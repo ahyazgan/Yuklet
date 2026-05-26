@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { C } from "../utils/theme";
 import { validateForm } from "../utils/validation";
+import { loadUsers, saveCurrentUser } from "../utils/storage";
+import { useToast } from "./Toast";
 
 const FIELDS = [
   { key: "email", label: "E-posta", type: "email", placeholder: "ornek@firma.com", required: true },
@@ -11,6 +13,7 @@ export default function LoginModal({ onClose }) {
   const [values, setValues] = useState({});
   const [errors, setErrors] = useState({});
   const [remember, setRemember] = useState(false);
+  const toast = useToast();
 
   const handleChange = (key, val) => {
     setValues(v => ({ ...v, [key]: val }));
@@ -21,8 +24,16 @@ export default function LoginModal({ onClose }) {
     e.preventDefault();
     const { valid, errors: errs } = validateForm(FIELDS, values);
     if (!valid) { setErrors(errs); return; }
-    // TODO: real auth
-    alert("Giris basarili! (Demo)");
+
+    const email = values.email.trim().toLowerCase();
+    const user = loadUsers().find(u => u.email.toLowerCase() === email);
+    if (!user || user.password !== values.password) {
+      setErrors({ password: "E-posta veya sifre hatali" });
+      return;
+    }
+
+    saveCurrentUser({ email: user.email, yetkili: user.yetkili, firma: user.firma, remember });
+    toast(`Hos geldiniz, ${user.yetkili || user.email}`, "success");
     onClose();
   };
 

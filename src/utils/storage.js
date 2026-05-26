@@ -38,3 +38,7 @@ export const loadPriceAlarms = () => load("hamted_price_alarms", []);
 export const savePriceAlarms = (v) => save("hamted_price_alarms", v);
 export const loadCoupons = () => load("hamted_used_coupons", []);
 export const saveCoupons = (v) => save("hamted_used_coupons", v);
+export const loadUsers = () => load("hamted_users", []);
+export const saveUsers = (v) => save("hamted_users", v);
+export const loadCurrentUser = () => load("hamted_current_user", null);
+export const saveCurrentUser = (v) => save("hamted_current_user", v);
