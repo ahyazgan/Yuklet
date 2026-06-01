@@ -1,5 +1,4 @@
 import { Link } from "react-router-dom";
-import { C } from "../utils/theme";
 
 export default function Footer() {
   return (
@@ -11,35 +10,29 @@ export default function Footer() {
               <div className="logo-icon logo-icon-sm">H</div>
               <span className="logo-text" style={{ fontSize: 16 }}>HamTed</span>
             </div>
-            <div className="footer-desc">Turkiye'nin B2B hammadde tedarik platformu. KOBi'lere toptan fiyatla, guvenli ve hizli tedarik.</div>
+            <div className="footer-desc">Turkiye'nin yuk & nakliye eslestirme platformu. Hafriyat ve silobas islerini dogru aracla, hizli ve guvenli sekilde bulusturur.</div>
           </div>
           <div>
             <div className="footer-title">Platform</div>
-            <Link to="/" className="footer-link">Urun Katalogu</Link>
+            <Link to="/ilanlar" className="footer-link">Tum Ilanlar</Link>
+            <Link to="/ilan-ver" className="footer-link">Ilan Ver</Link>
             <Link to="/nasil-calisir" className="footer-link">Nasil Calisir</Link>
-            <Link to="/tedarikci" className="footer-link">Tedarikci Ol</Link>
-            <Link to="/piyasa" className="footer-link">Canli Piyasa</Link>
-            <Link to="/talep-tahtasi" className="footer-link">Talep Tahtasi</Link>
           </div>
           <div>
-            <div className="footer-title">Kaynaklar</div>
-            <Link to="/ansiklopedi" className="footer-link">Ansiklopedi</Link>
-            <Link to="/haberler" className="footer-link">Haberler</Link>
-            <Link to="/sezonsal" className="footer-link">Sezonsal Analiz</Link>
-            <Link to="/blog" className="footer-link">Blog</Link>
+            <div className="footer-title">Kategoriler</div>
+            <Link to="/ilanlar" className="footer-link">🚛 Hafriyat</Link>
+            <Link to="/ilanlar" className="footer-link">🛢️ Silobas</Link>
           </div>
           <div>
             <div className="footer-title">Sirket</div>
             <Link to="/hakkimizda" className="footer-link">Hakkimizda</Link>
             <Link to="/iletisim" className="footer-link">Iletisim</Link>
-            <Link to="/rapor" className="footer-link">Satin Alma Raporu</Link>
           </div>
           <div>
             <div className="footer-title">Yasal</div>
             <Link to="/yasal/gizlilik" className="footer-link">Gizlilik Politikasi</Link>
             <Link to="/yasal/kullanim-kosullari" className="footer-link">Kullanim Kosullari</Link>
             <Link to="/yasal/kvkk" className="footer-link">KVKK Aydinlatma</Link>
-            <Link to="/yasal/mesafeli-satis" className="footer-link">Mesafeli Satis Sozlesmesi</Link>
           </div>
         </div>
         <div className="footer-bottom">
