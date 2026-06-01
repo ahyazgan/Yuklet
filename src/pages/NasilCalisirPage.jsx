@@ -2,22 +2,22 @@ import { C } from "../utils/theme";
 import SEO from "../components/SEO";
 
 const STEPS = [
-  { num: "1", title: "Urun Secin", desc: "Katalogdan ihtiyaciniz olan hammaddeyi secin veya teklif isteyin.", clr: C.accent },
-  { num: "2", title: "Miktar Belirleyin", desc: "Ihtiyaciniza uygun miktari girin. Minimum siparis miktarlarimiz uygundur.", clr: C.blue },
-  { num: "3", title: "Siparis Verin", desc: "Guvenli odeme ile siparisini tamamlayin. Kredi karti veya havale/EFT.", clr: C.green },
-  { num: "4", title: "Teslimat Alin", desc: "Sectiginiz teslimat yontemi ile hammaddeniz kapiniza gelsin.", clr: C.amber },
+  { num: "1", title: "Ilanini Yayinla", desc: "Tasinacak yukunu veya bos aracini birkac dakikada ekle. Konum, miktar ve tarihi belirt.", clr: C.accent },
+  { num: "2", title: "Teklifleri Topla", desc: "Ilgili nakliyeciler veya is sahipleri ilanini gorur, sana teklif gonderir.", clr: C.blue },
+  { num: "3", title: "Anlas", desc: "Gelen teklifleri karsilastir, en uygun olanla dogrudan iletisime gec ve anlas.", clr: C.green },
+  { num: "4", title: "Yola Cik", desc: "Is tamamlandiktan sonra karsilikli puanlama ile guvenli bir topluluk olusturulur.", clr: C.amber },
 ];
 
 export default function NasilCalisirPage() {
   return (
     <div className="page-content">
-      <SEO title="Nasil Calisir" description="HamTed nasil calisir? 4 adimda toptan hammadde tedarikinizi tamamlayin." />
+      <SEO title="Nasil Calisir" description="HamTed nasil calisir? 4 adimda hafriyat ve silobas yuklerinizi dogru aracla bulusturun." />
       <div className="page-header">
         <div className="section-badge" style={{ background: C.accentBg, borderColor: C.accentBorder, color: C.accent }}>
           Adim Adim
         </div>
         <h1 className="page-title">Nasil Calisir?</h1>
-        <p className="page-desc">4 basit adimda toptan hammadde tedarik edin.</p>
+        <p className="page-desc">4 basit adimda yukunu veya aracini dogru tarafla bulustur.</p>
       </div>
 
       <div className="steps-grid">
@@ -35,11 +35,11 @@ export default function NasilCalisirPage() {
         <h2 className="section-title">Sikca Sorulan Sorular</h2>
         <div className="faq-list">
           {[
-            ["Minimum siparis miktari ne kadar?", "Her urunun minimum siparis miktari urun detay sayfasinda belirtilmistir. Genellikle 1-25 ton araligindadir."],
-            ["Teslimat suresi ne kadar?", "Standart teslimat 5-7 is gunu, hizli teslimat 2-3 is gunudur. Fabrikadan teslim secenegi de mevcuttur."],
-            ["Odeme yontemleri nelerdir?", "Kredi karti, havale/EFT ile odeme yapabilirsiniz. Vadeli odeme secenegi yakinda eklenecektir."],
-            ["Iade ve degisim politikaniz nedir?", "Kalite uygunsuzlugu durumunda 7 is gunu icinde iade veya degisim yapilir. Detaylar icin mesafeli satis sozlesmesini inceleyiniz."],
-            ["Fatura kesiyor musunuz?", "Evet, tum siparisler icin e-fatura kesilmektedir. Kurumsal fatura bilgilerinizi siparis sirasinda girebilirsiniz."],
+            ["Ilan vermek ucretli mi?", "Hayir. Ilan vermek ve teklif almak ucretsizdir. Platform, is sahibi ile nakliyeciyi komisyonsuz bulusturur."],
+            ["Hangi isler icin kullanabilirim?", "Iki ana kategori vardir: Hafriyat (kazi, toprak, moloz tasima) ve Silobas (dokme cimento, kum, mıcır, tahil gibi yukler)."],
+            ["Is ilani mi arac ilani mi vermeliyim?", "Tasinacak yukunuz varsa 'Is ilani', bos araciniza is ariyorsaniz 'Arac ilani' verin. Karsi taraf size ulasir."],
+            ["Teklifler nasil geliyor?", "Ilaniniz yayinlandiktan sonra ilgili kullanicilar teklif verir veya dogrudan iletisime gecer. Teklifleri ilan detayinda gorursunuz."],
+            ["Odeme platform uzerinden mi yapiliyor?", "Hayir, anlasma ve odeme taraflar arasinda yapilir. Platform yalnizca eslestirme ve iletisimi saglar."],
           ].map(([q, a]) => (
             <div key={q} className="faq-item">
               <div className="faq-question">{q}</div>

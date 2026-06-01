@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { LISTINGS, IL_LIST } from "../data/listings";
 import { CATS, LISTING_TYPES } from "../data/categories";
+import CategoryIcon from "../components/CategoryIcon";
 
 function ListingCard({ l, onClick }) {
   const cat = CATS.find(c => c.id === l.cat);
@@ -19,7 +20,7 @@ function ListingCard({ l, onClick }) {
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 20 }}>{cat?.icon}</span>
+          <CategoryIcon catId={l.cat} size={20} fallback={cat?.icon} />
           <span style={{
             fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5,
             color: l.type === "is" ? "var(--accent)" : "var(--blue)",
@@ -118,7 +119,10 @@ export default function ListingsPage({ listings = LISTINGS }) {
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
         <button style={chip(cat === "all")} onClick={() => setCat("all")}>Tum kategoriler</button>
         {CATS.map(c => (
-          <button key={c.id} style={chip(cat === c.id)} onClick={() => setCat(c.id)}>{c.icon} {c.name}</button>
+          <button key={c.id} style={{ ...chip(cat === c.id), display: "inline-flex", alignItems: "center", gap: 6 }} onClick={() => setCat(c.id)}>
+            <CategoryIcon catId={c.id} size={16} fallback={c.icon} />
+            {c.name}
+          </button>
         ))}
       </div>
 

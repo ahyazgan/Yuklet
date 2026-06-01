@@ -38,3 +38,9 @@ export const loadPriceAlarms = () => load("hamted_price_alarms", []);
 export const savePriceAlarms = (v) => save("hamted_price_alarms", v);
 export const loadCoupons = () => load("hamted_used_coupons", []);
 export const saveCoupons = (v) => save("hamted_used_coupons", v);
+
+// Nakliye platformu
+export const loadListings = () => load("hamted_listings", []);
+export const saveListings = (v) => save("hamted_listings", v);
+export const loadUser = () => load("hamted_user", null);
+export const saveUser = (v) => save("hamted_user", v);

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
-export default function Header({ darkMode, toggleDark }) {
+export default function Header({ darkMode, toggleDark, user, onLoginClick, onLogout }) {
   const [mobileMenu, setMobileMenu] = useState(false);
   const navigate = useNavigate();
 
@@ -33,6 +33,15 @@ export default function Header({ darkMode, toggleDark }) {
 
           <button onClick={toggleDark} className="theme-toggle" aria-label="Tema">{darkMode ? "☀" : "☾"}</button>
 
+          {user ? (
+            <>
+              <span className="nav-link" style={{ fontWeight: 700, color: "var(--text)" }} title={user.email}>👤 {user.name}</span>
+              <button onClick={onLogout} className="nav-btn" aria-label="Cikis yap">Cikis</button>
+            </>
+          ) : (
+            <button onClick={onLoginClick} className="nav-btn" aria-label="Giris yap">Giris yap</button>
+          )}
+
           <button onClick={() => navigate("/ilan-ver")} className="btn-primary" style={{ marginLeft: 6 }}>+ Ilan ver</button>
         </nav>
 
@@ -49,6 +58,11 @@ export default function Header({ darkMode, toggleDark }) {
           {NAV_ITEMS.map(item => (
             <button key={item.label} onClick={() => handleNav(item.to)} className="mobile-menu-item">{item.label}</button>
           ))}
+          {user ? (
+            <button onClick={() => { onLogout(); setMobileMenu(false); }} className="mobile-menu-item">Cikis ({user.name})</button>
+          ) : (
+            <button onClick={() => { onLoginClick(); setMobileMenu(false); }} className="mobile-menu-item">Giris yap</button>
+          )}
           <button onClick={() => handleNav("/ilan-ver")} className="mobile-menu-item mobile-menu-login">+ Ilan ver</button>
         </div>
       )}

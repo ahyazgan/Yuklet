@@ -6,7 +6,7 @@ import SEO from "../components/SEO";
 const FIELDS = [
   { key: "name", label: "Ad Soyad *", type: "text", placeholder: "Adiniz Soyadiniz", required: true },
   { key: "email", label: "E-posta *", type: "email", placeholder: "ornek@firma.com", required: true },
-  { key: "konu", label: "Konu", type: "text", placeholder: "Siparisim hakkinda...", required: false },
+  { key: "konu", label: "Konu", type: "text", placeholder: "Ilanim hakkinda...", required: false },
 ];
 
 const CONTACTS = [
@@ -35,7 +35,7 @@ export default function IletisimPage() {
 
   return (
     <div className="page-content">
-      <SEO title="Iletisim" description="HamTed ile iletisime gecin. Sorulariniz ve ozel talepleriniz icin bize ulasin." />
+      <SEO title="Iletisim" description="HamTed ile iletisime gecin. Ilan, teklif ve nakliye sureci hakkindaki sorulariniz icin bize ulasin." />
       <div className="page-header">
         <div className="section-badge" style={{ background: C.amberBg, borderColor: C.amber+"30", color: C.amber }}>
           Bize Ulasin

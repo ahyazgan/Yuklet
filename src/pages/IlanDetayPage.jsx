@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { LISTINGS } from "../data/listings";
 import { CATS } from "../data/categories";
+import CategoryIcon from "../components/CategoryIcon";
 
 function Row({ label, value }) {
   if (!value && value !== 0) return null;
@@ -14,7 +15,7 @@ function Row({ label, value }) {
   );
 }
 
-export default function IlanDetayPage({ listings = LISTINGS }) {
+export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const [sent, setSent] = useState(false);
@@ -44,7 +45,7 @@ export default function IlanDetayPage({ listings = LISTINGS }) {
         {/* Sol kolon: detaylar */}
         <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 14, padding: 22, boxShadow: "var(--shadow)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-            <span style={{ fontSize: 22 }}>{cat?.icon}</span>
+            <CategoryIcon catId={l.cat} size={24} fallback={cat?.icon} />
             <span style={{
               fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5,
               color: l.type === "is" ? "var(--accent)" : "var(--blue)",
@@ -92,8 +93,8 @@ export default function IlanDetayPage({ listings = LISTINGS }) {
                 ✓ Teklifiniz iletildi
               </div>
             ) : (
-              <button onClick={() => setSent(true)} style={{ width: "100%", background: "var(--accent)", color: "#fff", border: "none", padding: "13px", borderRadius: 10, fontSize: 14.5, fontWeight: 700, cursor: "pointer" }}>
-                {l.type === "is" ? "Teklif ver" : "Iletisime gec"}
+              <button onClick={() => user ? setSent(true) : onRequireAuth?.()} style={{ width: "100%", background: "var(--accent)", color: "#fff", border: "none", padding: "13px", borderRadius: 10, fontSize: 14.5, fontWeight: 700, cursor: "pointer" }}>
+                {user ? (l.type === "is" ? "Teklif ver" : "Iletisime gec") : "Giris yapip teklif ver"}
               </button>
             )}
           </div>

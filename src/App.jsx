@@ -1,7 +1,7 @@
 import { useState, useEffect, lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
-import { loadTheme, saveTheme } from "./utils/storage";
+import { loadTheme, saveTheme, loadListings, saveListings, loadUser, saveUser } from "./utils/storage";
 import { ToastProvider } from "./components/Toast";
 import { ErrorBoundary, NotFoundPage } from "./components/ErrorBoundary";
 import { SkeletonGrid } from "./components/Skeleton";
@@ -10,6 +10,7 @@ import PageTransition from "./components/PageTransition";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import WhatsAppButton from "./components/WhatsAppButton";
+import AuthModal from "./components/AuthModal";
 
 import { LISTINGS } from "./data/listings";
 
@@ -43,15 +44,26 @@ function AppShell() {
     saveTheme(darkMode ? "dark" : "light");
   }, [darkMode]);
 
-  // Ilanlar (demo: bellek ici durum)
-  const [listings, setListings] = useState(LISTINGS);
-  const publishListing = (listing) => setListings(prev => [listing, ...prev]);
+  // Ilanlar: demo seed + kullanicinin ekledikleri (kalici)
+  const [userListings, setUserListings] = useState(() => loadListings());
+  useEffect(() => { saveListings(userListings); }, [userListings]);
+  const listings = [...userListings, ...LISTINGS];
+  const publishListing = (listing) => setUserListings(prev => [listing, ...prev]);
+
+  // Kullanici / kimlik dogrulama
+  const [user, setUser] = useState(() => loadUser());
+  useEffect(() => { saveUser(user); }, [user]);
+  const [showAuth, setShowAuth] = useState(false);
+  const logout = () => setUser(null);
 
   return (
     <div className="app-root">
       <ScrollToTop />
 
-      <Header darkMode={darkMode} toggleDark={() => setDarkMode(d => !d)} />
+      <Header
+        darkMode={darkMode} toggleDark={() => setDarkMode(d => !d)}
+        user={user} onLoginClick={() => setShowAuth(true)} onLogout={logout}
+      />
 
       <main>
         <ErrorBoundary>
@@ -60,8 +72,8 @@ function AppShell() {
               <Routes location={location} key={location.pathname}>
                 <Route path="/" element={<PageTransition><NakliyeHome listings={listings} /></PageTransition>} />
                 <Route path="/ilanlar" element={<PageTransition><ListingsPage listings={listings} /></PageTransition>} />
-                <Route path="/ilan/:id" element={<PageTransition><IlanDetayPage listings={listings} /></PageTransition>} />
-                <Route path="/ilan-ver" element={<PageTransition><IlanVerPage onPublish={publishListing} /></PageTransition>} />
+                <Route path="/ilan/:id" element={<PageTransition><IlanDetayPage listings={listings} user={user} onRequireAuth={() => setShowAuth(true)} /></PageTransition>} />
+                <Route path="/ilan-ver" element={<PageTransition><IlanVerPage onPublish={publishListing} user={user} onRequireAuth={() => setShowAuth(true)} /></PageTransition>} />
                 <Route path="/nasil-calisir" element={<PageTransition><NasilCalisirPage /></PageTransition>} />
                 <Route path="/hakkimizda" element={<PageTransition><HakkimizdaPage /></PageTransition>} />
                 <Route path="/iletisim" element={<PageTransition><IletisimPage /></PageTransition>} />
@@ -75,6 +87,8 @@ function AppShell() {
 
       <Footer />
       <WhatsAppButton />
+
+      {showAuth && <AuthModal onClose={() => setShowAuth(false)} onAuth={setUser} />}
     </div>
   );
 }

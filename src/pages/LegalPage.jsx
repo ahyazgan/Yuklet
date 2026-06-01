@@ -4,7 +4,7 @@ import SEO from "../components/SEO";
 const LEGAL_PAGES = {
   "gizlilik": {
     title: "Gizlilik Politikasi",
-    content: `HamTed Teknoloji A.S. ("HamTed") olarak, kullanicilarimizin gizliligine onem veriyoruz. Bu politika, kisisel verilerinizin nasil toplandigi, kullanildigi ve korundugu hakkinda bilgi vermektedir.
+    content: `HamTed Teknoloji A.S. ("HamTed") olarak, kullanicilarimizin gizliligine onem veriyoruz. Bu politika, kisisel verilerinizin nasil toplandigi, kullanildigi ve korundugu hakkinda bilgi vermektedir. HamTed, yuk sahibi ile nakliyeciyi bulusturan bir eslestirme platformudur.
 
 ## 1. Toplanan Veriler
 
@@ -12,7 +12,8 @@ Platform uzerinden asagidaki kisisel veriler toplanabilir:
 
 - **Kimlik Bilgileri:** Ad, soyad, firma unvani, vergi numarasi
 - **Iletisim Bilgileri:** E-posta adresi, telefon numarasi, adres
-- **Islem Bilgileri:** Siparis gecmisi, odeme bilgileri, teslimat adresleri
+- **Ilan Bilgileri:** Yayinladiginiz is/arac ilanlari, yukleme ve bosaltma noktalari
+- **Teklif Bilgileri:** Verdiginiz veya aldiginiz teklifler, mesajlasma gecmisi
 - **Teknik Veriler:** IP adresi, tarayici bilgisi, cerez verileri
 - **Kullanim Verileri:** Platform icindeki etkilesimler, arama gecmisi
 
@@ -20,10 +21,10 @@ Platform uzerinden asagidaki kisisel veriler toplanabilir:
 
 Toplanan veriler asagidaki amaclarla kullanilir:
 
-- Siparis ve teslimat sureclerinin yonetimi
-- Musteri hesaplarinin olusturulmasi ve yonetimi
-- Odeme islemlerinin gerceklestirilmesi
-- Musteri hizmetleri ve destek saglanmasi
+- Ilan yayinlama ve eslestirme hizmetinin sunulmasi
+- Kullanici hesaplarinin olusturulmasi ve yonetimi
+- Taraflar arasinda iletisim ve teklif surecinin saglanmasi
+- Karsilikli degerlendirme ve guven puani sisteminin isletilmesi
 - Platform iyilestirme ve analiz calismalari
 - Yasal yukumluluklerin yerine getirilmesi
 
@@ -31,16 +32,15 @@ Toplanan veriler asagidaki amaclarla kullanilir:
 
 Kisisel verileriniz, asagidaki durumlar disinda ucuncu taraflarla paylasilmaz:
 
-- Siparis teslimatini gerceklestiren lojistik firmalari
-- Odeme islemlerini yuruten finansal kuruluslar
+- Eslestirme amaciyla, ilan verdiginiz/teklif aldiginiz karsi taraf ile
 - Yasal zorunluluklar gerektirdiginde yetkili kurumlar
+- Platform altyapisini saglayan teknik hizmet saglayicilar
 
 ## 4. Veri Guvenligi
 
 - 256-bit SSL sifreleme ile veri iletimi
-- PCI DSS uyumlu odeme altyapisi
-- Duzenli guvenlik denetimleri
 - Erisim kontrolu ve yetkilendirme mekanizmalari
+- Duzenli guvenlik denetimleri
 
 ## 5. Cerez Politikasi
 
@@ -77,49 +77,42 @@ Telefon: +90 (212) 555 00 00`
 
 - **Platform:** hamted.com.tr web sitesi ve mobil uygulamasi
 - **Kullanici:** Platformu kullanan gercek veya tuzel kisi
-- **Tedarikci:** Platform uzerinden urun satan isletme
-- **Alici:** Platform uzerinden urun satin alan isletme
+- **Is Sahibi:** Tasinacak yuk icin is ilani veren taraf (muteahhit, firma, kisi)
+- **Nakliyeci:** Arac ilani veren veya ise teklif veren tasiyici taraf
 
-## 2. Uyelik Kosullari
+## 2. Platformun Niteligi
 
-- Platform B2B (isletmeler arasi) ticaret icin tasarlanmistir
-- Uyelik icin gecerli bir vergi numarasi veya ticaret sicil numarasi gereklidir
-- 18 yasindan kucukler platform kullanamazlar
+- HamTed, is sahibi ile nakliyeciyi bulusturan bir eslestirme/ilan platformudur
+- Platform, tasima hizmetinin tarafi degildir; tasima sozlesmesi dogrudan kullanicilar arasinda kurulur
+- Platform, ilan ve tekliflerin dogrulugunu garanti etmez
+
+## 3. Uyelik Kosullari
+
+- Uyelik icin gercek ve dogru bilgi verilmesi gerekir
+- 18 yasindan kucukler platform uzerinden islem yapamaz
 - Yanlis veya yaniltici bilgi vermek uyeligin iptaline yol acar
 
-## 3. Siparis ve Odeme
+## 4. Ilan ve Teklif Kurallari
 
-- Listelenen fiyatlar KDV haric olup aksi belirtilmedikce TL cinsindendir
-- Siparis onaylandiktan sonra fiyat degisikligi yapilmaz
-- Odeme havale/EFT veya kredi karti ile yapilir
-- Fatura, siparis tamamlandiktan sonra e-fatura olarak kesilir
+- Ilanlar gercek bir is veya arac icin verilmelidir
+- Yaniltici, mukerrer veya konu disi ilanlar kaldirilabilir
+- Verilen teklifler baglayici nitelikte olup iyi niyet kurallarina tabidir
+- Anlasma ve odeme kosullari taraflar arasinda serbestce belirlenir
 
-## 4. Teslimat
+## 5. Sorumluluk Sinirlamasi
 
-- Teslimat suresi, urun ve teslimat yontemine gore degisir
-- Teslimat adresi, siparis sirasinda belirtilen adrestir
-- Teslimatta hasar veya eksiklik durumunda 24 saat icinde bildirim yapilmalidir
-
-## 5. Iade ve Iptal
-
-- Kalite uygunsuzlugu durumunda 7 is gunu icinde iade kabul edilir
-- Iade icin urunun orijinal ambalajinda ve kullanilmamis olmasi gerekir
-- Ozel uretim veya kisisellestirilmis urunlerde iade kabul edilmez
-- Iade onaylanan urunlerin bedeli 5 is gunu icinde iade edilir
-
-## 6. Sorumluluk Sinirlamasi
-
-- Platform, tedarikci ile alici arasinda aracilik yapar
-- Urun kalitesi ve teslimat tedarikci sorumlulugundadir
+- Tasimanin yapilmasi, kalitesi ve odemesi taraflarin sorumlulugundadir
+- Platform, kullanicilar arasindaki uyusmazliklarin tarafi degildir
+- Arac belgeleri, yetki belgeleri (orn. K belgesi) ve sigorta yukumlulukleri ilgili tarafa aittir
 - Platform, ucuncu taraf sitelere verilen linklerin iceriginden sorumlu degildir
-- Mucbir sebepler nedeniyle olusan gecikmelerden sorumluluk kabul edilmez
+- Mucbir sebepler nedeniyle olusan aksakliklardan sorumluluk kabul edilmez
 
-## 7. Fikri Mulkiyet
+## 6. Fikri Mulkiyet
 
 - Platform uzerindeki tum icerik, tasarim ve yazilim HamTed'e aittir
 - Izinsiz kopyalama, dagitma veya degistirme yasaktir
 
-## 8. Uyusmazlik Cozumu
+## 7. Uyusmazlik Cozumu
 
 - Bu kosullar Turkiye Cumhuriyeti kanunlarina tabidir
 - Uyusmazliklarda Istanbul Mahkemeleri ve Icra Daireleri yetkilidir`
@@ -138,21 +131,18 @@ Adres: Buyukdere Cad. No:123 Kat:5, Levent, Istanbul
 
 Kisisel verileriniz, KVKK'nin 5. ve 6. maddelerinde belirtilen hukuki sebeplere dayanilarak asagidaki amaclarla islenmektedir:
 
-- Satis ve satin alma sureclerinin yurutulmesi
-- Sozlesmeden kaynaklanan yukumluluklerin yerine getirilmesi
-- Musteri iliskileri yonetimi
-- Lojistik ve teslimat faaliyetlerinin yurutulmesi
-- Finans ve muhasebe islemlerinin yurutulmesi
-- Hukuki sureclerin takibi
+- Ilan yayinlama ve eslestirme hizmetinin yurutulmesi
+- Taraflar arasinda iletisim ve teklif surecinin saglanmasi
+- Kullanici iliskileri yonetimi ve guven puani sistemi
 - Bilgi guvenligi sureclerinin yurutulmesi
+- Hukuki sureclerin takibi
 
 ## 3. Kisisel Verilerin Aktarimi
 
 Kisisel verileriniz, yukarida belirtilen amaclar dogrultusunda:
 
-- Is ortaklari ve tedarikci firmalara
-- Bankalara ve odeme kuruluslarina
-- Kargo ve lojistik firmalarina
+- Eslestirme amaciyla ilgili karsi tarafa
+- Teknik altyapi ve hizmet saglayicilara
 - Yasal zorunluluk halinde yetkili kamu kurumlarina
 
 KVKK'nin 8. ve 9. maddelerinde belirtilen kosullara uygun olarak aktarilabilir.
@@ -160,12 +150,12 @@ KVKK'nin 8. ve 9. maddelerinde belirtilen kosullara uygun olarak aktarilabilir.
 ## 4. Veri Toplama Yontemi ve Hukuki Sebebi
 
 Kisisel verileriniz;
-- Web sitesi uyelik formu
-- Siparis formu
+- Uyelik formu
+- Ilan ve teklif formlari
 - Iletisim formu
 - Cerezler ve otomatik yontemler
 
-araciligiyla, sozlesmenin ifasi, yasal yukumluluk ve meşru menfaat hukuki sebeplerine dayanilarak toplanmaktadir.
+araciligiyla, sozlesmenin ifasi, yasal yukumluluk ve mesru menfaat hukuki sebeplerine dayanilarak toplanmaktadir.
 
 ## 5. Veri Sahibi Haklari (KVKK Madde 11)
 
@@ -191,59 +181,6 @@ Haklarinizi kullanmak icin:
 - KEP: hamted@hs01.kep.tr
 
 Basvurular en gec 30 gun icinde sonuclandirilir.`
-  },
-  "mesafeli-satis": {
-    title: "Mesafeli Satis Sozlesmesi",
-    content: `## 1. Taraflar
-
-**SATICI:**
-HamTed Teknoloji A.S.
-Adres: Buyukdere Cad. No:123 Kat:5, Levent, Istanbul
-Telefon: +90 (212) 555 00 00
-E-posta: info@hamted.com.tr
-
-**ALICI:**
-Siparis sirasinda belirtilen bilgiler gecerlidir.
-
-## 2. Sozlesme Konusu
-
-Isbu sozlesme, alicinin platform uzerinden elektronik ortamda siparis verdigi urunlerin satisi ve teslimatina iliskin taraflarin hak ve yukumluluklerini duzenler.
-
-## 3. Urun Bilgileri
-
-Urunlerin temel ozellikleri, fiyati ve odeme bilgileri siparis ozeti sayfasinda belirtilmistir. Urun fiyatlarina KDV dahil degildir.
-
-## 4. Genel Hukumler
-
-- Alici, siparis onayindan once urun ozelliklerini ve fiyatini incelemis ve onaylamistir
-- Siparis onaylanana kadar fiyat degisikligi hakki saklidir
-- Siparis sonrasi fiyat degisikligi yapilmaz
-
-## 5. Teslimat
-
-- Teslimat, siparis onayindan itibaren en gec 30 is gunu icinde yapilir
-- Teslimat suresi, urun ve teslimat yontemine gore degisir
-- Teslimat masraflari aliciya aittir (aksi belirtilmedikce)
-- Teslimat, belirtilen adrese yapilir
-
-## 6. Cayma Hakki
-
-6502 sayili Tuketicinin Korunmasi Hakkinda Kanun uyarinca:
-- B2B islemler cayma hakki kapsaminda degildir
-- Ancak platform politikasi geregi, kalite uygunsuzlugu durumunda 7 is gunu icinde iade kabul edilir
-- Ozel uretim urunlerde iade kabul edilmez
-
-## 7. Temerrut ve Hukuki Sonuclari
-
-Alicinin odeme yukumlululerini yerine getirmemesi halinde, satici siparisin iptaline karar verebilir. Gecikme faizi yasal oranlar uzerinden uygulanir.
-
-## 8. Yetkili Mahkeme
-
-Uyusmazliklarda Istanbul Mahkemeleri ve Icra Daireleri yetkilidir.
-
-## 9. Yururluk
-
-Bu sozlesme, siparisin onaylanmasi ile yururluge girer. Alici, siparis onayinda bu sozlesmeyi okumus ve kabul etmis sayilir.`
   }
 };
 
@@ -255,7 +192,7 @@ export default function LegalPage() {
     return (
       <div className="page-content">
         <div className="empty-state">
-          <div className="empty-icon">{"\uD83D\uDCDC"}</div>
+          <div className="empty-icon">{"📜"}</div>
           <div className="empty-title">Sayfa bulunamadi</div>
           <div className="empty-desc"><Link to="/" className="link-btn link-btn-bold">Ana sayfaya don</Link></div>
         </div>
@@ -276,7 +213,7 @@ export default function LegalPage() {
               const parts = line.replace("- **", "").split(":**");
               return <div key={i} className="legal-item"><strong>{parts[0]}:</strong>{parts[1]}</div>;
             }
-            if (line.startsWith("- ")) return <div key={i} className="legal-item">{line.replace("- ", "\u2022 ")}</div>;
+            if (line.startsWith("- ")) return <div key={i} className="legal-item">{line.replace("- ", "• ")}</div>;
             if (line.trim() === "") return <br key={i} />;
             return <p key={i} className="legal-p">{line}</p>;
           })}

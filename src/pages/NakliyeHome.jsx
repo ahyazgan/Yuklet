@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { CATS } from "../data/categories";
 import { LISTINGS } from "../data/listings";
+import CategoryIcon from "../components/CategoryIcon";
 
 export default function NakliyeHome({ listings = LISTINGS }) {
   const navigate = useNavigate();
@@ -41,7 +42,9 @@ export default function NakliyeHome({ listings = LISTINGS }) {
           {CATS.map(c => (
             <motion.div key={c.id} whileHover={{ y: -4 }} onClick={() => navigate(`/ilanlar`)}
               style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 16, padding: 24, cursor: "pointer", boxShadow: "var(--shadow)", display: "flex", gap: 16, alignItems: "center" }}>
-              <div style={{ fontSize: 40, width: 64, height: 64, borderRadius: 14, background: c.clr + "18", display: "flex", alignItems: "center", justifyContent: "center" }}>{c.icon}</div>
+              <div style={{ width: 64, height: 64, borderRadius: 14, background: c.clr + "18", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <CategoryIcon catId={c.id} size={48} fallback={c.icon} />
+              </div>
               <div>
                 <h3 style={{ fontSize: 19, fontWeight: 800, color: "var(--text)", marginBottom: 4 }}>{c.name}</h3>
                 <p style={{ fontSize: 13.5, color: "var(--text-sec)", lineHeight: 1.5 }}>{c.desc}</p>
@@ -77,8 +80,10 @@ export default function NakliyeHome({ listings = LISTINGS }) {
               <motion.div key={l.id} whileHover={{ y: -4 }} onClick={() => navigate(`/ilan/${l.id}`)}
                 style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 14, padding: 18, cursor: "pointer", boxShadow: "var(--shadow)", display: "flex", flexDirection: "column", gap: 8 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontSize: 18 }}>{cat?.icon}</span>
-                  <span style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: l.type === "is" ? "var(--accent)" : "var(--blue)", background: l.type === "is" ? "var(--accent-bg)" : "var(--blue-bg)", padding: "3px 8px", borderRadius: 6 }}>
+                  <CategoryIcon catId={l.cat} size={20} fallback={cat?.icon} />
+                  <span style={{
+                    fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: l.type === "is" ? "var(--accent)" : "var(--blue)", background: l.type === "is" ? "var(--accent-bg)" : "var(--blue-bg)", padding: "3px 8px", borderRadius: 6
+                  }}>
                     {l.type === "is" ? "Is ilani" : "Arac"}
                   </span>
                 </div>

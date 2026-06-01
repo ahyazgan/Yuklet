@@ -3,18 +3,19 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { CATS, LISTING_TYPES, VEHICLE_TYPES, MATERIALS, UNITS } from "../data/categories";
 import { IL_LIST } from "../data/listings";
+import CategoryIcon from "../components/CategoryIcon";
 
 const label = { fontSize: 13, fontWeight: 600, color: "var(--text-sec)", marginBottom: 6, display: "block" };
 const field = { width: "100%", padding: "11px 14px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--bg-card)", color: "var(--text)", fontSize: 14 };
 
-export default function IlanVerPage({ onPublish }) {
+export default function IlanVerPage({ onPublish, user, onRequireAuth }) {
   const navigate = useNavigate();
   const [type, setType] = useState("is");
   const [cat, setCat] = useState("hafriyat");
   const [form, setForm] = useState({
     title: "", il: "Istanbul", ilce: "", yukleme: "", bosaltma: "",
     material: "", amount: "", unit: "ton", vehicle: "", capacity: "",
-    dateText: "", priceType: "teklif", price: "", desc: "", owner: "",
+    dateText: "", priceType: "teklif", price: "", desc: "", owner: user?.name || "",
   });
   const [error, setError] = useState("");
 
@@ -48,6 +49,22 @@ export default function IlanVerPage({ onPublish }) {
 
   const materials = MATERIALS[cat] || [];
   const vehicles = VEHICLE_TYPES[cat] || [];
+
+  if (!user) {
+    return (
+      <div className="page-content" style={{ maxWidth: 520, margin: "0 auto", textAlign: "center", paddingTop: 40 }}>
+        <div style={{ fontSize: 44, marginBottom: 12 }}>🔒</div>
+        <h1 style={{ fontSize: 24, fontWeight: 800, color: "var(--text)", marginBottom: 8 }}>Ilan vermek icin giris yapin</h1>
+        <p style={{ fontSize: 14.5, color: "var(--text-sec)", marginBottom: 24, lineHeight: 1.6 }}>
+          Ilan yayinlamak ucretsizdir. Devam etmek icin hesabiniza giris yapin veya hizlica kayit olun.
+        </p>
+        <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+          <button onClick={onRequireAuth} style={{ background: "var(--accent)", color: "#fff", border: "none", padding: "13px 24px", borderRadius: 11, fontSize: 15, fontWeight: 700, cursor: "pointer" }}>Giris yap / Kayit ol</button>
+          <button onClick={() => navigate("/ilanlar")} style={{ background: "var(--bg-card)", color: "var(--text)", border: "1px solid var(--border)", padding: "13px 24px", borderRadius: 11, fontSize: 15, fontWeight: 700, cursor: "pointer" }}>Ilanlara don</button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="page-content" style={{ maxWidth: 720, margin: "0 auto" }}>
@@ -83,8 +100,11 @@ export default function IlanVerPage({ onPublish }) {
                 style={{ flex: 1, minWidth: 160, textAlign: "left", padding: "12px 14px", borderRadius: 10, cursor: "pointer",
                   border: "1px solid " + (cat === c.id ? "var(--accent)" : "var(--border)"),
                   background: cat === c.id ? "var(--accent-bg)" : "var(--bg-card)" }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: cat === c.id ? "var(--accent)" : "var(--text)" }}>{c.icon} {c.name}</div>
-                <div style={{ fontSize: 12, color: "var(--text-sec)", marginTop: 2 }}>{c.desc}</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 700, color: cat === c.id ? "var(--accent)" : "var(--text)" }}>
+                  <CategoryIcon catId={c.id} size={24} fallback={c.icon} />
+                  <span>{c.name}</span>
+                </div>
+                <div style={{ fontSize: 12, color: "var(--text-sec)", marginTop: 4 }}>{c.desc}</div>
               </button>
             ))}
           </div>
