@@ -45,7 +45,7 @@ export default function Header({ darkMode, toggleDark, user, onLoginClick, onLog
 
           {user ? (
             <>
-              <span className="nav-link" style={{ fontWeight: 700, color: "var(--text)" }} title={`${user.email} · ${user.role === "tedarikci" ? "Tedarikci" : "Is veren"}`}>👤 {user.name}</span>
+              <Link to="/profil" className="nav-link" style={{ fontWeight: 700, color: "var(--text)" }} title={`${user.email} · ${user.role === "tedarikci" ? "Tedarikci" : "Is veren"}`}>👤 {user.name}</Link>
               <button onClick={onLogout} className="nav-btn" aria-label="Cikis yap">Cikis</button>
             </>
           ) : (
@@ -75,6 +75,7 @@ export default function Header({ darkMode, toggleDark, user, onLoginClick, onLog
               {item.label}{item.badge > 0 ? ` (${item.badge})` : ""}
             </button>
           ))}
+          {user && <button onClick={() => handleNav("/profil")} className="mobile-menu-item">Profil</button>}
           {user ? (
             <button onClick={() => { onLogout(); setMobileMenu(false); }} className="mobile-menu-item">Cikis ({user.name})</button>
           ) : (

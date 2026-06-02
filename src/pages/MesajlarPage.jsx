@@ -7,7 +7,7 @@ function fmtTime(iso) {
   catch { return ""; }
 }
 
-export default function MesajlarPage({ user, listings = [], offers = [], messages = [], onSendMessage, onRequireAuth, onSeen }) {
+export default function MesajlarPage({ user, listings = [], offers = [], messages = [], onSendMessage, onRequireAuth, onSeen, getContact }) {
   const navigate = useNavigate();
   const [selectedKey, setSelectedKey] = useState(null);
   const [text, setText] = useState("");
@@ -41,6 +41,7 @@ export default function MesajlarPage({ user, listings = [], offers = [], message
     .filter(Boolean);
 
   const active = conversations.find(c => c.key === selectedKey) || conversations[0] || null;
+  const otherPhone = active && getContact ? getContact(active.other.id)?.phone : null;
 
   const threadMessages = active
     ? messages
@@ -100,7 +101,10 @@ export default function MesajlarPage({ user, listings = [], offers = [], message
             {active && (
               <>
                 <div style={{ padding: "14px 18px", borderBottom: "1px solid var(--border-light)" }}>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text)" }}>{active.other.name}</div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text)" }}>{active.other.name}</div>
+                    {otherPhone && <a href={`tel:${otherPhone}`} style={{ fontSize: 13, fontWeight: 700, color: "var(--green)", textDecoration: "none" }}>📞 {otherPhone}</a>}
+                  </div>
                   <button onClick={() => navigate(`/ilan/${active.listingId}`)} style={{ background: "none", border: "none", color: "var(--accent)", fontSize: 12.5, fontWeight: 600, cursor: "pointer", padding: 0 }}>{active.listingTitle} →</button>
                 </div>
 

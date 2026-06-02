@@ -18,7 +18,7 @@ function fmtDate(iso) {
 
 const actionBtn = { background: "transparent", border: "1px solid var(--border)", color: "var(--text-sec)", padding: "6px 12px", borderRadius: 8, fontSize: 12.5, fontWeight: 600, cursor: "pointer" };
 
-export default function IlanlarimPage({ listings = [], user, offers = [], onUpdateOffer, onUpdateListing, onDeleteListing, onRequireAuth }) {
+export default function IlanlarimPage({ listings = [], user, offers = [], onUpdateOffer, onUpdateListing, onDeleteListing, onRequireAuth, getContact }) {
   const navigate = useNavigate();
   const toast = useToast();
 
@@ -122,7 +122,12 @@ export default function IlanlarimPage({ listings = [], user, offers = [], onUpda
                               </div>
                             )}
                             {o.status === "kabul" && (
-                              <button onClick={() => navigate("/mesajlar")} style={{ background: "var(--blue)", color: "#fff", border: "none", padding: "8px 12px", borderRadius: 8, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>Mesaj gonder</button>
+                              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                                {getContact?.(o.fromUserId)?.phone && (
+                                  <a href={`tel:${getContact(o.fromUserId).phone}`} style={{ fontSize: 12.5, fontWeight: 700, color: "var(--green)", textDecoration: "none" }}>📞 {getContact(o.fromUserId).phone}</a>
+                                )}
+                                <button onClick={() => navigate("/mesajlar")} style={{ background: "var(--blue)", color: "#fff", border: "none", padding: "8px 12px", borderRadius: 8, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>Mesaj gonder</button>
+                              </div>
                             )}
                           </div>
                         </div>

@@ -25,6 +25,7 @@ const IlanDetayPage = lazy(() => import("./pages/IlanDetayPage"));
 const IlanVerPage = lazy(() => import("./pages/IlanVerPage"));
 const IlanlarimPage = lazy(() => import("./pages/IlanlarimPage"));
 const MesajlarPage = lazy(() => import("./pages/MesajlarPage"));
+const ProfilPage = lazy(() => import("./pages/ProfilPage"));
 const NasilCalisirPage = lazy(() => import("./pages/NasilCalisirPage"));
 const HakkimizdaPage = lazy(() => import("./pages/HakkimizdaPage"));
 const IletisimPage = lazy(() => import("./pages/IletisimPage"));
@@ -101,6 +102,29 @@ function AppShell() {
   const logout = () => setUser(null);
   const requireAuth = () => setShowAuth(true);
   const markMessagesSeen = () => { if (user) setMsgSeen(prev => ({ ...prev, [user.id]: new Date().toISOString() })); };
+  const getContact = (id) => {
+    const u = users.find(x => String(x.id) === String(id));
+    return u ? { name: u.name, phone: u.phone, email: u.email } : null;
+  };
+  const updateProfile = (patch) => {
+    setUser(prev => prev ? { ...prev, ...patch } : prev);
+    setUsers(prev => prev.map(u => (user && u.id === user.id) ? { ...u, ...patch } : u));
+  };
+
+  // Sekmeler arasi canli senkron: baska sekmede localStorage degisince state'i tazele
+  useEffect(() => {
+    const onStorage = (e) => {
+      if (!e.key) return;
+      if (e.key === "hamted_offers") setOffers(loadOffers());
+      else if (e.key === "hamted_messages") setMessages(loadMessages());
+      else if (e.key === "hamted_listings") setUserListings(loadListings());
+      else if (e.key === "hamted_users") setUsers(loadUsers());
+      else if (e.key === "hamted_user") setUser(loadUser());
+      else if (e.key === "hamted_msg_seen") setMsgSeen(loadMsgSeen());
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
 
   // Bildirim sayilari
   const pendingOffersCount = user
@@ -131,8 +155,9 @@ function AppShell() {
                 <Route path="/ilan/:id" element={<PageTransition><IlanDetayPage listings={listings} user={user} onRequireAuth={requireAuth} offers={offers} onAddOffer={addOffer} /></PageTransition>} />
                 <Route path="/ilan-ver" element={<PageTransition><IlanVerPage onPublish={publishListing} onUpdate={updateListing} listings={listings} user={user} onRequireAuth={requireAuth} /></PageTransition>} />
                 <Route path="/ilan-duzenle/:id" element={<PageTransition><IlanVerPage onPublish={publishListing} onUpdate={updateListing} listings={listings} user={user} onRequireAuth={requireAuth} /></PageTransition>} />
-                <Route path="/ilanlarim" element={<PageTransition><IlanlarimPage listings={listings} user={user} offers={offers} onUpdateOffer={updateOffer} onUpdateListing={updateListing} onDeleteListing={removeListing} onRequireAuth={requireAuth} /></PageTransition>} />
-                <Route path="/mesajlar" element={<PageTransition><MesajlarPage user={user} listings={listings} offers={offers} messages={messages} onSendMessage={addMessage} onRequireAuth={requireAuth} onSeen={markMessagesSeen} /></PageTransition>} />
+                <Route path="/ilanlarim" element={<PageTransition><IlanlarimPage listings={listings} user={user} offers={offers} onUpdateOffer={updateOffer} onUpdateListing={updateListing} onDeleteListing={removeListing} onRequireAuth={requireAuth} getContact={getContact} /></PageTransition>} />
+                <Route path="/mesajlar" element={<PageTransition><MesajlarPage user={user} listings={listings} offers={offers} messages={messages} onSendMessage={addMessage} onRequireAuth={requireAuth} onSeen={markMessagesSeen} getContact={getContact} /></PageTransition>} />
+                <Route path="/profil" element={<PageTransition><ProfilPage user={user} onUpdateProfile={updateProfile} onRequireAuth={requireAuth} /></PageTransition>} />
                 <Route path="/nasil-calisir" element={<PageTransition><NasilCalisirPage /></PageTransition>} />
                 <Route path="/hakkimizda" element={<PageTransition><HakkimizdaPage /></PageTransition>} />
                 <Route path="/iletisim" element={<PageTransition><IletisimPage /></PageTransition>} />
