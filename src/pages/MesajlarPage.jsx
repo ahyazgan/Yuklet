@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import SEO from "../components/SEO";
 
 function fmtTime(iso) {
   try { return new Date(iso).toLocaleString("tr-TR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }); }
@@ -63,6 +64,7 @@ export default function MesajlarPage({ user, listings = [], offers = [], message
 
   return (
     <div className="page-content">
+      <SEO title="Mesajlar" description="Eslesen ilanlar uzerinden karsi tarafla mesajlasin." />
       <h1 style={{ fontSize: 26, fontWeight: 800, color: "var(--text)", marginBottom: 4 }}>Mesajlar</h1>
       <p style={{ fontSize: 14, color: "var(--text-sec)", marginBottom: 20 }}>Eslesen ilanlar uzerinden karsi tarafla iletisim.</p>
 
@@ -74,7 +76,7 @@ export default function MesajlarPage({ user, listings = [], offers = [], message
           </div>
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 2fr)", gap: 16, alignItems: "start" }} className="mesaj-grid">
+        <div style={{ display: "grid", gap: 16, alignItems: "start" }} className="mesaj-grid">
           {/* Konusma listesi */}
           <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 14, overflow: "hidden", boxShadow: "var(--shadow)" }}>
             {conversations.map(c => {

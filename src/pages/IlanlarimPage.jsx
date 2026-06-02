@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { CATS } from "../data/categories";
 import CategoryIcon from "../components/CategoryIcon";
 import { useToast } from "../components/Toast";
+import SEO from "../components/SEO";
 
 const STATUS_STYLE = {
   beklemede: { label: "Beklemede", clr: "var(--amber)", bg: "var(--amber-bg)" },
@@ -44,6 +45,7 @@ export default function IlanlarimPage({ listings = [], user, offers = [], onUpda
 
   return (
     <div className="page-content">
+      <SEO title="Ilanlarim" description="Actiginiz ilanlar ve gelen teklifler. Teklifleri kabul edin veya reddedin." />
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12, marginBottom: 20 }}>
         <div>
           <h1 style={{ fontSize: 26, fontWeight: 800, color: "var(--text)" }}>Ilanlarim</h1>

@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { CATS } from "../data/categories";
 import { LISTINGS } from "../data/listings";
 import CategoryIcon from "../components/CategoryIcon";
+import SEO from "../components/SEO";
 
 export default function NakliyeHome({ listings = LISTINGS }) {
   const navigate = useNavigate();
@@ -10,6 +11,7 @@ export default function NakliyeHome({ listings = LISTINGS }) {
 
   return (
     <div>
+      <SEO description="Hafriyat ve silobas isleri dogru aracla bulusuyor. Yukunu yayinla, nakliyeci teklifini al; bos aracin varsa is bul." />
       {/* Hero */}
       <section style={{ background: "var(--hero-bg)", borderBottom: "1px solid var(--border)" }}>
         <div className="page-content" style={{ paddingTop: 56, paddingBottom: 56, textAlign: "center" }}>

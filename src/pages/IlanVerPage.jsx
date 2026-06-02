@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { CATS, LISTING_TYPES, VEHICLE_TYPES, MATERIALS, UNITS } from "../data/categories";
 import { IL_LIST } from "../data/listings";
 import CategoryIcon from "../components/CategoryIcon";
+import SEO from "../components/SEO";
 
 const label = { fontSize: 13, fontWeight: 600, color: "var(--text-sec)", marginBottom: 6, display: "block" };
 const field = { width: "100%", padding: "11px 14px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--bg-card)", color: "var(--text)", fontSize: 14 };
@@ -71,6 +72,7 @@ export default function IlanVerPage({ onPublish, user, onRequireAuth }) {
 
   return (
     <div className="page-content" style={{ maxWidth: 720, margin: "0 auto" }}>
+      <SEO title="Ilan ver" description="Tasinacak yukunuzu veya bos aracinizi yayinlayin; nakliyeci ve is sahiplerinden teklif alin." />
       <button onClick={() => navigate(-1)} style={{ background: "transparent", border: "none", color: "var(--text-sec)", fontSize: 13.5, fontWeight: 600, cursor: "pointer", marginBottom: 12 }}>← Geri</button>
       <h1 style={{ fontSize: 26, fontWeight: 800, color: "var(--text)", marginBottom: 4 }}>Ilan ver</h1>
       <p style={{ fontSize: 14, color: "var(--text-sec)", marginBottom: 22 }}>Tasinacak yukunuzu veya bos aracinizi yayinlayin.</p>

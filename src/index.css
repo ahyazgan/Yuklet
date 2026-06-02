@@ -758,10 +758,16 @@ main { flex: 1; }
 .legal-p { margin-bottom: 12px; }
 .legal-item { padding: 4px 0 4px 16px; border-left: 2px solid var(--border); margin-bottom: 6px; font-size: 13px; }
 
+/* ═══ NAKLIYE GRID (ilan detay + mesajlar) ═══ */
+.ilan-detay-grid { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+.mesaj-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); }
+
 @media (max-width: 768px) {
   .live-feed { display: none; }
   .supplier-profile-header { flex-direction: column; text-align: center; }
   .blog-grid { grid-template-columns: 1fr; }
+  .ilan-detay-grid { grid-template-columns: 1fr; }
+  .mesaj-grid { grid-template-columns: 1fr; }
 }
 
 @media (min-width: 769px) {

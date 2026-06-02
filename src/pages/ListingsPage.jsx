@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { LISTINGS, IL_LIST } from "../data/listings";
 import { CATS, LISTING_TYPES } from "../data/categories";
+import SEO from "../components/SEO";
 import CategoryIcon from "../components/CategoryIcon";
 
 function ListingCard({ l, onClick }) {
@@ -90,6 +91,7 @@ export default function ListingsPage({ listings = LISTINGS }) {
 
   return (
     <div className="page-content">
+      <SEO title="Ilanlar" description="Hafriyat ve silobas is ve arac ilanlari. Konuma, kategoriye ve turune gore filtreleyin." />
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12, marginBottom: 20 }}>
         <div>
           <h1 style={{ fontSize: 26, fontWeight: 800, color: "var(--text)" }}>Ilanlar</h1>

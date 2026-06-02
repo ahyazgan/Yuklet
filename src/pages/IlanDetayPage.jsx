@@ -5,6 +5,7 @@ import { LISTINGS } from "../data/listings";
 import { CATS } from "../data/categories";
 import CategoryIcon from "../components/CategoryIcon";
 import { useToast } from "../components/Toast";
+import SEO from "../components/SEO";
 
 function Row({ label, value }) {
   if (!value && value !== 0) return null;
@@ -73,12 +74,13 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
 
   return (
     <div className="page-content">
+      <SEO title={l.title} description={l.desc || `${cat?.name} ilani - ${l.il} / ${l.ilce}`} />
       <button onClick={() => navigate(-1)} style={{ background: "transparent", border: "none", color: "var(--text-sec)", fontSize: 13.5, fontWeight: 600, cursor: "pointer", marginBottom: 16 }}>
         ← Geri
       </button>
 
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}
-        style={{ display: "grid", gridTemplateColumns: "minmax(0, 2fr) minmax(0, 1fr)", gap: 20, alignItems: "start" }} className="ilan-detay-grid">
+        style={{ display: "grid", gap: 20, alignItems: "start" }} className="ilan-detay-grid">
 
         {/* Sol kolon: detaylar + gelen teklifler */}
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
