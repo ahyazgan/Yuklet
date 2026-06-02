@@ -20,6 +20,7 @@ export default function Header({ darkMode, toggleDark, user, onLoginClick, onLog
   ];
 
   const USER_ITEMS = user ? [
+    { label: "Panelim", to: "/panel", badge: 0 },
     { label: "İlanlarım", to: "/ilanlarim", badge: pendingOffersCount },
     { label: "Mesajlar", to: "/mesajlar", badge: unreadCount },
   ] : [];

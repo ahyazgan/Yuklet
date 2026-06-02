@@ -768,6 +768,7 @@ main { flex: 1; }
   .blog-grid { grid-template-columns: 1fr; }
   .ilan-detay-grid { grid-template-columns: 1fr; }
   .mesaj-grid { grid-template-columns: 1fr; }
+  .dashboard-grid { grid-template-columns: 1fr; }
 }
 
 @media (min-width: 769px) {

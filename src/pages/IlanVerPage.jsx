@@ -28,6 +28,7 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], user, 
     title: "", il: "Istanbul", ilce: "", yukleme: "", bosaltma: "",
     material: "", amount: "", unit: "ton", vehicle: "", capacity: "",
     dateText: "", priceType: "teklif", price: "", desc: "", owner: user?.name || "",
+    recurring: false, recurringFreq: "haftalik", recurringDuration: "", dailyTrips: "",
   });
   const [error, setError] = useState("");
 
@@ -50,6 +51,13 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], user, 
       dateText: form.dateText.trim() || "Belirtilmedi",
       priceType: form.priceType, price: form.priceType === "sabit" ? Number(form.price) || 0 : null,
       desc: form.desc.trim(),
+      recurring: form.recurring,
+      recurringFreq: form.recurring ? form.recurringFreq : undefined,
+      recurringDuration: form.recurring ? form.recurringDuration.trim() : undefined,
+      dailyTrips: form.recurring && form.dailyTrips ? Number(form.dailyTrips) : undefined,
+      recurringText: form.recurring
+        ? [form.dailyTrips ? `Günde ${form.dailyTrips} sefer` : "", form.recurringDuration ? `• ${form.recurringDuration}` : ""].filter(Boolean).join(" ")
+        : "",
     };
 
     if (editing) {
@@ -238,9 +246,41 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], user, 
           </div>
         </div>
 
+        {/* Düzenli iş */}
+        <div style={{ background: form.recurring ? "var(--green-bg)" : "var(--bg)", border: `1px solid ${form.recurring ? "var(--green)" : "var(--border)"}`, borderRadius: 12, padding: "14px 16px", transition: "all .2s" }}>
+          <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
+            <input type="checkbox" checked={form.recurring} onChange={e => set("recurring", e.target.checked)}
+              style={{ width: 18, height: 18, accentColor: "var(--green)", cursor: "pointer" }} />
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: form.recurring ? "var(--green)" : "var(--text)" }}>🔁 Düzenli iş</div>
+              <div style={{ fontSize: 12, color: "var(--text-sec)" }}>Bu iş birden fazla gün / sürekli tekrarlanıyor</div>
+            </div>
+          </label>
+          {form.recurring && (
+            <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+              <div>
+                <label style={{ ...label, marginBottom: 4 }}>Sıklık</label>
+                <select style={field} value={form.recurringFreq} onChange={e => set("recurringFreq", e.target.value)}>
+                  <option value="gunluk">Günlük</option>
+                  <option value="haftalik">Haftalık</option>
+                  <option value="aylik">Aylık</option>
+                </select>
+              </div>
+              <div>
+                <label style={{ ...label, marginBottom: 4 }}>Süre</label>
+                <input style={field} value={form.recurringDuration} onChange={e => set("recurringDuration", e.target.value)} placeholder="Ör: 3 hafta, 2 ay" />
+              </div>
+              <div>
+                <label style={{ ...label, marginBottom: 4 }}>Günde sefer</label>
+                <input style={field} type="number" min="1" value={form.dailyTrips} onChange={e => set("dailyTrips", e.target.value)} placeholder="Ör: 5" />
+              </div>
+            </div>
+          )}
+        </div>
+
         <div>
-          <label style={label}>Aciklama</label>
-          <textarea style={{ ...field, minHeight: 90, resize: "vertical", fontFamily: "inherit" }} value={form.desc} onChange={e => set("desc", e.target.value)} placeholder="Is/arac detaylari, mesafe, ozel kosullar..." />
+          <label style={label}>Açıklama</label>
+          <textarea style={{ ...field, minHeight: 90, resize: "vertical", fontFamily: "inherit" }} value={form.desc} onChange={e => set("desc", e.target.value)} placeholder="İş/araç detayları, mesafe, özel koşullar..." />
         </div>
 
         <div>

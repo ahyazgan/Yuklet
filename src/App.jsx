@@ -26,6 +26,7 @@ const IlanVerPage = lazy(() => import("./pages/IlanVerPage"));
 const IlanlarimPage = lazy(() => import("./pages/IlanlarimPage"));
 const MesajlarPage = lazy(() => import("./pages/MesajlarPage"));
 const ProfilPage = lazy(() => import("./pages/ProfilPage"));
+const DashboardPage = lazy(() => import("./pages/DashboardPage"));
 const MuteahhitPage = lazy(() => import("./pages/MuteahhitPage"));
 const TedarikciPage = lazy(() => import("./pages/TedarikciPage"));
 const NakliyeciPage = lazy(() => import("./pages/NakliyeciPage"));
@@ -161,6 +162,7 @@ function AppShell() {
                 <Route path="/ilanlarim" element={<PageTransition><IlanlarimPage listings={listings} user={user} offers={offers} onUpdateOffer={updateOffer} onUpdateListing={updateListing} onDeleteListing={removeListing} onRequireAuth={requireAuth} getContact={getContact} /></PageTransition>} />
                 <Route path="/mesajlar" element={<PageTransition><MesajlarPage user={user} listings={listings} offers={offers} messages={messages} onSendMessage={addMessage} onRequireAuth={requireAuth} onSeen={markMessagesSeen} getContact={getContact} /></PageTransition>} />
                 <Route path="/profil" element={<PageTransition><ProfilPage user={user} onUpdateProfile={updateProfile} onRequireAuth={requireAuth} /></PageTransition>} />
+                <Route path="/panel" element={<PageTransition><DashboardPage user={user} listings={listings} offers={offers} messages={messages} onRequireAuth={requireAuth} /></PageTransition>} />
                 <Route path="/muteahhit" element={<PageTransition><MuteahhitPage /></PageTransition>} />
                 <Route path="/tedarikci" element={<PageTransition><TedarikciPage /></PageTransition>} />
                 <Route path="/nakliyeci" element={<PageTransition><NakliyeciPage /></PageTransition>} />

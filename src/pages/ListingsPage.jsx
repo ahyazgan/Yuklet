@@ -46,8 +46,8 @@ function ListingCard({ l, onClick }) {
       </div>
 
       {l.recurring && (
-        <span style={{ fontSize: 11.5, color: "var(--green)", background: "var(--green-bg)", padding: "3px 8px", borderRadius: 6, alignSelf: "flex-start" }}>
-          🔁 {l.recurringText}
+        <span style={{ fontSize: 11.5, fontWeight: 700, color: "var(--green)", background: "var(--green-bg)", border: "1px solid var(--green)", padding: "4px 10px", borderRadius: 6, alignSelf: "flex-start", display: "flex", alignItems: "center", gap: 4 }}>
+          🔁 {l.recurringText || (l.recurringFreq === "gunluk" ? "Günlük" : l.recurringFreq === "aylik" ? "Aylık" : "Düzenli iş")}
         </span>
       )}
 
@@ -75,6 +75,7 @@ export default function ListingsPage({ listings = LISTINGS }) {
   const [cat, setCat] = useState("all");         // all | hafriyat | silobas
   const [il, setIl] = useState("all");
   const [q, setQ] = useState("");
+  const [onlyRecurring, setOnlyRecurring] = useState(false);
 
   const filtered = useMemo(() => {
     return listings.filter(l =>
@@ -82,6 +83,7 @@ export default function ListingsPage({ listings = LISTINGS }) {
       (type === "all" || l.type === type) &&
       (cat === "all" || l.cat === cat) &&
       (il === "all" || l.il === il) &&
+      (!onlyRecurring || l.recurring) &&
       (q === "" || l.title.toLowerCase().includes(q.toLowerCase()) || l.ilce.toLowerCase().includes(q.toLowerCase()))
     );
   }, [listings, type, cat, il, q]);
@@ -132,11 +134,19 @@ export default function ListingsPage({ listings = LISTINGS }) {
         ))}
       </div>
 
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 24 }}>
-        <button style={chip(il === "all")} onClick={() => setIl("all")}>Tum iller</button>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
+        <button style={chip(il === "all")} onClick={() => setIl("all")}>Tüm iller</button>
         {IL_LIST.map(i => (
           <button key={i} style={chip(il === i)} onClick={() => setIl(i)}>{i}</button>
         ))}
+      </div>
+
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 24 }}>
+        <button
+          onClick={() => setOnlyRecurring(r => !r)}
+          style={{ ...chip(onlyRecurring), borderColor: onlyRecurring ? "var(--green)" : undefined, color: onlyRecurring ? "var(--green)" : undefined, background: onlyRecurring ? "var(--green-bg)" : undefined }}>
+          🔁 Düzenli işler
+        </button>
       </div>
 
       {filtered.length === 0 ? (

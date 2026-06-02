@@ -44,6 +44,11 @@ export default function IlanlarimPage({ listings = [], user, offers = [], onUpda
     onUpdateOffer?.(offer.id, { status: "ret" });
     toast("Teklif reddedildi", "info");
   };
+  const renew = (l) => {
+    onUpdateListing?.(l.id, { status: "aktif", createdText: "az önce" });
+    toast("İlan yenilendi ve tekrar yayında", "success");
+  };
+
   const del = (l) => {
     if (window.confirm(`"${l.title}" ilanini silmek istediginize emin misiniz?`)) {
       onDeleteListing?.(l.id);
@@ -89,9 +94,12 @@ export default function IlanlarimPage({ listings = [], user, offers = [], onUpda
 
                 {/* Yonetim aksiyonlari */}
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
-                  <button onClick={() => navigate(`/ilan-duzenle/${l.id}`)} style={actionBtn}>Duzenle</button>
+                  <button onClick={() => navigate(`/ilan-duzenle/${l.id}`)} style={actionBtn}>Düzenle</button>
                   {!matched && (
-                    <button onClick={() => onUpdateListing?.(l.id, { status: closed ? "aktif" : "kapali" })} style={actionBtn}>{closed ? "Tekrar ac" : "Kapat"}</button>
+                    <button onClick={() => onUpdateListing?.(l.id, { status: closed ? "aktif" : "kapali" })} style={actionBtn}>{closed ? "Tekrar aç" : "Kapat"}</button>
+                  )}
+                  {l.recurring && (
+                    <button onClick={() => renew(l)} style={{ ...actionBtn, color: "var(--green)", borderColor: "var(--green)" }}>🔁 Yenile</button>
                   )}
                   <button onClick={() => del(l)} style={{ ...actionBtn, color: "var(--red)" }}>Sil</button>
                 </div>
