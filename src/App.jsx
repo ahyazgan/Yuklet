@@ -26,6 +26,9 @@ const IlanVerPage = lazy(() => import("./pages/IlanVerPage"));
 const IlanlarimPage = lazy(() => import("./pages/IlanlarimPage"));
 const MesajlarPage = lazy(() => import("./pages/MesajlarPage"));
 const ProfilPage = lazy(() => import("./pages/ProfilPage"));
+const MuteahhitPage = lazy(() => import("./pages/MuteahhitPage"));
+const TedarikciPage = lazy(() => import("./pages/TedarikciPage"));
+const NakliyeciPage = lazy(() => import("./pages/NakliyeciPage"));
 const NasilCalisirPage = lazy(() => import("./pages/NasilCalisirPage"));
 const HakkimizdaPage = lazy(() => import("./pages/HakkimizdaPage"));
 const IletisimPage = lazy(() => import("./pages/IletisimPage"));
@@ -158,6 +161,9 @@ function AppShell() {
                 <Route path="/ilanlarim" element={<PageTransition><IlanlarimPage listings={listings} user={user} offers={offers} onUpdateOffer={updateOffer} onUpdateListing={updateListing} onDeleteListing={removeListing} onRequireAuth={requireAuth} getContact={getContact} /></PageTransition>} />
                 <Route path="/mesajlar" element={<PageTransition><MesajlarPage user={user} listings={listings} offers={offers} messages={messages} onSendMessage={addMessage} onRequireAuth={requireAuth} onSeen={markMessagesSeen} getContact={getContact} /></PageTransition>} />
                 <Route path="/profil" element={<PageTransition><ProfilPage user={user} onUpdateProfile={updateProfile} onRequireAuth={requireAuth} /></PageTransition>} />
+                <Route path="/muteahhit" element={<PageTransition><MuteahhitPage /></PageTransition>} />
+                <Route path="/tedarikci" element={<PageTransition><TedarikciPage /></PageTransition>} />
+                <Route path="/nakliyeci" element={<PageTransition><NakliyeciPage /></PageTransition>} />
                 <Route path="/nasil-calisir" element={<PageTransition><NasilCalisirPage /></PageTransition>} />
                 <Route path="/hakkimizda" element={<PageTransition><HakkimizdaPage /></PageTransition>} />
                 <Route path="/iletisim" element={<PageTransition><IletisimPage /></PageTransition>} />

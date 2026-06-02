@@ -88,4 +88,5 @@ export const LISTINGS = [
   },
 ];
 
-export const IL_LIST = ["Istanbul", "Kocaeli", "Bursa", "Ankara", "Izmir", "Tekirdag", "Sakarya", "Balikesir"];
+// IL_LIST artik categories.js'te — geri donuk uyumluluk icin re-export
+export { IL_LIST } from "./categories";
