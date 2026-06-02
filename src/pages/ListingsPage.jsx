@@ -29,7 +29,10 @@ function ListingCard({ l, onClick }) {
             padding: "3px 8px", borderRadius: 6,
           }}>{l.type === "is" ? "Is ilani" : "Arac"}</span>
         </div>
-        <span style={{ fontSize: 11, color: "var(--text-ter)" }}>{l.createdText}</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          {l.status === "eslesti" && <span style={{ fontSize: 10.5, fontWeight: 700, color: "var(--green)", background: "var(--green-bg)", padding: "2px 7px", borderRadius: 6 }}>Eslesti</span>}
+          <span style={{ fontSize: 11, color: "var(--text-ter)" }}>{l.createdText}</span>
+        </div>
       </div>
 
       <h3 style={{ fontSize: 15, fontWeight: 700, color: "var(--text)", lineHeight: 1.3 }}>{l.title}</h3>
@@ -75,6 +78,7 @@ export default function ListingsPage({ listings = LISTINGS }) {
 
   const filtered = useMemo(() => {
     return listings.filter(l =>
+      l.status !== "kapali" &&
       (type === "all" || l.type === type) &&
       (cat === "all" || l.cat === cat) &&
       (il === "all" || l.il === il) &&

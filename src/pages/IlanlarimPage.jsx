@@ -16,7 +16,9 @@ function fmtDate(iso) {
   catch { return ""; }
 }
 
-export default function IlanlarimPage({ listings = [], user, offers = [], onUpdateOffer, onUpdateListing, onRequireAuth }) {
+const actionBtn = { background: "transparent", border: "1px solid var(--border)", color: "var(--text-sec)", padding: "6px 12px", borderRadius: 8, fontSize: 12.5, fontWeight: 600, cursor: "pointer" };
+
+export default function IlanlarimPage({ listings = [], user, offers = [], onUpdateOffer, onUpdateListing, onDeleteListing, onRequireAuth }) {
   const navigate = useNavigate();
   const toast = useToast();
 
@@ -42,6 +44,12 @@ export default function IlanlarimPage({ listings = [], user, offers = [], onUpda
     onUpdateOffer?.(offer.id, { status: "ret" });
     toast("Teklif reddedildi", "info");
   };
+  const del = (l) => {
+    if (window.confirm(`"${l.title}" ilanini silmek istediginize emin misiniz?`)) {
+      onDeleteListing?.(l.id);
+      toast("Ilan silindi", "info");
+    }
+  };
 
   return (
     <div className="page-content">
@@ -64,16 +72,29 @@ export default function IlanlarimPage({ listings = [], user, offers = [], onUpda
             const cat = CATS.find(c => c.id === l.cat);
             const lOffers = offers.filter(o => String(o.listingId) === String(l.id));
             const matched = l.status === "eslesti";
+            const closed = l.status === "kapali";
             return (
               <motion.div key={l.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
                 style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 14, padding: 18, boxShadow: "var(--shadow)" }}>
                 {/* Ilan basligi */}
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4, cursor: "pointer" }} onClick={() => navigate(`/ilan/${l.id}`)}>
-                  <CategoryIcon catId={l.cat} size={22} fallback={cat?.icon} />
-                  <h3 style={{ fontSize: 16, fontWeight: 700, color: "var(--text)", flex: 1 }}>{l.title}</h3>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 0, cursor: "pointer" }} onClick={() => navigate(`/ilan/${l.id}`)}>
+                    <CategoryIcon catId={l.cat} size={22} fallback={cat?.icon} />
+                    <h3 style={{ fontSize: 16, fontWeight: 700, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{l.title}</h3>
+                  </div>
                   {matched && <span style={{ fontSize: 11, fontWeight: 700, color: "var(--green)", background: "var(--green-bg)", padding: "3px 8px", borderRadius: 6 }}>✓ Eslesti</span>}
+                  {closed && <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text-ter)", background: "var(--bg)", padding: "3px 8px", borderRadius: 6 }}>Kapali</span>}
                 </div>
-                <div style={{ fontSize: 12.5, color: "var(--text-sec)", marginBottom: 14 }}>📍 {l.il} / {l.ilce} • {l.amount} {l.unit} • {lOffers.length} teklif</div>
+                <div style={{ fontSize: 12.5, color: "var(--text-sec)", marginBottom: 10 }}>📍 {l.il} / {l.ilce} • {l.amount} {l.unit} • {lOffers.length} teklif</div>
+
+                {/* Yonetim aksiyonlari */}
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
+                  <button onClick={() => navigate(`/ilan-duzenle/${l.id}`)} style={actionBtn}>Duzenle</button>
+                  {!matched && (
+                    <button onClick={() => onUpdateListing?.(l.id, { status: closed ? "aktif" : "kapali" })} style={actionBtn}>{closed ? "Tekrar ac" : "Kapat"}</button>
+                  )}
+                  <button onClick={() => del(l)} style={{ ...actionBtn, color: "var(--red)" }}>Sil</button>
+                </div>
 
                 {/* Teklifler */}
                 {lOffers.length === 0 ? (

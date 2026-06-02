@@ -50,3 +50,5 @@ export const loadOffers = () => load("hamted_offers", []);
 export const saveOffers = (v) => save("hamted_offers", v);
 export const loadMessages = () => load("hamted_messages", []);
 export const saveMessages = (v) => save("hamted_messages", v);
+export const loadMsgSeen = () => load("hamted_msg_seen", {});
+export const saveMsgSeen = (v) => save("hamted_msg_seen", v);

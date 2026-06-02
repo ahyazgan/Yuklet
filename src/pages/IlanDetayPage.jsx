@@ -168,6 +168,10 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
                 Bu sizin ilaniniz.<br />
                 <button onClick={() => navigate("/ilanlarim")} style={{ marginTop: 8, background: "var(--blue)", color: "#fff", border: "none", padding: "8px 14px", borderRadius: 8, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>Teklifleri yonet</button>
               </div>
+            ) : (l.status === "kapali" || l.status === "eslesti") ? (
+              <div style={{ background: "var(--bg)", color: "var(--text-sec)", padding: "12px 14px", borderRadius: 10, fontSize: 13.5, fontWeight: 600, textAlign: "center" }}>
+                {l.status === "eslesti" ? "Bu ilan eslesti, yeni teklif alinmiyor." : "Bu ilan kapatildi, yeni teklif alinmiyor."}
+              </div>
             ) : !user ? (
               <button onClick={() => onRequireAuth?.()} style={{ width: "100%", background: "var(--accent)", color: "#fff", border: "none", padding: "13px", borderRadius: 10, fontSize: 14.5, fontWeight: 700, cursor: "pointer" }}>
                 Giris yapip teklif ver

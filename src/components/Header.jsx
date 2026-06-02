@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
-export default function Header({ darkMode, toggleDark, user, onLoginClick, onLogout }) {
+export default function Header({ darkMode, toggleDark, user, onLoginClick, onLogout, pendingOffersCount = 0, unreadCount = 0 }) {
   const [mobileMenu, setMobileMenu] = useState(false);
   const navigate = useNavigate();
 
@@ -13,8 +13,8 @@ export default function Header({ darkMode, toggleDark, user, onLoginClick, onLog
   ];
 
   const USER_ITEMS = user ? [
-    { label: "Ilanlarim", to: "/ilanlarim" },
-    { label: "Mesajlar", to: "/mesajlar" },
+    { label: "Ilanlarim", to: "/ilanlarim", badge: pendingOffersCount },
+    { label: "Mesajlar", to: "/mesajlar", badge: unreadCount },
   ] : [];
 
   const handleNav = (to) => { setMobileMenu(false); navigate(to); };
@@ -36,7 +36,9 @@ export default function Header({ darkMode, toggleDark, user, onLoginClick, onLog
             <Link key={item.label} to={item.to} className="nav-link">{item.label}</Link>
           ))}
           {USER_ITEMS.map(item => (
-            <Link key={item.label} to={item.to} className="nav-link" style={{ color: "var(--accent)" }}>{item.label}</Link>
+            <Link key={item.label} to={item.to} className="nav-link" style={{ color: "var(--accent)", position: "relative" }}>
+              {item.label}{item.badge > 0 && <span className="cart-badge">{item.badge}</span>}
+            </Link>
           ))}
 
           <button onClick={toggleDark} className="theme-toggle" aria-label="Tema">{darkMode ? "☀" : "☾"}</button>
@@ -57,7 +59,9 @@ export default function Header({ darkMode, toggleDark, user, onLoginClick, onLog
         <div className="mobile-nav">
           <button onClick={toggleDark} className="theme-toggle" aria-label="Tema degistir">{darkMode ? "☀" : "☾"}</button>
           <button onClick={() => navigate("/ilan-ver")} className="nav-btn" aria-label="Ilan ver">+ Ilan</button>
-          <button onClick={() => setMobileMenu(!mobileMenu)} className="hamburger-btn" aria-label="Menu">{mobileMenu ? "✕" : "☰"}</button>
+          <button onClick={() => setMobileMenu(!mobileMenu)} className="hamburger-btn" aria-label="Menu" style={{ position: "relative" }}>
+            {mobileMenu ? "✕" : "☰"}{!mobileMenu && (pendingOffersCount + unreadCount) > 0 && <span className="cart-badge" style={{ position: "absolute", top: -4, right: -4 }}>{pendingOffersCount + unreadCount}</span>}
+          </button>
         </div>
       </div>
 
@@ -67,7 +71,9 @@ export default function Header({ darkMode, toggleDark, user, onLoginClick, onLog
             <button key={item.label} onClick={() => handleNav(item.to)} className="mobile-menu-item">{item.label}</button>
           ))}
           {USER_ITEMS.map(item => (
-            <button key={item.label} onClick={() => handleNav(item.to)} className="mobile-menu-item">{item.label}</button>
+            <button key={item.label} onClick={() => handleNav(item.to)} className="mobile-menu-item">
+              {item.label}{item.badge > 0 ? ` (${item.badge})` : ""}
+            </button>
           ))}
           {user ? (
             <button onClick={() => { onLogout(); setMobileMenu(false); }} className="mobile-menu-item">Cikis ({user.name})</button>

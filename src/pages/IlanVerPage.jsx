@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { CATS, LISTING_TYPES, VEHICLE_TYPES, MATERIALS, UNITS } from "../data/categories";
 import { IL_LIST } from "../data/listings";
@@ -9,11 +9,22 @@ import SEO from "../components/SEO";
 const label = { fontSize: 13, fontWeight: 600, color: "var(--text-sec)", marginBottom: 6, display: "block" };
 const field = { width: "100%", padding: "11px 14px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--bg-card)", color: "var(--text)", fontSize: 14 };
 
-export default function IlanVerPage({ onPublish, user, onRequireAuth }) {
+export default function IlanVerPage({ onPublish, onUpdate, listings = [], user, onRequireAuth }) {
   const navigate = useNavigate();
-  const [type, setType] = useState("is");
-  const [cat, setCat] = useState("hafriyat");
-  const [form, setForm] = useState({
+  const { id } = useParams();
+  const editing = Boolean(id);
+  const editListing = editing ? listings.find(l => String(l.id) === String(id)) : null;
+  const [type, setType] = useState(editListing?.type || "is");
+  const [cat, setCat] = useState(editListing?.cat || "hafriyat");
+  const [form, setForm] = useState(() => editListing ? {
+    title: editListing.title || "", il: editListing.il || "Istanbul", ilce: editListing.ilce || "",
+    yukleme: editListing.yukleme || "", bosaltma: editListing.bosaltma || "",
+    material: editListing.material || "", amount: editListing.amount != null ? String(editListing.amount) : "", unit: editListing.unit || "ton",
+    vehicle: editListing.vehicle || "", capacity: editListing.capacity || "",
+    dateText: editListing.dateText || "", priceType: editListing.priceType || "teklif",
+    price: editListing.price != null ? String(editListing.price) : "", desc: editListing.desc || "",
+    owner: editListing.owner || user?.name || "",
+  } : {
     title: "", il: "Istanbul", ilce: "", yukleme: "", bosaltma: "",
     material: "", amount: "", unit: "ton", vehicle: "", capacity: "",
     dateText: "", priceType: "teklif", price: "", desc: "", owner: user?.name || "",
@@ -28,8 +39,7 @@ export default function IlanVerPage({ onPublish, user, onRequireAuth }) {
       setError("Baslik, ilce ve ad/firma alanlari zorunludur.");
       return;
     }
-    const listing = {
-      id: Date.now(),
+    const data = {
       type, cat,
       title: form.title.trim(),
       il: form.il, ilce: form.ilce.trim(),
@@ -37,10 +47,21 @@ export default function IlanVerPage({ onPublish, user, onRequireAuth }) {
       material: form.material, amount: Number(form.amount) || 0, unit: form.unit,
       vehicle: type === "arac" ? form.vehicle : undefined,
       capacity: type === "arac" ? form.capacity.trim() : undefined,
-      date: "", dateText: form.dateText.trim() || "Belirtilmedi",
-      recurring: false, recurringText: "",
+      dateText: form.dateText.trim() || "Belirtilmedi",
       priceType: form.priceType, price: form.priceType === "sabit" ? Number(form.price) || 0 : null,
       desc: form.desc.trim(),
+    };
+
+    if (editing) {
+      onUpdate?.(editListing.id, data);
+      navigate(`/ilan/${editListing.id}`);
+      return;
+    }
+
+    const listing = {
+      id: Date.now(),
+      ...data,
+      date: "", recurring: false, recurringText: "",
       owner: user?.name || form.owner.trim(),
       ownerId: user?.id,
       ownerVerified: user?.verified || false,
@@ -70,12 +91,29 @@ export default function IlanVerPage({ onPublish, user, onRequireAuth }) {
     );
   }
 
+  if (editing && !editListing) {
+    return (
+      <div className="page-content" style={{ textAlign: "center", paddingTop: 60 }}>
+        <h1 style={{ fontSize: 22, fontWeight: 800, color: "var(--text)", marginBottom: 12 }}>Ilan bulunamadi</h1>
+        <button onClick={() => navigate("/ilanlarim")} style={{ background: "var(--accent)", color: "#fff", border: "none", padding: "11px 20px", borderRadius: 10, fontWeight: 700, cursor: "pointer" }}>Ilanlarim</button>
+      </div>
+    );
+  }
+  if (editing && editListing.ownerId !== user.id) {
+    return (
+      <div className="page-content" style={{ textAlign: "center", paddingTop: 60 }}>
+        <h1 style={{ fontSize: 22, fontWeight: 800, color: "var(--text)", marginBottom: 12 }}>Bu ilani duzenleme yetkiniz yok</h1>
+        <button onClick={() => navigate("/ilanlar")} style={{ background: "var(--accent)", color: "#fff", border: "none", padding: "11px 20px", borderRadius: 10, fontWeight: 700, cursor: "pointer" }}>Ilanlara don</button>
+      </div>
+    );
+  }
+
   return (
     <div className="page-content" style={{ maxWidth: 720, margin: "0 auto" }}>
-      <SEO title="Ilan ver" description="Tasinacak yukunuzu veya bos aracinizi yayinlayin; nakliyeci ve is sahiplerinden teklif alin." />
+      <SEO title={editing ? "Ilani duzenle" : "Ilan ver"} description="Tasinacak yukunuzu veya bos aracinizi yayinlayin; nakliyeci ve is sahiplerinden teklif alin." />
       <button onClick={() => navigate(-1)} style={{ background: "transparent", border: "none", color: "var(--text-sec)", fontSize: 13.5, fontWeight: 600, cursor: "pointer", marginBottom: 12 }}>← Geri</button>
-      <h1 style={{ fontSize: 26, fontWeight: 800, color: "var(--text)", marginBottom: 4 }}>Ilan ver</h1>
-      <p style={{ fontSize: 14, color: "var(--text-sec)", marginBottom: 22 }}>Tasinacak yukunuzu veya bos aracinizi yayinlayin.</p>
+      <h1 style={{ fontSize: 26, fontWeight: 800, color: "var(--text)", marginBottom: 4 }}>{editing ? "Ilani duzenle" : "Ilan ver"}</h1>
+      <p style={{ fontSize: 14, color: "var(--text-sec)", marginBottom: 22 }}>{editing ? "Ilan bilgilerini guncelleyin." : "Tasinacak yukunuzu veya bos aracinizi yayinlayin."}</p>
 
       <motion.form onSubmit={submit} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
         style={{ display: "flex", flexDirection: "column", gap: 16, background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 14, padding: 22, boxShadow: "var(--shadow)" }}>
@@ -213,7 +251,7 @@ export default function IlanVerPage({ onPublish, user, onRequireAuth }) {
         {error && <div style={{ color: "var(--red)", fontSize: 13, fontWeight: 600 }}>{error}</div>}
 
         <button type="submit" style={{ background: "var(--accent)", color: "#fff", border: "none", padding: "14px", borderRadius: 11, fontSize: 15, fontWeight: 700, cursor: "pointer" }}>
-          Ilani yayinla
+          {editing ? "Degisiklikleri kaydet" : "Ilani yayinla"}
         </button>
       </motion.form>
     </div>

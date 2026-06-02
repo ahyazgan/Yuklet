@@ -4,6 +4,7 @@ import { AnimatePresence } from "framer-motion";
 import {
   loadTheme, saveTheme, loadListings, saveListings, loadUser, saveUser,
   loadUsers, saveUsers, loadOffers, saveOffers, loadMessages, saveMessages,
+  loadMsgSeen, saveMsgSeen,
 } from "./utils/storage";
 import { ToastProvider } from "./components/Toast";
 import { ErrorBoundary, NotFoundPage } from "./components/ErrorBoundary";
@@ -55,6 +56,10 @@ function AppShell() {
   const listings = [...userListings, ...LISTINGS];
   const publishListing = (listing) => setUserListings(prev => [listing, ...prev]);
   const updateListing = (id, patch) => setUserListings(prev => prev.map(l => l.id === id ? { ...l, ...patch } : l));
+  const removeListing = (id) => {
+    setUserListings(prev => prev.filter(l => l.id !== id));
+    setOffers(prev => prev.filter(o => String(o.listingId) !== String(id)));
+  };
 
   // Teklifler
   const [offers, setOffers] = useState(() => loadOffers());
@@ -66,6 +71,8 @@ function AppShell() {
   const [messages, setMessages] = useState(() => loadMessages());
   useEffect(() => { saveMessages(messages); }, [messages]);
   const addMessage = (msg) => setMessages(prev => [...prev, msg]);
+  const [msgSeen, setMsgSeen] = useState(() => loadMsgSeen());
+  useEffect(() => { saveMsgSeen(msgSeen); }, [msgSeen]);
 
   // Kullanici / kimlik dogrulama
   const [users, setUsers] = useState(() => loadUsers());
@@ -93,6 +100,16 @@ function AppShell() {
   };
   const logout = () => setUser(null);
   const requireAuth = () => setShowAuth(true);
+  const markMessagesSeen = () => { if (user) setMsgSeen(prev => ({ ...prev, [user.id]: new Date().toISOString() })); };
+
+  // Bildirim sayilari
+  const pendingOffersCount = user
+    ? offers.filter(o => o.status === "beklemede" && userListings.some(l => l.ownerId === user.id && String(l.id) === String(o.listingId))).length
+    : 0;
+  const seenIso = user ? (msgSeen[user.id] || null) : null;
+  const unreadCount = user
+    ? messages.filter(m => String(m.toId) === String(user.id) && (!seenIso || m.createdAt > seenIso)).length
+    : 0;
 
   return (
     <div className="app-root">
@@ -101,6 +118,7 @@ function AppShell() {
       <Header
         darkMode={darkMode} toggleDark={() => setDarkMode(d => !d)}
         user={user} onLoginClick={requireAuth} onLogout={logout}
+        pendingOffersCount={pendingOffersCount} unreadCount={unreadCount}
       />
 
       <main>
@@ -111,9 +129,10 @@ function AppShell() {
                 <Route path="/" element={<PageTransition><NakliyeHome listings={listings} /></PageTransition>} />
                 <Route path="/ilanlar" element={<PageTransition><ListingsPage listings={listings} /></PageTransition>} />
                 <Route path="/ilan/:id" element={<PageTransition><IlanDetayPage listings={listings} user={user} onRequireAuth={requireAuth} offers={offers} onAddOffer={addOffer} /></PageTransition>} />
-                <Route path="/ilan-ver" element={<PageTransition><IlanVerPage onPublish={publishListing} user={user} onRequireAuth={requireAuth} /></PageTransition>} />
-                <Route path="/ilanlarim" element={<PageTransition><IlanlarimPage listings={listings} user={user} offers={offers} onUpdateOffer={updateOffer} onUpdateListing={updateListing} onRequireAuth={requireAuth} /></PageTransition>} />
-                <Route path="/mesajlar" element={<PageTransition><MesajlarPage user={user} listings={listings} offers={offers} messages={messages} onSendMessage={addMessage} onRequireAuth={requireAuth} /></PageTransition>} />
+                <Route path="/ilan-ver" element={<PageTransition><IlanVerPage onPublish={publishListing} onUpdate={updateListing} listings={listings} user={user} onRequireAuth={requireAuth} /></PageTransition>} />
+                <Route path="/ilan-duzenle/:id" element={<PageTransition><IlanVerPage onPublish={publishListing} onUpdate={updateListing} listings={listings} user={user} onRequireAuth={requireAuth} /></PageTransition>} />
+                <Route path="/ilanlarim" element={<PageTransition><IlanlarimPage listings={listings} user={user} offers={offers} onUpdateOffer={updateOffer} onUpdateListing={updateListing} onDeleteListing={removeListing} onRequireAuth={requireAuth} /></PageTransition>} />
+                <Route path="/mesajlar" element={<PageTransition><MesajlarPage user={user} listings={listings} offers={offers} messages={messages} onSendMessage={addMessage} onRequireAuth={requireAuth} onSeen={markMessagesSeen} /></PageTransition>} />
                 <Route path="/nasil-calisir" element={<PageTransition><NasilCalisirPage /></PageTransition>} />
                 <Route path="/hakkimizda" element={<PageTransition><HakkimizdaPage /></PageTransition>} />
                 <Route path="/iletisim" element={<PageTransition><IletisimPage /></PageTransition>} />

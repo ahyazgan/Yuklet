@@ -7,7 +7,7 @@ import SEO from "../components/SEO";
 
 export default function NakliyeHome({ listings = LISTINGS }) {
   const navigate = useNavigate();
-  const recent = listings.slice(0, 3);
+  const recent = listings.filter(l => l.status !== "kapali").slice(0, 3);
 
   return (
     <div>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import SEO from "../components/SEO";
 
@@ -7,10 +7,13 @@ function fmtTime(iso) {
   catch { return ""; }
 }
 
-export default function MesajlarPage({ user, listings = [], offers = [], messages = [], onSendMessage, onRequireAuth }) {
+export default function MesajlarPage({ user, listings = [], offers = [], messages = [], onSendMessage, onRequireAuth, onSeen }) {
   const navigate = useNavigate();
   const [selectedKey, setSelectedKey] = useState(null);
   const [text, setText] = useState("");
+
+  // Sayfa acilinca mesajlari okundu isaretle
+  useEffect(() => { onSeen?.(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!user) {
     return (
