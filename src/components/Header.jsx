@@ -12,6 +12,11 @@ export default function Header({ darkMode, toggleDark, user, onLoginClick, onLog
     { label: "Iletisim", to: "/iletisim" },
   ];
 
+  const USER_ITEMS = user ? [
+    { label: "Ilanlarim", to: "/ilanlarim" },
+    { label: "Mesajlar", to: "/mesajlar" },
+  ] : [];
+
   const handleNav = (to) => { setMobileMenu(false); navigate(to); };
 
   return (
@@ -30,12 +35,15 @@ export default function Header({ darkMode, toggleDark, user, onLoginClick, onLog
           {NAV_ITEMS.map(item => (
             <Link key={item.label} to={item.to} className="nav-link">{item.label}</Link>
           ))}
+          {USER_ITEMS.map(item => (
+            <Link key={item.label} to={item.to} className="nav-link" style={{ color: "var(--accent)" }}>{item.label}</Link>
+          ))}
 
           <button onClick={toggleDark} className="theme-toggle" aria-label="Tema">{darkMode ? "☀" : "☾"}</button>
 
           {user ? (
             <>
-              <span className="nav-link" style={{ fontWeight: 700, color: "var(--text)" }} title={user.email}>👤 {user.name}</span>
+              <span className="nav-link" style={{ fontWeight: 700, color: "var(--text)" }} title={`${user.email} · ${user.role === "tedarikci" ? "Tedarikci" : "Is veren"}`}>👤 {user.name}</span>
               <button onClick={onLogout} className="nav-btn" aria-label="Cikis yap">Cikis</button>
             </>
           ) : (
@@ -56,6 +64,9 @@ export default function Header({ darkMode, toggleDark, user, onLoginClick, onLog
       {mobileMenu && (
         <div className="mobile-dropdown">
           {NAV_ITEMS.map(item => (
+            <button key={item.label} onClick={() => handleNav(item.to)} className="mobile-menu-item">{item.label}</button>
+          ))}
+          {USER_ITEMS.map(item => (
             <button key={item.label} onClick={() => handleNav(item.to)} className="mobile-menu-item">{item.label}</button>
           ))}
           {user ? (

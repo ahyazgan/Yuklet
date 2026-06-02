@@ -40,7 +40,10 @@ export default function IlanVerPage({ onPublish, user, onRequireAuth }) {
       recurring: false, recurringText: "",
       priceType: form.priceType, price: form.priceType === "sabit" ? Number(form.price) || 0 : null,
       desc: form.desc.trim(),
-      owner: form.owner.trim(), ownerVerified: false, ownerRating: 5.0,
+      owner: user?.name || form.owner.trim(),
+      ownerId: user?.id,
+      ownerVerified: user?.verified || false,
+      ownerRating: user?.rating || 5.0,
       status: "aktif", offers: 0, createdText: "az once",
     };
     onPublish?.(listing);
