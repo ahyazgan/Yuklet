@@ -3,196 +3,240 @@ import { motion } from "framer-motion";
 import { LISTINGS } from "../data/listings";
 import SEO from "../components/SEO";
 
+// ── Bu sayfa TAMAMEN TAILWIND ile yazildi (kademeli gecis ornek/sablonu).
+// Tasarim aracindan uretilen React+Tailwind kodu da aynen bu sekilde yapistirilabilir.
+
 const PERSONAS = [
-  { id: "muteahhit", letter: "M", title: "Müteahhit / Alıcı", desc: "İş ilanı aç, teklif topla", route: "/muteahhit", clr: "var(--accent)", bg: "var(--accent-bg)" },
-  { id: "tedarikci", letter: "T", title: "Tedarikçi", desc: "Ocak/santral ürününü listele", route: "/tedarikci", clr: "var(--green)", bg: "var(--green-bg)" },
-  { id: "nakliyeci", letter: "N", title: "Nakliyeci", desc: "Araç ilanı ver, yük bul", route: "/nakliyeci", clr: "var(--blue)", bg: "var(--blue-bg)" },
+  { id: "muteahhit", letter: "M", title: "Müteahhit / Alıcı", desc: "İş ilanı aç, teklif topla", route: "/muteahhit", ring: "text-yellow-400 bg-yellow-400/15" },
+  { id: "tedarikci", letter: "T", title: "Tedarikçi", desc: "Ocak/santral ürününü listele", route: "/tedarikci", ring: "text-emerald-400 bg-emerald-400/15" },
+  { id: "nakliyeci", letter: "N", title: "Nakliyeci", desc: "Araç ilanı ver, yük bul", route: "/nakliyeci", ring: "text-sky-400 bg-sky-400/15" },
 ];
 
 const CAT_TAG = {
-  hafriyat: { label: "HAFRİYAT", clr: "var(--amber)", bg: "var(--amber-bg)" },
-  silobas: { label: "SİLOBAS", clr: "var(--blue)", bg: "var(--blue-bg)" },
+  hafriyat: { label: "HAFRİYAT", cls: "text-amber-300 bg-amber-400/15" },
+  silobas: { label: "SİLOBAS", cls: "text-sky-300 bg-sky-400/15" },
 };
 
-// MoveIQ tarzi kamyon gorselleri
 const TRUCK_DARK = "https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?auto=format&fit=crop&q=80&w=400";
 const TRUCK_LIGHT = "https://images.unsplash.com/photo-1516574187841-cb9cc2ca948b?auto=format&fit=crop&q=80&w=400";
 
-const TRACK_STEPS = ["İlan", "Teklif", "Kabul", "Yolda"];
+const STEPS = ["İlan", "Teklif", "Kabul", "Yolda"];
 
 export default function NakliyeHome({ listings = LISTINGS }) {
   const navigate = useNavigate();
-  const open = listings.filter(l => l.status !== "kapali");
+  const open = listings.filter((l) => l.status !== "kapali");
 
-  // kartlar icin ilan secimi
-  const trackJob = open.find(l => l.type === "is") || open[0];
-  const cargo = open.find(l => l.type === "arac") || open.find(l => l !== trackJob) || open[0];
-  const recent = listings.find(l => l.status === "kapali" || l.status === "eslesti")
-    || open.find(l => l !== trackJob && l !== cargo) || open[0];
-  const rest = open.filter(l => l !== trackJob && l !== cargo).slice(0, 3);
+  const trackJob = open.find((l) => l.type === "is") || open[0];
+  const cargo = open.find((l) => l.type === "arac") || open.find((l) => l !== trackJob) || open[0];
+  const recent = listings.find((l) => l.status === "kapali" || l.status === "eslesti")
+    || open.find((l) => l !== trackJob && l !== cargo) || open[0];
+  const rest = open.filter((l) => l !== trackJob && l !== cargo).slice(0, 3);
 
-  // takip kartinin ilerleme adimi (teklif geldiyse 2. adim)
   const onCount = trackJob ? (trackJob.offers > 0 ? 2 : 1) : 1;
-  const fillPct = ((onCount - 1) / (TRACK_STEPS.length - 1)) * 100;
-
+  const fillPct = ((onCount - 1) / (STEPS.length - 1)) * 100;
   const idText = (l) => "HMT-" + String(l.id).padStart(4, "0");
 
   return (
-    <div className="app-screen">
+    <div className="mx-auto flex w-full max-w-[460px] flex-col gap-5 px-4 pb-24 pt-2">
       <SEO description="Hafriyat ve silobas işleri doğru araçla buluşuyor. Müteahhit, tedarikçi ve nakliyeciler için Türkiye'nin yük eşleştirme platformu." />
 
       {/* UST BAR */}
-      <div className="app-topbar">
+      <div className="flex items-center justify-between">
         <div>
-          <p className="app-topbar-greet">İyi çalışmalar 👋</p>
-          <p className="app-topbar-name">HamTed</p>
+          <p className="text-xs text-[#6c7b93]">İyi çalışmalar 👋</p>
+          <p className="mt-0.5 text-lg font-extrabold tracking-tight text-white">HamTed</p>
         </div>
-        <button className="app-icon-btn" onClick={() => navigate("/mesajlar")} aria-label="Bildirimler">
-          🔔<span className="app-icon-dot" />
+        <button
+          onClick={() => navigate("/mesajlar")}
+          aria-label="Bildirimler"
+          className="relative flex h-12 w-12 items-center justify-center rounded-full border border-[#2a323f] bg-[#1b222d] text-slate-300 transition-colors hover:bg-[#232c3a]"
+        >
+          🔔
+          <span className="absolute right-3 top-3 h-2.5 w-2.5 rounded-full border-2 border-[#1b222d] bg-yellow-400" />
         </button>
       </div>
 
       {/* ARAMA */}
-      <div className="app-search">
-        <span style={{ fontSize: 15 }}>🔍</span>
+      <div className="flex items-center gap-2 rounded-2xl border border-[#2a323f] bg-[#1b222d] p-1.5 pl-4">
+        <span className="text-base">🔍</span>
         <input
           placeholder="İl, malzeme veya güzergah ara…"
           onKeyDown={(e) => { if (e.key === "Enter") navigate("/ilanlar"); }}
           aria-label="İlan ara"
+          className="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-[#6c7b93]"
         />
-        <button className="app-search-btn" onClick={() => navigate("/ilanlar")}>Ara</button>
+        <button
+          onClick={() => navigate("/ilanlar")}
+          className="whitespace-nowrap rounded-full bg-yellow-400 px-5 py-2.5 text-sm font-extrabold text-[#11141a] transition-colors hover:bg-yellow-500"
+        >
+          Ara
+        </button>
       </div>
 
       {/* LACIVERT TAKIP KARTI */}
       {trackJob && (
-        <motion.div className="track-card" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-          <div className="track-head">
-            <div style={{ minWidth: 0 }}>
-              <p className="track-eyebrow">Öne çıkan iş</p>
-              <h3 className="track-title">{trackJob.title}</h3>
-              <p className="track-id">No · {idText(trackJob)} · {trackJob.offers || 0} teklif</p>
+        <motion.div
+          initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
+          className="rounded-[32px] border border-[#2a323f] bg-gradient-to-b from-[#232c3a] via-[#1b222d] to-[#161c26] p-6 text-slate-100 shadow-2xl"
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-yellow-400">Öne çıkan iş</p>
+              <h3 className="text-xl font-extrabold leading-tight tracking-tight text-white">{trackJob.title}</h3>
+              <p className="mt-1 text-[11px] text-[#6c7b93]">No · {idText(trackJob)} · {trackJob.offers || 0} teklif</p>
             </div>
-            <button className="track-badge" onClick={() => navigate(`/ilan/${trackJob.id}`)}>Takip et</button>
+            <button
+              onClick={() => navigate(`/ilan/${trackJob.id}`)}
+              className="whitespace-nowrap rounded-full bg-yellow-400 px-5 py-2.5 text-xs font-extrabold text-[#11141a] transition hover:opacity-90"
+            >
+              Takip et
+            </button>
           </div>
 
-          <div className="track-prog">
-            <div className="track-prog-line" />
-            <div className="track-prog-fill" style={{ width: `${fillPct}%` }} />
-            {TRACK_STEPS.map((_, i) => (
-              <span key={i} className={`track-dot${i < onCount ? " on" : ""}`} />
+          {/* ilerleme cubugu */}
+          <div className="relative my-6 flex items-center justify-between px-1">
+            <div className="absolute left-0 right-0 top-1/2 h-[3px] -translate-y-1/2 bg-[#2e3b4e]" />
+            <div className="absolute left-0 top-1/2 h-[3px] -translate-y-1/2 rounded bg-yellow-400" style={{ width: `${fillPct}%` }} />
+            {STEPS.map((_, i) => (
+              <span
+                key={i}
+                className={`z-10 h-4 w-4 rounded-full border-4 ${i < onCount ? "border-[#161c26] bg-yellow-400" : "border-[#1b222d] bg-[#52637a]"}`}
+              />
             ))}
           </div>
-          <div className="track-steps">
-            {TRACK_STEPS.map((s, i) => (
-              <span key={s} className={`track-step${i < onCount ? " on" : ""}`}>{s}</span>
+          <div className="mb-5 flex justify-between">
+            {STEPS.map((s, i) => (
+              <span key={s} className={`flex-1 text-center text-[9.5px] font-semibold ${i < onCount ? "text-yellow-400" : "text-[#6c7b93]"}`}>{s}</span>
             ))}
           </div>
 
-          <div className="track-ends">
-            <div className="track-end from">
-              <p className="track-end-label">Yükleme</p>
-              <p className="track-end-city">{trackJob.il}</p>
-              <p className="track-end-date">{trackJob.yukleme || trackJob.ilce || "—"}</p>
+          <div className="flex justify-between gap-3">
+            <div className="min-w-0">
+              <p className="mb-1 text-[11px] text-[#6c7b93]">Yükleme</p>
+              <p className="truncate text-sm font-extrabold text-white">{trackJob.il}</p>
+              <p className="mt-1 text-[11px] text-[#6c7b93]">{trackJob.yukleme || trackJob.ilce || "—"}</p>
             </div>
-            <div className="track-end to">
-              <p className="track-end-label">Boşaltma</p>
-              <p className="track-end-city">{trackJob.bosaltma ? trackJob.bosaltma.split(",")[0] : (trackJob.ilce || "Saha")}</p>
-              <p className="track-end-date">{trackJob.dateText || "—"}</p>
+            <div className="min-w-0 text-right">
+              <p className="mb-1 text-[11px] text-[#6c7b93]">Boşaltma</p>
+              <p className="truncate text-sm font-extrabold text-white">{trackJob.bosaltma ? trackJob.bosaltma.split(",")[0] : (trackJob.ilce || "Saha")}</p>
+              <p className="mt-1 text-[11px] text-[#6c7b93]">{trackJob.dateText || "—"}</p>
             </div>
           </div>
         </motion.div>
       )}
 
       {/* ISTATISTIK */}
-      <div className="app-stats">
-        <div className="app-stat"><div className="app-stat-num">2.400+</div><div className="app-stat-label">Aktif ilan</div></div>
-        <div className="app-stat"><div className="app-stat-num">850+</div><div className="app-stat-label">Nakliyeci</div></div>
-        <div className="app-stat"><div className="app-stat-num">12 sa</div><div className="app-stat-label">Ort. eşleşme</div></div>
+      <div className="flex gap-2">
+        {[["2.400+", "Aktif ilan"], ["850+", "Nakliyeci"], ["12 sa", "Ort. eşleşme"]].map(([n, l]) => (
+          <div key={l} className="flex-1 rounded-2xl border border-[#2a323f] bg-[#1b222d] px-3.5 py-3">
+            <div className="text-xl font-extrabold text-yellow-400">{n}</div>
+            <div className="mt-0.5 text-[11px] text-[#6c7b93]">{l}</div>
+          </div>
+        ))}
       </div>
 
       {/* MUSAIT ARAC / KARGO KARTI */}
       {cargo && (
-        <section className="app-section">
-          <div className="app-section-head">
-            <h2 className="app-section-title">{cargo.type === "arac" ? "Müsait araç" : "Öne çıkan yük"}</h2>
-            <button className="app-section-link" onClick={() => navigate("/ilanlar")}>Tümü ›</button>
+        <section className="flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-extrabold tracking-tight text-white">{cargo.type === "arac" ? "Müsait araç" : "Öne çıkan yük"}</h2>
+            <button onClick={() => navigate("/ilanlar")} className="text-xs font-bold text-[#6c7b93]">Tümü ›</button>
           </div>
-          <button className="cargo-card" onClick={() => navigate(`/ilan/${cargo.id}`)}>
-            <div className="cargo-info">
-              <span className="cargo-badge">{cargo.type === "arac" ? "Müsait" : (CAT_TAG[cargo.cat]?.label || "İlan")}</span>
+          <button
+            onClick={() => navigate(`/ilan/${cargo.id}`)}
+            className="flex w-full items-center justify-between gap-3.5 overflow-hidden rounded-[32px] border border-[#2a323f] bg-gradient-to-b from-[#232c3a] to-[#1b222d] p-5 text-left text-slate-100 transition hover:-translate-y-0.5"
+          >
+            <div className="flex min-w-0 flex-col gap-3">
+              <span className="self-start rounded-full bg-[#29323f] px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-wide text-yellow-400">
+                {cargo.type === "arac" ? "Müsait" : (CAT_TAG[cargo.cat]?.label || "İlan")}
+              </span>
               <div>
-                <p className="cargo-name-label">{cargo.type === "arac" ? "Araç" : "Malzeme"}</p>
-                <h5 className="cargo-name">{cargo.type === "arac" ? (cargo.vehicle || cargo.title) : (cargo.material || cargo.title)}</h5>
+                <p className="mb-0.5 text-[11px] text-[#6c7b93]">{cargo.type === "arac" ? "Araç" : "Malzeme"}</p>
+                <h5 className="text-base font-extrabold leading-tight text-white">{cargo.type === "arac" ? (cargo.vehicle || cargo.title) : (cargo.material || cargo.title)}</h5>
               </div>
-              <div className="cargo-meta">
+              <div className="flex gap-5">
                 <div>
-                  <p className="cargo-meta-label">{cargo.priceType === "sabit" && cargo.price ? "Fiyat" : "Durum"}</p>
-                  <p className="cargo-meta-val">{cargo.priceType === "sabit" && cargo.price ? `₺${cargo.price}` : "Teklif"}</p>
+                  <p className="text-[10px] text-[#6c7b93]">{cargo.priceType === "sabit" && cargo.price ? "Fiyat" : "Durum"}</p>
+                  <p className="mt-0.5 text-sm font-extrabold text-white">{cargo.priceType === "sabit" && cargo.price ? `₺${cargo.price}` : "Teklif"}</p>
                 </div>
                 <div>
-                  <p className="cargo-meta-label">{cargo.type === "arac" ? "Kapasite" : "Miktar"}</p>
-                  <p className="cargo-meta-val">{cargo.type === "arac" ? (cargo.capacity || "—") : `${cargo.amount || "—"} ${cargo.unit || ""}`}</p>
+                  <p className="text-[10px] text-[#6c7b93]">{cargo.type === "arac" ? "Kapasite" : "Miktar"}</p>
+                  <p className="mt-0.5 text-sm font-extrabold text-white">{cargo.type === "arac" ? (cargo.capacity || "—") : `${cargo.amount || "—"} ${cargo.unit || ""}`}</p>
                 </div>
               </div>
             </div>
-            <img className="cargo-img" src={TRUCK_DARK} alt="Araç" loading="lazy" />
+            <img src={TRUCK_DARK} alt="Araç" loading="lazy" className="h-[108px] w-36 flex-shrink-0 rounded-[18px] border border-[#2a323f] object-cover" />
           </button>
         </section>
       )}
 
       {/* PERSONALAR */}
-      <section className="app-section">
-        <h2 className="app-section-title">Ne yapmak istiyorsun?</h2>
+      <section className="flex flex-col gap-3">
+        <h2 className="text-lg font-extrabold tracking-tight text-white">Ne yapmak istiyorsun?</h2>
         {PERSONAS.map((p, i) => (
-          <motion.button key={p.id} className="app-persona" onClick={() => navigate(p.route)}
-            initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: i * 0.06 }}>
-            <span className="app-persona-icon" style={{ background: p.bg, color: p.clr }}>{p.letter}</span>
-            <span>
-              <span className="app-persona-title" style={{ display: "block" }}>{p.title}</span>
-              <span className="app-persona-desc" style={{ display: "block" }}>{p.desc}</span>
+          <motion.button
+            key={p.id}
+            onClick={() => navigate(p.route)}
+            initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: i * 0.06 }}
+            className="flex w-full items-center gap-3.5 rounded-3xl border border-[#2a323f] bg-[#1b222d] p-4 text-left transition hover:-translate-y-0.5 hover:border-yellow-400/40"
+          >
+            <span className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl text-lg font-extrabold ${p.ring}`}>{p.letter}</span>
+            <span className="min-w-0">
+              <span className="block text-sm font-bold text-white">{p.title}</span>
+              <span className="block text-xs text-[#6c7b93]">{p.desc}</span>
             </span>
-            <span className="app-persona-chev">›</span>
+            <span className="ml-auto text-2xl text-[#6c7b93]">›</span>
           </motion.button>
         ))}
       </section>
 
-      {/* SON ILAN — SARI KART */}
+      {/* SON ILAN — SARI KART + LISTE */}
       {recent && (
-        <section className="app-section">
-          <div className="app-section-head">
-            <h2 className="app-section-title">Son ilanlar</h2>
-            <button className="app-section-link" onClick={() => navigate("/ilanlar")}>Tümü ›</button>
+        <section className="flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-extrabold tracking-tight text-white">Son ilanlar</h2>
+            <button onClick={() => navigate("/ilanlar")} className="text-xs font-bold text-[#6c7b93]">Tümü ›</button>
           </div>
-          <button className="recent-card" onClick={() => navigate(`/ilan/${recent.id}`)}>
-            <div className="recent-info">
-              <span className="recent-badge">{recent.status === "kapali" ? "Tamamlandı" : recent.status === "eslesti" ? "Eşleşti" : "Yayında"}</span>
+
+          <button
+            onClick={() => navigate(`/ilan/${recent.id}`)}
+            className="flex w-full items-center justify-between gap-3.5 overflow-hidden rounded-[32px] bg-gradient-to-br from-yellow-300 to-yellow-500 p-5 text-left shadow-[0_12px_30px_rgba(245,179,1,0.32)] transition hover:-translate-y-0.5"
+          >
+            <div className="flex min-w-0 flex-col gap-3">
+              <span className="self-start rounded-full bg-black/10 px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-wide text-[#11141a]">
+                {recent.status === "kapali" ? "Tamamlandı" : recent.status === "eslesti" ? "Eşleşti" : "Yayında"}
+              </span>
               <div>
-                <p className="recent-date">{recent.createdText || recent.dateText || "yeni"}</p>
-                <p className="recent-id">{recent.title}</p>
+                <p className="text-[11px] font-semibold text-[#4a4220]">{recent.createdText || recent.dateText || "yeni"}</p>
+                <p className="mt-0.5 text-[17px] font-black leading-tight tracking-tight text-[#11141a]">{recent.title}</p>
               </div>
             </div>
-            <img className="recent-img" src={TRUCK_LIGHT} alt="İlan" loading="lazy" />
+            <img src={TRUCK_LIGHT} alt="İlan" loading="lazy" className="h-[100px] w-[132px] flex-shrink-0 rounded-2xl object-cover" />
           </button>
 
-          {/* diger ilanlar listesi */}
-          <div className="app-list" style={{ marginTop: 4 }}>
-            {rest.map(l => {
+          {/* diger ilanlar */}
+          <div className="flex flex-col gap-2.5">
+            {rest.map((l) => {
               const tag = CAT_TAG[l.cat] || CAT_TAG.hafriyat;
               const isFixed = l.priceType === "sabit" && l.price;
               return (
-                <button key={l.id} className="app-listing" onClick={() => navigate(`/ilan/${l.id}`)}>
-                  <div className="app-listing-tagrow">
-                    <span className="app-tag" style={{ color: tag.clr, background: tag.bg }}>{tag.label}</span>
-                    <span className="app-listing-meta">• {l.createdText || "yeni"}</span>
+                <button
+                  key={l.id}
+                  onClick={() => navigate(`/ilan/${l.id}`)}
+                  className="flex w-full flex-col gap-2 rounded-[22px] border border-[#2a323f] bg-[#1b222d] p-4 text-left transition hover:-translate-y-0.5 hover:border-yellow-400/40"
+                >
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold tracking-wide ${tag.cls}`}>{tag.label}</span>
+                    <span className="text-[11px] text-[#6c7b93]">• {l.createdText || "yeni"}</span>
                   </div>
-                  <div className="app-listing-title">{l.title}</div>
-                  <div className="app-listing-loc">📍 {l.il}{l.ilce ? `, ${l.ilce}` : ""}{l.amount ? ` • ${l.amount} ${l.unit || ""}` : ""}</div>
-                  <div className="app-listing-foot">
+                  <div className="text-base font-bold leading-snug text-white">{l.title}</div>
+                  <div className="flex flex-wrap items-center gap-1 text-xs text-[#6c7b93]">📍 {l.il}{l.ilce ? `, ${l.ilce}` : ""}{l.amount ? ` • ${l.amount} ${l.unit || ""}` : ""}</div>
+                  <div className="flex items-center justify-between gap-2 pt-2.5">
                     <span>
-                      <span className="app-price">{isFixed ? `₺${l.price}` : "Teklif"}</span>
-                      <span className="app-price-unit"> {isFixed ? (l.unit ? `/${l.unit}` : "") : "usulü"}</span>
+                      <span className="text-xl font-extrabold tracking-tight text-yellow-400">{isFixed ? `₺${l.price}` : "Teklif"}</span>
+                      <span className="text-[11px] text-[#6c7b93]"> {isFixed ? (l.unit ? `/${l.unit}` : "") : "usulü"}</span>
                     </span>
-                    <span className="app-listing-cta">Teklif ver</span>
+                    <span className="whitespace-nowrap rounded-full bg-yellow-400 px-4 py-2 text-xs font-extrabold text-[#11141a]">Teklif ver</span>
                   </div>
                 </button>
               );

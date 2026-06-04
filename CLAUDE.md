@@ -19,7 +19,12 @@ Tedarikçi (ocak/santral) kendi ürün/stok ilanını açar, müteahhit bulur, n
 - React 19 + Vite + react-router-dom v7
 - Framer Motion (animasyonlar)
 - Backend YOK. Veri şimdilik **localStorage**'da tutulur (ileride Supabase).
-- Stil: CSS değişkenleriyle (`src/index.css` → `--accent`, `--bg-card`, `--text` vb.). Dark mode `[data-theme="dark"]`.
+- Stil: **Tailwind CSS v3** (gerçek kurulum, CDN değil). `tailwind.config.js` + `postcss.config.js` + `src/tailwind.css`.
+  - **KADEMELİ GEÇİŞ:** Eski sayfalar hâlâ `src/index.css` sınıflarıyla çalışıyor. Yeni/çevrilen sayfalar **Tailwind utility** kullanır. `NakliyeHome.jsx` tamamen Tailwind'e çevrildi (referans şablon).
+  - Tailwind `preflight` KAPALI (`corePlugins.preflight=false`) — index.css'i bozmasın. Tüm sayfalar çevrilince açılabilir.
+  - Dark mode: `darkMode: ["selector", '[data-theme="dark"]']` — mevcut tema butonu çalışmaya devam eder. Renkler için `dark:` varyantı kullan.
+  - Marka renkleri: koyu zemin `bg-[#1b222d]`/`#11141a`, vurgu `yellow-400` (= MoveIQ). `navy`/`brand` token'ları da tanımlı.
+  - Tasarım aracından üretilen React+Tailwind kodu doğrudan yapıştırılabilir (slate/yellow-400 vb. standart sınıflar çalışır).
 
 ## Mevcut yapı (KULLAN, YENİSİNİ İCAT ETME)
 - `src/data/categories.js` — CATS, LISTING_TYPES, VEHICLE_TYPES, MATERIALS, UNITS, IL_LIST, HAFRIYAT_MATERIALS/VEHICLES, SILOBAS_MATERIALS/VEHICLES
@@ -46,7 +51,7 @@ Tedarikçi (ocak/santral) kendi ürün/stok ilanını açar, müteahhit bulur, n
 
 ## DEĞİŞMEZ KURALLAR
 1. **Mevcut çalışan kodu bozma.** Routing, header, footer, tema çalışıyor.
-2. **Yeni stil sistemi kurma.** Sadece `var(--accent)` vb. CSS değişkenleri. Tailwind/styled-components EKLEME.
+2. **Stil = Tailwind.** Yeni/çevrilen sayfalar Tailwind utility ile yazılır. Eski sayfalar çevrilene kadar `index.css` ile kalır — ikisini aynı anda bozma. styled-components vb. EKLEME.
 3. **Veri tek yerden.** Tüm localStorage erişimi `storage.js` üzerinden. Bileşen içine `localStorage.getItem` yazma.
 4. **localStorage anahtarları `hamted_` ile başlar:** listings, offers, messages, user, users, msg_seen, theme…
 5. **Türkçe karakter kullan.** Düzgün Türkçe yaz (İlanını, taşıma, güvenli).
