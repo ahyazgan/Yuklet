@@ -34,7 +34,7 @@ export default function TedarikciPage() {
       <SEO title="Tedarikçi" description="Kırma ocağı, kum ocağı, beton santrali — ürünlerinizi dijitale taşıyın, daha geniş müşteri kitlesine ulaşın." />
 
       {/* Hero */}
-      <section style={{ background: "linear-gradient(135deg, #EEF4FF 0%, #FAFAF8 60%, #EDF7EF 100%)", borderBottom: "1px solid var(--border)" }}>
+      <section style={{ background: "var(--hero-bg)", borderBottom: "1px solid var(--border)" }}>
         <div className="page-content" style={{ paddingTop: 64, paddingBottom: 64 }}>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}
             style={{ maxWidth: 680 }}>
@@ -49,7 +49,7 @@ export default function TedarikciPage() {
               Kum, çakıl, mıcır, kırma taş, çimento — ürünlerinizi platforma ekleyin. Yüzlerce müteahhit size ulaşsın. Nakliye sorununu platform çözsün.
             </p>
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-              <button onClick={() => navigate("/ilan-ver")} style={{ background: "var(--blue)", color: "#fff", border: "none", padding: "15px 28px", borderRadius: 12, fontSize: 16, fontWeight: 700, cursor: "pointer", boxShadow: "0 6px 24px #2E6FA340" }}>
+              <button onClick={() => navigate("/ilan-ver")} style={{ background: "var(--blue)", color: "#fff", border: "none", padding: "15px 28px", borderRadius: 999, fontSize: 16, fontWeight: 700, cursor: "pointer", boxShadow: "0 6px 24px #2E6FA340" }}>
                 Tedarikçi olarak ilanı ver
               </button>
               <button onClick={() => navigate("/hakkimizda")} style={{ background: "var(--bg-card)", color: "var(--text)", border: "1px solid var(--border)", padding: "15px 28px", borderRadius: 12, fontSize: 16, fontWeight: 700, cursor: "pointer" }}>

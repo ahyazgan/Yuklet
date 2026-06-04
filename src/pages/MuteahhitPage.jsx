@@ -34,7 +34,7 @@ export default function MuteahhitPage() {
       <SEO title="Müteahhit & Alıcı" description="Şantiyeniz için hafriyat ve döküm yük nakliyesi artık çok kolay. Anlık teklif alın, belgeli araçlarla çalışın." />
 
       {/* Hero */}
-      <section style={{ background: `linear-gradient(135deg, #FDF3EC 0%, #FAFAF8 60%, #EEF4FF 100%)`, borderBottom: "1px solid var(--border)" }}>
+      <section style={{ background: "var(--hero-bg)", borderBottom: "1px solid var(--border)" }}>
         <div className="page-content" style={{ paddingTop: 64, paddingBottom: 64 }}>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}
             style={{ maxWidth: 680 }}>
@@ -49,7 +49,7 @@ export default function MuteahhitPage() {
               Hafriyat, kum, çakıl, mıcır, çimento — inşaat yüklerinizi taşıyacak belgeli ve puanlı nakliyecilere anında ulaşın. Telefon trafiği yok, pazarlık yok, belirsizlik yok.
             </p>
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-              <button onClick={() => navigate("/ilan-ver")} style={{ background: "var(--accent)", color: "#fff", border: "none", padding: "15px 28px", borderRadius: 12, fontSize: 16, fontWeight: 700, cursor: "pointer", boxShadow: "0 6px 24px #C85A2440" }}>
+              <button onClick={() => navigate("/ilan-ver")} style={{ background: "var(--accent)", color: "var(--accent-text)", border: "none", padding: "15px 28px", borderRadius: 999, fontSize: 16, fontWeight: 700, cursor: "pointer", boxShadow: "0 6px 24px rgba(245,179,1,.35)" }}>
                 İlan ver — ücretsiz
               </button>
               <button onClick={() => navigate("/ilanlar")} style={{ background: "var(--bg-card)", color: "var(--text)", border: "1px solid var(--border)", padding: "15px 28px", borderRadius: 12, fontSize: 16, fontWeight: 700, cursor: "pointer" }}>
