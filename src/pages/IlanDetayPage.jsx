@@ -6,22 +6,24 @@ import { CATS } from "../data/categories";
 import { useToast } from "../components/Toast";
 import SEO from "../components/SEO";
 
+// ── MoveIQ LIGHT ilan detay (Tailwind).
+
 const CAT_TAG = {
-  hafriyat: { label: "HAFRİYAT", clr: "var(--amber)", bg: "var(--amber-bg)" },
-  silobas: { label: "SİLOBAS", clr: "var(--blue)", bg: "var(--blue-bg)" },
+  hafriyat: { label: "HAFRİYAT", cls: "text-amber-700 bg-amber-100" },
+  silobas: { label: "SİLOBAS", cls: "text-sky-700 bg-sky-100" },
 };
 const STATUS_STYLE = {
-  beklemede: { label: "Beklemede", clr: "var(--amber)", bg: "var(--amber-bg)" },
-  kabul: { label: "Kabul edildi", clr: "var(--green)", bg: "var(--green-bg)" },
-  ret: { label: "Reddedildi", clr: "var(--red)", bg: "var(--accent-bg)" },
+  beklemede: { label: "Beklemede", cls: "text-amber-700 bg-amber-100" },
+  kabul: { label: "Kabul edildi", cls: "text-emerald-700 bg-emerald-100" },
+  ret: { label: "Reddedildi", cls: "text-red-700 bg-red-100" },
 };
 
 function Row({ label, value }) {
   if (!value && value !== 0) return null;
   return (
-    <div className="spec-row">
-      <span className="spec-label">{label}</span>
-      <span className="spec-value">{value}</span>
+    <div className="flex items-center justify-between gap-4 border-b border-gray-100 px-5 py-3 last:border-b-0">
+      <span className="text-xs font-medium text-gray-500">{label}</span>
+      <span className="text-right text-sm font-bold text-slate-900">{value}</span>
     </div>
   );
 }
@@ -31,8 +33,6 @@ function fmtDate(iso) {
   catch { return ""; }
 }
 
-const cardStyle = { background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 16, padding: 18, boxShadow: "var(--shadow)" };
-
 export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth, offers = [], onAddOffer }) {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -40,22 +40,22 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
   const [price, setPrice] = useState("");
   const [message, setMessage] = useState("");
 
-  const l = listings.find(x => String(x.id) === String(id));
+  const l = listings.find((x) => String(x.id) === String(id));
 
   if (!l) {
     return (
-      <div className="app-screen" style={{ textAlign: "center", paddingTop: 60 }}>
-        <div className="empty-icon">📭</div>
-        <h1 className="empty-title">İlan bulunamadı</h1>
-        <p className="empty-desc">Bu ilan kaldırılmış veya hiç var olmamış olabilir.</p>
-        <button className="app-listing-cta" style={{ alignSelf: "center", padding: "11px 20px" }} onClick={() => navigate("/ilanlar")}>Tüm ilanlar</button>
+      <div className="mx-auto flex w-full max-w-[460px] flex-col items-center gap-3 px-4 pt-16 text-center text-slate-900">
+        <div className="text-4xl">📭</div>
+        <h1 className="text-xl font-bold text-slate-950">İlan bulunamadı</h1>
+        <p className="text-sm text-gray-500">Bu ilan kaldırılmış veya hiç var olmamış olabilir.</p>
+        <button onClick={() => navigate("/ilanlar")} className="mt-2 rounded-full bg-yellow-400 px-5 py-2.5 text-xs font-extrabold text-slate-950">Tüm ilanlar</button>
       </div>
     );
   }
 
-  const cat = CATS.find(c => c.id === l.cat);
+  const cat = CATS.find((c) => c.id === l.cat);
   const tag = CAT_TAG[l.cat] || CAT_TAG.hafriyat;
-  const listingOffers = offers.filter(o => String(o.listingId) === String(l.id));
+  const listingOffers = offers.filter((o) => String(o.listingId) === String(l.id));
   const isOwner = user && l.ownerId && l.ownerId === user.id;
   const isFixed = l.priceType === "sabit" && l.price;
   const closed = l.status === "kapali" || l.status === "eslesti";
@@ -72,72 +72,72 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
     toast("Teklifiniz iletildi", "success");
   };
 
+  const inputCls = "w-full rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-slate-300";
+
   return (
-    <div className="app-screen">
+    <div className="mx-auto flex w-full max-w-[460px] flex-col gap-4 px-4 pb-24 pt-2 text-slate-900">
       <SEO title={l.title} description={l.desc || `${cat?.name} ilanı - ${l.il} / ${l.ilce}`} />
 
-      <button onClick={() => navigate(-1)} style={{ alignSelf: "flex-start", background: "transparent", border: "none", color: "var(--text-sec)", fontSize: 14, fontWeight: 600, cursor: "pointer", marginBottom: -8 }}>
-        ← Geri
-      </button>
+      <button onClick={() => navigate(-1)} className="flex h-11 w-11 items-center justify-center self-start rounded-full bg-white text-slate-700 shadow-sm">←</button>
 
-      <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="flex flex-col gap-4">
 
         {/* Baslik karti */}
-        <div style={cardStyle}>
-          <div className="app-listing-tagrow" style={{ marginBottom: 10 }}>
-            <span className="app-tag" style={{ color: tag.clr, background: tag.bg }}>{tag.label}</span>
-            <span className="app-tag" style={{ color: l.type === "is" ? "var(--accent)" : "var(--blue)", background: l.type === "is" ? "var(--accent-bg)" : "var(--blue-bg)" }}>
+        <div className="rounded-3xl bg-white p-5 shadow-sm">
+          <div className="mb-2.5 flex flex-wrap items-center gap-1.5">
+            <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold tracking-wide ${tag.cls}`}>{tag.label}</span>
+            <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold tracking-wide ${l.type === "is" ? "text-amber-700 bg-amber-100" : "text-sky-700 bg-sky-100"}`}>
               {l.type === "is" ? "İŞ İLANI" : "ARAÇ İLANI"}
             </span>
-            {l.status === "eslesti" && <span className="app-tag" style={{ color: "var(--green)", background: "var(--green-bg)" }}>✓ EŞLEŞTİ</span>}
-            <span className="app-listing-meta" style={{ marginLeft: "auto" }}>{l.createdText}</span>
+            {l.status === "eslesti" && <span className="rounded-md bg-emerald-100 px-2 py-0.5 text-[10px] font-bold tracking-wide text-emerald-700">✓ EŞLEŞTİ</span>}
+            <span className="ml-auto text-[11px] text-gray-400">{l.createdText}</span>
           </div>
-          <h1 className="app-hero-title" style={{ fontSize: 22, lineHeight: 1.25 }}>{l.title}</h1>
-          <div className="app-listing-loc" style={{ marginTop: 8 }}>📍 {l.il}{l.ilce ? `, ${l.ilce}` : ""}</div>
-          <div className="app-listing-loc" style={{ marginTop: 6, gap: 8 }}>
-            <span style={{ fontWeight: 700, color: "var(--text)" }}>{l.owner}</span>
-            {l.ownerVerified && <span style={{ color: "var(--green)", fontWeight: 700 }}>✓ Onaylı</span>}
-            {l.ownerRating && <span style={{ color: "var(--amber)" }}>★ {l.ownerRating}</span>}
+          <h1 className="text-xl font-extrabold leading-snug tracking-tight text-slate-950">{l.title}</h1>
+          <div className="mt-2 text-xs text-gray-500">📍 {l.il}{l.ilce ? `, ${l.ilce}` : ""}</div>
+          <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs">
+            <span className="font-bold text-slate-700">{l.owner}</span>
+            {l.ownerVerified && <span className="font-bold text-emerald-600">✓ Onaylı</span>}
+            {l.ownerRating && <span className="text-amber-600">★ {l.ownerRating}</span>}
           </div>
         </div>
 
-        {/* Fiyat + teklif aksiyonu */}
-        <div style={cardStyle}>
-          <div className="app-price" style={{ fontSize: 28 }}>{isFixed ? `₺${l.price.toLocaleString("tr-TR")}` : "Teklife açık"}</div>
-          <div className="app-listing-meta" style={{ marginTop: 2, marginBottom: 14 }}>{listingOffers.length} teklif geldi</div>
+        {/* Fiyat + teklif */}
+        <div className="rounded-3xl bg-white p-5 shadow-sm">
+          <div className="text-3xl font-extrabold tracking-tight text-slate-950">{isFixed ? `₺${l.price.toLocaleString("tr-TR")}` : "Teklife açık"}</div>
+          <div className="mb-4 mt-0.5 text-xs text-gray-400">{listingOffers.length} teklif geldi</div>
 
           {isOwner ? (
-            <div style={{ background: "var(--blue-bg)", color: "var(--blue)", padding: "12px 14px", borderRadius: 10, fontSize: 13, fontWeight: 600, textAlign: "center" }}>
+            <div className="rounded-2xl bg-sky-50 p-4 text-center text-sm font-semibold text-sky-700">
               Bu sizin ilanınız.
-              <button onClick={() => navigate("/ilanlarim")} style={{ display: "block", margin: "8px auto 0", background: "var(--blue)", color: "#fff", border: "none", padding: "9px 16px", borderRadius: 8, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>Teklifleri yönet</button>
+              <button onClick={() => navigate("/ilanlarim")} className="mx-auto mt-2 block rounded-full bg-sky-600 px-4 py-2 text-xs font-bold text-white">Teklifleri yönet</button>
             </div>
           ) : closed ? (
-            <div style={{ background: "var(--bg)", color: "var(--text-sec)", padding: "12px 14px", borderRadius: 10, fontSize: 13.5, fontWeight: 600, textAlign: "center" }}>
+            <div className="rounded-2xl bg-slate-50 p-4 text-center text-sm font-semibold text-gray-500">
               {l.status === "eslesti" ? "Bu ilan eşleşti, yeni teklif alınmıyor." : "Bu ilan kapatıldı, yeni teklif alınmıyor."}
             </div>
           ) : !user ? (
-            <button onClick={() => onRequireAuth?.()} className="app-search-btn" style={{ width: "100%", padding: 13, fontSize: 14.5, borderRadius: 10 }}>
+            <button onClick={() => onRequireAuth?.()} className="w-full rounded-2xl bg-slate-950 py-3.5 text-sm font-bold text-white transition hover:bg-slate-800">
               Giriş yapıp teklif ver
             </button>
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <input className="form-input form-input-lg" type="number" min="0" value={price} onChange={e => setPrice(e.target.value)} placeholder="Teklif fiyatınız (₺)" />
-              <textarea className="form-input form-textarea" style={{ minHeight: 80 }} value={message} onChange={e => setMessage(e.target.value)} placeholder="Mesajınız (müsaitlik, araç, koşullar…)" />
-              <button onClick={submitOffer} className="app-search-btn" style={{ width: "100%", padding: 13, fontSize: 14.5, borderRadius: 10 }}>Teklif gönder</button>
+            <div className="flex flex-col gap-2.5">
+              <input className={inputCls} type="number" min="0" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="Teklif fiyatınız (₺)" />
+              <textarea className={`${inputCls} min-h-[80px]`} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Mesajınız (müsaitlik, araç, koşullar…)" />
+              <button onClick={submitOffer} className="w-full rounded-2xl bg-yellow-400 py-3.5 text-sm font-extrabold text-slate-950 transition hover:bg-yellow-500">Teklif gönder</button>
             </div>
           )}
         </div>
 
         {/* Aciklama */}
         {l.desc && (
-          <div style={cardStyle}>
-            <h2 className="app-section-title" style={{ fontSize: 15, marginBottom: 8 }}>Açıklama</h2>
-            <p style={{ fontSize: 14, color: "var(--text-sec)", lineHeight: 1.7, margin: 0 }}>{l.desc}</p>
+          <div className="rounded-3xl bg-white p-5 shadow-sm">
+            <h2 className="mb-2 text-sm font-bold text-slate-950">Açıklama</h2>
+            <p className="text-sm leading-relaxed text-gray-600">{l.desc}</p>
           </div>
         )}
 
         {/* Detaylar */}
-        <div className="detail-specs">
+        <div className="overflow-hidden rounded-3xl bg-white shadow-sm">
           <Row label="Kategori" value={cat?.name} />
           <Row label="Konum" value={`${l.il}${l.ilce ? " / " + l.ilce : ""}`} />
           <Row label="Yükleme" value={l.yukleme} />
@@ -151,25 +151,25 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
         </div>
 
         {/* Gelen teklifler */}
-        <div style={cardStyle}>
-          <h2 className="app-section-title" style={{ fontSize: 16, marginBottom: 12 }}>Gelen teklifler ({listingOffers.length})</h2>
+        <div className="rounded-3xl bg-white p-5 shadow-sm">
+          <h2 className="mb-3 text-base font-bold text-slate-950">Gelen teklifler ({listingOffers.length})</h2>
           {listingOffers.length === 0 ? (
-            <p style={{ fontSize: 13.5, color: "var(--text-ter)", margin: 0 }}>Henüz teklif yok. İlk teklifi siz verin.</p>
+            <p className="text-sm text-gray-400">Henüz teklif yok. İlk teklifi siz verin.</p>
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {listingOffers.map(o => {
+            <div className="flex flex-col gap-2.5">
+              {listingOffers.map((o) => {
                 const s = STATUS_STYLE[o.status] || STATUS_STYLE.beklemede;
                 return (
-                  <div key={o.id} style={{ border: "1px solid var(--border-light)", borderRadius: 10, padding: 14 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, marginBottom: 4 }}>
-                      <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text)" }}>{o.fromUser}</span>
-                      <span className="app-tag" style={{ color: s.clr, background: s.bg }}>{s.label}</span>
+                  <div key={o.id} className="rounded-2xl border border-gray-100 p-4">
+                    <div className="mb-1 flex items-center justify-between gap-2.5">
+                      <span className="text-sm font-bold text-slate-900">{o.fromUser}</span>
+                      <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold ${s.cls}`}>{s.label}</span>
                     </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
-                      <span style={{ fontSize: 13.5, color: "var(--text-sec)" }}>{o.message || "—"}</span>
-                      {o.price != null && <span style={{ fontSize: 15, fontWeight: 800, color: "var(--accent)", whiteSpace: "nowrap" }}>₺{o.price.toLocaleString("tr-TR")}</span>}
+                    <div className="flex items-center justify-between gap-2.5">
+                      <span className="text-sm text-gray-500">{o.message || "—"}</span>
+                      {o.price != null && <span className="whitespace-nowrap text-base font-extrabold text-slate-950">₺{o.price.toLocaleString("tr-TR")}</span>}
                     </div>
-                    <div style={{ fontSize: 11.5, color: "var(--text-ter)", marginTop: 6 }}>{fmtDate(o.createdAt)}</div>
+                    <div className="mt-1.5 text-[11px] text-gray-400">{fmtDate(o.createdAt)}</div>
                   </div>
                 );
               })}

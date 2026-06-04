@@ -5,38 +5,43 @@ import { LISTINGS, IL_LIST } from "../data/listings";
 import { CATS } from "../data/categories";
 import SEO from "../components/SEO";
 
+// ── MoveIQ LIGHT "Orders" tasarimi (Tailwind).
+
 const CAT_TAG = {
-  hafriyat: { label: "HAFRİYAT", clr: "var(--amber)", bg: "var(--amber-bg)" },
-  silobas: { label: "SİLOBAS", clr: "var(--blue)", bg: "var(--blue-bg)" },
+  hafriyat: { label: "HAFRİYAT", cls: "text-amber-700 bg-amber-100" },
+  silobas: { label: "SİLOBAS", cls: "text-sky-700 bg-sky-100" },
 };
 
 function ListingCard({ l, onClick }) {
   const tag = CAT_TAG[l.cat] || CAT_TAG.hafriyat;
   const isFixed = l.priceType === "sabit" && l.price;
   return (
-    <motion.button className="app-listing" onClick={onClick}
-      initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.28 }}>
-      <div className="app-listing-tagrow">
-        <span className="app-tag" style={{ color: tag.clr, background: tag.bg }}>{tag.label}</span>
-        <span className="app-tag" style={{ color: l.type === "is" ? "var(--accent)" : "var(--blue)", background: l.type === "is" ? "var(--accent-bg)" : "var(--blue-bg)" }}>
+    <motion.button
+      onClick={onClick}
+      initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.28 }}
+      className="flex w-full flex-col gap-2 rounded-3xl bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5"
+    >
+      <div className="flex flex-wrap items-center gap-1.5">
+        <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold tracking-wide ${tag.cls}`}>{tag.label}</span>
+        <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold tracking-wide ${l.type === "is" ? "text-amber-700 bg-amber-100" : "text-sky-700 bg-sky-100"}`}>
           {l.type === "is" ? "İŞ İLANI" : "ARAÇ"}
         </span>
-        {l.status === "eslesti" && <span className="app-tag" style={{ color: "var(--green)", background: "var(--green-bg)" }}>EŞLEŞTİ</span>}
-        <span className="app-listing-meta">• {l.createdText}</span>
+        {l.status === "eslesti" && <span className="rounded-md bg-emerald-100 px-2 py-0.5 text-[10px] font-bold tracking-wide text-emerald-700">EŞLEŞTİ</span>}
+        <span className="text-[11px] text-gray-400">• {l.createdText}</span>
       </div>
-      <div className="app-listing-title">{l.title}</div>
-      <div className="app-listing-loc">📍 {l.il}{l.ilce ? `, ${l.ilce}` : ""}{l.amount ? ` • ${l.amount} ${l.unit || ""}` : ""}</div>
-      <div className="app-listing-loc" style={{ gap: 8 }}>
-        <span style={{ fontWeight: 600, color: "var(--text)" }}>{l.owner}</span>
-        {l.ownerVerified && <span style={{ color: "var(--green)", fontWeight: 700 }}>✓ Onaylı</span>}
-        {l.ownerRating && <span style={{ color: "var(--amber)" }}>★ {l.ownerRating}</span>}
+      <div className="text-base font-bold leading-snug text-slate-950">{l.title}</div>
+      <div className="flex flex-wrap items-center gap-1 text-xs text-gray-500">📍 {l.il}{l.ilce ? `, ${l.ilce}` : ""}{l.amount ? ` • ${l.amount} ${l.unit || ""}` : ""}</div>
+      <div className="flex flex-wrap items-center gap-2 text-xs">
+        <span className="font-semibold text-slate-700">{l.owner}</span>
+        {l.ownerVerified && <span className="font-bold text-emerald-600">✓ Onaylı</span>}
+        {l.ownerRating && <span className="text-amber-600">★ {l.ownerRating}</span>}
       </div>
-      <div className="app-listing-foot">
+      <div className="flex items-center justify-between gap-2 border-t border-gray-100 pt-3">
         <span>
-          <span className="app-price">{isFixed ? `₺${l.price.toLocaleString("tr-TR")}` : "Teklif"}</span>
-          <span className="app-price-unit"> {isFixed ? (l.unit ? `/${l.unit}` : "") : "usulü"}</span>
+          <span className="text-xl font-extrabold tracking-tight text-slate-950">{isFixed ? `₺${l.price.toLocaleString("tr-TR")}` : "Teklif"}</span>
+          <span className="text-[11px] text-gray-400"> {isFixed ? (l.unit ? `/${l.unit}` : "") : "usulü"}</span>
         </span>
-        <span className="app-listing-cta">Teklif ver</span>
+        <span className="whitespace-nowrap rounded-full bg-yellow-400 px-4 py-2 text-xs font-extrabold text-slate-950">Teklif ver</span>
       </div>
     </motion.button>
   );
@@ -44,13 +49,13 @@ function ListingCard({ l, onClick }) {
 
 export default function ListingsPage({ listings = LISTINGS }) {
   const navigate = useNavigate();
-  const [type, setType] = useState("all");   // all | is | arac
-  const [cat, setCat] = useState("all");      // all | hafriyat | silobas
+  const [type, setType] = useState("all");
+  const [cat, setCat] = useState("all");
   const [il, setIl] = useState("all");
   const [q, setQ] = useState("");
 
   const filtered = useMemo(() => {
-    return listings.filter(l =>
+    return listings.filter((l) =>
       l.status !== "kapali" &&
       (type === "all" || l.type === type) &&
       (cat === "all" || l.cat === cat) &&
@@ -59,51 +64,64 @@ export default function ListingsPage({ listings = LISTINGS }) {
     );
   }, [listings, type, cat, il, q]);
 
+  const segBtn = (active) =>
+    `flex-1 rounded-xl py-2.5 text-sm font-bold transition ${active ? "bg-slate-950 text-white shadow" : "text-gray-500"}`;
+  const chip = (active) =>
+    `flex-shrink-0 whitespace-nowrap rounded-xl px-4 py-2.5 text-xs font-bold transition ${active ? "bg-slate-950 text-white shadow" : "bg-white text-gray-500 shadow-sm"}`;
+
   return (
-    <div className="app-screen">
+    <div className="mx-auto flex w-full max-w-[460px] flex-col gap-4 px-4 pb-24 pt-2 text-slate-900">
       <SEO title="İlanlar" description="Hafriyat ve silobas iş ve araç ilanları. Konuma, kategoriye ve türüne göre filtreleyin." />
 
-      <h1 className="app-hero-title" style={{ fontSize: 26 }}>İlanlar</h1>
-
-      {/* arama */}
-      <div className="app-search" style={{ marginTop: -8 }}>
-        <span style={{ fontSize: 15 }}>🔍</span>
-        <input value={q} onChange={e => setQ(e.target.value)} placeholder="İl, malzeme veya güzergah ara…" aria-label="İlan ara" />
+      {/* Baslik */}
+      <div className="flex items-center justify-between pt-2">
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-black tracking-tight text-slate-950">İlanlar</h1>
+          <span className="rounded-full bg-white px-2.5 py-1 text-xs font-bold text-slate-800 shadow-sm">{filtered.length}</span>
+        </div>
       </div>
 
-      {/* segment Is/Arac */}
-      <div className="app-segment">
-        <button className={type === "is" || type === "all" ? "active" : ""} onClick={() => setType("is")}>İş ilanları</button>
-        <button className={type === "arac" ? "active" : ""} onClick={() => setType("arac")}>Araç ilanları</button>
+      {/* Arama */}
+      <div className="relative">
+        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
+        <input
+          value={q} onChange={(e) => setQ(e.target.value)}
+          placeholder="İl, malzeme veya güzergah ara…" aria-label="İlan ara"
+          className="w-full rounded-2xl bg-white py-3 pl-11 pr-4 text-xs text-slate-900 shadow-sm outline-none focus:ring-2 focus:ring-slate-300"
+        />
       </div>
 
-      {/* kategori chip */}
-      <div className="app-chips">
-        <button className={`app-chip ${cat === "all" ? "app-chip-active" : ""}`} onClick={() => setCat("all")}>Tümü</button>
-        {CATS.map(c => (
-          <button key={c.id} className={`app-chip ${cat === c.id ? "app-chip-active" : ""}`} onClick={() => setCat(c.id)}>{c.name}</button>
+      {/* Segment Is/Arac */}
+      <div className="flex gap-1 rounded-2xl bg-white p-1 shadow-sm">
+        <button className={segBtn(type === "is" || type === "all")} onClick={() => setType("is")}>İş ilanları</button>
+        <button className={segBtn(type === "arac")} onClick={() => setType("arac")}>Araç ilanları</button>
+      </div>
+
+      {/* Kategori chip */}
+      <div className="flex gap-1.5">
+        <button className={chip(cat === "all")} onClick={() => setCat("all")}>Tümü</button>
+        {CATS.map((c) => (
+          <button key={c.id} className={chip(cat === c.id)} onClick={() => setCat(c.id)}>{c.name}</button>
         ))}
       </div>
 
-      {/* il chip (kaydirilabilir) */}
-      <div className="app-chips" style={{ flexWrap: "nowrap", overflowX: "auto", paddingBottom: 4 }}>
-        <button className={`app-chip ${il === "all" ? "app-chip-active" : ""}`} onClick={() => setIl("all")} style={{ flexShrink: 0 }}>Tüm iller</button>
-        {IL_LIST.map(i => (
-          <button key={i} className={`app-chip ${il === i ? "app-chip-active" : ""}`} onClick={() => setIl(i)} style={{ flexShrink: 0 }}>{i}</button>
+      {/* Il chip (kaydirilabilir) */}
+      <div className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1">
+        <button className={chip(il === "all")} onClick={() => setIl("all")}>Tüm iller</button>
+        {IL_LIST.map((i) => (
+          <button key={i} className={chip(il === i)} onClick={() => setIl(i)}>{i}</button>
         ))}
       </div>
-
-      <div className="app-listing-meta" style={{ marginTop: -4 }}>{filtered.length} ilan bulundu</div>
 
       {filtered.length === 0 ? (
-        <div className="empty-state">
-          <div className="empty-icon">🔍</div>
-          <div className="empty-title">İlan bulunamadı</div>
-          <div className="empty-desc">Filtreleri değiştirip tekrar dene.</div>
+        <div className="flex flex-col items-center gap-2 rounded-3xl bg-white py-14 text-center shadow-sm">
+          <div className="text-4xl">🔍</div>
+          <div className="text-base font-bold text-slate-950">İlan bulunamadı</div>
+          <div className="text-sm text-gray-500">Filtreleri değiştirip tekrar dene.</div>
         </div>
       ) : (
-        <div className="app-list">
-          {filtered.map(l => (
+        <div className="flex flex-col gap-3">
+          {filtered.map((l) => (
             <ListingCard key={l.id} l={l} onClick={() => navigate(`/ilan/${l.id}`)} />
           ))}
         </div>
