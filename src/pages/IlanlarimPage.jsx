@@ -5,10 +5,12 @@ import CategoryIcon from "../components/CategoryIcon";
 import { useToast } from "../components/Toast";
 import SEO from "../components/SEO";
 
+// ── MoveIQ LIGHT ilanlarim (Tailwind).
+
 const STATUS_STYLE = {
-  beklemede: { label: "Beklemede", clr: "var(--amber)", bg: "var(--amber-bg)" },
-  kabul: { label: "Kabul edildi", clr: "var(--green)", bg: "var(--green-bg)" },
-  ret: { label: "Reddedildi", clr: "var(--red)", bg: "var(--accent-bg)" },
+  beklemede: { label: "Beklemede", cls: "text-amber-700 bg-amber-100" },
+  kabul: { label: "Kabul edildi", cls: "text-emerald-700 bg-emerald-100" },
+  ret: { label: "Reddedildi", cls: "text-red-700 bg-red-100" },
 };
 
 function fmtDate(iso) {
@@ -16,7 +18,7 @@ function fmtDate(iso) {
   catch { return ""; }
 }
 
-const actionBtn = { background: "transparent", border: "1px solid var(--border)", color: "var(--text-sec)", padding: "6px 12px", borderRadius: 8, fontSize: 12.5, fontWeight: 600, cursor: "pointer" };
+const ACTION = "rounded-full border border-gray-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-600 transition hover:bg-gray-50";
 
 export default function IlanlarimPage({ listings = [], user, offers = [], onUpdateOffer, onUpdateListing, onDeleteListing, onRequireAuth, getContact }) {
   const navigate = useNavigate();
@@ -24,21 +26,21 @@ export default function IlanlarimPage({ listings = [], user, offers = [], onUpda
 
   if (!user) {
     return (
-      <div className="page-content" style={{ maxWidth: 520, margin: "0 auto", textAlign: "center", paddingTop: 48 }}>
-        <div style={{ fontSize: 44, marginBottom: 12 }}>🔒</div>
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: "var(--text)", marginBottom: 8 }}>Ilanlarinizi gormek icin giris yapin</h1>
-        <p style={{ fontSize: 14.5, color: "var(--text-sec)", marginBottom: 24 }}>Actiginiz ilanlari ve gelen teklifleri burada yonetebilirsiniz.</p>
-        <button onClick={() => onRequireAuth?.()} style={{ background: "var(--accent)", color: "#fff", border: "none", padding: "13px 24px", borderRadius: 11, fontSize: 15, fontWeight: 700, cursor: "pointer" }}>Giris yap / Kayit ol</button>
+      <div className="mx-auto flex w-full max-w-[460px] flex-col items-center gap-3 px-4 pt-12 text-center text-slate-900">
+        <div className="text-5xl">🔒</div>
+        <h1 className="text-2xl font-extrabold tracking-tight text-slate-950">İlanlarınızı görmek için giriş yapın</h1>
+        <p className="text-sm text-gray-500">Açtığınız ilanları ve gelen teklifleri burada yönetebilirsiniz.</p>
+        <button onClick={() => onRequireAuth?.()} className="mt-2 rounded-full bg-slate-950 px-5 py-3 text-sm font-bold text-white">Giriş yap / Kayıt ol</button>
       </div>
     );
   }
 
-  const myListings = listings.filter(l => l.ownerId && l.ownerId === user.id);
+  const myListings = listings.filter((l) => l.ownerId && l.ownerId === user.id);
 
   const accept = (listing, offer) => {
     onUpdateOffer?.(offer.id, { status: "kabul" });
     onUpdateListing?.(listing.id, { status: "eslesti" });
-    toast("Teklif kabul edildi, ilan eslesti", "success");
+    toast("Teklif kabul edildi, ilan eşleşti", "success");
   };
   const reject = (offer) => {
     onUpdateOffer?.(offer.id, { status: "ret" });
@@ -48,93 +50,91 @@ export default function IlanlarimPage({ listings = [], user, offers = [], onUpda
     onUpdateListing?.(l.id, { status: "aktif", createdText: "az önce" });
     toast("İlan yenilendi ve tekrar yayında", "success");
   };
-
   const del = (l) => {
-    if (window.confirm(`"${l.title}" ilanini silmek istediginize emin misiniz?`)) {
+    if (window.confirm(`"${l.title}" ilanını silmek istediğinize emin misiniz?`)) {
       onDeleteListing?.(l.id);
-      toast("Ilan silindi", "info");
+      toast("İlan silindi", "info");
     }
   };
 
   return (
-    <div className="page-content">
-      <SEO title="Ilanlarim" description="Actiginiz ilanlar ve gelen teklifler. Teklifleri kabul edin veya reddedin." />
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12, marginBottom: 20 }}>
+    <div className="mx-auto flex w-full max-w-[460px] flex-col gap-4 px-4 pb-24 pt-2 text-slate-900">
+      <SEO title="İlanlarım" description="Açtığınız ilanlar ve gelen teklifler. Teklifleri kabul edin veya reddedin." />
+      <div className="flex items-center justify-between gap-3 pt-2">
         <div>
-          <h1 style={{ fontSize: 26, fontWeight: 800, color: "var(--text)" }}>Ilanlarim</h1>
-          <p style={{ fontSize: 14, color: "var(--text-sec)", marginTop: 2 }}>{myListings.length} ilan · gelen teklifleri yonetin</p>
+          <h1 className="text-2xl font-black tracking-tight text-slate-950">İlanlarım</h1>
+          <p className="mt-0.5 text-xs text-gray-500">{myListings.length} ilan · gelen teklifleri yönetin</p>
         </div>
-        <button onClick={() => navigate("/ilan-ver")} style={{ background: "var(--accent)", color: "#fff", border: "none", padding: "11px 20px", borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>+ Ilan ver</button>
+        <button onClick={() => navigate("/ilan-ver")} className="rounded-full bg-yellow-400 px-4 py-2.5 text-xs font-extrabold text-slate-950">+ İlan ver</button>
       </div>
 
       {myListings.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "60px 20px", color: "var(--text-ter)" }}>
-          Henuz ilaniniz yok. <button onClick={() => navigate("/ilan-ver")} style={{ background: "none", border: "none", color: "var(--accent)", fontWeight: 700, cursor: "pointer", fontSize: "inherit" }}>Ilk ilani verin</button>
+        <div className="rounded-3xl bg-white py-14 text-center text-sm text-gray-400 shadow-sm">
+          Henüz ilanınız yok. <button onClick={() => navigate("/ilan-ver")} className="font-bold text-amber-600">İlk ilanı verin</button>
         </div>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-          {myListings.map(l => {
-            const cat = CATS.find(c => c.id === l.cat);
-            const lOffers = offers.filter(o => String(o.listingId) === String(l.id));
+        <div className="flex flex-col gap-4">
+          {myListings.map((l) => {
+            const cat = CATS.find((c) => c.id === l.cat);
+            const lOffers = offers.filter((o) => String(o.listingId) === String(l.id));
             const matched = l.status === "eslesti";
             const closed = l.status === "kapali";
             return (
-              <motion.div key={l.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-                style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 14, padding: 18, boxShadow: "var(--shadow)" }}>
-                {/* Ilan basligi */}
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 0, cursor: "pointer" }} onClick={() => navigate(`/ilan/${l.id}`)}>
+              <motion.div key={l.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="rounded-3xl bg-white p-5 shadow-sm">
+                {/* Baslik */}
+                <div className="mb-1 flex items-center gap-2.5">
+                  <div className="flex min-w-0 flex-1 cursor-pointer items-center gap-2.5" onClick={() => navigate(`/ilan/${l.id}`)}>
                     <CategoryIcon catId={l.cat} size={22} fallback={cat?.icon} />
-                    <h3 style={{ fontSize: 16, fontWeight: 700, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{l.title}</h3>
+                    <h3 className="truncate text-base font-bold text-slate-950">{l.title}</h3>
                   </div>
-                  {matched && <span style={{ fontSize: 11, fontWeight: 700, color: "var(--green)", background: "var(--green-bg)", padding: "3px 8px", borderRadius: 6 }}>✓ Eslesti</span>}
-                  {closed && <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text-ter)", background: "var(--bg)", padding: "3px 8px", borderRadius: 6 }}>Kapali</span>}
+                  {matched && <span className="rounded-md bg-emerald-100 px-2 py-0.5 text-[11px] font-bold text-emerald-700">✓ Eşleşti</span>}
+                  {closed && <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-gray-500">Kapalı</span>}
                 </div>
-                <div style={{ fontSize: 12.5, color: "var(--text-sec)", marginBottom: 10 }}>📍 {l.il} / {l.ilce} • {l.amount} {l.unit} • {lOffers.length} teklif</div>
+                <div className="mb-3 text-xs text-gray-500">📍 {l.il} / {l.ilce} • {l.amount} {l.unit} • {lOffers.length} teklif</div>
 
-                {/* Yonetim aksiyonlari */}
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
-                  <button onClick={() => navigate(`/ilan-duzenle/${l.id}`)} style={actionBtn}>Düzenle</button>
+                {/* Aksiyonlar */}
+                <div className="mb-3.5 flex flex-wrap gap-2">
+                  <button onClick={() => navigate(`/ilan-duzenle/${l.id}`)} className={ACTION}>Düzenle</button>
                   {!matched && (
-                    <button onClick={() => onUpdateListing?.(l.id, { status: closed ? "aktif" : "kapali" })} style={actionBtn}>{closed ? "Tekrar aç" : "Kapat"}</button>
+                    <button onClick={() => onUpdateListing?.(l.id, { status: closed ? "aktif" : "kapali" })} className={ACTION}>{closed ? "Tekrar aç" : "Kapat"}</button>
                   )}
                   {l.recurring && (
-                    <button onClick={() => renew(l)} style={{ ...actionBtn, color: "var(--green)", borderColor: "var(--green)" }}>🔁 Yenile</button>
+                    <button onClick={() => renew(l)} className="rounded-full border border-emerald-300 bg-emerald-50 px-3.5 py-2 text-xs font-semibold text-emerald-700">🔁 Yenile</button>
                   )}
-                  <button onClick={() => del(l)} style={{ ...actionBtn, color: "var(--red)" }}>Sil</button>
+                  <button onClick={() => del(l)} className="rounded-full border border-red-200 bg-white px-3.5 py-2 text-xs font-semibold text-red-600">Sil</button>
                 </div>
 
                 {/* Teklifler */}
                 {lOffers.length === 0 ? (
-                  <div style={{ fontSize: 13, color: "var(--text-ter)", borderTop: "1px solid var(--border-light)", paddingTop: 12 }}>Bu ilana henuz teklif gelmedi.</div>
+                  <div className="border-t border-gray-100 pt-3 text-sm text-gray-400">Bu ilana henüz teklif gelmedi.</div>
                 ) : (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 10, borderTop: "1px solid var(--border-light)", paddingTop: 12 }}>
-                    {lOffers.map(o => {
+                  <div className="flex flex-col gap-2.5 border-t border-gray-100 pt-3">
+                    {lOffers.map((o) => {
                       const s = STATUS_STYLE[o.status] || STATUS_STYLE.beklemede;
                       return (
-                        <div key={o.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", border: "1px solid var(--border-light)", borderRadius: 10, padding: 12 }}>
-                          <div style={{ flex: 1, minWidth: 180 }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                              <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text)" }}>{o.fromUser}</span>
-                              <span style={{ fontSize: 11, fontWeight: 700, color: s.clr, background: s.bg, padding: "2px 7px", borderRadius: 6 }}>{s.label}</span>
+                        <div key={o.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-gray-100 p-3.5">
+                          <div className="min-w-[180px] flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-bold text-slate-900">{o.fromUser}</span>
+                              <span className={`rounded-md px-2 py-0.5 text-[11px] font-bold ${s.cls}`}>{s.label}</span>
                             </div>
-                            <div style={{ fontSize: 13, color: "var(--text-sec)", marginTop: 3 }}>{o.message || "—"}</div>
-                            <div style={{ fontSize: 11.5, color: "var(--text-ter)", marginTop: 3 }}>{fmtDate(o.createdAt)}</div>
+                            <div className="mt-1 text-sm text-gray-500">{o.message || "—"}</div>
+                            <div className="mt-1 text-[11px] text-gray-400">{fmtDate(o.createdAt)}</div>
                           </div>
-                          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                            {o.price != null && <span style={{ fontSize: 16, fontWeight: 800, color: "var(--accent)" }}>{o.price.toLocaleString("tr-TR")} ₺</span>}
+                          <div className="flex items-center gap-2.5">
+                            {o.price != null && <span className="text-base font-extrabold text-slate-950">{o.price.toLocaleString("tr-TR")} ₺</span>}
                             {o.status === "beklemede" && !matched && (
-                              <div style={{ display: "flex", gap: 6 }}>
-                                <button onClick={() => accept(l, o)} style={{ background: "var(--green)", color: "#fff", border: "none", padding: "8px 12px", borderRadius: 8, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>Kabul et</button>
-                                <button onClick={() => reject(o)} style={{ background: "transparent", color: "var(--red)", border: "1px solid var(--border)", padding: "8px 12px", borderRadius: 8, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>Reddet</button>
+                              <div className="flex gap-1.5">
+                                <button onClick={() => accept(l, o)} className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-bold text-white">Kabul et</button>
+                                <button onClick={() => reject(o)} className="rounded-lg border border-gray-200 px-3 py-2 text-xs font-bold text-red-600">Reddet</button>
                               </div>
                             )}
                             {o.status === "kabul" && (
-                              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                              <div className="flex flex-wrap items-center gap-2">
                                 {getContact?.(o.fromUserId)?.phone && (
-                                  <a href={`tel:${getContact(o.fromUserId).phone}`} style={{ fontSize: 12.5, fontWeight: 700, color: "var(--green)", textDecoration: "none" }}>📞 {getContact(o.fromUserId).phone}</a>
+                                  <a href={`tel:${getContact(o.fromUserId).phone}`} className="text-xs font-bold text-emerald-600">📞 {getContact(o.fromUserId).phone}</a>
                                 )}
-                                <button onClick={() => navigate("/mesajlar")} style={{ background: "var(--blue)", color: "#fff", border: "none", padding: "8px 12px", borderRadius: 8, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>Mesaj gonder</button>
+                                <button onClick={() => navigate("/mesajlar")} className="rounded-lg bg-slate-950 px-3 py-2 text-xs font-bold text-white">Mesaj gönder</button>
                               </div>
                             )}
                           </div>

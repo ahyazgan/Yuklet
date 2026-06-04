@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import SEO from "../components/SEO";
 
+// ── MoveIQ LIGHT mesajlar (Tailwind).
+
 function fmtTime(iso) {
   try { return new Date(iso).toLocaleString("tr-TR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }); }
   catch { return ""; }
@@ -16,20 +18,20 @@ export default function MesajlarPage({ user, listings = [], offers = [], message
 
   if (!user) {
     return (
-      <div className="app-screen" style={{ textAlign: "center", paddingTop: 48 }}>
+      <div className="mx-auto flex w-full max-w-[460px] flex-col items-center gap-3 px-4 pt-12 text-center text-slate-900">
         <SEO title="Mesajlar" />
-        <div style={{ fontSize: 44 }}>🔒</div>
-        <h1 className="app-hero-title" style={{ fontSize: 22 }}>Mesajlar için giriş yapın</h1>
-        <p style={{ fontSize: 14, color: "var(--text-sec)" }}>Kabul edilen tekliflerde karşı tarafla buradan mesajlaşırsınız.</p>
-        <button onClick={() => onRequireAuth?.()} className="app-search-btn" style={{ alignSelf: "center", padding: "13px 24px", fontSize: 15, borderRadius: 11 }}>Giriş yap / Kayıt ol</button>
+        <div className="text-5xl">🔒</div>
+        <h1 className="text-xl font-bold text-slate-950">Mesajlar için giriş yapın</h1>
+        <p className="text-sm text-gray-500">Kabul edilen tekliflerde karşı tarafla buradan mesajlaşırsınız.</p>
+        <button onClick={() => onRequireAuth?.()} className="mt-2 rounded-full bg-slate-950 px-5 py-3 text-sm font-bold text-white">Giriş yap / Kayıt ol</button>
       </div>
     );
   }
 
   const conversations = offers
-    .filter(o => o.status === "kabul")
-    .map(o => {
-      const l = listings.find(x => String(x.id) === String(o.listingId));
+    .filter((o) => o.status === "kabul")
+    .map((o) => {
+      const l = listings.find((x) => String(x.id) === String(o.listingId));
       if (!l) return null;
       const ownerSide = { id: l.ownerId, name: l.owner };
       const offerSide = { id: o.fromUserId, name: o.fromUser };
@@ -39,12 +41,12 @@ export default function MesajlarPage({ user, listings = [], offers = [], message
     })
     .filter(Boolean);
 
-  const active = conversations.find(c => c.key === selectedKey) || null;
+  const active = conversations.find((c) => c.key === selectedKey) || null;
   const otherPhone = active && getContact ? getContact(active.other.id)?.phone : null;
 
   const threadMessages = active
     ? messages
-        .filter(m => String(m.listingId) === String(active.listingId) && String(m.offerId) === String(active.offerId))
+        .filter((m) => String(m.listingId) === String(active.listingId) && String(m.offerId) === String(active.offerId))
         .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
     : [];
 
@@ -59,39 +61,39 @@ export default function MesajlarPage({ user, listings = [], offers = [], message
     setText("");
   };
 
-  // ── Aktif sohbet (tam ekran) ──
+  // ── Aktif sohbet ──
   if (active) {
     return (
-      <div className="app-screen" style={{ gap: 0 }}>
+      <div className="mx-auto flex w-full max-w-[460px] flex-col px-4 pb-24 pt-2 text-slate-900">
         <SEO title="Mesajlar" />
-        <div style={{ display: "flex", alignItems: "center", gap: 10, paddingBottom: 12, borderBottom: "1px solid var(--border)" }}>
-          <button onClick={() => setSelectedKey(null)} style={{ background: "transparent", border: "none", color: "var(--text)", fontSize: 22, cursor: "pointer", lineHeight: 1 }}>←</button>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text)" }}>{active.other.name}</div>
-            <button onClick={() => navigate(`/ilan/${active.listingId}`)} style={{ background: "none", border: "none", color: "var(--accent)", fontSize: 12, fontWeight: 600, cursor: "pointer", padding: 0 }}>{active.listingTitle} ›</button>
+        <div className="flex items-center gap-3 border-b border-gray-200 pb-3">
+          <button onClick={() => setSelectedKey(null)} className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-slate-700 shadow-sm">←</button>
+          <div className="min-w-0 flex-1">
+            <div className="text-sm font-bold text-slate-950">{active.other.name}</div>
+            <button onClick={() => navigate(`/ilan/${active.listingId}`)} className="truncate text-xs font-semibold text-amber-600">{active.listingTitle} ›</button>
           </div>
-          {otherPhone && <a href={`tel:${otherPhone}`} style={{ fontSize: 13, fontWeight: 700, color: "var(--green)", textDecoration: "none" }}>📞</a>}
+          {otherPhone && <a href={`tel:${otherPhone}`} className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">📞</a>}
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: "16px 0", minHeight: "45vh" }}>
+        <div className="flex min-h-[45vh] flex-col gap-2.5 py-4">
           {threadMessages.length === 0 ? (
-            <div style={{ margin: "auto", color: "var(--text-ter)", fontSize: 13.5 }}>İlk mesajı yazın.</div>
+            <div className="m-auto text-sm text-gray-400">İlk mesajı yazın.</div>
           ) : (
-            threadMessages.map(m => {
+            threadMessages.map((m) => {
               const mine = m.fromId === user.id;
               return (
-                <div key={m.id} style={{ alignSelf: mine ? "flex-end" : "flex-start", maxWidth: "78%" }}>
-                  <div style={{ background: mine ? "var(--accent)" : "var(--bg-card)", color: mine ? "#fff" : "var(--text)", padding: "10px 14px", borderRadius: 14, borderBottomRightRadius: mine ? 4 : 14, borderBottomLeftRadius: mine ? 14 : 4, fontSize: 13.5, lineHeight: 1.45, border: mine ? "none" : "1px solid var(--border)" }}>{m.text}</div>
-                  <div style={{ fontSize: 10.5, color: "var(--text-ter)", marginTop: 3, textAlign: mine ? "right" : "left" }}>{fmtTime(m.createdAt)}</div>
+                <div key={m.id} className={`max-w-[78%] ${mine ? "self-end" : "self-start"}`}>
+                  <div className={`px-3.5 py-2.5 text-sm leading-snug ${mine ? "rounded-2xl rounded-br-sm bg-slate-950 text-white" : "rounded-2xl rounded-bl-sm bg-white text-slate-900 shadow-sm"}`}>{m.text}</div>
+                  <div className={`mt-1 text-[10.5px] text-gray-400 ${mine ? "text-right" : "text-left"}`}>{fmtTime(m.createdAt)}</div>
                 </div>
               );
             })
           )}
         </div>
 
-        <form onSubmit={send} className="app-search" style={{ position: "sticky", bottom: 8, paddingLeft: 16 }}>
-          <input value={text} onChange={e => setText(e.target.value)} placeholder="Mesaj yazın…" aria-label="Mesaj" />
-          <button type="submit" className="app-search-btn">Gönder</button>
+        <form onSubmit={send} className="sticky bottom-2 flex items-center gap-2 rounded-2xl bg-white p-1.5 pl-4 shadow-md">
+          <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Mesaj yazın…" aria-label="Mesaj" className="min-w-0 flex-1 bg-transparent text-sm text-slate-900 outline-none placeholder:text-gray-400" />
+          <button type="submit" className="rounded-full bg-slate-950 px-5 py-2.5 text-sm font-bold text-white">Gönder</button>
         </form>
       </div>
     );
@@ -99,29 +101,29 @@ export default function MesajlarPage({ user, listings = [], offers = [], message
 
   // ── Konusma listesi ──
   return (
-    <div className="app-screen">
+    <div className="mx-auto flex w-full max-w-[460px] flex-col gap-4 px-4 pb-24 pt-2 text-slate-900">
       <SEO title="Mesajlar" description="Eşleşen ilanlar üzerinden karşı tarafla mesajlaşın." />
-      <h1 className="app-hero-title" style={{ fontSize: 26 }}>Mesajlar</h1>
+      <h1 className="pt-2 text-2xl font-black tracking-tight text-slate-950">Mesajlar</h1>
 
       {conversations.length === 0 ? (
-        <div className="empty-state">
-          <div className="empty-icon">💬</div>
-          <div className="empty-title">Henüz mesajlaşma yok</div>
-          <div className="empty-desc">Bir teklif kabul edildiğinde konuşma burada açılır.</div>
-          <button onClick={() => navigate("/ilanlar")} className="app-search-btn" style={{ marginTop: 14, padding: "11px 20px" }}>İlanlara göz at</button>
+        <div className="flex flex-col items-center gap-2 rounded-3xl bg-white py-14 text-center shadow-sm">
+          <div className="text-4xl">💬</div>
+          <div className="text-base font-bold text-slate-950">Henüz mesajlaşma yok</div>
+          <div className="text-sm text-gray-500">Bir teklif kabul edildiğinde konuşma burada açılır.</div>
+          <button onClick={() => navigate("/ilanlar")} className="mt-3 rounded-full bg-yellow-400 px-5 py-2.5 text-xs font-extrabold text-slate-950">İlanlara göz at</button>
         </div>
       ) : (
-        <div className="app-list">
-          {conversations.map(c => (
-            <button key={c.key} className="app-persona" onClick={() => setSelectedKey(c.key)}>
-              <span className="app-persona-icon" style={{ background: "var(--accent-bg)", color: "var(--accent)" }}>
+        <div className="flex flex-col gap-2.5">
+          {conversations.map((c) => (
+            <button key={c.key} onClick={() => setSelectedKey(c.key)} className="flex w-full items-center gap-3.5 rounded-3xl bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5">
+              <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-lg font-extrabold text-amber-700">
                 {c.other.name?.[0]?.toUpperCase() || "?"}
               </span>
-              <span style={{ flex: 1, minWidth: 0 }}>
-                <span className="app-persona-title" style={{ display: "block" }}>{c.other.name}</span>
-                <span className="app-persona-desc" style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.listingTitle}</span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-bold text-slate-950">{c.other.name}</span>
+                <span className="block truncate text-xs text-gray-500">{c.listingTitle}</span>
               </span>
-              <span className="app-persona-chev">›</span>
+              <span className="text-2xl text-gray-300">›</span>
             </button>
           ))}
         </div>
