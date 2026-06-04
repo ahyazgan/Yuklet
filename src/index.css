@@ -390,6 +390,66 @@ main { flex: 1; }
   .chat-fab { bottom: 150px; }
 }
 
+/* ═══ MOBILE-APP SCREENS (Figma mobil tasarimi) ═══ */
+/* Telefon genisliginde sutun: mobilde tam genislik, masaustunde ortalanmis dar kolon */
+.app-screen { max-width: 480px; margin: 0 auto; padding: 12px 16px 32px; display: flex; flex-direction: column; gap: 20px; }
+
+/* hero kart */
+.app-hero { background: var(--hero-bg); border: 1px solid var(--border); border-radius: 20px; padding: 22px 20px; display: flex; flex-direction: column; gap: 12px; }
+.app-hero-badge { align-self: flex-start; display: inline-flex; gap: 6px; align-items: center; background: var(--accent-bg); border: 1px solid var(--accent-border); color: var(--accent); font-size: 11px; font-weight: 600; padding: 5px 12px; border-radius: 20px; }
+.app-hero-title { font-size: 28px; font-weight: 900; letter-spacing: -1px; line-height: 1.06; color: var(--text); margin: 0; }
+.app-hero-desc { font-size: 13px; color: var(--text-sec); line-height: 1.55; margin: 0; }
+
+/* arama cubugu */
+.app-search { display: flex; align-items: center; gap: 10px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 6px 6px 6px 16px; box-shadow: var(--shadow); }
+.app-search input { flex: 1; border: none; background: transparent; outline: none; font-size: 13px; color: var(--text); min-width: 0; }
+.app-search input::placeholder { color: var(--text-ter); }
+.app-search-btn { background: var(--accent); color: #fff; border: none; padding: 9px 16px; border-radius: 9px; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+
+/* istatistik kartlari */
+.app-stats { display: flex; gap: 8px; }
+.app-stat { flex: 1; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; box-shadow: var(--shadow); }
+.app-stat-num { font-size: 20px; font-weight: 800; color: var(--accent); }
+.app-stat-label { font-size: 11px; color: var(--text-sec); margin-top: 2px; }
+
+/* bolum basligi */
+.app-section { display: flex; flex-direction: column; gap: 10px; }
+.app-section-head { display: flex; justify-content: space-between; align-items: center; }
+.app-section-title { font-size: 18px; font-weight: 800; letter-spacing: -0.5px; color: var(--text); margin: 0; }
+.app-section-link { background: none; border: none; color: var(--accent); font-size: 13px; font-weight: 700; cursor: pointer; }
+
+/* persona satiri */
+.app-persona { display: flex; align-items: center; gap: 14px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; cursor: pointer; box-shadow: var(--shadow); transition: border-color .2s, transform .2s; text-align: left; width: 100%; }
+.app-persona:hover { border-color: var(--accent); transform: translateY(-2px); }
+.app-persona-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 800; flex-shrink: 0; }
+.app-persona-title { font-size: 14px; font-weight: 700; color: var(--text); }
+.app-persona-desc { font-size: 12px; color: var(--text-ter); margin-top: 2px; }
+.app-persona-chev { margin-left: auto; color: var(--text-ter); font-size: 22px; font-weight: 500; }
+
+/* ilan karti */
+.app-list { display: flex; flex-direction: column; gap: 10px; }
+.app-listing { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 16px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 8px; cursor: pointer; transition: border-color .2s, transform .2s; text-align: left; width: 100%; }
+.app-listing:hover { border-color: var(--accent); transform: translateY(-2px); }
+.app-listing-tagrow { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.app-tag { font-size: 10px; font-weight: 700; letter-spacing: .5px; padding: 3px 8px; border-radius: 6px; }
+.app-listing-meta { font-size: 11px; color: var(--text-ter); }
+.app-listing-title { font-size: 16px; font-weight: 700; color: var(--text); line-height: 1.3; }
+.app-listing-loc { font-size: 12px; color: var(--text-sec); display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.app-listing-foot { display: flex; justify-content: space-between; align-items: center; padding-top: 10px; gap: 8px; }
+.app-price { font-size: 20px; font-weight: 800; color: var(--accent); letter-spacing: -.5px; }
+.app-price-unit { font-size: 11px; color: var(--text-ter); font-weight: 400; }
+.app-listing-cta { background: var(--accent); color: #fff; border: none; padding: 9px 16px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+
+/* kategori chip satiri */
+.app-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.app-chip { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-sec); padding: 9px 16px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.app-chip-active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+/* segment (Is/Arac) */
+.app-segment { display: flex; gap: 4px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 4px; }
+.app-segment button { flex: 1; border: none; background: transparent; color: var(--text-sec); padding: 9px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; }
+.app-segment button.active { background: var(--accent); color: #fff; }
+
 /* ═══ TOAST ═══ */
 .toast-container { position: fixed; bottom: 90px; right: 24px; z-index: 300; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
 .toast { pointer-events: auto; display: flex; align-items: center; gap: 10px; padding: 12px 20px; border-radius: 10px; font-size: 13px; font-weight: 600; color: #fff; box-shadow: 0 8px 24px rgba(0,0,0,.2); animation: toastIn .3s ease; min-width: 240px; }

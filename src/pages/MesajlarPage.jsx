@@ -12,21 +12,20 @@ export default function MesajlarPage({ user, listings = [], offers = [], message
   const [selectedKey, setSelectedKey] = useState(null);
   const [text, setText] = useState("");
 
-  // Sayfa acilinca mesajlari okundu isaretle
   useEffect(() => { onSeen?.(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!user) {
     return (
-      <div className="page-content" style={{ maxWidth: 520, margin: "0 auto", textAlign: "center", paddingTop: 48 }}>
-        <div style={{ fontSize: 44, marginBottom: 12 }}>🔒</div>
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: "var(--text)", marginBottom: 8 }}>Mesajlar icin giris yapin</h1>
-        <p style={{ fontSize: 14.5, color: "var(--text-sec)", marginBottom: 24 }}>Kabul edilen tekliflerde karsi tarafla buradan mesajlasirsiniz.</p>
-        <button onClick={() => onRequireAuth?.()} style={{ background: "var(--accent)", color: "#fff", border: "none", padding: "13px 24px", borderRadius: 11, fontSize: 15, fontWeight: 700, cursor: "pointer" }}>Giris yap / Kayit ol</button>
+      <div className="app-screen" style={{ textAlign: "center", paddingTop: 48 }}>
+        <SEO title="Mesajlar" />
+        <div style={{ fontSize: 44 }}>🔒</div>
+        <h1 className="app-hero-title" style={{ fontSize: 22 }}>Mesajlar için giriş yapın</h1>
+        <p style={{ fontSize: 14, color: "var(--text-sec)" }}>Kabul edilen tekliflerde karşı tarafla buradan mesajlaşırsınız.</p>
+        <button onClick={() => onRequireAuth?.()} className="app-search-btn" style={{ alignSelf: "center", padding: "13px 24px", fontSize: 15, borderRadius: 11 }}>Giriş yap / Kayıt ol</button>
       </div>
     );
   }
 
-  // Kabul edilen tekliflerden konusmalar tureti (kullanici taraflardan biri olmali)
   const conversations = offers
     .filter(o => o.status === "kabul")
     .map(o => {
@@ -40,7 +39,7 @@ export default function MesajlarPage({ user, listings = [], offers = [], message
     })
     .filter(Boolean);
 
-  const active = conversations.find(c => c.key === selectedKey) || conversations[0] || null;
+  const active = conversations.find(c => c.key === selectedKey) || null;
   const otherPhone = active && getContact ? getContact(active.other.id)?.phone : null;
 
   const threadMessages = active
@@ -53,85 +52,78 @@ export default function MesajlarPage({ user, listings = [], offers = [], message
     e.preventDefault();
     if (!text.trim() || !active) return;
     onSendMessage?.({
-      id: Date.now(),
-      listingId: active.listingId,
-      offerId: active.offerId,
-      fromId: user.id,
-      fromName: user.name,
-      toId: active.other.id,
-      toName: active.other.name,
-      text: text.trim(),
-      createdAt: new Date().toISOString(),
+      id: Date.now(), listingId: active.listingId, offerId: active.offerId,
+      fromId: user.id, fromName: user.name, toId: active.other.id, toName: active.other.name,
+      text: text.trim(), createdAt: new Date().toISOString(),
     });
     setText("");
   };
 
+  // ── Aktif sohbet (tam ekran) ──
+  if (active) {
+    return (
+      <div className="app-screen" style={{ gap: 0 }}>
+        <SEO title="Mesajlar" />
+        <div style={{ display: "flex", alignItems: "center", gap: 10, paddingBottom: 12, borderBottom: "1px solid var(--border)" }}>
+          <button onClick={() => setSelectedKey(null)} style={{ background: "transparent", border: "none", color: "var(--text)", fontSize: 22, cursor: "pointer", lineHeight: 1 }}>←</button>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text)" }}>{active.other.name}</div>
+            <button onClick={() => navigate(`/ilan/${active.listingId}`)} style={{ background: "none", border: "none", color: "var(--accent)", fontSize: 12, fontWeight: 600, cursor: "pointer", padding: 0 }}>{active.listingTitle} ›</button>
+          </div>
+          {otherPhone && <a href={`tel:${otherPhone}`} style={{ fontSize: 13, fontWeight: 700, color: "var(--green)", textDecoration: "none" }}>📞</a>}
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: "16px 0", minHeight: "45vh" }}>
+          {threadMessages.length === 0 ? (
+            <div style={{ margin: "auto", color: "var(--text-ter)", fontSize: 13.5 }}>İlk mesajı yazın.</div>
+          ) : (
+            threadMessages.map(m => {
+              const mine = m.fromId === user.id;
+              return (
+                <div key={m.id} style={{ alignSelf: mine ? "flex-end" : "flex-start", maxWidth: "78%" }}>
+                  <div style={{ background: mine ? "var(--accent)" : "var(--bg-card)", color: mine ? "#fff" : "var(--text)", padding: "10px 14px", borderRadius: 14, borderBottomRightRadius: mine ? 4 : 14, borderBottomLeftRadius: mine ? 14 : 4, fontSize: 13.5, lineHeight: 1.45, border: mine ? "none" : "1px solid var(--border)" }}>{m.text}</div>
+                  <div style={{ fontSize: 10.5, color: "var(--text-ter)", marginTop: 3, textAlign: mine ? "right" : "left" }}>{fmtTime(m.createdAt)}</div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        <form onSubmit={send} className="app-search" style={{ position: "sticky", bottom: 8, paddingLeft: 16 }}>
+          <input value={text} onChange={e => setText(e.target.value)} placeholder="Mesaj yazın…" aria-label="Mesaj" />
+          <button type="submit" className="app-search-btn">Gönder</button>
+        </form>
+      </div>
+    );
+  }
+
+  // ── Konusma listesi ──
   return (
-    <div className="page-content">
-      <SEO title="Mesajlar" description="Eslesen ilanlar uzerinden karsi tarafla mesajlasin." />
-      <h1 style={{ fontSize: 26, fontWeight: 800, color: "var(--text)", marginBottom: 4 }}>Mesajlar</h1>
-      <p style={{ fontSize: 14, color: "var(--text-sec)", marginBottom: 20 }}>Eslesen ilanlar uzerinden karsi tarafla iletisim.</p>
+    <div className="app-screen">
+      <SEO title="Mesajlar" description="Eşleşen ilanlar üzerinden karşı tarafla mesajlaşın." />
+      <h1 className="app-hero-title" style={{ fontSize: 26 }}>Mesajlar</h1>
 
       {conversations.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "60px 20px", color: "var(--text-ter)" }}>
-          Henuz mesajlasma yok. Bir teklif kabul edildiginde konusma burada acilir.
-          <div style={{ marginTop: 14 }}>
-            <button onClick={() => navigate("/ilanlar")} style={{ background: "var(--accent)", color: "#fff", border: "none", padding: "11px 20px", borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>Ilanlara goz at</button>
-          </div>
+        <div className="empty-state">
+          <div className="empty-icon">💬</div>
+          <div className="empty-title">Henüz mesajlaşma yok</div>
+          <div className="empty-desc">Bir teklif kabul edildiğinde konuşma burada açılır.</div>
+          <button onClick={() => navigate("/ilanlar")} className="app-search-btn" style={{ marginTop: 14, padding: "11px 20px" }}>İlanlara göz at</button>
         </div>
       ) : (
-        <div style={{ display: "grid", gap: 16, alignItems: "start" }} className="mesaj-grid">
-          {/* Konusma listesi */}
-          <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 14, overflow: "hidden", boxShadow: "var(--shadow)" }}>
-            {conversations.map(c => {
-              const isActive = active && c.key === active.key;
-              return (
-                <button key={c.key} onClick={() => setSelectedKey(c.key)}
-                  style={{ width: "100%", textAlign: "left", padding: "14px 16px", border: "none", borderBottom: "1px solid var(--border-light)", cursor: "pointer",
-                    background: isActive ? "var(--accent-bg)" : "transparent" }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: isActive ? "var(--accent)" : "var(--text)" }}>{c.other.name}</div>
-                  <div style={{ fontSize: 12, color: "var(--text-sec)", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.listingTitle}</div>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Aktif konusma */}
-          <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 14, boxShadow: "var(--shadow)", display: "flex", flexDirection: "column", minHeight: 420 }}>
-            {active && (
-              <>
-                <div style={{ padding: "14px 18px", borderBottom: "1px solid var(--border-light)" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text)" }}>{active.other.name}</div>
-                    {otherPhone && <a href={`tel:${otherPhone}`} style={{ fontSize: 13, fontWeight: 700, color: "var(--green)", textDecoration: "none" }}>📞 {otherPhone}</a>}
-                  </div>
-                  <button onClick={() => navigate(`/ilan/${active.listingId}`)} style={{ background: "none", border: "none", color: "var(--accent)", fontSize: 12.5, fontWeight: 600, cursor: "pointer", padding: 0 }}>{active.listingTitle} →</button>
-                </div>
-
-                <div style={{ flex: 1, padding: 18, display: "flex", flexDirection: "column", gap: 10, overflowY: "auto" }}>
-                  {threadMessages.length === 0 ? (
-                    <div style={{ margin: "auto", color: "var(--text-ter)", fontSize: 13.5 }}>Ilk mesaji yazin.</div>
-                  ) : (
-                    threadMessages.map(m => {
-                      const mine = m.fromId === user.id;
-                      return (
-                        <div key={m.id} style={{ alignSelf: mine ? "flex-end" : "flex-start", maxWidth: "75%" }}>
-                          <div style={{ background: mine ? "var(--accent)" : "var(--bg)", color: mine ? "#fff" : "var(--text)", padding: "9px 13px", borderRadius: 12, fontSize: 13.5, lineHeight: 1.4, border: mine ? "none" : "1px solid var(--border-light)" }}>{m.text}</div>
-                          <div style={{ fontSize: 10.5, color: "var(--text-ter)", marginTop: 3, textAlign: mine ? "right" : "left" }}>{fmtTime(m.createdAt)}</div>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-
-                <form onSubmit={send} style={{ display: "flex", gap: 8, padding: 14, borderTop: "1px solid var(--border-light)" }}>
-                  <input value={text} onChange={e => setText(e.target.value)} placeholder="Mesaj yazin..."
-                    style={{ flex: 1, padding: "11px 14px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--bg-card)", color: "var(--text)", fontSize: 14 }} />
-                  <button type="submit" style={{ background: "var(--accent)", color: "#fff", border: "none", padding: "11px 18px", borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>Gonder</button>
-                </form>
-              </>
-            )}
-          </div>
+        <div className="app-list">
+          {conversations.map(c => (
+            <button key={c.key} className="app-persona" onClick={() => setSelectedKey(c.key)}>
+              <span className="app-persona-icon" style={{ background: "var(--accent-bg)", color: "var(--accent)" }}>
+                {c.other.name?.[0]?.toUpperCase() || "?"}
+              </span>
+              <span style={{ flex: 1, minWidth: 0 }}>
+                <span className="app-persona-title" style={{ display: "block" }}>{c.other.name}</span>
+                <span className="app-persona-desc" style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.listingTitle}</span>
+              </span>
+              <span className="app-persona-chev">›</span>
+            </button>
+          ))}
         </div>
       )}
     </div>
