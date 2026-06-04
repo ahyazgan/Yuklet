@@ -440,17 +440,70 @@ main { flex: 1; }
 .app-listing-foot { display: flex; justify-content: space-between; align-items: center; padding-top: 10px; gap: 8px; }
 .app-price { font-size: 20px; font-weight: 800; color: var(--accent); letter-spacing: -.5px; }
 .app-price-unit { font-size: 11px; color: var(--text-ter); font-weight: 400; }
-.app-listing-cta { background: var(--accent); color: #fff; border: none; padding: 9px 16px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.app-listing-cta { background: var(--accent); color: var(--accent-text); border: none; padding: 9px 16px; border-radius: 999px; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; }
 
 /* kategori chip satiri */
 .app-chips { display: flex; gap: 8px; flex-wrap: wrap; }
 .app-chip { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-sec); padding: 9px 16px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; }
-.app-chip-active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.app-chip-active { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
 
 /* segment (Is/Arac) */
 .app-segment { display: flex; gap: 4px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 4px; }
 .app-segment button { flex: 1; border: none; background: transparent; color: var(--text-sec); padding: 9px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; }
-.app-segment button.active { background: var(--accent); color: #fff; }
+.app-segment button.active { background: var(--accent); color: var(--accent-text); }
+
+/* ═══ MOVEIQ TARZI ANA EKRAN ═══ */
+/* ust bar: yuvarlak ikon butonlar */
+.app-topbar { display: flex; justify-content: space-between; align-items: center; }
+.app-topbar-greet { font-size: 12px; color: var(--text-ter); margin: 0; }
+.app-topbar-name { font-size: 19px; font-weight: 900; letter-spacing: -.5px; color: var(--text); margin: 1px 0 0; }
+.app-icon-btn { width: 46px; height: 46px; border-radius: 999px; background: var(--bg-card); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 17px; color: var(--text-sec); cursor: pointer; position: relative; transition: background .2s, border-color .2s; flex-shrink: 0; }
+.app-icon-btn:hover { background: var(--border-light); border-color: var(--accent-border); }
+.app-icon-dot { position: absolute; top: 11px; right: 11px; width: 9px; height: 9px; border-radius: 999px; background: var(--accent); border: 2px solid var(--bg-card); }
+
+/* lacivert takip karti (Current Order tarzi) — her temada navy */
+.track-card { background: linear-gradient(160deg, #232C3A 0%, #1B222D 58%, #161C26 100%); border: 1px solid #2A323F; border-radius: 28px; padding: 24px; color: #F1F5F9; box-shadow: 0 14px 36px rgba(0,0,0,.28); }
+.track-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.track-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--accent); margin: 0 0 6px; }
+.track-title { font-size: 21px; font-weight: 800; letter-spacing: -.5px; margin: 0; color: #fff; line-height: 1.2; }
+.track-id { font-size: 11px; color: #6C7B93; margin: 4px 0 0; }
+.track-badge { background: var(--accent); color: #11141A; border: none; font-size: 12px; font-weight: 800; padding: 10px 18px; border-radius: 999px; cursor: pointer; white-space: nowrap; transition: opacity .2s; }
+.track-badge:hover { opacity: .9; }
+.track-prog { position: relative; display: flex; align-items: center; justify-content: space-between; margin: 24px 6px 22px; }
+.track-prog-line { position: absolute; left: 0; right: 0; height: 3px; background: #2E3B4E; top: 50%; transform: translateY(-50%); }
+.track-prog-fill { position: absolute; left: 0; height: 3px; background: var(--accent); top: 50%; transform: translateY(-50%); border-radius: 3px; }
+.track-dot { width: 15px; height: 15px; border-radius: 999px; background: #52637A; border: 4px solid #1B222D; z-index: 1; }
+.track-dot.on { background: var(--accent); border-color: #161C26; }
+.track-steps { display: flex; justify-content: space-between; margin: 0 0 18px; }
+.track-step { font-size: 9.5px; color: #6C7B93; font-weight: 600; text-align: center; flex: 1; }
+.track-step.on { color: var(--accent); }
+.track-ends { display: flex; justify-content: space-between; gap: 12px; }
+.track-end { min-width: 0; }
+.track-end.to { text-align: right; }
+.track-end-label { font-size: 11px; color: #6C7B93; margin: 0 0 3px; }
+.track-end-city { font-size: 15px; font-weight: 800; color: #fff; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.track-end-date { font-size: 11px; color: #6C7B93; margin: 3px 0 0; }
+
+/* kamyon gorselli kargo karti (Available Cargo tarzi) */
+.cargo-card { background: linear-gradient(160deg, #232C3A, #1B222D); border: 1px solid #2A323F; border-radius: 28px; padding: 20px; display: flex; justify-content: space-between; align-items: center; gap: 14px; overflow: hidden; color: #F1F5F9; text-align: left; width: 100%; cursor: pointer; transition: transform .2s; }
+.cargo-card:hover { transform: translateY(-2px); }
+.cargo-info { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.cargo-badge { align-self: flex-start; background: #29323F; color: var(--accent); font-size: 10px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; padding: 6px 12px; border-radius: 999px; }
+.cargo-name-label { font-size: 11px; color: #6C7B93; margin: 0 0 2px; }
+.cargo-name { font-size: 16px; font-weight: 800; color: #fff; margin: 0; line-height: 1.25; }
+.cargo-meta { display: flex; gap: 18px; }
+.cargo-meta-label { font-size: 10px; color: #6C7B93; margin: 0; }
+.cargo-meta-val { font-size: 14px; font-weight: 800; color: #fff; margin: 2px 0 0; }
+.cargo-img { width: 144px; height: 108px; object-fit: cover; border-radius: 18px; flex-shrink: 0; border: 1px solid #2A323F; }
+
+/* sari "son is" karti (Recent Orders tarzi) */
+.recent-card { background: linear-gradient(150deg, #FFD83A 0%, #F5B301 100%); border: none; border-radius: 28px; padding: 20px; display: flex; justify-content: space-between; align-items: center; gap: 14px; overflow: hidden; box-shadow: 0 12px 30px rgba(245,179,1,.32); text-align: left; width: 100%; cursor: pointer; transition: transform .2s; }
+.recent-card:hover { transform: translateY(-2px); }
+.recent-info { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.recent-badge { align-self: flex-start; background: rgba(17,20,26,.12); color: #11141A; font-size: 10px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; padding: 6px 12px; border-radius: 999px; }
+.recent-date { font-size: 11px; font-weight: 600; color: #4a4220; margin: 0; }
+.recent-id { font-size: 17px; font-weight: 900; color: #11141A; margin: 3px 0 0; letter-spacing: -.5px; line-height: 1.2; }
+.recent-img { width: 132px; height: 100px; object-fit: cover; border-radius: 16px; flex-shrink: 0; }
 
 /* ═══ TOAST ═══ */
 .toast-container { position: fixed; bottom: 90px; right: 24px; z-index: 300; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }

@@ -18,7 +18,7 @@ export const loadShip = () => loadStr("hamted_ship", "std");
 export const saveShip = (v) => saveStr("hamted_ship", v);
 export const loadFavs = () => load("hamted_favs", []);
 export const saveFavs = (v) => save("hamted_favs", v);
-export const loadTheme = () => loadStr("hamted_theme", "light");
+export const loadTheme = () => loadStr("hamted_theme", "dark");
 export const saveTheme = (v) => saveStr("hamted_theme", v);
 export const loadLang = () => loadStr("hamted_lang", "tr");
 export const saveLang = (v) => saveStr("hamted_lang", v);
