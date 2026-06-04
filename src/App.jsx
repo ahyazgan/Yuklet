@@ -13,6 +13,7 @@ import PageTransition from "./components/PageTransition";
 
 import Header from "./components/Header";
 import Footer from "./components/Footer";
+import MobileTabBar from "./components/MobileTabBar";
 import WhatsAppButton from "./components/WhatsAppButton";
 import AuthModal from "./components/AuthModal";
 
@@ -179,6 +180,7 @@ function AppShell() {
 
       <Footer />
       <WhatsAppButton />
+      <MobileTabBar unreadCount={unreadCount} />
 
       {showAuth && <AuthModal onClose={() => setShowAuth(false)} onLogin={loginUser} onRegister={registerUser} />}
     </div>

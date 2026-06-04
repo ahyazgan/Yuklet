@@ -364,6 +364,32 @@ main { flex: 1; }
 .whatsapp-btn { position: fixed; bottom: 24px; right: 24px; width: 56px; height: 56px; border-radius: 50%; background: #25D366; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 16px rgba(37,211,102,.4); z-index: 99; font-size: 28px; color: #fff; transition: transform .2s; }
 .whatsapp-btn:hover { transform: scale(1.1); }
 
+/* ═══ MOBILE TAB BAR (alt gezinme) ═══ */
+.mobile-tabbar { display: none; }
+.tabbar-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; color: var(--text-ter); text-decoration: none; padding: 4px 0; transition: color .2s; }
+.tabbar-icon { font-size: 21px; line-height: 1; position: relative; opacity: .75; filter: grayscale(.4); transition: opacity .2s, filter .2s; }
+.tabbar-label { font-size: 10px; font-weight: 600; letter-spacing: -.1px; }
+.tabbar-item-active { color: var(--accent); }
+.tabbar-item-active .tabbar-icon { opacity: 1; filter: none; }
+.tabbar-item-active .tabbar-label { font-weight: 700; }
+.tabbar-label-accent { color: var(--accent); font-weight: 700; }
+.tabbar-fab { width: 50px; height: 50px; border-radius: 15px; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 30px; font-weight: 400; line-height: 1; margin-top: -22px; box-shadow: 0 6px 16px #C85A2455; }
+.tabbar-item-center { gap: 4px; }
+.tabbar-badge { position: absolute; top: -6px; right: -10px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--red); color: #fff; font-size: 9px; font-weight: 800; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 2px var(--bg-card); }
+
+@media (max-width: 768px) {
+  .mobile-tabbar {
+    display: flex; align-items: flex-start; justify-content: space-around;
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 120;
+    background: var(--header-bg); backdrop-filter: blur(16px);
+    border-top: 1px solid var(--border);
+    padding: 9px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+  }
+  .app-root { padding-bottom: 70px; }
+  .whatsapp-btn { bottom: 88px; }
+  .chat-fab { bottom: 150px; }
+}
+
 /* ═══ TOAST ═══ */
 .toast-container { position: fixed; bottom: 90px; right: 24px; z-index: 300; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
 .toast { pointer-events: auto; display: flex; align-items: center; gap: 10px; padding: 12px 20px; border-radius: 10px; font-size: 13px; font-weight: 600; color: #fff; box-shadow: 0 8px 24px rgba(0,0,0,.2); animation: toastIn .3s ease; min-width: 240px; }
