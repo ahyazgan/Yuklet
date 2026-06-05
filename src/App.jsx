@@ -23,6 +23,7 @@ import { LISTINGS } from "./data/listings";
 const NakliyeHome = lazy(() => import("./pages/NakliyeHome"));
 const ListingsPage = lazy(() => import("./pages/ListingsPage"));
 const IlanDetayPage = lazy(() => import("./pages/IlanDetayPage"));
+const TakipPage = lazy(() => import("./pages/TakipPage"));
 const IlanVerPage = lazy(() => import("./pages/IlanVerPage"));
 const IlanlarimPage = lazy(() => import("./pages/IlanlarimPage"));
 const MesajlarPage = lazy(() => import("./pages/MesajlarPage"));
@@ -158,6 +159,7 @@ function AppShell() {
                 <Route path="/" element={<PageTransition><NakliyeHome listings={listings} /></PageTransition>} />
                 <Route path="/ilanlar" element={<PageTransition><ListingsPage listings={listings} /></PageTransition>} />
                 <Route path="/ilan/:id" element={<PageTransition><IlanDetayPage listings={listings} user={user} onRequireAuth={requireAuth} offers={offers} onAddOffer={addOffer} /></PageTransition>} />
+                <Route path="/takip/:id" element={<PageTransition><TakipPage listings={listings} user={user} offers={offers} getContact={getContact} /></PageTransition>} />
                 <Route path="/ilan-ver" element={<PageTransition><IlanVerPage onPublish={publishListing} onUpdate={updateListing} listings={listings} user={user} onRequireAuth={requireAuth} /></PageTransition>} />
                 <Route path="/ilan-duzenle/:id" element={<PageTransition><IlanVerPage onPublish={publishListing} onUpdate={updateListing} listings={listings} user={user} onRequireAuth={requireAuth} /></PageTransition>} />
                 <Route path="/ilanlarim" element={<PageTransition><IlanlarimPage listings={listings} user={user} offers={offers} onUpdateOffer={updateOffer} onUpdateListing={updateListing} onDeleteListing={removeListing} onRequireAuth={requireAuth} getContact={getContact} /></PageTransition>} />
