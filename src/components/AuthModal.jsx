@@ -7,7 +7,7 @@ const ROLES = [
   { id: "tedarikci", label: "Tedarikçi", desc: "Araç ilanı / teklif verir" },
 ];
 
-const FIELD = "w-full rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-slate-300";
+const FIELD = "w-full rounded-2xl bg-slate-50 dark:bg-navy-soft px-4 py-3 text-sm text-slate-900 dark:text-slate-100 dark:placeholder:text-navy-muted outline-none focus:ring-2 focus:ring-slate-300";
 
 export default function AuthModal({ onClose, onLogin, onRegister }) {
   const [mode, setMode] = useState("login"); // login | register
@@ -39,22 +39,22 @@ export default function AuthModal({ onClose, onLogin, onRegister }) {
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-sm" onClick={onClose}>
-      <div className="relative max-h-[90vh] w-full max-w-[410px] overflow-auto rounded-[26px] bg-white p-8 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-        <button onClick={onClose} aria-label="Kapat" className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-slate-50 text-gray-500 transition hover:bg-gray-100">✕</button>
+      <div className="relative max-h-[90vh] w-full max-w-[410px] overflow-auto rounded-[26px] bg-white dark:bg-navy-card p-8 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <button onClick={onClose} aria-label="Kapat" className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-slate-50 dark:bg-navy-soft text-gray-500 dark:text-slate-400 transition hover:bg-gray-100 dark:hover:bg-navy-soft">✕</button>
 
         <div className="mb-5 text-center">
           <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-yellow-400 text-2xl font-black text-slate-950">H</div>
-          <h3 className="text-xl font-extrabold tracking-tight text-slate-950">{mode === "register" ? "Kayıt Ol" : "Giriş Yap"}</h3>
-          <p className="mt-1.5 text-sm text-gray-500">
+          <h3 className="text-xl font-extrabold tracking-tight text-slate-950 dark:text-slate-100">{mode === "register" ? "Kayıt Ol" : "Giriş Yap"}</h3>
+          <p className="mt-1.5 text-sm text-gray-500 dark:text-slate-400">
             {mode === "register" ? "İlan ve teklif vermek için ücretsiz hesap oluşturun" : "HamTed hesabınıza giriş yapın"}
           </p>
         </div>
 
         {/* Sekmeler */}
-        <div className="mb-5 flex gap-1.5 rounded-2xl bg-slate-50 p-1">
+        <div className="mb-5 flex gap-1.5 rounded-2xl bg-slate-50 dark:bg-navy-soft p-1">
           {[["login", "Giriş"], ["register", "Kayıt"]].map(([m, lbl]) => (
             <button key={m} type="button" onClick={() => switchMode(m)}
-              className={`flex-1 rounded-xl py-2 text-sm font-bold transition ${mode === m ? "bg-white text-slate-950 shadow-sm" : "text-gray-500"}`}>
+              className={`flex-1 rounded-xl py-2 text-sm font-bold transition ${mode === m ? "bg-white dark:bg-navy-card text-slate-950 dark:text-slate-100 shadow-sm" : "text-gray-500 dark:text-slate-400"}`}>
               {lbl}
             </button>
           ))}
@@ -64,17 +64,17 @@ export default function AuthModal({ onClose, onLogin, onRegister }) {
           {mode === "register" && (
             <>
               <div>
-                <label className="mb-1.5 block text-xs font-semibold text-gray-500">Ad / Firma</label>
+                <label className="mb-1.5 block text-xs font-semibold text-gray-500 dark:text-slate-400">Ad / Firma</label>
                 <input className={FIELD} value={values.name || ""} onChange={(e) => set("name", e.target.value)} placeholder="Yıldızlar İnşaat" />
               </div>
               <div>
-                <label className="mb-1.5 block text-xs font-semibold text-gray-500">Rol</label>
+                <label className="mb-1.5 block text-xs font-semibold text-gray-500 dark:text-slate-400">Rol</label>
                 <div className="flex gap-2">
                   {ROLES.map((r) => (
                     <button type="button" key={r.id} onClick={() => set("role", r.id)}
-                      className={`flex-1 rounded-2xl border p-3 text-left transition ${values.role === r.id ? "border-yellow-400 bg-yellow-50" : "border-gray-200 bg-white"}`}>
-                      <div className={`text-sm font-bold ${values.role === r.id ? "text-amber-700" : "text-slate-900"}`}>{r.label}</div>
-                      <div className="mt-0.5 text-[11px] text-gray-500">{r.desc}</div>
+                      className={`flex-1 rounded-2xl border p-3 text-left transition ${values.role === r.id ? "border-yellow-400 bg-yellow-50" : "border-gray-200 dark:border-navy-line bg-white dark:bg-navy-card"}`}>
+                      <div className={`text-sm font-bold ${values.role === r.id ? "text-amber-700" : "text-slate-900 dark:text-slate-100"}`}>{r.label}</div>
+                      <div className="mt-0.5 text-[11px] text-gray-500 dark:text-slate-400">{r.desc}</div>
                     </button>
                   ))}
                 </div>
@@ -83,19 +83,19 @@ export default function AuthModal({ onClose, onLogin, onRegister }) {
           )}
 
           <div>
-            <label className="mb-1.5 block text-xs font-semibold text-gray-500">E-posta</label>
+            <label className="mb-1.5 block text-xs font-semibold text-gray-500 dark:text-slate-400">E-posta</label>
             <input className={FIELD} type="email" value={values.email || ""} onChange={(e) => set("email", e.target.value)} placeholder="ornek@firma.com" />
           </div>
 
           {mode === "register" && (
             <div>
-              <label className="mb-1.5 block text-xs font-semibold text-gray-500">Telefon (isteğe bağlı)</label>
+              <label className="mb-1.5 block text-xs font-semibold text-gray-500 dark:text-slate-400">Telefon (isteğe bağlı)</label>
               <input className={FIELD} value={values.phone || ""} onChange={(e) => set("phone", e.target.value)} placeholder="05XX XXX XX XX" />
             </div>
           )}
 
           <div>
-            <label className="mb-1.5 block text-xs font-semibold text-gray-500">Şifre</label>
+            <label className="mb-1.5 block text-xs font-semibold text-gray-500 dark:text-slate-400">Şifre</label>
             <input className={FIELD} type="password" value={values.password || ""} onChange={(e) => set("password", e.target.value)} placeholder={mode === "register" ? "En az 6 karakter" : "Şifreniz"} />
           </div>
 
@@ -106,7 +106,7 @@ export default function AuthModal({ onClose, onLogin, onRegister }) {
           </button>
         </form>
 
-        <div className="mt-4 text-center text-sm text-gray-500">
+        <div className="mt-4 text-center text-sm text-gray-500 dark:text-slate-400">
           {mode === "register" ? (
             <><span>Zaten hesabınız var mı? </span><button className="font-bold text-amber-600" onClick={() => switchMode("login")}>Giriş Yap</button></>
           ) : (

@@ -8,8 +8,8 @@ import SEO from "../components/SEO";
 
 // ── MoveIQ LIGHT "Create Shipment" tasarimi (Tailwind).
 
-const LBL = "mb-1.5 block text-xs font-semibold text-gray-500";
-const FIELD = "w-full rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-slate-300";
+const LBL = "mb-1.5 block text-xs font-semibold text-gray-500 dark:text-slate-400";
+const FIELD = "w-full rounded-2xl bg-slate-50 dark:bg-navy-soft px-4 py-3 text-sm text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-slate-300";
 
 export default function IlanVerPage({ onPublish, onUpdate, listings = [], user, onRequireAuth }) {
   const navigate = useNavigate();
@@ -87,13 +87,13 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], user, 
 
   if (!user) {
     return (
-      <div className="mx-auto flex w-full max-w-[460px] flex-col items-center gap-3 px-4 pt-12 text-center text-slate-900">
+      <div className="mx-auto flex w-full max-w-[460px] flex-col items-center gap-3 px-4 pt-12 text-center text-slate-900 dark:text-slate-100">
         <div className="text-5xl">🔒</div>
-        <h1 className="text-2xl font-extrabold tracking-tight text-slate-950">İlan vermek için giriş yapın</h1>
-        <p className="text-sm leading-relaxed text-gray-500">İlan yayınlamak ücretsizdir. Devam etmek için hesabınıza giriş yapın veya hızlıca kayıt olun.</p>
+        <h1 className="text-2xl font-extrabold tracking-tight text-slate-950 dark:text-slate-100">İlan vermek için giriş yapın</h1>
+        <p className="text-sm leading-relaxed text-gray-500 dark:text-slate-400">İlan yayınlamak ücretsizdir. Devam etmek için hesabınıza giriş yapın veya hızlıca kayıt olun.</p>
         <div className="mt-2 flex flex-wrap justify-center gap-2.5">
-          <button onClick={onRequireAuth} className="rounded-full bg-slate-950 px-5 py-3 text-sm font-bold text-white">Giriş yap / Kayıt ol</button>
-          <button onClick={() => navigate("/ilanlar")} className="rounded-full bg-white px-5 py-3 text-sm font-bold text-slate-900 shadow-sm">İlanlara dön</button>
+          <button onClick={onRequireAuth} className="rounded-full bg-slate-950 dark:bg-navy-soft px-5 py-3 text-sm font-bold text-white dark:text-slate-100">Giriş yap / Kayıt ol</button>
+          <button onClick={() => navigate("/ilanlar")} className="rounded-full bg-white dark:bg-navy-card px-5 py-3 text-sm font-bold text-slate-900 dark:text-slate-100 shadow-sm">İlanlara dön</button>
         </div>
       </div>
     );
@@ -101,66 +101,66 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], user, 
 
   if (editing && !editListing) {
     return (
-      <div className="mx-auto flex w-full max-w-[460px] flex-col items-center gap-3 px-4 pt-16 text-center text-slate-900">
-        <h1 className="text-xl font-bold text-slate-950">İlan bulunamadı</h1>
+      <div className="mx-auto flex w-full max-w-[460px] flex-col items-center gap-3 px-4 pt-16 text-center text-slate-900 dark:text-slate-100">
+        <h1 className="text-xl font-bold text-slate-950 dark:text-slate-100">İlan bulunamadı</h1>
         <button onClick={() => navigate("/ilanlarim")} className="rounded-full bg-yellow-400 px-5 py-2.5 text-xs font-extrabold text-slate-950">İlanlarım</button>
       </div>
     );
   }
   if (editing && editListing.ownerId !== user.id) {
     return (
-      <div className="mx-auto flex w-full max-w-[460px] flex-col items-center gap-3 px-4 pt-16 text-center text-slate-900">
-        <h1 className="text-xl font-bold text-slate-950">Bu ilanı düzenleme yetkiniz yok</h1>
+      <div className="mx-auto flex w-full max-w-[460px] flex-col items-center gap-3 px-4 pt-16 text-center text-slate-900 dark:text-slate-100">
+        <h1 className="text-xl font-bold text-slate-950 dark:text-slate-100">Bu ilanı düzenleme yetkiniz yok</h1>
         <button onClick={() => navigate("/ilanlar")} className="rounded-full bg-yellow-400 px-5 py-2.5 text-xs font-extrabold text-slate-950">İlanlara dön</button>
       </div>
     );
   }
 
   const selectCard = (active) =>
-    `flex-1 min-w-[150px] rounded-2xl border p-3.5 text-left transition ${active ? "border-yellow-400 bg-yellow-50" : "border-gray-200 bg-white"}`;
+    `flex-1 min-w-[150px] rounded-2xl border p-3.5 text-left transition ${active ? "border-yellow-400 bg-yellow-50" : "border-gray-200 dark:border-navy-line bg-white dark:bg-navy-card"}`;
 
   return (
-    <div className="mx-auto flex w-full max-w-[460px] flex-col gap-4 px-4 pb-24 pt-2 text-slate-900">
+    <div className="mx-auto flex w-full max-w-[460px] flex-col gap-4 px-4 pb-24 pt-2 text-slate-900 dark:text-slate-100">
       <SEO title={editing ? "İlanı düzenle" : "İlan ver"} description="Taşınacak yükünüzü veya boş aracınızı yayınlayın; nakliyeci ve iş sahiplerinden teklif alın." />
 
       <div className="flex items-center gap-3 pt-1">
-        <button onClick={() => navigate(-1)} className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-slate-700 shadow-sm">←</button>
-        <h1 className="text-lg font-bold text-slate-950">{editing ? "İlanı düzenle" : "İlan ver"}</h1>
+        <button onClick={() => navigate(-1)} className="flex h-11 w-11 items-center justify-center rounded-full bg-white dark:bg-navy-card text-slate-700 dark:text-slate-100 shadow-sm">←</button>
+        <h1 className="text-lg font-bold text-slate-950 dark:text-slate-100">{editing ? "İlanı düzenle" : "İlan ver"}</h1>
       </div>
 
       <motion.form onSubmit={submit} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-4">
 
         {/* Ilan turu */}
-        <div className="rounded-3xl bg-white p-5 shadow-sm">
+        <div className="rounded-3xl bg-white dark:bg-navy-card p-5 shadow-sm">
           <span className={LBL}>İlan türü</span>
           <div className="flex flex-wrap gap-2">
             {LISTING_TYPES.map((lt) => (
               <button type="button" key={lt.id} onClick={() => setType(lt.id)} className={selectCard(type === lt.id)}>
-                <div className={`text-sm font-bold ${type === lt.id ? "text-amber-700" : "text-slate-900"}`}>{lt.name}</div>
-                <div className="mt-0.5 text-xs text-gray-500">{lt.desc}</div>
+                <div className={`text-sm font-bold ${type === lt.id ? "text-amber-700" : "text-slate-900 dark:text-slate-100"}`}>{lt.name}</div>
+                <div className="mt-0.5 text-xs text-gray-500 dark:text-slate-400">{lt.desc}</div>
               </button>
             ))}
           </div>
         </div>
 
         {/* Kategori */}
-        <div className="rounded-3xl bg-white p-5 shadow-sm">
+        <div className="rounded-3xl bg-white dark:bg-navy-card p-5 shadow-sm">
           <span className={LBL}>Kategori</span>
           <div className="flex flex-wrap gap-2">
             {CATS.map((c) => (
               <button type="button" key={c.id} onClick={() => { setCat(c.id); set("material", ""); set("vehicle", ""); }} className={selectCard(cat === c.id)}>
-                <div className={`flex items-center gap-2 text-sm font-bold ${cat === c.id ? "text-amber-700" : "text-slate-900"}`}>
+                <div className={`flex items-center gap-2 text-sm font-bold ${cat === c.id ? "text-amber-700" : "text-slate-900 dark:text-slate-100"}`}>
                   <CategoryIcon catId={c.id} size={24} fallback={c.icon} />
                   <span>{c.name}</span>
                 </div>
-                <div className="mt-1 text-xs text-gray-500">{c.desc}</div>
+                <div className="mt-1 text-xs text-gray-500 dark:text-slate-400">{c.desc}</div>
               </button>
             ))}
           </div>
         </div>
 
         {/* Detay alanlari */}
-        <div className="flex flex-col gap-4 rounded-3xl bg-white p-5 shadow-sm">
+        <div className="flex flex-col gap-4 rounded-3xl bg-white dark:bg-navy-card p-5 shadow-sm">
           <div>
             <label className={LBL}>Başlık *</label>
             <input className={FIELD} value={form.title} onChange={(e) => set("title", e.target.value)} placeholder="Örn: Şantiye hafriyat taşıma" />
@@ -248,12 +248,12 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], user, 
         </div>
 
         {/* Duzenli is */}
-        <div className={`rounded-3xl border p-5 transition ${form.recurring ? "border-emerald-300 bg-emerald-50" : "border-transparent bg-white shadow-sm"}`}>
+        <div className={`rounded-3xl border p-5 transition ${form.recurring ? "border-emerald-300 bg-emerald-50" : "border-transparent bg-white dark:bg-navy-card shadow-sm"}`}>
           <label className="flex cursor-pointer items-center gap-3">
             <input type="checkbox" checked={form.recurring} onChange={(e) => set("recurring", e.target.checked)} className="h-[18px] w-[18px] cursor-pointer accent-emerald-600" />
             <div>
-              <div className={`text-sm font-bold ${form.recurring ? "text-emerald-700" : "text-slate-900"}`}>🔁 Düzenli iş</div>
-              <div className="text-xs text-gray-500">Bu iş birden fazla gün / sürekli tekrarlanıyor</div>
+              <div className={`text-sm font-bold ${form.recurring ? "text-emerald-700" : "text-slate-900 dark:text-slate-100"}`}>🔁 Düzenli iş</div>
+              <div className="text-xs text-gray-500 dark:text-slate-400">Bu iş birden fazla gün / sürekli tekrarlanıyor</div>
             </div>
           </label>
           {form.recurring && (
@@ -279,7 +279,7 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], user, 
         </div>
 
         {/* Aciklama + firma */}
-        <div className="flex flex-col gap-4 rounded-3xl bg-white p-5 shadow-sm">
+        <div className="flex flex-col gap-4 rounded-3xl bg-white dark:bg-navy-card p-5 shadow-sm">
           <div>
             <label className={LBL}>Açıklama</label>
             <textarea className={`${FIELD} min-h-[90px] resize-y`} value={form.desc} onChange={(e) => set("desc", e.target.value)} placeholder="İş/araç detayları, mesafe, özel koşullar..." />

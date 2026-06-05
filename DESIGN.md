@@ -57,6 +57,27 @@
 
 > **Kural:** Vurgu = sarı (`yellow-400` dolgu / `amber-600` metin). Dönüşüm için yeni renk uydurma. **Renkli gölge yok** (tek istisna: sarı CTA'da `shadow-yellow-400/40`).
 
+### 2d. `dark:` eşleme tablosu (light sınıf → eklenecek dark varyantı)
+Light sınıfı **silinmez**, yanına `dark:` eklenir. Vurgu (sarı/amber) ve statü renkleri **iki temada da aynı kalır** (genelde `dark:` gerekmez).
+| Light sınıfı | Eklenecek |
+|---|---|
+| `bg-white` | `dark:bg-navy-card` |
+| `bg-slate-50` / `bg-slate-100` | `dark:bg-navy-soft` |
+| `bg-gray-50` / `bg-gray-100` | `dark:bg-navy-soft` |
+| `border-gray-100` / `border-slate-50` / `border-slate-100` | `dark:border-navy-line` |
+| `border-white` (nokta halkası) | `dark:border-navy-card` |
+| `text-slate-950` / `-900` / `-800` / `-700` | `dark:text-slate-100` |
+| `text-slate-600` | `dark:text-slate-300` |
+| `text-gray-500` | `dark:text-slate-400` |
+| `text-gray-400` | `dark:text-navy-muted` |
+| `text-gray-300` | `dark:text-slate-600` |
+| `bg-slate-950 text-white` (koyu kontrast buton) | `dark:bg-navy-soft dark:text-slate-100` |
+| sayfa sarmalayıcı `text-slate-900` | `dark:text-slate-100` |
+| `bg-yellow-400 text-slate-950` (sarı CTA) | değişmez |
+| `text-amber-600`, statü `emerald/sky/amber/red` | değişmez |
+
+> Yeni sayfa yazarken bu eşlemeyi baştan uygula. Mevcut sayfalara eklerken: her yüzey/metin/kenarlık sınıfına karşılığını yaz, sarıyı elleme.
+
 ---
 
 ## 3. Tipografi

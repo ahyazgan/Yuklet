@@ -19,32 +19,32 @@ const FAQ = [
 
 export default function NasilCalisirPage() {
   return (
-    <div className="mx-auto w-full max-w-5xl px-5 py-8 text-slate-900">
+    <div className="mx-auto w-full max-w-5xl px-5 py-8 text-slate-900 dark:text-slate-100">
       <SEO title="Nasıl Çalışır" description="HamTed nasıl çalışır? 4 adımda hafriyat ve silobas yüklerinizi doğru araçla buluşturun." />
       <div className="mb-9 text-center">
         <span className="inline-block rounded-full bg-amber-100 px-4 py-1.5 text-xs font-bold text-amber-700">Adım Adım</span>
-        <h1 className="mt-3 text-3xl font-black tracking-tight text-slate-950">Nasıl Çalışır?</h1>
-        <p className="mt-2 text-base text-gray-500">4 basit adımda yükünü veya aracını doğru tarafla buluştur.</p>
+        <h1 className="mt-3 text-3xl font-black tracking-tight text-slate-950 dark:text-slate-100">Nasıl Çalışır?</h1>
+        <p className="mt-2 text-base text-gray-500 dark:text-slate-400">4 basit adımda yükünü veya aracını doğru tarafla buluştur.</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {STEPS.map((s) => (
-          <div key={s.num} className="rounded-3xl bg-white p-6 shadow-sm">
+          <div key={s.num} className="rounded-3xl bg-white dark:bg-navy-card p-6 shadow-sm">
             <div className={`mb-3 flex h-11 w-11 items-center justify-center rounded-2xl text-lg font-black ${s.cls}`}>{s.num}</div>
-            <div className="mb-1.5 text-base font-bold text-slate-950">{s.title}</div>
-            <div className="text-sm leading-relaxed text-gray-500">{s.desc}</div>
+            <div className="mb-1.5 text-base font-bold text-slate-950 dark:text-slate-100">{s.title}</div>
+            <div className="text-sm leading-relaxed text-gray-500 dark:text-slate-400">{s.desc}</div>
           </div>
         ))}
       </div>
 
       {/* SSS */}
       <div className="mt-12">
-        <h2 className="mb-5 text-xl font-extrabold tracking-tight text-slate-950">Sıkça Sorulan Sorular</h2>
+        <h2 className="mb-5 text-xl font-extrabold tracking-tight text-slate-950 dark:text-slate-100">Sıkça Sorulan Sorular</h2>
         <div className="flex flex-col gap-3">
           {FAQ.map(([q, a]) => (
-            <div key={q} className="rounded-3xl bg-white p-5 shadow-sm">
-              <div className="mb-2 text-base font-bold text-slate-950">{q}</div>
-              <div className="text-sm leading-relaxed text-gray-500">{a}</div>
+            <div key={q} className="rounded-3xl bg-white dark:bg-navy-card p-5 shadow-sm">
+              <div className="mb-2 text-base font-bold text-slate-950 dark:text-slate-100">{q}</div>
+              <div className="text-sm leading-relaxed text-gray-500 dark:text-slate-400">{a}</div>
             </div>
           ))}
         </div>

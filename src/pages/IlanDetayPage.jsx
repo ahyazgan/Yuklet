@@ -21,9 +21,9 @@ const STATUS_STYLE = {
 function Row({ label, value }) {
   if (!value && value !== 0) return null;
   return (
-    <div className="flex items-center justify-between gap-4 border-b border-gray-100 px-5 py-3 last:border-b-0">
-      <span className="text-xs font-medium text-gray-500">{label}</span>
-      <span className="text-right text-sm font-bold text-slate-900">{value}</span>
+    <div className="flex items-center justify-between gap-4 border-b border-gray-100 dark:border-navy-line px-5 py-3 last:border-b-0">
+      <span className="text-xs font-medium text-gray-500 dark:text-slate-400">{label}</span>
+      <span className="text-right text-sm font-bold text-slate-900 dark:text-slate-100">{value}</span>
     </div>
   );
 }
@@ -44,10 +44,10 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
 
   if (!l) {
     return (
-      <div className="mx-auto flex w-full max-w-[460px] flex-col items-center gap-3 px-4 pt-16 text-center text-slate-900">
+      <div className="mx-auto flex w-full max-w-[460px] flex-col items-center gap-3 px-4 pt-16 text-center text-slate-900 dark:text-slate-100">
         <div className="text-4xl">📭</div>
-        <h1 className="text-xl font-bold text-slate-950">İlan bulunamadı</h1>
-        <p className="text-sm text-gray-500">Bu ilan kaldırılmış veya hiç var olmamış olabilir.</p>
+        <h1 className="text-xl font-bold text-slate-950 dark:text-slate-100">İlan bulunamadı</h1>
+        <p className="text-sm text-gray-500 dark:text-slate-400">Bu ilan kaldırılmış veya hiç var olmamış olabilir.</p>
         <button onClick={() => navigate("/ilanlar")} className="mt-2 rounded-full bg-yellow-400 px-5 py-2.5 text-xs font-extrabold text-slate-950">Tüm ilanlar</button>
       </div>
     );
@@ -72,39 +72,39 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
     toast("Teklifiniz iletildi", "success");
   };
 
-  const inputCls = "w-full rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-slate-300";
+  const inputCls = "w-full rounded-2xl bg-slate-50 dark:bg-navy-soft px-4 py-3 text-sm text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-slate-300";
 
   return (
-    <div className="mx-auto flex w-full max-w-[460px] flex-col gap-4 px-4 pb-24 pt-2 text-slate-900">
+    <div className="mx-auto flex w-full max-w-[460px] flex-col gap-4 px-4 pb-24 pt-2 text-slate-900 dark:text-slate-100">
       <SEO title={l.title} description={l.desc || `${cat?.name} ilanı - ${l.il} / ${l.ilce}`} />
 
-      <button onClick={() => navigate(-1)} className="flex h-11 w-11 items-center justify-center self-start rounded-full bg-white text-slate-700 shadow-sm">←</button>
+      <button onClick={() => navigate(-1)} className="flex h-11 w-11 items-center justify-center self-start rounded-full bg-white dark:bg-navy-card text-slate-700 dark:text-slate-100 shadow-sm">←</button>
 
       <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="flex flex-col gap-4">
 
         {/* Baslik karti */}
-        <div className="rounded-3xl bg-white p-5 shadow-sm">
+        <div className="rounded-3xl bg-white dark:bg-navy-card p-5 shadow-sm">
           <div className="mb-2.5 flex flex-wrap items-center gap-1.5">
             <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold tracking-wide ${tag.cls}`}>{tag.label}</span>
             <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold tracking-wide ${l.type === "is" ? "text-amber-700 bg-amber-100" : "text-sky-700 bg-sky-100"}`}>
               {l.type === "is" ? "İŞ İLANI" : "ARAÇ İLANI"}
             </span>
             {l.status === "eslesti" && <span className="rounded-md bg-emerald-100 px-2 py-0.5 text-[10px] font-bold tracking-wide text-emerald-700">✓ EŞLEŞTİ</span>}
-            <span className="ml-auto text-[11px] text-gray-400">{l.createdText}</span>
+            <span className="ml-auto text-[11px] text-gray-400 dark:text-navy-muted">{l.createdText}</span>
           </div>
-          <h1 className="text-xl font-extrabold leading-snug tracking-tight text-slate-950">{l.title}</h1>
-          <div className="mt-2 text-xs text-gray-500">📍 {l.il}{l.ilce ? `, ${l.ilce}` : ""}</div>
+          <h1 className="text-xl font-extrabold leading-snug tracking-tight text-slate-950 dark:text-slate-100">{l.title}</h1>
+          <div className="mt-2 text-xs text-gray-500 dark:text-slate-400">📍 {l.il}{l.ilce ? `, ${l.ilce}` : ""}</div>
           <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs">
-            <span className="font-bold text-slate-700">{l.owner}</span>
+            <span className="font-bold text-slate-700 dark:text-slate-100">{l.owner}</span>
             {l.ownerVerified && <span className="font-bold text-emerald-600">✓ Onaylı</span>}
             {l.ownerRating && <span className="text-amber-600">★ {l.ownerRating}</span>}
           </div>
         </div>
 
         {/* Fiyat + teklif */}
-        <div className="rounded-3xl bg-white p-5 shadow-sm">
-          <div className="text-3xl font-extrabold tracking-tight text-slate-950">{isFixed ? `₺${l.price.toLocaleString("tr-TR")}` : "Teklife açık"}</div>
-          <div className="mb-4 mt-0.5 text-xs text-gray-400">{listingOffers.length} teklif geldi</div>
+        <div className="rounded-3xl bg-white dark:bg-navy-card p-5 shadow-sm">
+          <div className="text-3xl font-extrabold tracking-tight text-slate-950 dark:text-slate-100">{isFixed ? `₺${l.price.toLocaleString("tr-TR")}` : "Teklife açık"}</div>
+          <div className="mb-4 mt-0.5 text-xs text-gray-400 dark:text-navy-muted">{listingOffers.length} teklif geldi</div>
 
           {isOwner ? (
             <div className="rounded-2xl bg-sky-50 p-4 text-center text-sm font-semibold text-sky-700">
@@ -112,11 +112,11 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
               <button onClick={() => navigate("/ilanlarim")} className="mx-auto mt-2 block rounded-full bg-sky-600 px-4 py-2 text-xs font-bold text-white">Teklifleri yönet</button>
             </div>
           ) : closed ? (
-            <div className="rounded-2xl bg-slate-50 p-4 text-center text-sm font-semibold text-gray-500">
+            <div className="rounded-2xl bg-slate-50 dark:bg-navy-soft p-4 text-center text-sm font-semibold text-gray-500 dark:text-slate-400">
               {l.status === "eslesti" ? "Bu ilan eşleşti, yeni teklif alınmıyor." : "Bu ilan kapatıldı, yeni teklif alınmıyor."}
             </div>
           ) : !user ? (
-            <button onClick={() => onRequireAuth?.()} className="w-full rounded-2xl bg-slate-950 py-3.5 text-sm font-bold text-white transition hover:bg-slate-800">
+            <button onClick={() => onRequireAuth?.()} className="w-full rounded-2xl bg-slate-950 dark:bg-navy-soft py-3.5 text-sm font-bold text-white dark:text-slate-100 transition hover:bg-slate-800">
               Giriş yapıp teklif ver
             </button>
           ) : (
@@ -130,14 +130,14 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
 
         {/* Aciklama */}
         {l.desc && (
-          <div className="rounded-3xl bg-white p-5 shadow-sm">
-            <h2 className="mb-2 text-sm font-bold text-slate-950">Açıklama</h2>
-            <p className="text-sm leading-relaxed text-gray-600">{l.desc}</p>
+          <div className="rounded-3xl bg-white dark:bg-navy-card p-5 shadow-sm">
+            <h2 className="mb-2 text-sm font-bold text-slate-950 dark:text-slate-100">Açıklama</h2>
+            <p className="text-sm leading-relaxed text-gray-600 dark:text-slate-300">{l.desc}</p>
           </div>
         )}
 
         {/* Detaylar */}
-        <div className="overflow-hidden rounded-3xl bg-white shadow-sm">
+        <div className="overflow-hidden rounded-3xl bg-white dark:bg-navy-card shadow-sm">
           <Row label="Kategori" value={cat?.name} />
           <Row label="Konum" value={`${l.il}${l.ilce ? " / " + l.ilce : ""}`} />
           <Row label="Yükleme" value={l.yukleme} />
@@ -151,25 +151,25 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
         </div>
 
         {/* Gelen teklifler */}
-        <div className="rounded-3xl bg-white p-5 shadow-sm">
-          <h2 className="mb-3 text-base font-bold text-slate-950">Gelen teklifler ({listingOffers.length})</h2>
+        <div className="rounded-3xl bg-white dark:bg-navy-card p-5 shadow-sm">
+          <h2 className="mb-3 text-base font-bold text-slate-950 dark:text-slate-100">Gelen teklifler ({listingOffers.length})</h2>
           {listingOffers.length === 0 ? (
-            <p className="text-sm text-gray-400">Henüz teklif yok. İlk teklifi siz verin.</p>
+            <p className="text-sm text-gray-400 dark:text-navy-muted">Henüz teklif yok. İlk teklifi siz verin.</p>
           ) : (
             <div className="flex flex-col gap-2.5">
               {listingOffers.map((o) => {
                 const s = STATUS_STYLE[o.status] || STATUS_STYLE.beklemede;
                 return (
-                  <div key={o.id} className="rounded-2xl border border-gray-100 p-4">
+                  <div key={o.id} className="rounded-2xl border border-gray-100 dark:border-navy-line p-4">
                     <div className="mb-1 flex items-center justify-between gap-2.5">
-                      <span className="text-sm font-bold text-slate-900">{o.fromUser}</span>
+                      <span className="text-sm font-bold text-slate-900 dark:text-slate-100">{o.fromUser}</span>
                       <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold ${s.cls}`}>{s.label}</span>
                     </div>
                     <div className="flex items-center justify-between gap-2.5">
-                      <span className="text-sm text-gray-500">{o.message || "—"}</span>
-                      {o.price != null && <span className="whitespace-nowrap text-base font-extrabold text-slate-950">₺{o.price.toLocaleString("tr-TR")}</span>}
+                      <span className="text-sm text-gray-500 dark:text-slate-400">{o.message || "—"}</span>
+                      {o.price != null && <span className="whitespace-nowrap text-base font-extrabold text-slate-950 dark:text-slate-100">₺{o.price.toLocaleString("tr-TR")}</span>}
                     </div>
-                    <div className="mt-1.5 text-[11px] text-gray-400">{fmtDate(o.createdAt)}</div>
+                    <div className="mt-1.5 text-[11px] text-gray-400 dark:text-navy-muted">{fmtDate(o.createdAt)}</div>
                   </div>
                 );
               })}

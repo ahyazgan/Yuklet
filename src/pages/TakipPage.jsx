@@ -16,9 +16,9 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
 
   if (!l) {
     return (
-      <div className="mx-auto flex w-full max-w-[460px] flex-col items-center gap-3 px-4 pt-16 text-center text-slate-900">
+      <div className="mx-auto flex w-full max-w-[460px] flex-col items-center gap-3 px-4 pt-16 text-center text-slate-900 dark:text-slate-100">
         <div className="text-4xl">📦</div>
-        <h1 className="text-xl font-bold text-slate-950">Takip kaydı bulunamadı</h1>
+        <h1 className="text-xl font-bold text-slate-950 dark:text-slate-100">Takip kaydı bulunamadı</h1>
         <button onClick={() => navigate("/ilanlar")} className="rounded-full bg-yellow-400 px-5 py-2.5 text-xs font-extrabold text-slate-950">İlanlara dön</button>
       </div>
     );
@@ -64,23 +64,23 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
   ];
 
   return (
-    <div className="mx-auto flex w-full max-w-[460px] flex-col gap-4 px-4 pb-24 pt-2 text-slate-900">
+    <div className="mx-auto flex w-full max-w-[460px] flex-col gap-4 px-4 pb-24 pt-2 text-slate-900 dark:text-slate-100">
       <SEO title={`Takip · ${l.title}`} description="Eşleşen işin sevkiyat takibi." />
 
       {/* Ust nav */}
       <div className="flex items-center justify-between pt-1">
-        <button onClick={() => navigate(-1)} className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-slate-700 shadow-sm">←</button>
-        <span className="text-sm font-extrabold text-slate-800">Sevkiyat Takibi</span>
-        <button onClick={() => navigate(`/ilan/${l.id}`)} className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-slate-700 shadow-sm">⋯</button>
+        <button onClick={() => navigate(-1)} className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-slate-700 shadow-sm dark:bg-navy-card dark:text-slate-300">←</button>
+        <span className="text-sm font-extrabold text-slate-800 dark:text-slate-100">Sevkiyat Takibi</span>
+        <button onClick={() => navigate(`/ilan/${l.id}`)} className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-slate-700 shadow-sm dark:bg-navy-card dark:text-slate-300">⋯</button>
       </div>
 
       {/* ACIK KUNYE KARTI */}
-      <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} className="relative overflow-hidden rounded-3xl bg-white p-5 shadow-sm">
+      <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} className="relative overflow-hidden rounded-3xl bg-white p-5 shadow-sm dark:bg-navy-card">
         <div className="mb-4 flex items-start justify-between">
           <div>
-            <span className="block text-[9px] font-bold uppercase text-gray-400">Takip No</span>
-            <span className="block text-base font-extrabold text-slate-900">{idText(l)}</span>
-            <span className="mt-0.5 block max-w-[200px] truncate text-[11px] font-semibold text-gray-400">{l.title}</span>
+            <span className="block text-[9px] font-bold uppercase text-gray-400 dark:text-navy-muted">Takip No</span>
+            <span className="block text-base font-extrabold text-slate-900 dark:text-slate-100">{idText(l)}</span>
+            <span className="mt-0.5 block max-w-[200px] truncate text-[11px] font-semibold text-gray-400 dark:text-navy-muted">{l.title}</span>
           </div>
           <span className={`rounded-full px-2.5 py-1 text-[9px] font-extrabold ${matched ? "bg-amber-50 text-amber-600" : "bg-slate-100 text-slate-500"}`}>{statusLabel}</span>
         </div>
@@ -89,8 +89,8 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
         <div className="relative z-10 grid grid-cols-2 gap-x-4 gap-y-3.5 pr-12">
           {SPECS.map(([k, v]) => (
             <div key={k}>
-              <span className="block text-[9px] font-bold uppercase text-gray-400">{k}</span>
-              <span className="block text-[11px] font-extrabold text-slate-800">{v}</span>
+              <span className="block text-[9px] font-bold uppercase text-gray-400 dark:text-navy-muted">{k}</span>
+              <span className="block text-[11px] font-extrabold text-slate-800 dark:text-slate-100">{v}</span>
             </div>
           ))}
         </div>
@@ -180,7 +180,7 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
       </motion.div>
 
       {!matched && (
-        <p className="px-2 text-center text-xs text-gray-400">
+        <p className="px-2 text-center text-xs text-gray-400 dark:text-navy-muted">
           Bu iş henüz eşleşmedi. {user ? "Teklifler geldikçe takip burada güncellenir." : "Takip detayları eşleşme sonrası canlanır."}
         </p>
       )}
