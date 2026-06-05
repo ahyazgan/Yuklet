@@ -1,20 +1,23 @@
 import { useState } from "react";
-import { C } from "../utils/theme";
 import { validateForm } from "../utils/validation";
 import SEO from "../components/SEO";
 
+// ── MoveIQ LIGHT (Tailwind) — Iletisim.
+
 const FIELDS = [
-  { key: "name", label: "Ad Soyad *", type: "text", placeholder: "Adiniz Soyadiniz", required: true },
+  { key: "name", label: "Ad Soyad *", type: "text", placeholder: "Adınız Soyadınız", required: true },
   { key: "email", label: "E-posta *", type: "email", placeholder: "ornek@firma.com", required: true },
-  { key: "konu", label: "Konu", type: "text", placeholder: "Ilanim hakkinda...", required: false },
+  { key: "konu", label: "Konu", type: "text", placeholder: "İlanım hakkında...", required: false },
 ];
 
 const CONTACTS = [
-  ["\uD83D\uDCDE", "Telefon", "+90 (212) 555 00 00", "Pazartesi-Cuma 09:00-18:00"],
-  ["\uD83D\uDCE7", "E-posta", "info@hamted.com.tr", "En gec 2 saat icinde donus"],
-  ["\uD83D\uDCAC", "WhatsApp", "+90 (555) 000 00 00", "7/24 hizli destek"],
-  ["\uD83D\uDCCD", "Adres", "Levent, Istanbul", "Buyukdere Cad. No:123 Kat:5"],
+  ["📞", "Telefon", "+90 (212) 555 00 00", "Pazartesi-Cuma 09:00-18:00"],
+  ["📧", "E-posta", "info@hamted.com.tr", "En geç 2 saat içinde dönüş"],
+  ["💬", "WhatsApp", "+90 (555) 000 00 00", "7/24 hızlı destek"],
+  ["📍", "Adres", "Levent, İstanbul", "Büyükdere Cad. No:123 Kat:5"],
 ];
+
+const FIELD = "w-full rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-slate-300";
 
 export default function IletisimPage() {
   const [values, setValues] = useState({});
@@ -22,8 +25,8 @@ export default function IletisimPage() {
   const [sent, setSent] = useState(false);
 
   const handleChange = (key, val) => {
-    setValues(v => ({ ...v, [key]: val }));
-    if (errors[key]) setErrors(e => ({ ...e, [key]: null }));
+    setValues((v) => ({ ...v, [key]: val }));
+    if (errors[key]) setErrors((e) => ({ ...e, [key]: null }));
   };
 
   const handleSubmit = () => {
@@ -34,62 +37,57 @@ export default function IletisimPage() {
   };
 
   return (
-    <div className="page-content">
-      <SEO title="Iletisim" description="HamTed ile iletisime gecin. Ilan, teklif ve nakliye sureci hakkindaki sorulariniz icin bize ulasin." />
-      <div className="page-header">
-        <div className="section-badge" style={{ background: C.amberBg, borderColor: C.amber+"30", color: C.amber }}>
-          Bize Ulasin
-        </div>
-        <h1 className="page-title">Iletisim</h1>
-        <p className="page-desc">Sorulariniz veya ozel talepleriniz icin bize ulasabilirsiniz.</p>
+    <div className="mx-auto w-full max-w-5xl px-5 py-8 text-slate-900">
+      <SEO title="İletişim" description="HamTed ile iletişime geçin. İlan, teklif ve nakliye süreci hakkındaki sorularınız için bize ulaşın." />
+      <div className="mb-9 text-center">
+        <span className="inline-block rounded-full bg-amber-100 px-4 py-1.5 text-xs font-bold text-amber-700">Bize Ulaşın</span>
+        <h1 className="mt-3 text-3xl font-black tracking-tight text-slate-950">İletişim</h1>
+        <p className="mt-2 text-base text-gray-500">Sorularınız veya özel talepleriniz için bize ulaşabilirsiniz.</p>
       </div>
 
-      <div className="contact-grid">
-        <div className="contact-cards">
+      <div className="grid gap-5 lg:grid-cols-2">
+        <div className="flex flex-col gap-3">
           {CONTACTS.map(([icon, title, value, sub]) => (
-            <div key={title} className="contact-card">
-              <div className="contact-icon">{icon}</div>
+            <div key={title} className="flex items-start gap-3.5 rounded-3xl bg-white p-5 shadow-sm">
+              <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-xl">{icon}</div>
               <div>
-                <div className="contact-label">{title}</div>
-                <div className="contact-value">{value}</div>
-                <div className="contact-sub">{sub}</div>
+                <div className="text-xs font-medium text-gray-500">{title}</div>
+                <div className="text-base font-bold text-slate-950">{value}</div>
+                <div className="text-xs text-gray-400">{sub}</div>
               </div>
             </div>
           ))}
         </div>
 
-        <div className="form-card">
+        <div className="rounded-3xl bg-white p-6 shadow-sm">
           {sent ? (
-            <div style={{ textAlign: "center", padding: "40px 0" }}>
-              <div className="success-icon">{"\u2713"}</div>
-              <div className="success-title">Mesajiniz gonderildi!</div>
-              <div className="success-desc">En kisa surede size donus yapacagiz.</div>
+            <div className="py-10 text-center">
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-2xl text-emerald-600">✓</div>
+              <div className="text-lg font-bold text-slate-950">Mesajınız gönderildi!</div>
+              <div className="mt-1 text-sm text-gray-500">En kısa sürede size dönüş yapacağız.</div>
             </div>
           ) : (
             <>
-              <h3 className="form-card-title">Mesaj Gonderin</h3>
-              {FIELDS.map(f => (
-                <div key={f.key} className="form-group">
-                  <label className="field-label-sm">{f.label}</label>
-                  <input type={f.type}
-                    placeholder={f.placeholder}
-                    value={values[f.key] || ""}
-                    onChange={e => handleChange(f.key, e.target.value)}
-                    className={`form-input ${errors[f.key] ? "form-input-error" : ""}`} />
-                  {errors[f.key] && <div className="field-error">{errors[f.key]}</div>}
+              <h3 className="mb-4 text-lg font-bold text-slate-950">Mesaj Gönderin</h3>
+              <div className="flex flex-col gap-3.5">
+                {FIELDS.map((f) => (
+                  <div key={f.key}>
+                    <label className="mb-1.5 block text-xs font-semibold text-gray-500">{f.label}</label>
+                    <input type={f.type} placeholder={f.placeholder} value={values[f.key] || ""}
+                      onChange={(e) => handleChange(f.key, e.target.value)}
+                      className={`${FIELD} ${errors[f.key] ? "ring-2 ring-red-300" : ""}`} />
+                    {errors[f.key] && <div className="mt-1 text-xs font-medium text-red-600">{errors[f.key]}</div>}
+                  </div>
+                ))}
+                <div>
+                  <label className="mb-1.5 block text-xs font-semibold text-gray-500">Mesajınız *</label>
+                  <textarea placeholder="Mesajınızı buraya yazın..." rows={4} value={values.mesaj || ""}
+                    onChange={(e) => handleChange("mesaj", e.target.value)}
+                    className={`${FIELD} resize-y ${errors.mesaj ? "ring-2 ring-red-300" : ""}`} />
+                  {errors.mesaj && <div className="mt-1 text-xs font-medium text-red-600">{errors.mesaj}</div>}
                 </div>
-              ))}
-              <div className="form-group">
-                <label className="field-label-sm">Mesajiniz *</label>
-                <textarea placeholder="Mesajinizi buraya yazin..." rows={4}
-                  value={values.mesaj || ""}
-                  onChange={e => handleChange("mesaj", e.target.value)}
-                  className={`form-input form-textarea ${errors.mesaj ? "form-input-error" : ""}`} />
-                {errors.mesaj && <div className="field-error">{errors.mesaj}</div>}
+                <button onClick={handleSubmit} className="mt-1 w-full rounded-2xl bg-yellow-400 py-3.5 text-sm font-extrabold text-slate-950 transition hover:bg-yellow-500">Gönder</button>
               </div>
-              <button onClick={handleSubmit} className="btn-primary btn-full" style={{ background: C.amber, marginTop: 4, boxShadow: `0 4px 16px ${C.amber}30` }}>
-                Gonder
-              </button>
             </>
           )}
         </div>

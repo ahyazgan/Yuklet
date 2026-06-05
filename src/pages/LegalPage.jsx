@@ -190,32 +190,30 @@ export default function LegalPage() {
 
   if (!page) {
     return (
-      <div className="page-content">
-        <div className="empty-state">
-          <div className="empty-icon">{"📜"}</div>
-          <div className="empty-title">Sayfa bulunamadi</div>
-          <div className="empty-desc"><Link to="/" className="link-btn link-btn-bold">Ana sayfaya don</Link></div>
-        </div>
+      <div className="mx-auto flex w-full max-w-3xl flex-col items-center gap-2 px-5 py-16 text-center text-slate-900">
+        <div className="text-4xl">📜</div>
+        <div className="text-base font-bold text-slate-950">Sayfa bulunamadı</div>
+        <Link to="/" className="text-sm font-bold text-amber-600">Ana sayfaya dön</Link>
       </div>
     );
   }
 
   return (
-    <div className="page-content">
-      <SEO title={page.title} description={page.title + " - HamTed Teknoloji A.S."} />
-      <div className="legal-page">
-        <h1 className="page-title" style={{ textAlign: "left", marginBottom: 8 }}>{page.title}</h1>
-        <div className="legal-meta">Son guncelleme: 1 Ocak 2026 · HamTed Teknoloji A.S.</div>
-        <div className="legal-content">
+    <div className="mx-auto w-full max-w-3xl px-5 py-8 text-slate-900">
+      <SEO title={page.title} description={page.title + " - HamTed Teknoloji A.Ş."} />
+      <div className="rounded-3xl bg-white p-7 shadow-sm">
+        <h1 className="mb-1 text-2xl font-black tracking-tight text-slate-950">{page.title}</h1>
+        <div className="mb-6 text-xs text-gray-400">Son güncelleme: 1 Ocak 2026 · HamTed Teknoloji A.Ş.</div>
+        <div className="text-sm leading-relaxed text-gray-600">
           {page.content.split("\n").map((line, i) => {
-            if (line.startsWith("## ")) return <h2 key={i} className="legal-h2">{line.replace("## ", "")}</h2>;
+            if (line.startsWith("## ")) return <h2 key={i} className="mb-2 mt-6 text-lg font-bold text-slate-950">{line.replace("## ", "")}</h2>;
             if (line.startsWith("- **")) {
               const parts = line.replace("- **", "").split(":**");
-              return <div key={i} className="legal-item"><strong>{parts[0]}:</strong>{parts[1]}</div>;
+              return <div key={i} className="mb-1.5 pl-1"><strong className="text-slate-900">{parts[0]}:</strong>{parts[1]}</div>;
             }
-            if (line.startsWith("- ")) return <div key={i} className="legal-item">{line.replace("- ", "• ")}</div>;
+            if (line.startsWith("- ")) return <div key={i} className="mb-1.5 pl-1">{line.replace("- ", "• ")}</div>;
             if (line.trim() === "") return <br key={i} />;
-            return <p key={i} className="legal-p">{line}</p>;
+            return <p key={i} className="mb-2">{line}</p>;
           })}
         </div>
       </div>

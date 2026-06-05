@@ -1,49 +1,50 @@
-import { C } from "../utils/theme";
 import SEO from "../components/SEO";
 
+// ── MoveIQ LIGHT (Tailwind) — Nasil Calisir.
+
 const STEPS = [
-  { num: "1", title: "Ilanini Yayinla", desc: "Tasinacak yukunu veya bos aracini birkac dakikada ekle. Konum, miktar ve tarihi belirt.", clr: C.accent },
-  { num: "2", title: "Teklifleri Topla", desc: "Ilgili nakliyeciler veya is sahipleri ilanini gorur, sana teklif gonderir.", clr: C.blue },
-  { num: "3", title: "Anlas", desc: "Gelen teklifleri karsilastir, en uygun olanla dogrudan iletisime gec ve anlas.", clr: C.green },
-  { num: "4", title: "Yola Cik", desc: "Is tamamlandiktan sonra karsilikli puanlama ile guvenli bir topluluk olusturulur.", clr: C.amber },
+  { num: "1", title: "İlanını Yayınla", desc: "Taşınacak yükünü veya boş aracını birkaç dakikada ekle. Konum, miktar ve tarihi belirt.", cls: "text-amber-700 bg-amber-100" },
+  { num: "2", title: "Teklifleri Topla", desc: "İlgili nakliyeciler veya iş sahipleri ilanını görür, sana teklif gönderir.", cls: "text-sky-700 bg-sky-100" },
+  { num: "3", title: "Anlaş", desc: "Gelen teklifleri karşılaştır, en uygun olanla doğrudan iletişime geç ve anlaş.", cls: "text-emerald-700 bg-emerald-100" },
+  { num: "4", title: "Yola Çık", desc: "İş tamamlandıktan sonra karşılıklı puanlama ile güvenli bir topluluk oluşturulur.", cls: "text-amber-700 bg-amber-100" },
+];
+
+const FAQ = [
+  ["İlan vermek ücretli mi?", "Hayır. İlan vermek ve teklif almak ücretsizdir. Platform, iş sahibi ile nakliyeciyi komisyonsuz buluşturur."],
+  ["Hangi işler için kullanabilirim?", "İki ana kategori vardır: Hafriyat (kazı, toprak, moloz taşıma) ve Silobas (dökme çimento, kum, mıcır, tahıl gibi yükler)."],
+  ["İş ilanı mı araç ilanı mı vermeliyim?", "Taşınacak yükünüz varsa 'İş ilanı', boş aracınıza iş arıyorsanız 'Araç ilanı' verin. Karşı taraf size ulaşır."],
+  ["Teklifler nasıl geliyor?", "İlanınız yayınlandıktan sonra ilgili kullanıcılar teklif verir veya doğrudan iletişime geçer. Teklifleri ilan detayında görürsünüz."],
+  ["Ödeme platform üzerinden mi yapılıyor?", "Hayır, anlaşma ve ödeme taraflar arasında yapılır. Platform yalnızca eşleştirme ve iletişimi sağlar."],
 ];
 
 export default function NasilCalisirPage() {
   return (
-    <div className="page-content">
-      <SEO title="Nasil Calisir" description="HamTed nasil calisir? 4 adimda hafriyat ve silobas yuklerinizi dogru aracla bulusturun." />
-      <div className="page-header">
-        <div className="section-badge" style={{ background: C.accentBg, borderColor: C.accentBorder, color: C.accent }}>
-          Adim Adim
-        </div>
-        <h1 className="page-title">Nasil Calisir?</h1>
-        <p className="page-desc">4 basit adimda yukunu veya aracini dogru tarafla bulustur.</p>
+    <div className="mx-auto w-full max-w-5xl px-5 py-8 text-slate-900">
+      <SEO title="Nasıl Çalışır" description="HamTed nasıl çalışır? 4 adımda hafriyat ve silobas yüklerinizi doğru araçla buluşturun." />
+      <div className="mb-9 text-center">
+        <span className="inline-block rounded-full bg-amber-100 px-4 py-1.5 text-xs font-bold text-amber-700">Adım Adım</span>
+        <h1 className="mt-3 text-3xl font-black tracking-tight text-slate-950">Nasıl Çalışır?</h1>
+        <p className="mt-2 text-base text-gray-500">4 basit adımda yükünü veya aracını doğru tarafla buluştur.</p>
       </div>
 
-      <div className="steps-grid">
-        {STEPS.map(s => (
-          <div key={s.num} className="step-card">
-            <div className="step-num" style={{ background: s.clr + "12", borderColor: s.clr + "30", color: s.clr }}>{s.num}</div>
-            <div className="step-title">{s.title}</div>
-            <div className="step-desc">{s.desc}</div>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {STEPS.map((s) => (
+          <div key={s.num} className="rounded-3xl bg-white p-6 shadow-sm">
+            <div className={`mb-3 flex h-11 w-11 items-center justify-center rounded-2xl text-lg font-black ${s.cls}`}>{s.num}</div>
+            <div className="mb-1.5 text-base font-bold text-slate-950">{s.title}</div>
+            <div className="text-sm leading-relaxed text-gray-500">{s.desc}</div>
           </div>
         ))}
       </div>
 
       {/* SSS */}
-      <div style={{ marginTop: 48 }}>
-        <h2 className="section-title">Sikca Sorulan Sorular</h2>
-        <div className="faq-list">
-          {[
-            ["Ilan vermek ucretli mi?", "Hayir. Ilan vermek ve teklif almak ucretsizdir. Platform, is sahibi ile nakliyeciyi komisyonsuz bulusturur."],
-            ["Hangi isler icin kullanabilirim?", "Iki ana kategori vardir: Hafriyat (kazi, toprak, moloz tasima) ve Silobas (dokme cimento, kum, mıcır, tahil gibi yukler)."],
-            ["Is ilani mi arac ilani mi vermeliyim?", "Tasinacak yukunuz varsa 'Is ilani', bos araciniza is ariyorsaniz 'Arac ilani' verin. Karsi taraf size ulasir."],
-            ["Teklifler nasil geliyor?", "Ilaniniz yayinlandiktan sonra ilgili kullanicilar teklif verir veya dogrudan iletisime gecer. Teklifleri ilan detayinda gorursunuz."],
-            ["Odeme platform uzerinden mi yapiliyor?", "Hayir, anlasma ve odeme taraflar arasinda yapilir. Platform yalnizca eslestirme ve iletisimi saglar."],
-          ].map(([q, a]) => (
-            <div key={q} className="faq-item">
-              <div className="faq-question">{q}</div>
-              <div className="faq-answer">{a}</div>
+      <div className="mt-12">
+        <h2 className="mb-5 text-xl font-extrabold tracking-tight text-slate-950">Sıkça Sorulan Sorular</h2>
+        <div className="flex flex-col gap-3">
+          {FAQ.map(([q, a]) => (
+            <div key={q} className="rounded-3xl bg-white p-5 shadow-sm">
+              <div className="mb-2 text-base font-bold text-slate-950">{q}</div>
+              <div className="text-sm leading-relaxed text-gray-500">{a}</div>
             </div>
           ))}
         </div>
