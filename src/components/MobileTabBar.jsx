@@ -1,7 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 
-// Figma "HamTed — Mobil Uygulama" tasarimindaki alt tab bar.
-// Sadece mobilde gorunur (CSS: .mobile-tabbar @media max-width:768px).
+// ── MoveIQ LIGHT alt tab bar (Tailwind). Sadece mobilde (md:hidden).
+
 const TABS = [
   { to: "/", label: "Ana Sayfa", icon: "🏠", match: (p) => p === "/" },
   { to: "/ilanlar", label: "İlanlar", icon: "📋", match: (p) => p.startsWith("/ilanlar") || p.startsWith("/ilan/") },
@@ -14,31 +14,25 @@ export default function MobileTabBar({ unreadCount = 0 }) {
   const { pathname } = useLocation();
 
   return (
-    <nav className="mobile-tabbar" aria-label="Alt gezinme">
+    <nav aria-label="Alt gezinme" className="fixed inset-x-0 bottom-0 z-50 flex items-end justify-around border-t border-gray-100 bg-white/95 px-2 pb-[max(8px,env(safe-area-inset-bottom))] pt-2 backdrop-blur-md md:hidden">
       {TABS.map((tab) => {
         const active = tab.match(pathname);
         if (tab.center) {
           return (
-            <Link key={tab.to} to={tab.to} className="tabbar-item tabbar-item-center" aria-label={tab.label}>
-              <span className="tabbar-fab">{tab.icon}</span>
-              <span className="tabbar-label tabbar-label-accent">{tab.label}</span>
+            <Link key={tab.to} to={tab.to} aria-label={tab.label} className="flex flex-col items-center gap-1">
+              <span className="-mt-6 flex h-12 w-12 items-center justify-center rounded-full bg-yellow-400 text-2xl font-light leading-none text-slate-950 shadow-lg shadow-yellow-400/40">{tab.icon}</span>
+              <span className="text-[10px] font-bold text-amber-600">{tab.label}</span>
             </Link>
           );
         }
         const badge = tab.to === "/mesajlar" ? unreadCount : 0;
         return (
-          <Link
-            key={tab.to}
-            to={tab.to}
-            className={`tabbar-item ${active ? "tabbar-item-active" : ""}`}
-            aria-label={tab.label}
-            aria-current={active ? "page" : undefined}
-          >
-            <span className="tabbar-icon">
+          <Link key={tab.to} to={tab.to} aria-label={tab.label} aria-current={active ? "page" : undefined} className="flex flex-1 flex-col items-center gap-1 py-1">
+            <span className={`relative text-lg ${active ? "" : "opacity-60 grayscale"}`}>
               {tab.icon}
-              {badge > 0 && <span className="tabbar-badge">{badge > 9 ? "9+" : badge}</span>}
+              {badge > 0 && <span className="absolute -right-2.5 -top-1.5 flex min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-extrabold text-white ring-2 ring-white">{badge > 9 ? "9+" : badge}</span>}
             </span>
-            <span className="tabbar-label">{tab.label}</span>
+            <span className={`text-[10px] font-semibold ${active ? "text-amber-600" : "text-gray-400"}`}>{tab.label}</span>
           </Link>
         );
       })}
