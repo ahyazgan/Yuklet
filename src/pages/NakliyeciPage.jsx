@@ -3,6 +3,8 @@ import { motion } from "framer-motion";
 import SEO from "../components/SEO";
 import CategoryIcon from "../components/CategoryIcon";
 
+// ── MoveIQ LIGHT landing (Tailwind) — Nakliyeci/Tasiyici.
+
 const BENEFITS = [
   { icon: "📭", title: "Boş sefer yok", desc: "Bölgenizdeki yükleri önceden görün. Boş dönüş yerine iş alın, kilometre başı kazancınızı artırın." },
   { icon: "⚡", title: "Anında iş eşleştirme", desc: "İş ilanları anlık güncellenir. Sabah ilan veren müteahhit, öğleden önce araç bulabilir — siz o araçsınız." },
@@ -31,104 +33,92 @@ export default function NakliyeciPage() {
   const navigate = useNavigate();
 
   return (
-    <div>
+    <div className="text-slate-900">
       <SEO title="Nakliyeci & Taşıyıcı" description="Boş sefer yapmayın. Hafriyat ve döküm yük işlerini bulun, anında teklif verin, daha fazla kazanın." />
 
       {/* Hero */}
-      <section style={{ background: "var(--hero-bg)", borderBottom: "1px solid var(--border)" }}>
-        <div className="page-content" style={{ paddingTop: 64, paddingBottom: 64 }}>
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}
-            style={{ maxWidth: 680 }}>
-            <span style={{ fontSize: 12, fontWeight: 700, color: "var(--green)", background: "var(--green-bg)", padding: "5px 12px", borderRadius: 20, letterSpacing: 0.5 }}>
-              NAKLİYECİ & TAŞIYICI
-            </span>
-            <h1 style={{ fontSize: 42, fontWeight: 900, color: "var(--text)", lineHeight: 1.1, margin: "16px 0 14px", letterSpacing: -1.5 }}>
+      <section className="border-b border-gray-100 bg-white">
+        <div className="mx-auto w-full max-w-5xl px-5 py-16">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }} className="max-w-2xl">
+            <span className="rounded-full bg-emerald-100 px-3 py-1.5 text-xs font-bold tracking-wide text-emerald-700">NAKLİYECİ & TAŞIYICI</span>
+            <h1 className="my-4 text-4xl font-black leading-tight tracking-tight text-slate-950 md:text-5xl">
               Boş sefer yapmayın,<br />
-              <span style={{ color: "var(--green)" }}>her kilometre</span> kazandırsın
+              <span className="text-emerald-600">her kilometre</span> kazandırsın
             </h1>
-            <p style={{ fontSize: 17, color: "var(--text-sec)", lineHeight: 1.65, marginBottom: 30, maxWidth: 560 }}>
+            <p className="mb-7 max-w-xl text-lg leading-relaxed text-gray-500">
               Bölgenizdeki hafriyat ve döküm yük işlerini anlık görün. Teklif verin, iş sahibiyle doğrudan anlaşın. Boş dönüş yok, kayıp kilometre yok.
             </p>
-            <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-              <button onClick={() => navigate("/ilan-ver")} style={{ background: "var(--green)", color: "#fff", border: "none", padding: "15px 28px", borderRadius: 999, fontSize: 16, fontWeight: 700, cursor: "pointer", boxShadow: "0 6px 24px #2E7D4240" }}>
-                Araç ilanı ver — ücretsiz
-              </button>
-              <button onClick={() => navigate("/ilanlar")} style={{ background: "var(--bg-card)", color: "var(--text)", border: "1px solid var(--border)", padding: "15px 28px", borderRadius: 12, fontSize: 16, fontWeight: 700, cursor: "pointer" }}>
-                İş ilanlarına bak →
-              </button>
+            <div className="flex flex-wrap gap-3">
+              <button onClick={() => navigate("/ilan-ver")} className="rounded-full bg-slate-950 px-7 py-3.5 text-base font-bold text-white transition hover:bg-slate-800">Araç ilanı ver — ücretsiz</button>
+              <button onClick={() => navigate("/ilanlar")} className="rounded-full bg-white px-7 py-3.5 text-base font-bold text-slate-900 shadow-sm ring-1 ring-gray-200 transition hover:bg-gray-50">İş ilanlarına bak →</button>
             </div>
           </motion.div>
         </div>
       </section>
 
-      <div className="page-content">
-        {/* Araç tipleri */}
-        <h2 style={{ fontSize: 26, fontWeight: 800, color: "var(--text)", margin: "48px 0 20px" }}>Hangi araçla çalışıyorsunuz?</h2>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 12, marginBottom: 52 }}>
-          {VEHICLES.map(v => (
-            <motion.div key={v.label} whileHover={{ y: -3, borderColor: "var(--green)" }}
-              onClick={() => navigate("/ilan-ver")}
-              style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 14, padding: "18px 16px", cursor: "pointer", boxShadow: "var(--shadow)", display: "flex", alignItems: "center", gap: 12, transition: "border-color .2s" }}>
-              <div style={{ fontSize: 28, flexShrink: 0 }}>{v.icon}</div>
+      <div className="mx-auto w-full max-w-5xl px-5">
+        {/* Arac tipleri */}
+        <h2 className="mb-5 mt-12 text-2xl font-extrabold tracking-tight text-slate-950">Hangi araçla çalışıyorsunuz?</h2>
+        <div className="mb-14 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {VEHICLES.map((v) => (
+            <motion.div key={v.label} whileHover={{ y: -3 }} onClick={() => navigate("/ilan-ver")} className="flex cursor-pointer items-center gap-3 rounded-3xl bg-white p-4 shadow-sm">
+              <div className="flex-shrink-0 text-3xl">{v.icon}</div>
               <div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text)" }}>{v.label}</div>
-                <div style={{ fontSize: 12, color: "var(--text-sec)" }}>{v.sub}</div>
+                <div className="text-sm font-bold text-slate-950">{v.label}</div>
+                <div className="text-xs text-gray-500">{v.sub}</div>
               </div>
             </motion.div>
           ))}
         </div>
 
-        {/* İki kategori */}
-        <h2 style={{ fontSize: 26, fontWeight: 800, color: "var(--text)", marginBottom: 16 }}>Ne taşıyabilirsiniz?</h2>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16, marginBottom: 52 }}>
+        {/* Iki kategori */}
+        <h2 className="mb-4 text-2xl font-extrabold tracking-tight text-slate-950">Ne taşıyabilirsiniz?</h2>
+        <div className="mb-14 grid gap-4 sm:grid-cols-2">
           {[
-            { catId: "hafriyat", title: "Hafriyat", color: "var(--accent)", bg: "var(--accent-bg)", desc: "Toprak, moloz, kaya, kırıntı, asfalt frezeleme — inşaat sahasından döküm sahasına." },
-            { catId: "silobas", title: "Silobas & Döküme", color: "var(--blue)", bg: "var(--blue-bg)", desc: "Çimento, kum, çakıl, mıcır, tahıl, kimyasal granül — silobas ve tanker araçlar için." },
-          ].map(c => (
-            <div key={c.catId} style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 16, padding: 24, boxShadow: "var(--shadow)" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
+            { catId: "hafriyat", title: "Hafriyat", color: "text-amber-700", desc: "Toprak, moloz, kaya, kırıntı, asfalt frezeleme — inşaat sahasından döküm sahasına." },
+            { catId: "silobas", title: "Silobas & Döküme", color: "text-sky-700", desc: "Çimento, kum, çakıl, mıcır, tahıl, kimyasal granül — silobas ve tanker araçlar için." },
+          ].map((c) => (
+            <div key={c.catId} className="rounded-3xl bg-white p-6 shadow-sm">
+              <div className="mb-2.5 flex items-center gap-3">
                 <CategoryIcon catId={c.catId} size={36} fallback={c.catId === "hafriyat" ? "🚛" : "🛢️"} />
-                <span style={{ fontSize: 18, fontWeight: 800, color: c.color }}>{c.title}</span>
+                <span className={`text-lg font-extrabold ${c.color}`}>{c.title}</span>
               </div>
-              <p style={{ fontSize: 14, color: "var(--text-sec)", lineHeight: 1.6 }}>{c.desc}</p>
+              <p className="text-sm leading-relaxed text-gray-500">{c.desc}</p>
             </div>
           ))}
         </div>
 
         {/* Faydalar */}
-        <h2 style={{ fontSize: 26, fontWeight: 800, color: "var(--text)", marginBottom: 20 }}>Size ne kazandırır?</h2>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16, marginBottom: 52 }}>
-          {BENEFITS.map(b => (
-            <motion.div key={b.title} whileHover={{ y: -3 }}
-              style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 14, padding: 22, boxShadow: "var(--shadow)" }}>
-              <div style={{ fontSize: 28, marginBottom: 10 }}>{b.icon}</div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text)", marginBottom: 6 }}>{b.title}</div>
-              <div style={{ fontSize: 13.5, color: "var(--text-sec)", lineHeight: 1.55 }}>{b.desc}</div>
+        <h2 className="mb-5 text-2xl font-extrabold tracking-tight text-slate-950">Size ne kazandırır?</h2>
+        <div className="mb-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {BENEFITS.map((b) => (
+            <motion.div key={b.title} whileHover={{ y: -3 }} className="rounded-3xl bg-white p-6 shadow-sm">
+              <div className="mb-2.5 text-3xl">{b.icon}</div>
+              <div className="mb-1.5 text-base font-bold text-slate-950">{b.title}</div>
+              <div className="text-sm leading-relaxed text-gray-500">{b.desc}</div>
             </motion.div>
           ))}
         </div>
 
-        {/* Nasıl çalışır */}
-        <h2 style={{ fontSize: 26, fontWeight: 800, color: "var(--text)", marginBottom: 20 }}>3 adımda iş bulun</h2>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16, marginBottom: 52 }}>
-          {HOW.map(s => (
-            <div key={s.n} style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 14, padding: 22 }}>
-              <div style={{ width: 36, height: 36, borderRadius: 10, background: "var(--green-bg)", color: "var(--green)", fontWeight: 900, fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 12 }}>{s.n}</div>
-              <div style={{ fontSize: 15.5, fontWeight: 700, color: "var(--text)", marginBottom: 6 }}>{s.t}</div>
-              <div style={{ fontSize: 13.5, color: "var(--text-sec)", lineHeight: 1.55 }}>{s.d}</div>
+        {/* Nasil calisir */}
+        <h2 className="mb-5 text-2xl font-extrabold tracking-tight text-slate-950">3 adımda iş bulun</h2>
+        <div className="mb-14 grid gap-4 sm:grid-cols-3">
+          {HOW.map((s) => (
+            <div key={s.n} className="rounded-3xl bg-white p-6 shadow-sm">
+              <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-100 text-base font-black text-emerald-700">{s.n}</div>
+              <div className="mb-1.5 text-base font-bold text-slate-950">{s.t}</div>
+              <div className="text-sm leading-relaxed text-gray-500">{s.d}</div>
             </div>
           ))}
         </div>
 
-        {/* CTA bar */}
-        <div style={{ background: "var(--green)", borderRadius: 18, padding: "36px 32px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 20, marginBottom: 60 }}>
+        {/* CTA */}
+        <div className="mb-16 flex flex-wrap items-center justify-between gap-5 rounded-[28px] bg-slate-950 px-8 py-9">
           <div>
-            <div style={{ fontSize: 22, fontWeight: 800, color: "#fff", marginBottom: 4 }}>Araç ilanınızı bugün açın</div>
-            <div style={{ fontSize: 14, color: "#ffffff99" }}>Kayıt ve ilan ücretsiz. Anlaştığınızda komisyon yok.</div>
+            <div className="mb-1 text-2xl font-extrabold text-white">Araç ilanınızı bugün açın</div>
+            <div className="text-sm text-slate-400">Kayıt ve ilan ücretsiz. Anlaştığınızda komisyon yok.</div>
           </div>
-          <button onClick={() => navigate("/ilan-ver")} style={{ background: "#fff", color: "var(--green)", border: "none", padding: "14px 28px", borderRadius: 12, fontSize: 15, fontWeight: 800, cursor: "pointer", whiteSpace: "nowrap" }}>
-            Araç ilanı ver →
-          </button>
+          <button onClick={() => navigate("/ilan-ver")} className="whitespace-nowrap rounded-full bg-yellow-400 px-7 py-3.5 text-base font-extrabold text-slate-950 transition hover:bg-yellow-500">Araç ilanı ver →</button>
         </div>
       </div>
     </div>
