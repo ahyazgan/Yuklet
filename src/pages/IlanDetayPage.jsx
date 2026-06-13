@@ -64,7 +64,7 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
   const isFixed = l.priceType === "sabit" && l.price;
   const closed = l.status === "kapali" || l.status === "eslesti";
   const backhaul = l.type === "arac" ? loadsForVehicle(l, listings) : backhaulForJob(l, listings);
-  const est = !isFixed && l.type === "is" && l.amount ? estimatePrice({ cat: l.cat, amount: l.amount, unit: l.unit, fromIl: l.il, toIl: l.varisIl }) : null;
+  const est = !isFixed && l.type === "is" && l.amount ? estimatePrice({ cat: l.cat, amount: l.amount, unit: l.unit, fromIl: l.il, toIl: l.varisIl, kmOverride: l.km }) : null;
 
   const submitOffer = () => {
     if (!user) { onRequireAuth?.(); return; }
@@ -155,6 +155,7 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
           <Row label="Yükleme" value={l.yukleme} />
           <Row label="Boşaltma" value={l.bosaltma} />
           <Row label="Varış ili" value={l.type === "is" ? l.varisIl : null} />
+          <Row label="Mesafe" value={l.km ? `~${l.km} km` : null} />
           <Row label="Malzeme" value={l.material} />
           <Row label="Miktar" value={l.amount ? `${l.amount} ${l.unit || ""}` : null} />
           <Row label="Araç" value={l.vehicle} />

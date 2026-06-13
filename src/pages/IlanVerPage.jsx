@@ -1,11 +1,13 @@
-import { useState } from "react";
+import { useState, lazy, Suspense } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { CATS, LISTING_TYPES, VEHICLE_TYPES, MATERIALS, UNITS } from "../data/categories";
 import { IL_LIST } from "../data/listings";
 import CategoryIcon from "../components/CategoryIcon";
-import { estimatePrice, fmtTL } from "../utils/priceEstimate";
+import { estimatePrice, fmtTL, haversineKm } from "../utils/priceEstimate";
 import SEO from "../components/SEO";
+
+const LocationPicker = lazy(() => import("../components/LocationPicker"));
 
 // ── MoveIQ LIGHT "Create Shipment" tasarimi (Tailwind).
 
@@ -35,6 +37,10 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], user, 
     recurring: false, recurringFreq: "haftalik", recurringDuration: "", dailyTrips: "",
   });
   const [error, setError] = useState("");
+  const [pickup, setPickup] = useState(editListing?.pickup || null);
+  const [dropoff, setDropoff] = useState(editListing?.dropoff || null);
+  const [showMap, setShowMap] = useState(false);
+  const realKm = haversineKm(pickup, dropoff);
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -50,6 +56,7 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], user, 
       il: form.il, ilce: form.ilce.trim(),
       yukleme: form.yukleme.trim(), bosaltma: form.bosaltma.trim(),
       varisIl: type === "is" ? form.varisIl : undefined,
+      pickup: type === "is" ? pickup : undefined, dropoff: type === "is" ? dropoff : undefined, km: type === "is" ? realKm : undefined,
       material: form.material, amount: Number(form.amount) || 0, unit: form.unit,
       vehicle: type === "arac" ? form.vehicle : undefined,
       capacity: type === "arac" ? form.capacity.trim() : undefined,
@@ -88,7 +95,7 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], user, 
   const materials = MATERIALS[cat] || [];
   const vehicles = VEHICLE_TYPES[cat] || [];
   const est = type === "is" && Number(form.amount) > 0
-    ? estimatePrice({ cat, amount: Number(form.amount), unit: form.unit, fromIl: form.il, toIl: form.varisIl })
+    ? estimatePrice({ cat, amount: Number(form.amount), unit: form.unit, fromIl: form.il, toIl: form.varisIl, kmOverride: realKm })
     : null;
 
   if (!user) {
@@ -202,6 +209,26 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], user, 
                 <select className={FIELD} value={form.varisIl} onChange={(e) => set("varisIl", e.target.value)}>
                   {IL_LIST.map((i) => <option key={i} value={i}>{i}</option>)}
                 </select>
+              </div>
+
+              {/* Haritada konum + gercek km */}
+              <div>
+                <button type="button" onClick={() => setShowMap((s) => !s)} className="flex w-full items-center justify-between rounded-2xl bg-slate-50 px-4 py-3 text-left dark:bg-navy-soft">
+                  <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">🗺️ Haritada konum seç {realKm != null && <span className="font-bold text-amber-600">· {realKm} km</span>}</span>
+                  <span className="text-gray-400">{showMap ? "▴" : "▾"}</span>
+                </button>
+                {showMap && (
+                  <div className="mt-2">
+                    <p className="mb-2 text-[11px] text-gray-500 dark:text-slate-400">Önce <b className="text-emerald-600">yükleme</b>, sonra <b className="text-red-600">boşaltma</b> noktasına tıkla. Gerçek mesafe fiyat tahminine yansır.</p>
+                    <Suspense fallback={<div className="flex h-[300px] items-center justify-center rounded-2xl bg-slate-50 text-xs text-gray-400 dark:bg-navy-soft">Harita yükleniyor…</div>}>
+                      <LocationPicker pickup={pickup} dropoff={dropoff} onChange={({ pickup: p, dropoff: d }) => { setPickup(p); setDropoff(d); }} />
+                    </Suspense>
+                    <div className="mt-2 flex items-center justify-between">
+                      <span className="text-xs text-gray-500 dark:text-slate-400">{pickup && dropoff ? `Mesafe ~${realKm} km` : pickup ? "Şimdi boşaltma noktasını işaretle" : "Yükleme noktasını işaretle"}</span>
+                      {(pickup || dropoff) && <button type="button" onClick={() => { setPickup(null); setDropoff(null); }} className="text-xs font-bold text-amber-600">Temizle</button>}
+                    </div>
+                  </div>
+                )}
               </div>
             </>
           )}

@@ -13,10 +13,19 @@ const PER_KM = 22;                                        // ₺/km (araç + yak
 
 const round50 = (n) => Math.round(n / 50) * 50;
 
-export function estimatePrice({ cat, amount, unit, fromIl, toIl, capacity, vehicle }) {
-  if (!amount || !fromIl) return null;
+// İki [lat,lng] arası kuş uçuşu km (Haversine) — gerçek mesafe (anahtarsız).
+export function haversineKm(a, b) {
+  if (!a || !b) return null;
+  const R = 6371, toR = (x) => (x * Math.PI) / 180;
+  const dLat = toR(b[0] - a[0]), dLng = toR(b[1] - a[1]);
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(toR(a[0])) * Math.cos(toR(b[0])) * Math.sin(dLng / 2) ** 2;
+  return Math.round(2 * R * Math.asin(Math.sqrt(h)));
+}
+
+export function estimatePrice({ cat, amount, unit, fromIl, toIl, capacity, vehicle, kmOverride }) {
+  if (!amount || (!fromIl && !kmOverride)) return null;
   const d = ilDistance(fromIl, toIl || fromIl);
-  const km = KM_BAND[d] ?? 220;
+  const km = kmOverride != null ? kmOverride : (KM_BAND[d] ?? 220);
   const catRate = CAT_RATE[cat] || 1;
   const cap = capacityTonOf(capacity) || capacityTonOf(vehicle) || 20;
 
@@ -30,7 +39,8 @@ export function estimatePrice({ cat, amount, unit, fromIl, toIl, capacity, vehic
     perTrip, trips, total, km,
     min: round50(total * 0.85),
     max: round50(total * 1.15),
-    distLabel: ["aynı il", "yakın il", "bölge içi", "uzak"][Math.min(d, 3)],
+    real: kmOverride != null,
+    distLabel: kmOverride != null ? "harita mesafesi" : ["aynı il", "yakın il", "bölge içi", "uzak"][Math.min(d, 3)],
   };
 }
 
