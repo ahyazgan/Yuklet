@@ -11,7 +11,9 @@ import SEO from "../components/SEO";
 
 const idText = (l) => "HMT-" + String(l.id).padStart(4, "0");
 
-export default function TakipPage({ listings = LISTINGS, user, offers = [], getContact, reviews = [], onAddReview, getUserRating }) {
+const PHASES = [["eslesti", "Eşleşti"], ["yuklendi", "Yüklendi"], ["yolda", "Yolda"], ["teslim", "Teslim"]];
+
+export default function TakipPage({ listings = LISTINGS, user, offers = [], getContact, reviews = [], onAddReview, getUserRating, onUpdateListing }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const [rateVal, setRateVal] = useState(0);
@@ -79,6 +81,17 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
   );
   const counterpartRating = counterpart ? getUserRating?.(counterpart.id) : null;
 
+  // ── İş durumu akışı ──
+  const canManage = matched && (isOwner || isNakliyeci);
+  const phase = l.phase || (matched ? "eslesti" : null);
+  const phaseIdx = PHASES.findIndex((p) => p[0] === phase);
+  const nextPhase = phaseIdx >= 0 && phaseIdx < PHASES.length - 1 ? PHASES[phaseIdx + 1] : null;
+  const estTrips = l.amount && (l.unit === "ton" || l.unit === "m³") ? Math.ceil(l.amount / 18) : null;
+  const advancePhase = () => {
+    if (!nextPhase) return;
+    onUpdateListing?.(l.id, { phase: nextPhase[0], ...(nextPhase[0] === "teslim" ? { status: "kapali" } : {}) });
+  };
+
   const submitReview = () => {
     if (!counterpart || !rateVal) return;
     onAddReview?.({
@@ -130,6 +143,43 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
           </div>
         </div>
       </motion.div>
+
+      {/* IS DURUMU AKISI */}
+      {phase && (
+        <div className="rounded-3xl bg-white p-5 shadow-sm dark:bg-navy-card">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-base font-bold text-slate-950 dark:text-slate-100">İş durumu</h2>
+            {estTrips && <span className="text-xs text-gray-500 dark:text-slate-400">{l.tripsDone || 0}/{estTrips} sefer</span>}
+          </div>
+          <div className="flex items-center">
+            {PHASES.map(([k], i) => (
+              <div key={k} className="flex flex-1 items-center last:flex-none">
+                <span className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-bold ${i <= phaseIdx ? "bg-yellow-400 text-slate-950" : "bg-gray-100 text-gray-400 dark:bg-navy-soft dark:text-slate-500"}`}>{i < phaseIdx ? "✓" : i + 1}</span>
+                {i < PHASES.length - 1 && <span className={`mx-1 h-0.5 flex-1 ${i < phaseIdx ? "bg-yellow-400" : "bg-gray-200 dark:bg-navy-line"}`} />}
+              </div>
+            ))}
+          </div>
+          <div className="mt-2 flex justify-between">
+            {PHASES.map(([k, lbl], i) => (
+              <span key={k} className={`flex-1 text-center text-[9.5px] font-semibold ${i <= phaseIdx ? "text-amber-600" : "text-gray-400 dark:text-slate-500"}`}>{lbl}</span>
+            ))}
+          </div>
+          {canManage && (
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              {nextPhase && (
+                <button onClick={advancePhase} className="rounded-full bg-slate-950 px-5 py-2.5 text-xs font-bold text-white dark:bg-navy-soft dark:text-slate-100">
+                  {nextPhase[1]} olarak işaretle →
+                </button>
+              )}
+              {estTrips && phaseIdx >= 1 && (l.tripsDone || 0) < estTrips && (
+                <button onClick={() => onUpdateListing?.(l.id, { tripsDone: (l.tripsDone || 0) + 1 })} className="rounded-full border border-gray-200 px-4 py-2.5 text-xs font-bold text-slate-700 dark:border-navy-line dark:text-slate-200">+1 sefer</button>
+              )}
+              {phase === "teslim" && <span className="text-xs font-bold text-emerald-600">✓ Teslim edildi — iş tamamlandı</span>}
+            </div>
+          )}
+          {!canManage && phase === "teslim" && <p className="mt-3 text-xs font-semibold text-emerald-600">✓ Bu iş tamamlandı.</p>}
+        </div>
+      )}
 
       {/* KOYU TAKIP SAYFASI */}
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.05 }} className="flex flex-col gap-4 rounded-[32px] bg-slate-900 p-5 text-white">
