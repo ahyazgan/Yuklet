@@ -2,7 +2,13 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useToast } from "../components/Toast";
+import { StarsDisplay } from "../components/Stars";
 import SEO from "../components/SEO";
+
+function fmtRev(iso) {
+  try { return new Date(iso).toLocaleDateString("tr-TR", { day: "numeric", month: "short", year: "numeric" }); }
+  catch { return ""; }
+}
 
 // ── MoveIQ LIGHT profil (Tailwind).
 
@@ -19,7 +25,7 @@ const QUICK = [
 const LBL = "mb-1.5 block text-xs font-semibold text-gray-500 dark:text-slate-400";
 const FIELD = "w-full rounded-2xl bg-slate-50 dark:bg-navy-soft px-4 py-3 text-sm text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-slate-300";
 
-export default function ProfilPage({ user, onUpdateProfile, onRequireAuth }) {
+export default function ProfilPage({ user, onUpdateProfile, onRequireAuth, reviews = [], getUserRating }) {
   const toast = useToast();
   const navigate = useNavigate();
   const [form, setForm] = useState({
@@ -48,6 +54,9 @@ export default function ProfilPage({ user, onUpdateProfile, onRequireAuth }) {
     toast("Profil güncellendi", "success");
   };
 
+  const rating = getUserRating?.(user.id);
+  const myReviews = reviews.filter((r) => String(r.toId) === String(user.id)).slice(0, 8);
+
   return (
     <div className="mx-auto flex w-full max-w-[460px] flex-col gap-4 px-4 pb-24 pt-2 text-slate-900 dark:text-slate-100">
       <SEO title="Profil" description="Hesap bilgilerinizi görüntüleyin ve güncelleyin." />
@@ -63,10 +72,36 @@ export default function ProfilPage({ user, onUpdateProfile, onRequireAuth }) {
           <div className="truncate text-xs text-gray-500 dark:text-slate-400">{user.email}</div>
         </div>
         <div className="text-right">
-          <div className="text-xs text-amber-600">★ {user.rating ?? 5.0}</div>
+          <div className="text-xs text-amber-600">★ {(rating ? rating.avg : (user.rating ?? 5.0)).toFixed(1)}{rating?.count ? ` (${rating.count})` : ""}</div>
           <div className={`text-[11px] font-bold ${user.verified ? "text-emerald-600" : "text-gray-400 dark:text-navy-muted"}`}>{user.verified ? "✓ Onaylı" : "Onaysız"}</div>
         </div>
       </div>
+
+      {/* Aldigin degerlendirmeler */}
+      {(rating || myReviews.length > 0) && (
+        <section className="rounded-3xl bg-white p-5 shadow-sm dark:bg-navy-card">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-base font-bold text-slate-950 dark:text-slate-100">Aldığın değerlendirmeler</h2>
+            {rating && <StarsDisplay value={rating.avg} count={rating.count} className="text-sm" />}
+          </div>
+          {myReviews.length === 0 ? (
+            <p className="text-sm text-gray-400 dark:text-slate-500">Henüz değerlendirme yok. İş tamamladıkça puanların burada birikir.</p>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {myReviews.map((r) => (
+                <div key={r.id} className="rounded-2xl border border-gray-100 p-3.5 dark:border-navy-line">
+                  <div className="mb-1 flex items-center justify-between gap-2">
+                    <span className="text-sm font-bold text-slate-900 dark:text-slate-100">{r.fromName}</span>
+                    <StarsDisplay value={r.rating} className="text-xs" />
+                  </div>
+                  {r.comment && <p className="text-sm text-gray-500 dark:text-slate-400">{r.comment}</p>}
+                  <p className="mt-1 text-[11px] text-gray-400 dark:text-slate-500">{fmtRev(r.createdAt)}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
 
       {/* Hizli erisim */}
       <section className="flex flex-col gap-3">

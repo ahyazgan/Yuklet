@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { LISTINGS } from "../data/listings";
 import { CATS } from "../data/categories";
+import { StarsDisplay, StarsInput } from "../components/Stars";
 import SEO from "../components/SEO";
 
 // ── "Sevkiyat Takibi" — logistics prototip (Shipment Review + Dark Detail) HamTed'e uyarlandi.
@@ -9,9 +11,11 @@ import SEO from "../components/SEO";
 
 const idText = (l) => "HMT-" + String(l.id).padStart(4, "0");
 
-export default function TakipPage({ listings = LISTINGS, user, offers = [], getContact }) {
+export default function TakipPage({ listings = LISTINGS, user, offers = [], getContact, reviews = [], onAddReview, getUserRating }) {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [rateVal, setRateVal] = useState(0);
+  const [rateComment, setRateComment] = useState("");
   const l = listings.find((x) => String(x.id) === String(id));
 
   if (!l) {
@@ -62,6 +66,28 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
     ["Tutar", fiyat],
     ["Kategori", cat?.name || "—"],
   ];
+
+  // ── Karşılıklı değerlendirme (eşleşince) ──
+  const isOwner = user && String(user.id) === String(l.ownerId);
+  const isNakliyeci = accepted && user && String(user.id) === String(accepted.fromUserId);
+  const counterpart = matched
+    ? (isOwner ? { id: accepted?.fromUserId, name: nakliyeci, role: "Nakliyeci" }
+      : isNakliyeci ? { id: l.ownerId, name: l.owner, role: "İş sahibi" } : null)
+    : null;
+  const myReview = counterpart && reviews.find(
+    (r) => String(r.fromId) === String(user.id) && String(r.toId) === String(counterpart.id) && String(r.listingId) === String(l.id)
+  );
+  const counterpartRating = counterpart ? getUserRating?.(counterpart.id) : null;
+
+  const submitReview = () => {
+    if (!counterpart || !rateVal) return;
+    onAddReview?.({
+      id: Date.now(), listingId: l.id, offerId: accepted?.id,
+      fromId: user.id, fromName: user.name, toId: counterpart.id, toName: counterpart.name,
+      rating: rateVal, comment: rateComment.trim(), createdAt: new Date().toISOString(),
+    });
+    setRateVal(0); setRateComment("");
+  };
 
   return (
     <div className="mx-auto flex w-full max-w-[460px] flex-col gap-4 px-4 pb-24 pt-2 text-slate-900 dark:text-slate-100">
@@ -178,6 +204,29 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
           </div>
         </div>
       </motion.div>
+
+      {/* Karşılıklı değerlendirme */}
+      {counterpart && (
+        <div className="rounded-3xl bg-white p-5 shadow-sm dark:bg-navy-card">
+          <div className="mb-1 flex items-center justify-between gap-2">
+            <h2 className="text-base font-bold text-slate-950 dark:text-slate-100">{counterpart.role} değerlendirmesi</h2>
+            {counterpartRating && <StarsDisplay value={counterpartRating.avg} count={counterpartRating.count} className="text-xs" />}
+          </div>
+          {myReview ? (
+            <div className="flex items-center gap-2 text-sm font-semibold text-emerald-600">
+              <StarsDisplay value={myReview.rating} className="text-sm" /> Değerlendirdin, teşekkürler ✓
+            </div>
+          ) : (
+            <>
+              <p className="mb-3 text-xs text-gray-500 dark:text-slate-400"><b className="text-slate-700 dark:text-slate-200">{counterpart.name}</b> ile çalışman nasıldı? Puan ver, topluluk güvenini büyüt.</p>
+              <StarsInput value={rateVal} onChange={setRateVal} />
+              <textarea value={rateComment} onChange={(e) => setRateComment(e.target.value)} placeholder="Kısa yorum (opsiyonel)"
+                className="mt-3 min-h-[64px] w-full rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-slate-300 dark:bg-navy-soft dark:text-slate-100" />
+              <button onClick={submitReview} disabled={!rateVal} className="mt-3 w-full rounded-2xl bg-yellow-400 py-3 text-sm font-extrabold text-slate-950 transition hover:bg-yellow-500 disabled:opacity-50">Değerlendir</button>
+            </>
+          )}
+        </div>
+      )}
 
       {!matched && (
         <p className="px-2 text-center text-xs text-gray-400 dark:text-navy-muted">
