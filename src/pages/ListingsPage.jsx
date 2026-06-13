@@ -52,11 +52,11 @@ function ListingCard({ l, onClick }) {
 
 export default function ListingsPage({ listings = LISTINGS }) {
   const navigate = useNavigate();
-  const [type, setType] = useState("all");
-  const [cat, setCat] = useState("all");
+  const [sp] = useSearchParams();
+  const [type, setType] = useState(sp.get("type") === "arac" ? "arac" : "all");
+  const [cat, setCat] = useState(["hafriyat", "silobas"].includes(sp.get("cat")) ? sp.get("cat") : "all");
   const [il, setIl] = useState("all");
   const [q, setQ] = useState("");
-  const [sp] = useSearchParams();
   const [mode, setMode] = useState(sp.get("mode") === "backhaul" ? "backhaul" : "normal"); // normal | backhaul
   const [material, setMaterial] = useState("all");
   const [priceMin, setPriceMin] = useState("");

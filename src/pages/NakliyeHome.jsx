@@ -5,49 +5,59 @@ import { CATS } from "../data/categories";
 import CategoryIcon from "../components/CategoryIcon";
 import SEO from "../components/SEO";
 
-// ── "Dashboard Home" (logistics prototip) HamTed'e uyarlandi — sari MoveIQ paleti, hafriyat/silobas verisi.
-// Light = varsayilan; dark: varyantlari navy paleti (DESIGN.md §2d eslemesi).
+// ── Ana sayfa (Dashboard Home) — kullanıcı-duyarlı: giriş yapınca kişiselleşir.
 
 const PERSONAS = [
   { id: "muteahhit", letter: "M", title: "Müteahhit / Alıcı", desc: "İş ilanı aç, teklif topla", route: "/muteahhit", ring: "text-amber-600 bg-amber-100" },
   { id: "tedarikci", letter: "T", title: "Tedarikçi", desc: "Ocak/santral ürününü listele", route: "/tedarikci", ring: "text-emerald-600 bg-emerald-100" },
   { id: "nakliyeci", letter: "N", title: "Nakliyeci", desc: "Araç ilanı ver, yük bul", route: "/nakliyeci", ring: "text-sky-600 bg-sky-100" },
 ];
-
-const STATUS_PILL = {
-  aktif: "bg-amber-50 text-amber-600",
-  eslesti: "bg-emerald-50 text-emerald-600",
-  kapali: "bg-slate-100 text-slate-500",
-};
+const STATUS_PILL = { aktif: "bg-amber-50 text-amber-600", eslesti: "bg-emerald-50 text-emerald-600", kapali: "bg-slate-100 text-slate-500" };
 const STATUS_TR = { aktif: "Yayında", eslesti: "Eşleşti", kapali: "Kapandı" };
 const idText = (l) => "HMT-" + String(l.id).padStart(4, "0");
 
-export default function NakliyeHome({ listings = LISTINGS }) {
+export default function NakliyeHome({ listings = LISTINGS, user, offers = [], pendingOffersCount = 0, unreadCount = 0, onLoginClick }) {
   const navigate = useNavigate();
   const open = listings.filter((l) => l.status !== "kapali");
 
-  const current = open.find((l) => l.type === "is") || open[0];
-  const recent = open.filter((l) => l !== current).slice(0, 3);
+  // Kişiselleştirme
+  const myListings = user ? listings.filter((l) => String(l.ownerId) === String(user.id)) : [];
+  const myActiveCount = myListings.filter((l) => l.status === "aktif" || l.status === "eslesti").length;
+  const myAcceptedJob = user
+    ? offers.filter((o) => String(o.fromUserId) === String(user.id) && o.status === "kabul")
+        .map((o) => listings.find((l) => String(l.id) === String(o.listingId))).find(Boolean)
+    : null;
 
+  // Aktif sevkiyat: kullanıcının kendi işi (eşleşen > kabul ettiğim > aktif), yoksa öne çıkan demo
+  const current = (user && (
+    myListings.find((l) => l.status === "eslesti") || myAcceptedJob || myListings.find((l) => l.status === "aktif")
+  )) || open.find((l) => l.type === "is") || open[0];
+
+  const recent = open.filter((l) => l !== current).slice(0, 3);
   const hasOffers = current && (current.offers || 0) > 0;
   const matched = current && current.status === "eslesti";
+  const greet = user ? `Merhaba, ${String(user.name || "").split(" ")[0] || "👋"}` : "Hoş geldin 👋";
 
   return (
     <div className="mx-auto flex w-full max-w-[460px] flex-col gap-5 px-4 pb-24 pt-2 text-slate-900 dark:text-slate-100">
       <SEO description="Hafriyat ve silobas işleri doğru araçla buluşuyor. Müteahhit, tedarikçi ve nakliyeciler için Türkiye'nin yük eşleştirme platformu." />
 
-      {/* KONUM + BILDIRIM */}
+      {/* TOP BAR */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-100 bg-white text-slate-600 shadow-sm dark:border-navy-line dark:bg-navy-card dark:text-slate-300">🚚</div>
+          <button onClick={() => navigate(user ? "/profil" : "/")} className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-100 bg-white text-slate-600 shadow-sm dark:border-navy-line dark:bg-navy-card dark:text-slate-300">
+            {user ? (user.name?.[0]?.toUpperCase() || "👤") : "🚚"}
+          </button>
           <div>
-            <span className="block text-[9px] font-semibold leading-tight text-gray-400 dark:text-navy-muted">Yük borsası</span>
-            <span className="block text-xs font-bold leading-tight text-slate-800 dark:text-slate-100">Türkiye geneli</span>
+            <span className="block text-[9px] font-semibold leading-tight text-gray-400 dark:text-navy-muted">Türkiye yük borsası</span>
+            <span className="block text-xs font-bold leading-tight text-slate-800 dark:text-slate-100">{greet}</span>
           </div>
         </div>
         <button onClick={() => navigate("/mesajlar")} aria-label="Bildirimler" className="relative flex h-9 w-9 items-center justify-center rounded-full border border-gray-100 bg-white text-slate-600 shadow-sm dark:border-navy-line dark:bg-navy-card dark:text-slate-300">
           🔔
-          <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-white bg-yellow-400 dark:border-navy-card" />
+          {unreadCount > 0
+            ? <span className="absolute -right-1 -top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-extrabold text-white">{unreadCount > 9 ? "9+" : unreadCount}</span>
+            : <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-white bg-yellow-400 dark:border-navy-card" />}
         </button>
       </div>
 
@@ -65,6 +75,35 @@ export default function NakliyeHome({ listings = LISTINGS }) {
         <button onClick={() => navigate("/ilanlar")} aria-label="Tüm ilanlar" className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-950 text-lg text-white shadow-md transition active:scale-95 dark:bg-navy-soft dark:text-slate-100">☰</button>
       </div>
 
+      {/* GIRIS YAPMAMIS: KAYIT CTA */}
+      {!user && (
+        <div className="flex items-center justify-between gap-3 rounded-[20px] bg-yellow-400 p-4 text-slate-950">
+          <div>
+            <div className="text-sm font-extrabold">Ücretsiz hesap aç</div>
+            <div className="text-[11px] font-semibold text-slate-800">Dakikada ilan ver · komisyon yok</div>
+          </div>
+          <button onClick={() => onLoginClick?.()} className="whitespace-nowrap rounded-full bg-slate-950 px-4 py-2.5 text-xs font-extrabold text-white">Giriş / Kayıt</button>
+        </div>
+      )}
+
+      {/* GIRIS YAPMIS: HIZLI DURUM */}
+      {user && (
+        <div className="flex gap-2.5">
+          <button onClick={() => navigate("/ilanlarim")} className="flex-1 rounded-2xl border border-gray-100 bg-white p-3 text-left shadow-sm dark:border-navy-line dark:bg-navy-card">
+            <div className="text-xl font-extrabold tracking-tight text-slate-950 dark:text-slate-100">{myActiveCount}</div>
+            <div className="text-[10px] font-medium text-gray-500 dark:text-slate-400">Aktif ilanım</div>
+          </button>
+          <button onClick={() => navigate("/ilanlarim")} className="relative flex-1 rounded-2xl border border-gray-100 bg-white p-3 text-left shadow-sm dark:border-navy-line dark:bg-navy-card">
+            <div className="text-xl font-extrabold tracking-tight text-amber-600">{pendingOffersCount}</div>
+            <div className="text-[10px] font-medium text-gray-500 dark:text-slate-400">Bekleyen teklif</div>
+          </button>
+          <button onClick={() => navigate("/cuzdan")} className="flex-1 rounded-2xl border border-gray-100 bg-white p-3 text-left shadow-sm dark:border-navy-line dark:bg-navy-card">
+            <div className="text-xl">💰</div>
+            <div className="text-[10px] font-medium text-gray-500 dark:text-slate-400">Cüzdan</div>
+          </button>
+        </div>
+      )}
+
       {/* PROMO KARTLAR */}
       <div className="grid grid-cols-2 gap-3">
         <button onClick={() => navigate("/ilan-ver")} className="relative flex h-28 flex-col justify-between overflow-hidden rounded-[20px] border border-gray-100 bg-white p-3.5 text-left shadow-sm transition hover:shadow-md dark:border-navy-line dark:bg-navy-card">
@@ -72,7 +111,7 @@ export default function NakliyeHome({ listings = LISTINGS }) {
           <span className="absolute -bottom-1 -right-1 text-4xl">🚛</span>
           <span className="text-[10px] font-bold text-amber-600">+ Oluştur</span>
         </button>
-        <button onClick={() => current && navigate(`/takip/${current.id}`)} className="relative flex h-28 flex-col justify-between overflow-hidden rounded-[20px] bg-yellow-400 p-3.5 text-left shadow-sm transition hover:shadow-md">
+        <button onClick={() => navigate(current ? `/takip/${current.id}` : "/ilanlar")} className="relative flex h-28 flex-col justify-between overflow-hidden rounded-[20px] bg-yellow-400 p-3.5 text-left shadow-sm transition hover:shadow-md">
           <div className="text-[13px] font-extrabold leading-tight text-slate-950">İlan<br />Takip</div>
           <span className="absolute -bottom-1 -right-1 text-4xl">📦</span>
           <span className="text-[10px] font-bold text-slate-800">Sevkiyatı izle</span>
@@ -91,12 +130,27 @@ export default function NakliyeHome({ listings = LISTINGS }) {
         <span className="text-xl text-yellow-400">›</span>
       </button>
 
+      {/* KATEGORI HIZLI */}
+      <div className="flex gap-2.5">
+        <button onClick={() => navigate("/ilanlar?cat=hafriyat")} className="flex flex-1 items-center gap-2 rounded-2xl border border-gray-100 bg-white px-3.5 py-3 text-left shadow-sm dark:border-navy-line dark:bg-navy-card">
+          <CategoryIcon catId="hafriyat" size={22} fallback="🚛" />
+          <span className="text-xs font-bold text-slate-900 dark:text-slate-100">Hafriyat</span>
+        </button>
+        <button onClick={() => navigate("/ilanlar?cat=silobas")} className="flex flex-1 items-center gap-2 rounded-2xl border border-gray-100 bg-white px-3.5 py-3 text-left shadow-sm dark:border-navy-line dark:bg-navy-card">
+          <CategoryIcon catId="silobas" size={22} fallback="🛢️" />
+          <span className="text-xs font-bold text-slate-900 dark:text-slate-100">Silobas</span>
+        </button>
+        <button onClick={() => navigate("/ilanlar?type=arac")} className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-gray-100 bg-white px-3.5 py-3 text-center shadow-sm dark:border-navy-line dark:bg-navy-card">
+          <span className="text-xs font-bold text-slate-900 dark:text-slate-100">🚚 Boş araç</span>
+        </button>
+      </div>
+
       {/* AKTIF SEVKIYAT */}
       {current && (
         <section>
           <div className="mb-2.5 flex items-center justify-between">
-            <span className="text-xs font-extrabold text-slate-800 dark:text-slate-100">Aktif sevkiyat</span>
-            <button onClick={() => navigate("/ilanlar")} className="text-[10px] font-bold text-gray-400 dark:text-navy-muted">Tümü</button>
+            <span className="text-xs font-extrabold text-slate-800 dark:text-slate-100">{user && (myListings.includes(current) || current === myAcceptedJob) ? "Aktif sevkiyatın" : "Öne çıkan iş"}</span>
+            <button onClick={() => navigate(user ? "/ilanlarim" : "/ilanlar")} className="text-[10px] font-bold text-gray-400 dark:text-navy-muted">Tümü</button>
           </div>
 
           <motion.button
@@ -117,7 +171,6 @@ export default function NakliyeHome({ listings = LISTINGS }) {
               <span className={`rounded-full px-2 py-0.5 text-[9px] font-extrabold ${matched ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-500"}`}>{matched ? "Yolda" : "Teklif"}</span>
             </div>
 
-            {/* tracker cizgi */}
             <div className="relative mt-4 flex items-center justify-between px-2">
               <div className="absolute left-6 right-6 top-[5px] z-0 h-[2px] border-t-2 border-dashed border-yellow-400" />
               <span className="z-10 flex h-3.5 w-3.5 items-center justify-center rounded-full border-2 border-white bg-yellow-400 text-[6px] text-slate-950 shadow-sm dark:border-navy-card">✓</span>
@@ -129,7 +182,6 @@ export default function NakliyeHome({ listings = LISTINGS }) {
               <span className="z-10 h-3.5 w-3.5 rounded-full border-2 border-white bg-slate-200 shadow-sm dark:border-navy-card dark:bg-navy-line" />
             </div>
 
-            {/* rota */}
             <div className="mt-5 grid grid-cols-2 gap-4 border-t border-slate-50 pt-2.5 dark:border-navy-line">
               <div>
                 <span className="block text-[8px] font-bold uppercase text-gray-400 dark:text-navy-muted">{current.dateText || "—"}</span>
@@ -137,7 +189,7 @@ export default function NakliyeHome({ listings = LISTINGS }) {
               </div>
               <div className="text-right">
                 <span className="block text-[8px] font-bold uppercase text-gray-400 dark:text-navy-muted">Boşaltma</span>
-                <span className="block text-[9px] font-extrabold text-slate-700 dark:text-slate-100">{current.bosaltma ? current.bosaltma.split(",")[0] : "Saha"}</span>
+                <span className="block text-[9px] font-extrabold text-slate-700 dark:text-slate-100">{current.varisIl || (current.bosaltma ? current.bosaltma.split(",")[0] : "Saha")}</span>
               </div>
             </div>
 
@@ -172,6 +224,16 @@ export default function NakliyeHome({ listings = LISTINGS }) {
           })}
         </div>
       </section>
+
+      {/* GUVEN / SOSYAL KANIT */}
+      <div className="flex gap-2.5">
+        {[["2.400+", "Aktif ilan"], ["850+", "Nakliyeci"], ["%0", "Komisyon"]].map(([n, l]) => (
+          <div key={l} className="flex-1 rounded-2xl bg-white p-3 text-center shadow-sm dark:bg-navy-card">
+            <div className="text-base font-black tracking-tight text-slate-950 dark:text-slate-100">{n}</div>
+            <div className="mt-0.5 text-[10px] text-gray-500 dark:text-slate-400">{l}</div>
+          </div>
+        ))}
+      </div>
 
       {/* ROLLER */}
       <section className="flex flex-col gap-3">
