@@ -1,10 +1,12 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, lazy, Suspense } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { LISTINGS, IL_LIST } from "../data/listings";
 import { CATS, MATERIALS } from "../data/categories";
 import { loadsNearCity } from "../utils/backhaul";
 import SEO from "../components/SEO";
+
+const ListingsMap = lazy(() => import("../components/ListingsMap"));
 
 // ── MoveIQ LIGHT "Orders" tasarimi (Tailwind).
 
@@ -61,6 +63,7 @@ export default function ListingsPage({ listings = LISTINGS }) {
   const [priceMax, setPriceMax] = useState("");
   const [sort, setSort] = useState("yeni"); // yeni | teklif | ucuz | pahali
   const [showFilters, setShowFilters] = useState(false);
+  const [view, setView] = useState(sp.get("view") === "map" ? "map" : "list"); // list | map
 
   const materialOpts = cat === "all"
     ? [...(MATERIALS.hafriyat || []), ...(MATERIALS.silobas || [])]
@@ -108,6 +111,12 @@ export default function ListingsPage({ listings = LISTINGS }) {
           <h1 className="text-2xl font-black tracking-tight text-slate-950 dark:text-slate-100">İlanlar</h1>
           <span className="rounded-full bg-white dark:bg-navy-card px-2.5 py-1 text-xs font-bold text-slate-800 dark:text-slate-100 shadow-sm">{mode === "backhaul" ? backhaul.length : filtered.length}</span>
         </div>
+        {mode === "normal" && (
+          <div className="flex gap-1 rounded-xl bg-white p-1 shadow-sm dark:bg-navy-card">
+            <button onClick={() => setView("list")} className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${view === "list" ? "bg-slate-950 text-white dark:bg-navy-soft dark:text-slate-100" : "text-gray-500 dark:text-slate-400"}`}>Liste</button>
+            <button onClick={() => setView("map")} className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${view === "map" ? "bg-slate-950 text-white dark:bg-navy-soft dark:text-slate-100" : "text-gray-500 dark:text-slate-400"}`}>🗺️ Harita</button>
+          </div>
+        )}
       </div>
 
       {/* Mod: Tum ilanlar / Donus yuku */}
@@ -224,6 +233,10 @@ export default function ListingsPage({ listings = LISTINGS }) {
             ))}
           </div>
         )
+      ) : view === "map" ? (
+        <Suspense fallback={<div className="flex h-[460px] items-center justify-center rounded-2xl bg-white text-sm text-gray-400 shadow-sm dark:bg-navy-card">Harita yükleniyor…</div>}>
+          <ListingsMap listings={filtered} onPickIl={(picked) => { setIl(picked); setView("list"); }} />
+        </Suspense>
       ) : filtered.length === 0 ? (
         <div className="flex flex-col items-center gap-2 rounded-3xl bg-white dark:bg-navy-card py-14 text-center shadow-sm">
           <div className="text-4xl">🔍</div>
