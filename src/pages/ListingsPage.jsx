@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { LISTINGS, IL_LIST } from "../data/listings";
-import { CATS } from "../data/categories";
+import { CATS, MATERIALS } from "../data/categories";
 import { loadsNearCity } from "../utils/backhaul";
 import SEO from "../components/SEO";
 
@@ -56,16 +56,36 @@ export default function ListingsPage({ listings = LISTINGS }) {
   const [q, setQ] = useState("");
   const [sp] = useSearchParams();
   const [mode, setMode] = useState(sp.get("mode") === "backhaul" ? "backhaul" : "normal"); // normal | backhaul
+  const [material, setMaterial] = useState("all");
+  const [priceMin, setPriceMin] = useState("");
+  const [priceMax, setPriceMax] = useState("");
+  const [sort, setSort] = useState("yeni"); // yeni | teklif | ucuz | pahali
+  const [showFilters, setShowFilters] = useState(false);
+
+  const materialOpts = cat === "all"
+    ? [...(MATERIALS.hafriyat || []), ...(MATERIALS.silobas || [])]
+    : (MATERIALS[cat] || []);
 
   const filtered = useMemo(() => {
-    return listings.filter((l) =>
+    const min = priceMin ? Number(priceMin) : null;
+    const max = priceMax ? Number(priceMax) : null;
+    let out = listings.filter((l) =>
       l.status !== "kapali" &&
       (type === "all" || l.type === type) &&
       (cat === "all" || l.cat === cat) &&
       (il === "all" || l.il === il) &&
+      (material === "all" || l.material === material) &&
+      (min == null || (l.price != null && l.price >= min)) &&
+      (max == null || (l.price != null && l.price <= max)) &&
       (q === "" || l.title.toLowerCase().includes(q.toLowerCase()) || (l.ilce || "").toLowerCase().includes(q.toLowerCase()))
     );
-  }, [listings, type, cat, il, q]);
+    if (sort === "teklif") out = [...out].sort((a, b) => (b.offers || 0) - (a.offers || 0));
+    else if (sort === "ucuz") out = [...out].sort((a, b) => (a.price ?? Infinity) - (b.price ?? Infinity));
+    else if (sort === "pahali") out = [...out].sort((a, b) => (b.price ?? -1) - (a.price ?? -1));
+    return out;
+  }, [listings, type, cat, il, q, material, priceMin, priceMax, sort]);
+
+  const activeFilters = (material !== "all" ? 1 : 0) + (priceMin || priceMax ? 1 : 0) + (sort !== "yeni" ? 1 : 0);
 
   // Donus yuku: referans il'e yakin acik is yukleri
   const backhaul = useMemo(() => {
@@ -96,15 +116,57 @@ export default function ListingsPage({ listings = LISTINGS }) {
         <button className={segBtn(mode === "backhaul")} onClick={() => setMode("backhaul")}>🔄 Dönüş yükü</button>
       </div>
 
-      {/* Arama */}
-      <div className="relative">
-        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-navy-muted">🔍</span>
-        <input
-          value={q} onChange={(e) => setQ(e.target.value)}
-          placeholder="İl, malzeme veya güzergah ara…" aria-label="İlan ara"
-          className="w-full rounded-2xl bg-white dark:bg-navy-card py-3 pl-11 pr-4 text-xs text-slate-900 dark:text-slate-100 shadow-sm outline-none focus:ring-2 focus:ring-slate-300"
-        />
+      {/* Arama + Filtre */}
+      <div className="flex gap-2.5">
+        <div className="relative flex-1">
+          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-navy-muted">🔍</span>
+          <input
+            value={q} onChange={(e) => setQ(e.target.value)}
+            placeholder="İl, malzeme veya güzergah ara…" aria-label="İlan ara"
+            className="w-full rounded-2xl bg-white dark:bg-navy-card py-3 pl-11 pr-4 text-xs text-slate-900 dark:text-slate-100 shadow-sm outline-none focus:ring-2 focus:ring-slate-300"
+          />
+        </div>
+        {mode === "normal" && (
+          <button onClick={() => setShowFilters((s) => !s)} aria-label="Filtreler"
+            className={`relative flex h-11 w-11 items-center justify-center rounded-2xl text-lg shadow-sm transition ${showFilters || activeFilters ? "bg-slate-950 text-white dark:bg-navy-soft dark:text-slate-100" : "bg-white text-slate-700 dark:bg-navy-card dark:text-slate-300"}`}>
+            ⚙
+            {activeFilters > 0 && <span className="absolute -right-1 -top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-yellow-400 px-1 text-[9px] font-extrabold text-slate-950">{activeFilters}</span>}
+          </button>
+        )}
       </div>
+
+      {/* Gelismis filtre paneli */}
+      {mode === "normal" && showFilters && (
+        <div className="flex flex-col gap-3 rounded-2xl bg-white p-4 shadow-sm dark:bg-navy-card">
+          <div>
+            <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wide text-gray-400">Malzeme</label>
+            <select value={material} onChange={(e) => setMaterial(e.target.value)} className="w-full rounded-xl bg-slate-50 px-3 py-2.5 text-xs text-slate-900 outline-none dark:bg-navy-soft dark:text-slate-100">
+              <option value="all">Tümü</option>
+              {materialOpts.map((m) => <option key={m} value={m}>{m}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wide text-gray-400">Fiyat aralığı (sabit fiyatlı ilanlar)</label>
+            <div className="flex items-center gap-2">
+              <input type="number" min="0" value={priceMin} onChange={(e) => setPriceMin(e.target.value)} placeholder="Min ₺" className="w-full rounded-xl bg-slate-50 px-3 py-2.5 text-xs text-slate-900 outline-none dark:bg-navy-soft dark:text-slate-100" />
+              <span className="text-gray-400">–</span>
+              <input type="number" min="0" value={priceMax} onChange={(e) => setPriceMax(e.target.value)} placeholder="Max ₺" className="w-full rounded-xl bg-slate-50 px-3 py-2.5 text-xs text-slate-900 outline-none dark:bg-navy-soft dark:text-slate-100" />
+            </div>
+          </div>
+          <div>
+            <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wide text-gray-400">Sıralama</label>
+            <div className="flex flex-wrap gap-1.5">
+              {[["yeni", "Yeni"], ["teklif", "En çok teklif"], ["ucuz", "Fiyat ↑"], ["pahali", "Fiyat ↓"]].map(([k, lbl]) => (
+                <button key={k} onClick={() => setSort(k)} className={chip(sort === k)}>{lbl}</button>
+              ))}
+            </div>
+          </div>
+          {activeFilters > 0 && (
+            <button onClick={() => { setMaterial("all"); setPriceMin(""); setPriceMax(""); setSort("yeni"); }}
+              className="self-start text-xs font-bold text-amber-600">Filtreleri temizle</button>
+          )}
+        </div>
+      )}
 
       {/* Segment Is/Arac — sadece normal modda */}
       {mode === "normal" && (
