@@ -4,7 +4,7 @@ import { AnimatePresence } from "framer-motion";
 import {
   loadTheme, saveTheme, loadListings, saveListings, loadUser, saveUser,
   loadUsers, saveUsers, loadOffers, saveOffers, loadMessages, saveMessages,
-  loadMsgSeen, saveMsgSeen, loadNotifSeen, saveNotifSeen, loadReviews, saveReviews,
+  loadMsgSeen, saveMsgSeen, loadNotifSeen, saveNotifSeen, loadReviews, saveReviews, loadDocs, saveDocs,
 } from "./utils/storage";
 import { buildNotifications } from "./utils/notifications";
 import { ToastProvider } from "./components/Toast";
@@ -90,6 +90,12 @@ function AppShell() {
   const [reviews, setReviews] = useState(() => loadReviews());
   useEffect(() => { saveReviews(reviews); }, [reviews]);
   const addReview = (r) => setReviews(prev => [r, ...prev]);
+
+  // Belgeler (K belgesi, ruhsat, vergi levhasi) — base64
+  const [docs, setDocs] = useState(() => loadDocs());
+  useEffect(() => { saveDocs(docs); }, [docs]);
+  const addDoc = (d) => setDocs(prev => [d, ...prev]);
+  const removeDoc = (id) => setDocs(prev => prev.filter(x => x.id !== id));
   const getUserRating = (userId) => {
     const rs = reviews.filter(r => String(r.toId) === String(userId));
     if (!rs.length) return null;
@@ -144,6 +150,7 @@ function AppShell() {
       else if (e.key === "hamted_user") setUser(loadUser());
       else if (e.key === "hamted_msg_seen") setMsgSeen(loadMsgSeen());
       else if (e.key === "hamted_reviews") setReviews(loadReviews());
+      else if (e.key === "hamted_docs") setDocs(loadDocs());
     };
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
@@ -187,7 +194,7 @@ function AppShell() {
                 <Route path="/ilan-duzenle/:id" element={<PageTransition><IlanVerPage onPublish={publishListing} onUpdate={updateListing} listings={listings} user={user} onRequireAuth={requireAuth} /></PageTransition>} />
                 <Route path="/ilanlarim" element={<PageTransition><IlanlarimPage listings={listings} user={user} offers={offers} onUpdateOffer={updateOffer} onUpdateListing={updateListing} onDeleteListing={removeListing} onRequireAuth={requireAuth} getContact={getContact} /></PageTransition>} />
                 <Route path="/mesajlar" element={<PageTransition><MesajlarPage user={user} listings={listings} offers={offers} messages={messages} onSendMessage={addMessage} onRequireAuth={requireAuth} onSeen={markMessagesSeen} getContact={getContact} /></PageTransition>} />
-                <Route path="/profil" element={<PageTransition><ProfilPage user={user} onUpdateProfile={updateProfile} onRequireAuth={requireAuth} reviews={reviews} getUserRating={getUserRating} /></PageTransition>} />
+                <Route path="/profil" element={<PageTransition><ProfilPage user={user} onUpdateProfile={updateProfile} onRequireAuth={requireAuth} reviews={reviews} getUserRating={getUserRating} docs={docs.filter(d => user && String(d.ownerId) === String(user.id))} onAddDoc={addDoc} onRemoveDoc={removeDoc} /></PageTransition>} />
                 <Route path="/panel" element={<PageTransition><DashboardPage user={user} listings={listings} offers={offers} messages={messages} onRequireAuth={requireAuth} /></PageTransition>} />
                 <Route path="/muteahhit" element={<PageTransition><MuteahhitPage /></PageTransition>} />
                 <Route path="/tedarikci" element={<PageTransition><TedarikciPage /></PageTransition>} />

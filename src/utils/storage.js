@@ -32,3 +32,5 @@ export const loadNotifSeen = () => load("hamted_notif_seen", {});
 export const saveNotifSeen = (v) => save("hamted_notif_seen", v);
 export const loadReviews = () => load("hamted_reviews", []);
 export const saveReviews = (v) => save("hamted_reviews", v);
+export const loadDocs = () => load("hamted_docs", []);
+export const saveDocs = (v) => save("hamted_docs", v);

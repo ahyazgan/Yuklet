@@ -26,9 +26,25 @@ const QUICK = [
 const LBL = "mb-1.5 block text-xs font-semibold text-gray-500 dark:text-slate-400";
 const FIELD = "w-full rounded-2xl bg-slate-50 dark:bg-navy-soft px-4 py-3 text-sm text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-slate-300";
 
-export default function ProfilPage({ user, onUpdateProfile, onRequireAuth, reviews = [], getUserRating }) {
+const DOC_TYPES = ["K Belgesi", "Araç Ruhsatı", "Vergi Levhası", "Sigorta Poliçesi", "Diğer"];
+
+export default function ProfilPage({ user, onUpdateProfile, onRequireAuth, reviews = [], getUserRating, docs = [], onAddDoc, onRemoveDoc }) {
   const toast = useToast();
   const navigate = useNavigate();
+  const [docType, setDocType] = useState("K Belgesi");
+
+  const onFile = (e) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    if (f.size > 2_500_000) { toast("Dosya çok büyük (~2.5MB sınırı)", "error"); return; }
+    const reader = new FileReader();
+    reader.onload = () => {
+      onAddDoc?.({ id: Date.now(), ownerId: user.id, type: docType, name: f.name, dataUrl: reader.result, createdAt: new Date().toISOString() });
+      toast("Belge yüklendi — inceleniyor", "success");
+    };
+    reader.readAsDataURL(f);
+    e.target.value = "";
+  };
   const [form, setForm] = useState({
     name: user?.name || "",
     phone: user?.phone || "",
@@ -103,6 +119,42 @@ export default function ProfilPage({ user, onUpdateProfile, onRequireAuth, revie
           )}
         </section>
       )}
+
+      {/* Belgelerim */}
+      <section className="rounded-3xl bg-white p-5 shadow-sm dark:bg-navy-card">
+        <div className="mb-1 flex items-center justify-between gap-2">
+          <h2 className="text-base font-bold text-slate-950 dark:text-slate-100">Belgelerim</h2>
+          <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${user.verified ? "bg-emerald-100 text-emerald-700" : docs.length ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-500"}`}>
+            {user.verified ? "✓ Doğrulandı" : docs.length ? "İnceleniyor" : "Eksik"}
+          </span>
+        </div>
+        <p className="mb-3 text-xs text-gray-500 dark:text-slate-400">K belgesi, araç ruhsatı, vergi levhası yükle → <b>doğrulanmış rozeti</b> kazan. (İnceleme yakında otomatikleşecek.)</p>
+        <div className="flex gap-2">
+          <select value={docType} onChange={(e) => setDocType(e.target.value)} className="rounded-xl bg-slate-50 px-3 py-2.5 text-xs text-slate-900 outline-none dark:bg-navy-soft dark:text-slate-100">
+            {DOC_TYPES.map((t) => <option key={t}>{t}</option>)}
+          </select>
+          <label className="flex-1 cursor-pointer rounded-xl bg-slate-950 px-4 py-2.5 text-center text-xs font-bold text-white dark:bg-navy-soft dark:text-slate-100">
+            + Belge yükle
+            <input type="file" accept="image/*,application/pdf" onChange={onFile} className="hidden" />
+          </label>
+        </div>
+        {docs.length > 0 && (
+          <div className="mt-3 flex flex-col gap-2">
+            {docs.map((d) => (
+              <div key={d.id} className="flex items-center gap-3 rounded-2xl border border-gray-100 p-2.5 dark:border-navy-line">
+                {String(d.dataUrl).startsWith("data:image")
+                  ? <img src={d.dataUrl} alt="" className="h-10 w-10 flex-shrink-0 rounded-lg object-cover" />
+                  : <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-slate-100 text-lg dark:bg-navy-soft">📄</span>}
+                <div className="min-w-0 flex-1">
+                  <div className="text-xs font-bold text-slate-900 dark:text-slate-100">{d.type}</div>
+                  <div className="truncate text-[11px] text-gray-400">{d.name}</div>
+                </div>
+                <button onClick={() => onRemoveDoc?.(d.id)} className="text-xs font-bold text-red-600">Sil</button>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
 
       {/* Hizli erisim */}
       <section className="flex flex-col gap-3">
