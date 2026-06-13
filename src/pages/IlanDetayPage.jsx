@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { LISTINGS } from "../data/listings";
 import { CATS } from "../data/categories";
+import { backhaulForJob, loadsForVehicle } from "../utils/backhaul";
 import { useToast } from "../components/Toast";
 import SEO from "../components/SEO";
 
@@ -59,6 +60,7 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
   const isOwner = user && l.ownerId && l.ownerId === user.id;
   const isFixed = l.priceType === "sabit" && l.price;
   const closed = l.status === "kapali" || l.status === "eslesti";
+  const backhaul = l.type === "arac" ? loadsForVehicle(l, listings) : backhaulForJob(l, listings);
 
   const submitOffer = () => {
     if (!user) { onRequireAuth?.(); return; }
@@ -149,6 +151,37 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
           <Row label="Tarih" value={l.dateText} />
           {l.recurring && <Row label="Tekrar" value={l.recurringText} />}
         </div>
+
+        {/* Dönüş yükü / backhaul */}
+        {backhaul.length > 0 && (
+          <div className="rounded-3xl bg-white dark:bg-navy-card p-5 shadow-sm">
+            <div className="mb-1 flex items-center gap-2">
+              <h2 className="text-base font-bold text-slate-950 dark:text-slate-100">{l.type === "arac" ? "Bu araca uygun yükler" : "Dönüş yükü fırsatı"}</h2>
+              <span className="rounded-full bg-yellow-400 px-2 py-0.5 text-[9px] font-extrabold text-slate-950">YENİ</span>
+            </div>
+            <p className="mb-3 text-xs text-gray-500 dark:text-slate-400">
+              {l.type === "arac"
+                ? "Aracınız buradayken alabileceğiniz yakın işler."
+                : "Bu işi alan araç dönüşte boş gitmesin — güzergaha uygun yükler:"}
+            </p>
+            <div className="flex flex-col gap-2.5">
+              {backhaul.map((m) => (
+                <button key={m.listing.id} onClick={() => navigate(`/ilan/${m.listing.id}`)}
+                  className="flex items-center justify-between gap-3 rounded-2xl border border-gray-100 dark:border-navy-line p-3.5 text-left transition hover:border-yellow-400/60">
+                  <div className="min-w-0">
+                    <div className="mb-1 flex flex-wrap items-center gap-1.5">
+                      <span className="rounded-md bg-slate-100 dark:bg-navy-soft px-2 py-0.5 text-[10px] font-bold text-slate-600 dark:text-slate-300">{m.fromIl || "—"} → {m.toIl || "—"}</span>
+                      {m.roundTrip && <span className="rounded-md bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">Tam tur ↺</span>}
+                    </div>
+                    <div className="truncate text-sm font-bold text-slate-900 dark:text-slate-100">{m.listing.title}</div>
+                    <div className="text-[11px] text-gray-500 dark:text-slate-400">📍 {m.listing.il}{m.listing.amount ? ` · ${m.listing.amount} ${m.listing.unit || ""}` : ""}</div>
+                  </div>
+                  <span className="flex-shrink-0 rounded-full bg-yellow-400 px-3 py-1.5 text-[10px] font-extrabold text-slate-950">{m.fit}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Gelen teklifler */}
         <div className="rounded-3xl bg-white dark:bg-navy-card p-5 shadow-sm">
