@@ -144,6 +144,7 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
           <Row label="Konum" value={`${l.il}${l.ilce ? " / " + l.ilce : ""}`} />
           <Row label="Yükleme" value={l.yukleme} />
           <Row label="Boşaltma" value={l.bosaltma} />
+          <Row label="Varış ili" value={l.type === "is" ? l.varisIl : null} />
           <Row label="Malzeme" value={l.material} />
           <Row label="Miktar" value={l.amount ? `${l.amount} ${l.unit || ""}` : null} />
           <Row label="Araç" value={l.vehicle} />

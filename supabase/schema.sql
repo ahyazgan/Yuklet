@@ -31,6 +31,7 @@ create table if not exists public.listings (
   title           text not null,
   il              text,
   ilce            text,
+  varis_il        text,                           -- donus yuku eslestirmesi icin varis ili
   yukleme         text default '',
   bosaltma        text default '',
   material        text default '',

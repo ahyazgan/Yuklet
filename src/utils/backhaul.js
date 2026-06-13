@@ -76,7 +76,8 @@ const canonIl = (text) => {
 export function routeOf(l) {
   const fromIl = canonIl(l.il) || canonIl(l.yukleme) || null;
   if (l.type === "arac") return { fromIl, toIl: fromIl }; // araç bir noktada müsait
-  const toIl = canonIl(l.bosaltma) || canonIl(l.title) || fromIl;
+  // Net 'varisIl' alanı varsa öncelik onun; yoksa serbest metinden tahmin
+  const toIl = canonIl(l.varisIl) || canonIl(l.bosaltma) || canonIl(l.title) || fromIl;
   return { fromIl, toIl };
 }
 

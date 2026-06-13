@@ -10,7 +10,7 @@ import { supabase } from "./supabase";
 // ── Mapper'lar ──────────────────────────────────────────────
 const rowToListing = (r) => ({
   id: r.id, type: r.type, cat: r.cat, title: r.title,
-  il: r.il, ilce: r.ilce, yukleme: r.yukleme, bosaltma: r.bosaltma,
+  il: r.il, ilce: r.ilce, varisIl: r.varis_il, yukleme: r.yukleme, bosaltma: r.bosaltma,
   material: r.material, amount: r.amount, unit: r.unit,
   dateText: r.date_text, recurring: r.recurring, recurringText: r.recurring_text,
   vehicle: r.vehicle, capacity: r.capacity,
@@ -20,7 +20,7 @@ const rowToListing = (r) => ({
 });
 
 const listingToRow = (l) => ({
-  type: l.type, cat: l.cat, title: l.title, il: l.il, ilce: l.ilce,
+  type: l.type, cat: l.cat, title: l.title, il: l.il, ilce: l.ilce, varis_il: l.varisIl ?? null,
   yukleme: l.yukleme, bosaltma: l.bosaltma, material: l.material,
   amount: l.amount ?? 0, unit: l.unit, date_text: l.dateText,
   recurring: l.recurring ?? false, recurring_text: l.recurringText ?? "",
@@ -30,7 +30,7 @@ const listingToRow = (l) => ({
 
 // camelCase patch -> snake_case (listing guncelleme)
 const LISTING_KEYMAP = {
-  title: "title", il: "il", ilce: "ilce", yukleme: "yukleme", bosaltma: "bosaltma",
+  title: "title", il: "il", ilce: "ilce", varisIl: "varis_il", yukleme: "yukleme", bosaltma: "bosaltma",
   material: "material", amount: "amount", unit: "unit", dateText: "date_text",
   recurring: "recurring", recurringText: "recurring_text", vehicle: "vehicle",
   capacity: "capacity", priceType: "price_type", price: "price", desc: "description",

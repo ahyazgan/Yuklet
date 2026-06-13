@@ -20,6 +20,7 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], user, 
   const [cat, setCat] = useState(editListing?.cat || "hafriyat");
   const [form, setForm] = useState(() => editListing ? {
     title: editListing.title || "", il: editListing.il || "Istanbul", ilce: editListing.ilce || "",
+    varisIl: editListing.varisIl || editListing.il || "Istanbul",
     yukleme: editListing.yukleme || "", bosaltma: editListing.bosaltma || "",
     material: editListing.material || "", amount: editListing.amount != null ? String(editListing.amount) : "", unit: editListing.unit || "ton",
     vehicle: editListing.vehicle || "", capacity: editListing.capacity || "",
@@ -27,7 +28,7 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], user, 
     price: editListing.price != null ? String(editListing.price) : "", desc: editListing.desc || "",
     owner: editListing.owner || user?.name || "",
   } : {
-    title: "", il: "Istanbul", ilce: "", yukleme: "", bosaltma: "",
+    title: "", il: "Istanbul", ilce: "", varisIl: "Istanbul", yukleme: "", bosaltma: "",
     material: "", amount: "", unit: "ton", vehicle: "", capacity: "",
     dateText: "", priceType: "teklif", price: "", desc: "", owner: user?.name || "",
     recurring: false, recurringFreq: "haftalik", recurringDuration: "", dailyTrips: "",
@@ -47,6 +48,7 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], user, 
       title: form.title.trim(),
       il: form.il, ilce: form.ilce.trim(),
       yukleme: form.yukleme.trim(), bosaltma: form.bosaltma.trim(),
+      varisIl: type === "is" ? form.varisIl : undefined,
       material: form.material, amount: Number(form.amount) || 0, unit: form.unit,
       vehicle: type === "arac" ? form.vehicle : undefined,
       capacity: type === "arac" ? form.capacity.trim() : undefined,
@@ -180,16 +182,24 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], user, 
           </div>
 
           {type === "is" && (
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className={LBL}>Yükleme noktası</label>
-                <input className={FIELD} value={form.yukleme} onChange={(e) => set("yukleme", e.target.value)} placeholder="Örn: Dudullu OSB" />
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={LBL}>Yükleme noktası</label>
+                  <input className={FIELD} value={form.yukleme} onChange={(e) => set("yukleme", e.target.value)} placeholder="Örn: Dudullu OSB" />
+                </div>
+                <div>
+                  <label className={LBL}>Boşaltma noktası</label>
+                  <input className={FIELD} value={form.bosaltma} onChange={(e) => set("bosaltma", e.target.value)} placeholder="Örn: Döküm sahası" />
+                </div>
               </div>
               <div>
-                <label className={LBL}>Boşaltma noktası</label>
-                <input className={FIELD} value={form.bosaltma} onChange={(e) => set("bosaltma", e.target.value)} placeholder="Örn: Döküm sahası" />
+                <label className={LBL}>Varış ili <span className="font-normal normal-case text-gray-400">— dönüş yükü eşleştirmesi için</span></label>
+                <select className={FIELD} value={form.varisIl} onChange={(e) => set("varisIl", e.target.value)}>
+                  {IL_LIST.map((i) => <option key={i} value={i}>{i}</option>)}
+                </select>
               </div>
-            </div>
+            </>
           )}
 
           <div className="grid grid-cols-2 gap-3">
