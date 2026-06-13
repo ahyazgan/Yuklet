@@ -108,10 +108,15 @@ export const parseTons = (str) => {
   const m = String(str || "").match(/(\d+(?:[.,]\d+)?)/);
   return m ? parseFloat(m[1].replace(",", ".")) : null;
 };
-// Araç bu işi kaç seferde taşır (kaba tahmin; sadece 'ton' birimi için)
+// Aralıktan azami kapasite: "Damperli kamyon (15–18 t)" -> 18
+export const capacityTonOf = (str) => {
+  const nums = String(str || "").match(/\d+(?:[.,]\d+)?/g);
+  return nums ? Math.max(...nums.map((n) => parseFloat(n.replace(",", ".")))) : null;
+};
+// Araç bu işi kaç seferde taşır (kaba tahmin; ton/m³ için). capacityStr boşsa araç adından da okur.
 export const estimateTrips = (jobAmount, jobUnit, capacityStr) => {
-  const cap = parseTons(capacityStr);
-  if (!cap || !jobAmount || (jobUnit && jobUnit !== "ton")) return null;
+  const cap = capacityTonOf(capacityStr);
+  if (!cap || !jobAmount || (jobUnit && jobUnit !== "ton" && jobUnit !== "m³")) return null;
   return Math.max(1, Math.ceil(jobAmount / cap));
 };
 
@@ -146,7 +151,7 @@ export function loadsForVehicle(arac, all, limit = 3) {
     .map((x) => {
       const xr = routeOf(x);
       const d = ilDistance(vIl, xr.fromIl);
-      return { listing: x, fromIl: xr.fromIl, toIl: xr.toIl, dist: d, trips: estimateTrips(x.amount, x.unit, arac.capacity) };
+      return { listing: x, fromIl: xr.fromIl, toIl: xr.toIl, dist: d, trips: estimateTrips(x.amount, x.unit, arac.capacity || arac.vehicle) };
     })
     .filter((m) => m.dist <= 2)
     .sort((a, b) => a.dist - b.dist)

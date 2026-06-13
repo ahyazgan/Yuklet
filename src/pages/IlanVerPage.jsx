@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { CATS, LISTING_TYPES, VEHICLE_TYPES, MATERIALS, UNITS } from "../data/categories";
 import { IL_LIST } from "../data/listings";
 import CategoryIcon from "../components/CategoryIcon";
+import { estimatePrice, fmtTL } from "../utils/priceEstimate";
 import SEO from "../components/SEO";
 
 // ── MoveIQ LIGHT "Create Shipment" tasarimi (Tailwind).
@@ -86,6 +87,9 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], user, 
 
   const materials = MATERIALS[cat] || [];
   const vehicles = VEHICLE_TYPES[cat] || [];
+  const est = type === "is" && Number(form.amount) > 0
+    ? estimatePrice({ cat, amount: Number(form.amount), unit: form.unit, fromIl: form.il, toIl: form.varisIl })
+    : null;
 
   if (!user) {
     return (
@@ -255,6 +259,19 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], user, 
               </div>
             </div>
           </div>
+
+          {/* Fiyat tahmini (sezgisel) */}
+          {est && (
+            <div className="rounded-2xl border border-yellow-200 bg-yellow-50 p-3.5 dark:border-navy-line dark:bg-navy-soft">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-bold text-amber-700 dark:text-yellow-400">💡 Tahmini piyasa aralığı</span>
+                <span className="text-sm font-extrabold text-slate-900 dark:text-slate-100">{fmtTL(est.min)} – {fmtTL(est.max)}</span>
+              </div>
+              <div className="mt-1 text-[11px] text-gray-500 dark:text-slate-400">
+                {est.distLabel} · ~{est.km} km · {est.trips > 1 ? `~${est.trips} sefer (sefer başı ~${fmtTL(est.perTrip)})` : `tek sefer`} · sadece tahmindir
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Duzenli is */}

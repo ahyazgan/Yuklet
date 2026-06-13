@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { LISTINGS } from "../data/listings";
 import { CATS } from "../data/categories";
 import { backhaulForJob, loadsForVehicle, vehicleClassOf } from "../utils/backhaul";
+import { estimatePrice, fmtTL } from "../utils/priceEstimate";
 import { useToast } from "../components/Toast";
 import SEO from "../components/SEO";
 
@@ -61,6 +62,7 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
   const isFixed = l.priceType === "sabit" && l.price;
   const closed = l.status === "kapali" || l.status === "eslesti";
   const backhaul = l.type === "arac" ? loadsForVehicle(l, listings) : backhaulForJob(l, listings);
+  const est = !isFixed && l.type === "is" && l.amount ? estimatePrice({ cat: l.cat, amount: l.amount, unit: l.unit, fromIl: l.il, toIl: l.varisIl }) : null;
 
   const submitOffer = () => {
     if (!user) { onRequireAuth?.(); return; }
@@ -106,7 +108,13 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
         {/* Fiyat + teklif */}
         <div className="rounded-3xl bg-white dark:bg-navy-card p-5 shadow-sm">
           <div className="text-3xl font-extrabold tracking-tight text-slate-950 dark:text-slate-100">{isFixed ? `₺${l.price.toLocaleString("tr-TR")}` : "Teklife açık"}</div>
-          <div className="mb-4 mt-0.5 text-xs text-gray-400 dark:text-navy-muted">{listingOffers.length} teklif geldi</div>
+          <div className="mt-0.5 text-xs text-gray-400 dark:text-navy-muted">{listingOffers.length} teklif geldi</div>
+          {est && (
+            <div className="mb-4 mt-2 inline-flex items-center gap-1.5 rounded-full bg-yellow-50 px-3 py-1 text-[11px] font-semibold text-amber-700 dark:bg-navy-soft dark:text-yellow-400">
+              💡 Tahmini bütçe: {fmtTL(est.min)} – {fmtTL(est.max)}
+            </div>
+          )}
+          {!est && <div className="mb-4" />}
 
           {isOwner ? (
             <div className="rounded-2xl bg-sky-50 p-4 text-center text-sm font-semibold text-sky-700">
