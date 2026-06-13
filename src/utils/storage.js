@@ -34,3 +34,5 @@ export const loadReviews = () => load("hamted_reviews", []);
 export const saveReviews = (v) => save("hamted_reviews", v);
 export const loadDocs = () => load("hamted_docs", []);
 export const saveDocs = (v) => save("hamted_docs", v);
+export const loadOnboarded = () => loadStr("hamted_onboarded", "") === "1";
+export const saveOnboarded = () => saveStr("hamted_onboarded", "1");

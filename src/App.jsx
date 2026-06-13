@@ -5,6 +5,7 @@ import {
   loadTheme, saveTheme, loadListings, saveListings, loadUser, saveUser,
   loadUsers, saveUsers, loadOffers, saveOffers, loadMessages, saveMessages,
   loadMsgSeen, saveMsgSeen, loadNotifSeen, saveNotifSeen, loadReviews, saveReviews, loadDocs, saveDocs,
+  loadOnboarded, saveOnboarded,
 } from "./utils/storage";
 import { buildNotifications } from "./utils/notifications";
 import { ToastProvider } from "./components/Toast";
@@ -17,6 +18,7 @@ import Footer from "./components/Footer";
 import MobileTabBar from "./components/MobileTabBar";
 import WhatsAppButton from "./components/WhatsAppButton";
 import AuthModal from "./components/AuthModal";
+import OnboardingModal from "./components/OnboardingModal";
 
 import { LISTINGS } from "./data/listings";
 
@@ -108,6 +110,8 @@ function AppShell() {
   const [user, setUser] = useState(() => loadUser());
   useEffect(() => { saveUser(user); }, [user]);
   const [showAuth, setShowAuth] = useState(false);
+  const [showOnboard, setShowOnboard] = useState(() => !loadOnboarded());
+  const finishOnboard = () => { saveOnboarded(); setShowOnboard(false); };
 
   const registerUser = ({ name, email, password, role, phone }) => {
     if (users.some(u => u.email.toLowerCase() === email.toLowerCase()))
@@ -215,6 +219,7 @@ function AppShell() {
       <MobileTabBar unreadCount={unreadCount} />
 
       {showAuth && <AuthModal onClose={() => setShowAuth(false)} onLogin={loginUser} onRegister={registerUser} />}
+      {showOnboard && !showAuth && <OnboardingModal onClose={finishOnboard} />}
     </div>
   );
 }
