@@ -61,6 +61,20 @@ export default function MesajlarPage({ user, listings = [], offers = [], message
     setText("");
   };
 
+  const sendImage = (e) => {
+    const f = e.target.files?.[0];
+    if (!f || !active) return;
+    if (f.size > 1_800_000) { e.target.value = ""; return; } // ~1.8MB sınır
+    const reader = new FileReader();
+    reader.onload = () => onSendMessage?.({
+      id: Date.now(), listingId: active.listingId, offerId: active.offerId,
+      fromId: user.id, fromName: user.name, toId: active.other.id, toName: active.other.name,
+      text: "", image: reader.result, createdAt: new Date().toISOString(),
+    });
+    reader.readAsDataURL(f);
+    e.target.value = "";
+  };
+
   // ── Aktif sohbet ──
   if (active) {
     return (
@@ -83,7 +97,10 @@ export default function MesajlarPage({ user, listings = [], offers = [], message
               const mine = m.fromId === user.id;
               return (
                 <div key={m.id} className={`max-w-[78%] ${mine ? "self-end" : "self-start"}`}>
-                  <div className={`px-3.5 py-2.5 text-sm leading-snug ${mine ? "rounded-2xl rounded-br-sm bg-slate-950 text-white dark:bg-navy-soft dark:text-slate-100" : "rounded-2xl rounded-bl-sm bg-white dark:bg-navy-card text-slate-900 dark:text-slate-100 shadow-sm"}`}>{m.text}</div>
+                  <div className={`px-3.5 py-2.5 text-sm leading-snug ${mine ? "rounded-2xl rounded-br-sm bg-slate-950 text-white dark:bg-navy-soft dark:text-slate-100" : "rounded-2xl rounded-bl-sm bg-white dark:bg-navy-card text-slate-900 dark:text-slate-100 shadow-sm"}`}>
+                    {m.image && <img src={m.image} alt="Görsel" className={`max-h-52 rounded-xl object-cover ${m.text ? "mb-1.5" : ""}`} />}
+                    {m.text}
+                  </div>
                   <div className={`mt-1 text-[10.5px] text-gray-400 dark:text-navy-muted ${mine ? "text-right" : "text-left"}`}>{fmtTime(m.createdAt)}</div>
                 </div>
               );
@@ -91,7 +108,11 @@ export default function MesajlarPage({ user, listings = [], offers = [], message
           )}
         </div>
 
-        <form onSubmit={send} className="sticky bottom-2 flex items-center gap-2 rounded-2xl bg-white dark:bg-navy-card p-1.5 pl-4 shadow-md">
+        <form onSubmit={send} className="sticky bottom-2 flex items-center gap-2 rounded-2xl bg-white dark:bg-navy-card p-1.5 pl-2 shadow-md">
+          <label className="flex h-9 w-9 flex-shrink-0 cursor-pointer items-center justify-center rounded-full text-lg text-slate-500 transition hover:bg-slate-100 dark:hover:bg-navy-soft" aria-label="Fotoğraf ekle">
+            🖼️
+            <input type="file" accept="image/*" onChange={sendImage} className="hidden" />
+          </label>
           <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Mesaj yazın…" aria-label="Mesaj" className="min-w-0 flex-1 bg-transparent text-sm text-slate-900 dark:text-slate-100 outline-none placeholder:text-gray-400 dark:placeholder:text-navy-muted" />
           <button type="submit" className="rounded-full bg-slate-950 px-5 py-2.5 text-sm font-bold text-white dark:bg-navy-soft dark:text-slate-100">Gönder</button>
         </form>
