@@ -2,96 +2,96 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import SEO from "../components/SEO";
 
-// ── MoveIQ LIGHT landing (Tailwind) — Muteahhit/Alici.
+// ── Muteahhit/Alici — app-native ekran (MoveIQ LIGHT, max-w-460 kolon). DESIGN.md §5.
 
 const BENEFITS = [
-  { icon: "⚡", title: "Anlık teklif al", desc: "İlanınızı verin, dakikalar içinde belgeli nakliyecilerden fiyat teklifleri gelsin." },
-  { icon: "✅", title: "Belgeli & puanlı araçlar", desc: "Yalnızca K belgeli, geçmişi doğrulanmış nakliyecilerle çalışın. Sürpriz yok." },
-  { icon: "📦", title: "Her yük tipi", desc: "Hafriyat, moloz, kaya, kum, çakıl, mıcır, çimento — tüm inşaat yükleri tek platformda." },
-  { icon: "📋", title: "Dijital irsaliye", desc: "Taşıma belgelerinizi dijital tutun; fatura ve irsaliyelere tek yerden erişin." },
-  { icon: "📍", title: "Konum bazlı eşleştirme", desc: "Şantiyenize en yakın boş araçlar öncelikli gösterilir, boş sefer maliyeti sıfıra iner." },
-  { icon: "🔁", title: "Tekrarlayan işler", desc: "Uzun süreli şantiyeler için anlaşmalı nakliyeci tanımlayın, her gün ilan açmayın." },
+  { icon: "⚡", t: "Anlık teklif", d: "İlanını ver, dakikalar içinde belgeli nakliyecilerden fiyat gelsin." },
+  { icon: "✅", t: "Belgeli & puanlı", d: "Sadece K belgeli, geçmişi doğrulanmış araçlarla çalış." },
+  { icon: "📦", t: "Her yük tipi", d: "Hafriyat, kum, çakıl, mıcır, çimento — hepsi tek yerde." },
+  { icon: "📍", t: "Konuma yakın", d: "Şantiyene en yakın boş araçlar öne çıkar, boş sefer maliyeti düşer." },
 ];
 
 const HOW = [
-  { n: "1", t: "İlanınızı verin", d: "Yükleme/boşaltma noktası, yük tipi, miktar ve tarihi girin. 2 dakika." },
-  { n: "2", t: "Teklifleri karşılaştırın", d: "Nakliyeciler fiyat ve araç bilgileriyle teklif gönderir. Puanlarına bakın." },
-  { n: "3", t: "Anlaşın & başlayın", d: "En uygun teklifi kabul edin. Platform iletişimi ve belge takibini kolaylaştırır." },
-];
-
-const PERSONAS = [
-  { icon: "🏗️", label: "Müteahhit" },
-  { icon: "🏢", label: "Yapı şirketi" },
-  { icon: "🔨", label: "Alt yüklenici" },
-  { icon: "🏙️", label: "Belediye / kamu" },
-  { icon: "🏭", label: "Fabrika / sanayi" },
+  { n: "1", t: "İlanını ver", d: "Yükleme/boşaltma, yük tipi, miktar ve tarih. 2 dakika." },
+  { n: "2", t: "Teklifleri karşılaştır", d: "Nakliyeciler fiyat ve araçla teklif yollar; puanlara bak." },
+  { n: "3", t: "Anlaş & başla", d: "En uygun teklifi kabul et, iletişime geç." },
 ];
 
 export default function MuteahhitPage() {
   const navigate = useNavigate();
 
   return (
-    <div className="text-slate-900 dark:text-slate-100">
-      <SEO title="Müteahhit & Alıcı" description="Şantiyeniz için hafriyat ve döküm yük nakliyesi artık çok kolay. Anlık teklif alın, belgeli araçlarla çalışın." />
+    <div className="mx-auto flex w-full max-w-[460px] flex-col gap-5 px-4 pb-24 pt-3 text-slate-900 dark:text-slate-100">
+      <SEO title="Müteahhit & Alıcı" description="Şantiyen için hafriyat ve döküm yük nakliyesi artık çok kolay. Anlık teklif al, belgeli araçlarla çalış." />
 
-      {/* Hero */}
-      <section className="border-b border-gray-100 dark:border-navy-line bg-white dark:bg-navy-card">
-        <div className="mx-auto w-full max-w-5xl px-5 py-16">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }} className="max-w-2xl">
-            <span className="rounded-full bg-amber-100 px-3 py-1.5 text-xs font-bold tracking-wide text-amber-700">MÜTEAHHİT & ALICI</span>
-            <h1 className="my-4 text-4xl font-black leading-tight tracking-tight text-slate-950 dark:text-slate-100 md:text-5xl">
-              Şantiyenize en uygun<br />
-              <span className="text-amber-500">nakliyeyi dakikada</span> bulun
-            </h1>
-            <p className="mb-7 max-w-xl text-lg leading-relaxed text-gray-500 dark:text-slate-400">
-              Hafriyat, kum, çakıl, mıcır, çimento — inşaat yüklerinizi taşıyacak belgeli ve puanlı nakliyecilere anında ulaşın. Telefon trafiği yok, pazarlık yok, belirsizlik yok.
-            </p>
-            <div className="flex flex-wrap gap-3">
-              <button onClick={() => navigate("/ilan-ver")} className="rounded-full bg-slate-950 dark:bg-navy-soft px-7 py-3.5 text-base font-bold text-white dark:text-slate-100 transition hover:bg-slate-800">İlan ver — ücretsiz</button>
-              <button onClick={() => navigate("/ilanlar")} className="rounded-full bg-white dark:bg-navy-card px-7 py-3.5 text-base font-bold text-slate-900 dark:text-slate-100 shadow-sm ring-1 ring-gray-200 dark:ring-navy-line transition hover:bg-gray-50 dark:hover:bg-navy-soft">Boş araçlara bak →</button>
-            </div>
-            <div className="mt-6 flex flex-wrap gap-2">
-              {PERSONAS.map((p) => (
-                <span key={p.label} className="rounded-full bg-slate-50 dark:bg-navy-soft px-3 py-1.5 text-xs font-semibold text-gray-600 dark:text-slate-300 ring-1 ring-gray-200 dark:ring-navy-line">{p.icon} {p.label}</span>
-              ))}
-            </div>
-          </motion.div>
+      {/* üst bar */}
+      <div className="flex items-center gap-3">
+        <button onClick={() => navigate(-1)} aria-label="Geri" className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-100 bg-white text-slate-700 shadow-sm dark:border-navy-line dark:bg-navy-card dark:text-slate-300">←</button>
+        <span className="text-sm font-extrabold text-slate-800 dark:text-slate-100">Müteahhit / Alıcı</span>
+      </div>
+
+      {/* hero kart */}
+      <motion.section
+        initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}
+        className="relative overflow-hidden rounded-[28px] border border-gray-100 bg-white p-5 shadow-sm dark:border-navy-line dark:bg-navy-card"
+      >
+        <span className="inline-flex rounded-full bg-amber-50 px-3 py-1 text-[10px] font-extrabold uppercase tracking-wide text-amber-600">Müteahhit & Alıcı</span>
+        <h1 className="mt-3 text-[26px] font-black leading-[1.1] tracking-tight text-slate-950 dark:text-slate-100">
+          Şantiyene en uygun<br /><span className="text-amber-500">nakliyeyi dakikada</span> bul
+        </h1>
+        <p className="mt-2.5 text-[13px] leading-relaxed text-gray-500 dark:text-slate-400">
+          Hafriyat, kum, çakıl, mıcır, çimento — yüklerini belgeli ve puanlı nakliyecilere anında ulaştır. Telefon trafiği yok, belirsizlik yok.
+        </p>
+        <div className="mt-4 flex flex-col gap-2.5">
+          <button onClick={() => navigate("/ilan-ver")} className="flex items-center justify-center rounded-full bg-yellow-400 px-5 py-3 text-sm font-extrabold text-slate-950 shadow-sm shadow-yellow-400/30 transition active:scale-[.98]">İlan ver — ücretsiz</button>
+          <button onClick={() => navigate("/ilanlar")} className="flex items-center justify-center rounded-full bg-slate-50 px-5 py-3 text-sm font-bold text-slate-900 ring-1 ring-gray-100 transition active:scale-[.98] dark:bg-navy-soft dark:text-slate-100 dark:ring-navy-line">Boş araçlara bak →</button>
         </div>
-      </section>
+        <div className="pointer-events-none absolute -right-7 -top-7 h-28 w-28 rounded-full bg-yellow-400/10" />
+      </motion.section>
 
-      <div className="mx-auto w-full max-w-5xl px-5">
-        {/* Faydalar */}
-        <h2 className="mb-5 mt-12 text-2xl font-extrabold tracking-tight text-slate-950 dark:text-slate-100">Size ne kazandırır?</h2>
-        <div className="mb-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {BENEFITS.map((b) => (
-            <motion.div key={b.title} whileHover={{ y: -3 }} className="rounded-3xl bg-white dark:bg-navy-card p-6 shadow-sm">
-              <div className="mb-2.5 text-3xl">{b.icon}</div>
-              <div className="mb-1.5 text-base font-bold text-slate-950 dark:text-slate-100">{b.title}</div>
-              <div className="text-sm leading-relaxed text-gray-500 dark:text-slate-400">{b.desc}</div>
+      {/* neden */}
+      <section>
+        <span className="mb-2.5 block text-xs font-extrabold text-slate-800 dark:text-slate-100">Sana ne kazandırır?</span>
+        <div className="flex flex-col gap-2.5">
+          {BENEFITS.map((b, i) => (
+            <motion.div
+              key={b.t}
+              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: i * 0.05 }}
+              className="flex items-start gap-3 rounded-2xl border border-gray-100 bg-white p-3.5 shadow-sm dark:border-navy-line dark:bg-navy-card"
+            >
+              <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-amber-50 text-base">{b.icon}</span>
+              <div className="min-w-0">
+                <span className="block text-[13px] font-bold text-slate-950 dark:text-slate-100">{b.t}</span>
+                <span className="block text-[11px] leading-relaxed text-gray-500 dark:text-slate-400">{b.d}</span>
+              </div>
             </motion.div>
           ))}
         </div>
+      </section>
 
-        {/* Nasil calisir */}
-        <h2 className="mb-5 text-2xl font-extrabold tracking-tight text-slate-950 dark:text-slate-100">3 adımda nakliye ayarlayın</h2>
-        <div className="mb-14 grid gap-4 sm:grid-cols-3">
+      {/* nasıl çalışır */}
+      <section>
+        <span className="mb-2.5 block text-xs font-extrabold text-slate-800 dark:text-slate-100">3 adımda nakliye ayarla</span>
+        <div className="flex flex-col gap-2.5">
           {HOW.map((s) => (
-            <div key={s.n} className="rounded-3xl bg-white dark:bg-navy-card p-6 shadow-sm">
-              <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-100 text-base font-black text-amber-700">{s.n}</div>
-              <div className="mb-1.5 text-base font-bold text-slate-950 dark:text-slate-100">{s.t}</div>
-              <div className="text-sm leading-relaxed text-gray-500 dark:text-slate-400">{s.d}</div>
+            <div key={s.n} className="flex items-start gap-3 rounded-2xl border border-gray-100 bg-white p-3.5 shadow-sm dark:border-navy-line dark:bg-navy-card">
+              <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-amber-100 text-xs font-black text-amber-700">{s.n}</span>
+              <div className="min-w-0">
+                <span className="block text-[13px] font-bold text-slate-950 dark:text-slate-100">{s.t}</span>
+                <span className="block text-[11px] leading-relaxed text-gray-500 dark:text-slate-400">{s.d}</span>
+              </div>
             </div>
           ))}
         </div>
+      </section>
 
-        {/* CTA */}
-        <div className="mb-16 flex flex-wrap items-center justify-between gap-5 rounded-[28px] bg-slate-950 dark:bg-navy-soft px-8 py-9">
-          <div>
-            <div className="mb-1 text-2xl font-extrabold text-white">Hemen başlayın — ücretsiz</div>
-            <div className="text-sm text-slate-400">Kayıt olun, ilk ilanınızı 2 dakikada verin.</div>
-          </div>
-          <button onClick={() => navigate("/ilan-ver")} className="whitespace-nowrap rounded-full bg-yellow-400 px-7 py-3.5 text-base font-extrabold text-slate-950 transition hover:bg-yellow-500">İlan ver →</button>
+      {/* kapanış cta */}
+      <div className="flex flex-col gap-3 rounded-[24px] bg-slate-950 p-5 dark:bg-navy-soft">
+        <div>
+          <div className="text-base font-extrabold text-white">Hemen başla — ücretsiz</div>
+          <div className="mt-0.5 text-[12px] text-slate-400">Kayıt ol, ilk ilanını 2 dakikada ver.</div>
         </div>
+        <button onClick={() => navigate("/ilan-ver")} className="rounded-full bg-yellow-400 px-5 py-3 text-sm font-extrabold text-slate-950 transition active:scale-[.98]">İlan ver →</button>
       </div>
     </div>
   );
