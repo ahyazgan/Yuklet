@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { LISTINGS } from "../data/listings";
 import { CATS } from "../data/categories";
-import { backhaulForJob, loadsForVehicle } from "../utils/backhaul";
+import { backhaulForJob, loadsForVehicle, vehicleClassOf } from "../utils/backhaul";
 import { useToast } from "../components/Toast";
 import SEO from "../components/SEO";
 
@@ -161,7 +161,7 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
             </div>
             <p className="mb-3 text-xs text-gray-500 dark:text-slate-400">
               {l.type === "arac"
-                ? "Aracınız buradayken alabileceğiniz yakın işler."
+                ? `${vehicleClassOf(l)} aracınıza uygun yakın işler (sefer tahmini dahil).`
                 : "Bu işi alan araç dönüşte boş gitmesin — güzergaha uygun yükler:"}
             </p>
             <div className="flex flex-col gap-2.5">
@@ -174,7 +174,7 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
                       {m.roundTrip && <span className="rounded-md bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">Tam tur ↺</span>}
                     </div>
                     <div className="truncate text-sm font-bold text-slate-900 dark:text-slate-100">{m.listing.title}</div>
-                    <div className="text-[11px] text-gray-500 dark:text-slate-400">📍 {m.listing.il}{m.listing.amount ? ` · ${m.listing.amount} ${m.listing.unit || ""}` : ""}</div>
+                    <div className="text-[11px] text-gray-500 dark:text-slate-400">📍 {m.listing.il}{m.listing.amount ? ` · ${m.listing.amount} ${m.listing.unit || ""}` : ""}{m.trips ? ` · ~${m.trips} sefer` : ""}</div>
                   </div>
                   <span className="flex-shrink-0 rounded-full bg-yellow-400 px-3 py-1.5 text-[10px] font-extrabold text-slate-950">{m.fit}</span>
                 </button>

@@ -79,6 +79,18 @@ export default function NakliyeHome({ listings = LISTINGS }) {
         </button>
       </div>
 
+      {/* BOS DONUS FIRSATI */}
+      <button onClick={() => navigate("/ilanlar?mode=backhaul")} className="flex items-center justify-between gap-3 rounded-2xl bg-slate-950 p-4 text-left text-white shadow-sm transition hover:-translate-y-0.5 dark:bg-navy-soft">
+        <div className="flex items-center gap-3">
+          <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-yellow-400 text-lg">🔄</span>
+          <div>
+            <div className="text-sm font-extrabold">Boş dönme — dönüş yükü bul</div>
+            <div className="text-[11px] text-slate-400">Aracının olduğu ile yakın açık yükler</div>
+          </div>
+        </div>
+        <span className="text-xl text-yellow-400">›</span>
+      </button>
+
       {/* AKTIF SEVKIYAT */}
       {current && (
         <section>

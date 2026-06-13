@@ -91,6 +91,29 @@ export function ilDistance(a, b) {
 
 const FIT = { 0: "Aynı il", 1: "Çok uygun", 2: "Uygun" };
 
+// ── Araç tipi / kapasite uyumu ──────────────────────────────
+// Kategori = araç sınıfı: hafriyat -> açık damper, silobas -> kapalı silobas/tanker.
+// (Damperli kamyon dökme çimento taşıyamaz; bu yüzden kategori = araç uyumu.)
+export const vehicleClassOf = (l) => {
+  if (l?.vehicle) {
+    const f = fold(l.vehicle);
+    if (f.includes("silobas") || f.includes("tanker")) return "Silobas / Tanker";
+    if (f.includes("damper")) return "Damperli";
+  }
+  return l?.cat === "silobas" ? "Silobas / Tanker" : "Damperli";
+};
+// "18 ton" -> 18 ; "30 ton" -> 30
+export const parseTons = (str) => {
+  const m = String(str || "").match(/(\d+(?:[.,]\d+)?)/);
+  return m ? parseFloat(m[1].replace(",", ".")) : null;
+};
+// Araç bu işi kaç seferde taşır (kaba tahmin; sadece 'ton' birimi için)
+export const estimateTrips = (jobAmount, jobUnit, capacityStr) => {
+  const cap = parseTons(capacityStr);
+  if (!cap || !jobAmount || (jobUnit && jobUnit !== "ton")) return null;
+  return Math.max(1, Math.ceil(jobAmount / cap));
+};
+
 // "is" işi için dönüş yükü zinciri: bu işi alan araç, B noktasında
 // (boşaltma ili) yeni bir yük bulabilir mi?
 export function backhaulForJob(job, all, limit = 3) {
@@ -112,19 +135,36 @@ export function backhaulForJob(job, all, limit = 3) {
     .map((m) => ({ ...m, fit: FIT[m.dist] || "Uygun" }));
 }
 
-// "arac" ilanı için: araç buradayken alabileceği yakın yükler
+// "arac" ilanı için: araç buradayken alabileceği yakın yükler (araç tipi uyumlu)
 export function loadsForVehicle(arac, all, limit = 3) {
   if (!arac) return [];
   const vIl = routeOf(arac).fromIl;
   if (!vIl) return [];
   return all
-    .filter((x) => x.type === "is" && x.status !== "kapali" && x.cat === arac.cat)
+    .filter((x) => x.type === "is" && x.status !== "kapali" && x.cat === arac.cat) // ayni arac sinifi
     .map((x) => {
       const xr = routeOf(x);
       const d = ilDistance(vIl, xr.fromIl);
-      return { listing: x, fromIl: xr.fromIl, toIl: xr.toIl, dist: d };
+      return { listing: x, fromIl: xr.fromIl, toIl: xr.toIl, dist: d, trips: estimateTrips(x.amount, x.unit, arac.capacity) };
     })
     .filter((m) => m.dist <= 2)
+    .sort((a, b) => a.dist - b.dist)
+    .slice(0, limit)
+    .map((m) => ({ ...m, fit: FIT[m.dist] || "Uygun" }));
+}
+
+// Belirli bir il referansıyla yakın iş yükleri (İlanlar 'dönüş yükü' filtresi + ana sayfa widget)
+export function loadsNearCity(il, all, { cat = null, maxDist = 2, limit = 20 } = {}) {
+  const ref = canonIl(il);
+  if (!ref) return [];
+  return all
+    .filter((x) => x.type === "is" && x.status !== "kapali" && (!cat || x.cat === cat))
+    .map((x) => {
+      const xr = routeOf(x);
+      const d = ilDistance(ref, xr.fromIl);
+      return { listing: x, fromIl: xr.fromIl, toIl: xr.toIl, dist: d };
+    })
+    .filter((m) => m.dist <= maxDist)
     .sort((a, b) => a.dist - b.dist)
     .slice(0, limit)
     .map((m) => ({ ...m, fit: FIT[m.dist] || "Uygun" }));

@@ -1,8 +1,9 @@
 import { useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { LISTINGS, IL_LIST } from "../data/listings";
 import { CATS } from "../data/categories";
+import { loadsNearCity } from "../utils/backhaul";
 import SEO from "../components/SEO";
 
 // ── MoveIQ LIGHT "Orders" tasarimi (Tailwind).
@@ -53,6 +54,8 @@ export default function ListingsPage({ listings = LISTINGS }) {
   const [cat, setCat] = useState("all");
   const [il, setIl] = useState("all");
   const [q, setQ] = useState("");
+  const [sp] = useSearchParams();
+  const [mode, setMode] = useState(sp.get("mode") === "backhaul" ? "backhaul" : "normal"); // normal | backhaul
 
   const filtered = useMemo(() => {
     return listings.filter((l) =>
@@ -63,6 +66,12 @@ export default function ListingsPage({ listings = LISTINGS }) {
       (q === "" || l.title.toLowerCase().includes(q.toLowerCase()) || (l.ilce || "").toLowerCase().includes(q.toLowerCase()))
     );
   }, [listings, type, cat, il, q]);
+
+  // Donus yuku: referans il'e yakin acik is yukleri
+  const backhaul = useMemo(() => {
+    if (mode !== "backhaul" || il === "all") return [];
+    return loadsNearCity(il, listings, { cat: cat === "all" ? null : cat, limit: 30 });
+  }, [mode, il, cat, listings]);
 
   const segBtn = (active) =>
     `flex-1 rounded-xl py-2.5 text-sm font-bold transition ${active ? "bg-slate-950 text-white dark:bg-navy-soft dark:text-slate-100 shadow" : "text-gray-500 dark:text-slate-400"}`;
@@ -77,8 +86,14 @@ export default function ListingsPage({ listings = LISTINGS }) {
       <div className="flex items-center justify-between pt-2">
         <div className="flex items-center gap-2">
           <h1 className="text-2xl font-black tracking-tight text-slate-950 dark:text-slate-100">İlanlar</h1>
-          <span className="rounded-full bg-white dark:bg-navy-card px-2.5 py-1 text-xs font-bold text-slate-800 dark:text-slate-100 shadow-sm">{filtered.length}</span>
+          <span className="rounded-full bg-white dark:bg-navy-card px-2.5 py-1 text-xs font-bold text-slate-800 dark:text-slate-100 shadow-sm">{mode === "backhaul" ? backhaul.length : filtered.length}</span>
         </div>
+      </div>
+
+      {/* Mod: Tum ilanlar / Donus yuku */}
+      <div className="flex gap-1 rounded-2xl bg-white dark:bg-navy-card p-1 shadow-sm">
+        <button className={segBtn(mode === "normal")} onClick={() => setMode("normal")}>Tüm ilanlar</button>
+        <button className={segBtn(mode === "backhaul")} onClick={() => setMode("backhaul")}>🔄 Dönüş yükü</button>
       </div>
 
       {/* Arama */}
@@ -91,11 +106,19 @@ export default function ListingsPage({ listings = LISTINGS }) {
         />
       </div>
 
-      {/* Segment Is/Arac */}
-      <div className="flex gap-1 rounded-2xl bg-white dark:bg-navy-card p-1 shadow-sm">
-        <button className={segBtn(type === "is" || type === "all")} onClick={() => setType("is")}>İş ilanları</button>
-        <button className={segBtn(type === "arac")} onClick={() => setType("arac")}>Araç ilanları</button>
-      </div>
+      {/* Segment Is/Arac — sadece normal modda */}
+      {mode === "normal" && (
+        <div className="flex gap-1 rounded-2xl bg-white dark:bg-navy-card p-1 shadow-sm">
+          <button className={segBtn(type === "is" || type === "all")} onClick={() => setType("is")}>İş ilanları</button>
+          <button className={segBtn(type === "arac")} onClick={() => setType("arac")}>Araç ilanları</button>
+        </div>
+      )}
+
+      {mode === "backhaul" && (
+        <p className="-mb-1 px-1 text-xs text-gray-500 dark:text-slate-400">
+          Aracın <b className="text-slate-800 dark:text-slate-200">hangi ildeyse</b> aşağıdan seç — o ile yakın açık yükleri (boş dönmeyesin) sıralayalım.
+        </p>
+      )}
 
       {/* Kategori chip */}
       <div className="flex gap-1.5">
@@ -113,7 +136,33 @@ export default function ListingsPage({ listings = LISTINGS }) {
         ))}
       </div>
 
-      {filtered.length === 0 ? (
+      {mode === "backhaul" ? (
+        il === "all" ? (
+          <div className="flex flex-col items-center gap-2 rounded-3xl bg-white dark:bg-navy-card py-12 text-center shadow-sm">
+            <div className="text-4xl">🧭</div>
+            <div className="text-base font-bold text-slate-950 dark:text-slate-100">Bir referans il seç</div>
+            <div className="px-6 text-sm text-gray-500 dark:text-slate-400">Yukarıdaki illerden aracının bulunduğu ili seç; o ile yakın açık yükleri gösterelim.</div>
+          </div>
+        ) : backhaul.length === 0 ? (
+          <div className="flex flex-col items-center gap-2 rounded-3xl bg-white dark:bg-navy-card py-12 text-center shadow-sm">
+            <div className="text-4xl">📭</div>
+            <div className="text-base font-bold text-slate-950 dark:text-slate-100">{il} çevresinde açık yük yok</div>
+            <div className="text-sm text-gray-500 dark:text-slate-400">Komşu illeri de deneyebilirsin.</div>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3">
+            {backhaul.map((m) => (
+              <div key={m.listing.id} className="flex flex-col gap-1.5">
+                <div className="flex items-center gap-1.5 px-1">
+                  <span className="rounded-md bg-slate-100 dark:bg-navy-soft px-2 py-0.5 text-[10px] font-bold text-slate-600 dark:text-slate-300">📍 {m.fromIl || "—"} → {m.toIl || "—"}</span>
+                  <span className="rounded-full bg-yellow-400 px-2.5 py-0.5 text-[10px] font-extrabold text-slate-950">{m.fit}</span>
+                </div>
+                <ListingCard l={m.listing} onClick={() => navigate(`/ilan/${m.listing.id}`)} />
+              </div>
+            ))}
+          </div>
+        )
+      ) : filtered.length === 0 ? (
         <div className="flex flex-col items-center gap-2 rounded-3xl bg-white dark:bg-navy-card py-14 text-center shadow-sm">
           <div className="text-4xl">🔍</div>
           <div className="text-base font-bold text-slate-950 dark:text-slate-100">İlan bulunamadı</div>
