@@ -47,6 +47,11 @@ create table if not exists public.listings (
   description     text default '',
   status          text not null default 'aktif',  -- aktif | kapali | eslesti
   offers_count    integer not null default 0,
+  km              numeric,                         -- harita ile secilen gercek mesafe
+  pickup          jsonb,                           -- [lat,lng] yukleme noktasi
+  dropoff         jsonb,                           -- [lat,lng] bosaltma noktasi
+  phase           text,                            -- eslesti | yuklendi | yolda | teslim (sefer akisi)
+  trips_done      integer not null default 0,      -- tamamlanan sefer sayisi
   created_text    text default 'az once',
   created_at      timestamptz not null default now()
 );
@@ -81,7 +86,8 @@ create table if not exists public.messages (
   from_name   text default '',
   to_id       uuid not null references public.profiles(id) on delete cascade,
   to_name     text default '',
-  text        text not null,
+  text        text default '',
+  image       text,                                -- base64/URL (ileride Supabase Storage)
   created_at  timestamptz not null default now()
 );
 create index if not exists messages_thread_idx on public.messages(listing_id, offer_id);
@@ -171,6 +177,68 @@ create policy messages_read on public.messages for select using (
   auth.uid() = from_id or auth.uid() = to_id
 );
 create policy messages_insert on public.messages for insert with check (auth.uid() = from_id);
+
+-- ──────────────────────────────────────────────
+-- 7b) PUANLAMA / YORUM  (reviews)
+-- ──────────────────────────────────────────────
+create table if not exists public.reviews (
+  id           bigint generated always as identity primary key,
+  listing_id   bigint references public.listings(id) on delete cascade,
+  from_id      uuid not null references public.profiles(id) on delete cascade,
+  from_name    text default '',
+  to_id        uuid not null references public.profiles(id) on delete cascade,
+  rating       integer not null check (rating between 1 and 5),
+  comment      text default '',
+  created_at   timestamptz not null default now()
+);
+create index if not exists reviews_to_idx on public.reviews(to_id);
+alter table public.reviews enable row level security;
+drop policy if exists reviews_read on public.reviews;
+drop policy if exists reviews_insert on public.reviews;
+create policy reviews_read   on public.reviews for select using (true);          -- puanlar herkese acik
+create policy reviews_insert on public.reviews for insert with check (auth.uid() = from_id);
+
+-- ──────────────────────────────────────────────
+-- 7c) SIKAYET / UYUSMAZLIK  (reports)
+-- ──────────────────────────────────────────────
+create table if not exists public.reports (
+  id          bigint generated always as identity primary key,
+  type        text not null,                       -- listing | user
+  target_id   text,                                -- ilan id veya kullanici id
+  listing_id  bigint references public.listings(id) on delete set null,
+  from_id     uuid references public.profiles(id) on delete set null,
+  from_name   text default '',
+  reason      text not null,
+  description text default '',
+  status      text not null default 'acik',        -- acik | inceleniyor | kapali
+  created_at  timestamptz not null default now()
+);
+alter table public.reports enable row level security;
+drop policy if exists reports_insert on public.reports;
+drop policy if exists reports_read on public.reports;
+create policy reports_insert on public.reports for insert with check (true);     -- giris yapmamis da bildirebilir
+create policy reports_read   on public.reports for select using (auth.uid() = from_id);  -- sadece kendi bildirimini gorur (admin servis rolu ayri)
+
+-- ──────────────────────────────────────────────
+-- 7d) BELGELER  (docs) — ileride dosyalar Supabase Storage'a tasinir
+-- ──────────────────────────────────────────────
+create table if not exists public.docs (
+  id          bigint generated always as identity primary key,
+  owner_id    uuid not null references public.profiles(id) on delete cascade,
+  type        text not null,                       -- K Belgesi | Arac Ruhsati | ...
+  name        text default '',
+  url         text,                                -- Storage URL (base64 yerine)
+  status      text not null default 'beklemede',   -- beklemede | dogrulandi | red
+  created_at  timestamptz not null default now()
+);
+create index if not exists docs_owner_idx on public.docs(owner_id);
+alter table public.docs enable row level security;
+drop policy if exists docs_read on public.docs;
+drop policy if exists docs_write on public.docs;
+drop policy if exists docs_delete on public.docs;
+create policy docs_read   on public.docs for select using (auth.uid() = owner_id);
+create policy docs_write  on public.docs for insert with check (auth.uid() = owner_id);
+create policy docs_delete on public.docs for delete using (auth.uid() = owner_id);
 
 -- ──────────────────────────────────────────────
 -- 8) DEMO SEED  (owner_id null = sistem ilani; herkes gorur, kimse duzenleyemez)

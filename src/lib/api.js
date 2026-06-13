@@ -17,6 +17,7 @@ const rowToListing = (r) => ({
   priceType: r.price_type, price: r.price, desc: r.description,
   owner: r.owner_name, ownerId: r.owner_id, ownerVerified: r.owner_verified, ownerRating: r.owner_rating,
   status: r.status, offers: r.offers_count, createdText: r.created_text, createdAt: r.created_at,
+  km: r.km, pickup: r.pickup, dropoff: r.dropoff, phase: r.phase, tripsDone: r.trips_done,
 });
 
 const listingToRow = (l) => ({
@@ -26,6 +27,7 @@ const listingToRow = (l) => ({
   recurring: l.recurring ?? false, recurring_text: l.recurringText ?? "",
   vehicle: l.vehicle ?? null, capacity: l.capacity ?? null,
   price_type: l.priceType, price: l.price ?? null, description: l.desc ?? "",
+  km: l.km ?? null, pickup: l.pickup ?? null, dropoff: l.dropoff ?? null,
 });
 
 // camelCase patch -> snake_case (listing guncelleme)
@@ -35,6 +37,7 @@ const LISTING_KEYMAP = {
   recurring: "recurring", recurringText: "recurring_text", vehicle: "vehicle",
   capacity: "capacity", priceType: "price_type", price: "price", desc: "description",
   status: "status", createdText: "created_text", type: "type", cat: "cat",
+  km: "km", pickup: "pickup", dropoff: "dropoff", phase: "phase", tripsDone: "trips_done",
 };
 const mapPatch = (patch, keymap) => {
   const out = {};
@@ -50,7 +53,7 @@ const rowToOffer = (r) => ({
 const rowToMessage = (r) => ({
   id: r.id, listingId: r.listing_id, offerId: r.offer_id,
   fromId: r.from_id, fromName: r.from_name, toId: r.to_id, toName: r.to_name,
-  text: r.text, createdAt: r.created_at,
+  text: r.text, image: r.image, createdAt: r.created_at,
 });
 
 const rowToProfile = (r) => r && ({
@@ -166,12 +169,49 @@ export async function fetchMessages() {
   return (data || []).map(rowToMessage);
 }
 
-export async function sendMessage({ listingId, offerId, fromId, fromName, toId, toName, text }) {
+export async function sendMessage({ listingId, offerId, fromId, fromName, toId, toName, text, image }) {
   const row = {
     listing_id: listingId, offer_id: offerId,
-    from_id: fromId, from_name: fromName, to_id: toId, to_name: toName, text,
+    from_id: fromId, from_name: fromName, to_id: toId, to_name: toName, text: text || "", image: image || null,
   };
   const { data, error } = await supabase.from("messages").insert(row).select("*").single();
   if (error) throw error;
   return rowToMessage(data);
+}
+
+// ── Reviews (puanlama/yorum) ────────────────────────────────
+export async function fetchReviews() {
+  const { data, error } = await supabase.from("reviews").select("*").order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data || []).map((r) => ({ id: r.id, listingId: r.listing_id, fromId: r.from_id, fromName: r.from_name, toId: r.to_id, rating: r.rating, comment: r.comment, createdAt: r.created_at }));
+}
+export async function addReview({ listingId, fromId, fromName, toId, rating, comment }) {
+  const { error } = await supabase.from("reviews").insert({ listing_id: listingId, from_id: fromId, from_name: fromName, to_id: toId, rating, comment: comment || "" });
+  if (error) throw error;
+}
+
+// ── Reports (şikayet) ───────────────────────────────────────
+export async function addReport({ type, targetId, listingId, fromId, fromName, reason, description }) {
+  const { error } = await supabase.from("reports").insert({
+    type, target_id: String(targetId ?? ""),
+    listing_id: typeof listingId === "number" ? listingId : null,
+    from_id: fromId || null, from_name: fromName || "", reason, description: description || "",
+  });
+  if (error) throw error;
+}
+
+// ── Docs (belgeler) — url Supabase Storage'dan gelir ────────
+export async function fetchDocs(ownerId) {
+  const { data, error } = await supabase.from("docs").select("*").eq("owner_id", ownerId).order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data || []).map((d) => ({ id: d.id, ownerId: d.owner_id, type: d.type, name: d.name, url: d.url, status: d.status, createdAt: d.created_at }));
+}
+export async function addDoc({ ownerId, type, name, url }) {
+  const { data, error } = await supabase.from("docs").insert({ owner_id: ownerId, type, name, url }).select("*").single();
+  if (error) throw error;
+  return data;
+}
+export async function removeDoc(id) {
+  const { error } = await supabase.from("docs").delete().eq("id", id);
+  if (error) throw error;
 }
