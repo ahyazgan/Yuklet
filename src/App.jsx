@@ -4,8 +4,9 @@ import { AnimatePresence } from "framer-motion";
 import {
   loadTheme, saveTheme, loadListings, saveListings, loadUser, saveUser,
   loadUsers, saveUsers, loadOffers, saveOffers, loadMessages, saveMessages,
-  loadMsgSeen, saveMsgSeen,
+  loadMsgSeen, saveMsgSeen, loadNotifSeen, saveNotifSeen,
 } from "./utils/storage";
+import { buildNotifications } from "./utils/notifications";
 import { ToastProvider } from "./components/Toast";
 import { ErrorBoundary, NotFoundPage } from "./components/ErrorBoundary";
 import { SkeletonGrid } from "./components/Skeleton";
@@ -72,7 +73,7 @@ function AppShell() {
   const [offers, setOffers] = useState(() => loadOffers());
   useEffect(() => { saveOffers(offers); }, [offers]);
   const addOffer = (offer) => setOffers(prev => [offer, ...prev]);
-  const updateOffer = (id, patch) => setOffers(prev => prev.map(o => o.id === id ? { ...o, ...patch } : o));
+  const updateOffer = (id, patch) => setOffers(prev => prev.map(o => o.id === id ? { ...o, ...patch, ...(patch.status ? { updatedAt: new Date().toISOString() } : {}) } : o));
 
   // Mesajlar
   const [messages, setMessages] = useState(() => loadMessages());
@@ -80,6 +81,8 @@ function AppShell() {
   const addMessage = (msg) => setMessages(prev => [...prev, msg]);
   const [msgSeen, setMsgSeen] = useState(() => loadMsgSeen());
   useEffect(() => { saveMsgSeen(msgSeen); }, [msgSeen]);
+  const [notifSeen, setNotifSeen] = useState(() => loadNotifSeen());
+  useEffect(() => { saveNotifSeen(notifSeen); }, [notifSeen]);
 
   // Kullanici / kimlik dogrulama
   const [users, setUsers] = useState(() => loadUsers());
@@ -108,6 +111,7 @@ function AppShell() {
   const logout = () => setUser(null);
   const requireAuth = () => setShowAuth(true);
   const markMessagesSeen = () => { if (user) setMsgSeen(prev => ({ ...prev, [user.id]: new Date().toISOString() })); };
+  const markNotifSeen = () => { if (user) setNotifSeen(prev => ({ ...prev, [user.id]: new Date().toISOString() })); };
   const getContact = (id) => {
     const u = users.find(x => String(x.id) === String(id));
     return u ? { name: u.name, phone: u.phone, email: u.email } : null;
@@ -141,6 +145,9 @@ function AppShell() {
     ? messages.filter(m => String(m.toId) === String(user.id) && (!seenIso || m.createdAt > seenIso)).length
     : 0;
 
+  const notifSeenIso = user ? (notifSeen[user.id] || null) : null;
+  const notif = buildNotifications(user, { listings, offers, messages }, notifSeenIso);
+
   return (
     <div className="app-root">
       <ScrollToTop />
@@ -149,6 +156,7 @@ function AppShell() {
         darkMode={darkMode} toggleDark={() => setDarkMode(d => !d)}
         user={user} onLoginClick={requireAuth} onLogout={logout}
         pendingOffersCount={pendingOffersCount} unreadCount={unreadCount}
+        notifItems={notif.items} notifUnread={notif.unread} onNotifSeen={markNotifSeen}
       />
 
       <main>

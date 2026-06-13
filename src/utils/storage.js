@@ -28,3 +28,5 @@ export const loadMessages = () => load("hamted_messages", []);
 export const saveMessages = (v) => save("hamted_messages", v);
 export const loadMsgSeen = () => load("hamted_msg_seen", {});
 export const saveMsgSeen = (v) => save("hamted_msg_seen", v);
+export const loadNotifSeen = () => load("hamted_notif_seen", {});
+export const saveNotifSeen = (v) => save("hamted_notif_seen", v);

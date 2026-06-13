@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import NotificationBell from "./NotificationBell";
 
 // ── MoveIQ LIGHT header (Tailwind).
 
@@ -9,7 +10,7 @@ const COZUMLER = [
   { icon: "🚚", label: "Nakliyeci & Taşıyıcı", to: "/nakliyeci", sub: "Boş sefer yok, iş bul" },
 ];
 
-export default function Header({ darkMode, toggleDark, user, onLoginClick, onLogout, pendingOffersCount = 0, unreadCount = 0 }) {
+export default function Header({ darkMode, toggleDark, user, onLoginClick, onLogout, pendingOffersCount = 0, unreadCount = 0, notifItems = [], notifUnread = 0, onNotifSeen }) {
   const [mobileMenu, setMobileMenu] = useState(false);
   const [showCozumler, setShowCozumler] = useState(false);
   const navigate = useNavigate();
@@ -72,6 +73,7 @@ export default function Header({ darkMode, toggleDark, user, onLoginClick, onLog
             </Link>
           ))}
 
+          {user && <NotificationBell items={notifItems} unread={notifUnread} onOpen={onNotifSeen} />}
           <button onClick={toggleDark} aria-label="Tema" className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 dark:border-navy-line text-gray-600 dark:text-slate-300 transition hover:bg-gray-50 dark:hover:bg-navy-soft">{darkMode ? "☀" : "☾"}</button>
 
           {user ? (
@@ -88,6 +90,7 @@ export default function Header({ darkMode, toggleDark, user, onLoginClick, onLog
 
         {/* Mobile nav */}
         <div className="flex items-center gap-2 md:hidden">
+          {user && <NotificationBell items={notifItems} unread={notifUnread} onOpen={onNotifSeen} />}
           <button onClick={toggleDark} aria-label="Tema değiştir" className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 dark:border-navy-line text-gray-600 dark:text-slate-300">{darkMode ? "☀" : "☾"}</button>
           <button onClick={() => navigate("/ilan-ver")} aria-label="İlan ver" className="rounded-full bg-yellow-400 px-3 py-1.5 text-xs font-extrabold text-slate-950">+ İlan</button>
           <button onClick={() => setMobileMenu(!mobileMenu)} aria-label="Menü" className="relative flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 dark:border-navy-line text-xl text-slate-700 dark:text-slate-100">
