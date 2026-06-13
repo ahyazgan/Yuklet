@@ -36,3 +36,5 @@ export const loadDocs = () => load("hamted_docs", []);
 export const saveDocs = (v) => save("hamted_docs", v);
 export const loadOnboarded = () => loadStr("hamted_onboarded", "") === "1";
 export const saveOnboarded = () => saveStr("hamted_onboarded", "1");
+export const loadReports = () => load("hamted_reports", []);
+export const saveReports = (v) => save("hamted_reports", v);

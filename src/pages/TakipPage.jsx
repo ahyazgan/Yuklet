@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { LISTINGS } from "../data/listings";
 import { CATS } from "../data/categories";
 import { StarsDisplay, StarsInput } from "../components/Stars";
+import ReportModal from "../components/ReportModal";
 import SEO from "../components/SEO";
 
 // ── "Sevkiyat Takibi" — logistics prototip (Shipment Review + Dark Detail) HamTed'e uyarlandi.
@@ -13,11 +14,12 @@ const idText = (l) => "HMT-" + String(l.id).padStart(4, "0");
 
 const PHASES = [["eslesti", "Eşleşti"], ["yuklendi", "Yüklendi"], ["yolda", "Yolda"], ["teslim", "Teslim"]];
 
-export default function TakipPage({ listings = LISTINGS, user, offers = [], getContact, reviews = [], onAddReview, getUserRating, onUpdateListing }) {
+export default function TakipPage({ listings = LISTINGS, user, offers = [], getContact, reviews = [], onAddReview, getUserRating, onUpdateListing, onReport }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const [rateVal, setRateVal] = useState(0);
   const [rateComment, setRateComment] = useState("");
+  const [showReport, setShowReport] = useState(false);
   const l = listings.find((x) => String(x.id) === String(id));
 
   if (!l) {
@@ -290,6 +292,16 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
         <p className="px-2 text-center text-xs text-gray-400 dark:text-navy-muted">
           Bu iş henüz eşleşmedi. {user ? "Teklifler geldikçe takip burada güncellenir." : "Takip detayları eşleşme sonrası canlanır."}
         </p>
+      )}
+
+      <button onClick={() => setShowReport(true)} className="self-center text-xs font-semibold text-gray-400 transition hover:text-red-500 dark:text-slate-500">⚠ Sorun bildir / anlaşmazlık</button>
+
+      {showReport && (
+        <ReportModal
+          targetLabel={counterpart ? `${counterpart.role}: ${counterpart.name}` : `İlan: ${l.title}`}
+          onClose={() => setShowReport(false)}
+          onSubmit={(p) => { onReport?.({ type: counterpart ? "user" : "listing", targetId: counterpart?.id || l.id, listingId: l.id, fromId: user?.id || null, fromName: user?.name || "misafir", ...p }); }}
+        />
       )}
     </div>
   );

@@ -5,7 +5,7 @@ import {
   loadTheme, saveTheme, loadListings, saveListings, loadUser, saveUser,
   loadUsers, saveUsers, loadOffers, saveOffers, loadMessages, saveMessages,
   loadMsgSeen, saveMsgSeen, loadNotifSeen, saveNotifSeen, loadReviews, saveReviews, loadDocs, saveDocs,
-  loadOnboarded, saveOnboarded,
+  loadOnboarded, saveOnboarded, loadReports, saveReports,
 } from "./utils/storage";
 import { buildNotifications } from "./utils/notifications";
 import { ToastProvider } from "./components/Toast";
@@ -98,6 +98,11 @@ function AppShell() {
   useEffect(() => { saveDocs(docs); }, [docs]);
   const addDoc = (d) => setDocs(prev => [d, ...prev]);
   const removeDoc = (id) => setDocs(prev => prev.filter(x => x.id !== id));
+
+  // Sikayet / uyusmazlik bildirimleri
+  const [reports, setReports] = useState(() => loadReports());
+  useEffect(() => { saveReports(reports); }, [reports]);
+  const addReport = (r) => setReports(prev => [{ ...r, id: Date.now(), createdAt: new Date().toISOString(), status: "acik" }, ...prev]);
   const getUserRating = (userId) => {
     const rs = reviews.filter(r => String(r.toId) === String(userId));
     if (!rs.length) return null;
@@ -190,8 +195,8 @@ function AppShell() {
               <Routes location={location} key={location.pathname}>
                 <Route path="/" element={<PageTransition><NakliyeHome listings={listings} /></PageTransition>} />
                 <Route path="/ilanlar" element={<PageTransition><ListingsPage listings={listings} /></PageTransition>} />
-                <Route path="/ilan/:id" element={<PageTransition><IlanDetayPage listings={listings} user={user} onRequireAuth={requireAuth} offers={offers} onAddOffer={addOffer} /></PageTransition>} />
-                <Route path="/takip/:id" element={<PageTransition><TakipPage listings={listings} user={user} offers={offers} getContact={getContact} reviews={reviews} onAddReview={addReview} getUserRating={getUserRating} onUpdateListing={updateListing} /></PageTransition>} />
+                <Route path="/ilan/:id" element={<PageTransition><IlanDetayPage listings={listings} user={user} onRequireAuth={requireAuth} offers={offers} onAddOffer={addOffer} onReport={addReport} /></PageTransition>} />
+                <Route path="/takip/:id" element={<PageTransition><TakipPage listings={listings} user={user} offers={offers} getContact={getContact} reviews={reviews} onAddReview={addReview} getUserRating={getUserRating} onUpdateListing={updateListing} onReport={addReport} /></PageTransition>} />
                 <Route path="/sozlesme/:offerId" element={<PageTransition><SozlesmePage listings={listings} offers={offers} getContact={getContact} /></PageTransition>} />
                 <Route path="/cuzdan" element={<PageTransition><CuzdanPage user={user} listings={listings} offers={offers} onRequireAuth={requireAuth} /></PageTransition>} />
                 <Route path="/ilan-ver" element={<PageTransition><IlanVerPage onPublish={publishListing} onUpdate={updateListing} listings={listings} user={user} onRequireAuth={requireAuth} /></PageTransition>} />

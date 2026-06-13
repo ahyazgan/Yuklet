@@ -6,6 +6,7 @@ import { CATS } from "../data/categories";
 import { backhaulForJob, loadsForVehicle, vehicleClassOf } from "../utils/backhaul";
 import { estimatePrice, fmtTL } from "../utils/priceEstimate";
 import { useToast } from "../components/Toast";
+import ReportModal from "../components/ReportModal";
 import SEO from "../components/SEO";
 
 // ── MoveIQ LIGHT ilan detay (Tailwind).
@@ -35,12 +36,13 @@ function fmtDate(iso) {
   catch { return ""; }
 }
 
-export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth, offers = [], onAddOffer }) {
+export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth, offers = [], onAddOffer, onReport }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
   const [price, setPrice] = useState("");
   const [message, setMessage] = useState("");
+  const [showReport, setShowReport] = useState(false);
 
   const l = listings.find((x) => String(x.id) === String(id));
 
@@ -218,7 +220,17 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
             </div>
           )}
         </div>
+
+        <button onClick={() => setShowReport(true)} className="self-center pt-1 text-xs font-semibold text-gray-400 transition hover:text-red-500 dark:text-slate-500">⚠ Bu ilanı şikayet et</button>
       </motion.div>
+
+      {showReport && (
+        <ReportModal
+          targetLabel={`İlan: ${l.title}`}
+          onClose={() => setShowReport(false)}
+          onSubmit={(p) => { onReport?.({ type: "listing", targetId: l.id, listingId: l.id, fromId: user?.id || null, fromName: user?.name || "misafir", ...p }); }}
+        />
+      )}
     </div>
   );
 }
