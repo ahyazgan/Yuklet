@@ -19,6 +19,7 @@ const ROLES = [
 
 const QUICK = [
   { icon: "📋", label: "İlanlarım", desc: "Açtığın ilanlar ve gelen teklifler", to: "/ilanlarim" },
+  { icon: "💰", label: "Cüzdan", desc: "Kazanç, hakediş ve harcama", to: "/cuzdan" },
   { icon: "📊", label: "Panelim", desc: "Özet ve iş akışı", to: "/panel" },
 ];
 
