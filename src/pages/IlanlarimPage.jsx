@@ -135,6 +135,7 @@ export default function IlanlarimPage({ listings = [], user, offers = [], onUpda
                                   <a href={`tel:${getContact(o.fromUserId).phone}`} className="text-xs font-bold text-emerald-600">📞 {getContact(o.fromUserId).phone}</a>
                                 )}
                                 <button onClick={() => navigate("/mesajlar")} className="rounded-lg bg-slate-950 dark:bg-navy-soft px-3 py-2 text-xs font-bold text-white dark:text-slate-100">Mesaj gönder</button>
+                                <button onClick={() => navigate(`/sozlesme/${o.id}`)} className="rounded-lg border border-gray-200 dark:border-navy-line px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200">📄 Sözleşme</button>
                               </div>
                             )}
                           </div>

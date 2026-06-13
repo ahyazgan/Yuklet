@@ -114,6 +114,13 @@ main { flex: 1; }
   .product-grid { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
 }
 
+/* ═══ YAZDIRMA (sözleşme/irsaliye) ═══ */
+@media print {
+  header, footer, nav[aria-label="Alt gezinme"], .whatsapp-btn { display: none !important; }
+  body, .app-root, main { background: #fff !important; }
+  main { padding: 0 !important; }
+}
+
 /* ═══ RESPONSIVE — MOBILE ═══ */
 @media (max-width: 768px) {
   .app-root { padding-bottom: 70px; } /* alt tab bar için boşluk */

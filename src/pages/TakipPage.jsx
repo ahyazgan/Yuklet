@@ -205,6 +205,14 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
         </div>
       </motion.div>
 
+      {/* Sözleşme / irsaliye */}
+      {matched && accepted && (
+        <button onClick={() => navigate(`/sozlesme/${accepted.id}`)}
+          className="flex items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white py-3.5 text-sm font-bold text-slate-900 shadow-sm transition hover:-translate-y-0.5 dark:border-navy-line dark:bg-navy-card dark:text-slate-100">
+          📄 Taşıma sözleşmesi / irsaliye
+        </button>
+      )}
+
       {/* Karşılıklı değerlendirme */}
       {counterpart && (
         <div className="rounded-3xl bg-white p-5 shadow-sm dark:bg-navy-card">
