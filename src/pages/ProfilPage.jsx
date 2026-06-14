@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { useToast } from "../components/Toast";
 import { StarsDisplay } from "../components/Stars";
 import SEO from "../components/SEO";
+import { sendSmsCode, verifySmsCode, isValidPhone, isSmsConfigured } from "../lib/smsProvider";
 
 function fmtRev(iso) {
   try { return new Date(iso).toLocaleDateString("tr-TR", { day: "numeric", month: "short", year: "numeric" }); }
@@ -28,10 +29,34 @@ const FIELD = "w-full rounded-2xl bg-slate-50 dark:bg-navy-soft px-4 py-3 text-s
 
 const DOC_TYPES = ["K Belgesi", "Araç Ruhsatı", "Vergi Levhası", "Sigorta Poliçesi", "Diğer"];
 
-export default function ProfilPage({ user, onUpdateProfile, onRequireAuth, reviews = [], getUserRating, docs = [], onAddDoc, onRemoveDoc }) {
+export default function ProfilPage({ user, onUpdateProfile, onVerifyPhone, onRequireAuth, reviews = [], getUserRating, docs = [], onAddDoc, onRemoveDoc }) {
   const toast = useToast();
   const navigate = useNavigate();
   const [docType, setDocType] = useState("K Belgesi");
+
+  // ── Telefon doğrulama (SMS, mock-first) ──
+  const [smsStep, setSmsStep] = useState("idle"); // idle | sent
+  const [smsCode, setSmsCode] = useState("");
+  const [smsHint, setSmsHint] = useState("");     // mock'ta gösterilen kod
+  const [smsBusy, setSmsBusy] = useState(false);
+  const startVerify = async () => {
+    setSmsBusy(true); setSmsHint("");
+    const res = await sendSmsCode(form.phone).catch((e) => ({ ok: false, error: e?.message }));
+    setSmsBusy(false);
+    if (!res?.ok) { toast(res?.error || "Kod gönderilemedi", "error"); return; }
+    setSmsStep("sent");
+    if (res.mock) setSmsHint(res.code); // gerçek SMS yokken kodu ekranda göster
+    toast(res.mock ? "Demo: kod ekranda gösterildi" : "Kod telefonuna gönderildi", "success");
+  };
+  const confirmVerify = async () => {
+    setSmsBusy(true);
+    const res = await verifySmsCode(form.phone, smsCode).catch((e) => ({ ok: false, error: e?.message }));
+    setSmsBusy(false);
+    if (!res?.ok) { toast(res?.error || "Kod hatalı", "error"); return; }
+    await onVerifyPhone?.(form.phone.trim());
+    setSmsStep("idle"); setSmsCode(""); setSmsHint("");
+    toast("Telefon doğrulandı ✓", "success");
+  };
 
   const onFile = (e) => {
     const f = e.target.files?.[0];
@@ -73,6 +98,8 @@ export default function ProfilPage({ user, onUpdateProfile, onRequireAuth, revie
 
   const rating = getUserRating?.(user.id);
   const myReviews = reviews.filter((r) => String(r.toId) === String(user.id)).slice(0, 8);
+  // Doğrulanmış numara forma eşitse "doğrulandı" göster (numara değişince düşer)
+  const phoneVerified = Boolean(user.phoneVerified) && String(user.phone || "").replace(/\D/g, "") === String(form.phone || "").replace(/\D/g, "") && isValidPhone(form.phone);
 
   return (
     <div className="mx-auto flex w-full max-w-[460px] flex-col gap-4 px-4 pb-24 pt-2 text-slate-900 dark:text-slate-100">
@@ -185,8 +212,40 @@ export default function ProfilPage({ user, onUpdateProfile, onRequireAuth, revie
           </div>
           <div>
             <label className={LBL}>Telefon</label>
-            <input className={FIELD} value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder="05XX XXX XX XX" />
-            <div className="mt-1.5 text-[11px] text-gray-400 dark:text-navy-muted">Eşleşen tarafla iletişim için paylaşılır.</div>
+            <div className="flex gap-2">
+              <input className={FIELD} value={form.phone} onChange={(e) => { set("phone", e.target.value); setSmsStep("idle"); }} placeholder="05XX XXX XX XX" />
+              {phoneVerified ? (
+                <span className="flex items-center gap-1 rounded-2xl bg-emerald-50 px-3 text-xs font-bold text-emerald-600 dark:bg-emerald-900/20">✓ Doğrulandı</span>
+              ) : (
+                <button type="button" onClick={startVerify} disabled={smsBusy || !isValidPhone(form.phone)}
+                  className="shrink-0 rounded-2xl bg-slate-950 px-4 text-xs font-bold text-white transition hover:bg-slate-800 disabled:opacity-50 dark:bg-navy-soft dark:text-slate-100">
+                  {smsBusy && smsStep === "idle" ? "…" : "Doğrula"}
+                </button>
+              )}
+            </div>
+
+            {!phoneVerified && smsStep === "sent" && (
+              <div className="mt-2 rounded-2xl border border-gray-100 bg-slate-50 p-3 dark:border-navy-line dark:bg-navy-soft">
+                {smsHint && (
+                  <div className="mb-2 rounded-lg bg-yellow-100 px-3 py-2 text-[11px] font-bold text-amber-800">
+                    Demo modu — gerçek SMS yerine kodun: <span className="tracking-widest">{smsHint}</span>
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <input value={smsCode} onChange={(e) => setSmsCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                    inputMode="numeric" placeholder="6 haneli kod"
+                    className="flex-1 rounded-xl bg-white px-3 py-2.5 text-sm tracking-widest text-slate-900 outline-none focus:ring-2 focus:ring-slate-300 dark:bg-navy-card dark:text-slate-100" />
+                  <button type="button" onClick={confirmVerify} disabled={smsBusy || smsCode.length !== 6}
+                    className="shrink-0 rounded-xl bg-yellow-400 px-4 text-xs font-extrabold text-slate-950 transition hover:bg-yellow-500 disabled:opacity-50">
+                    {smsBusy ? "…" : "Onayla"}
+                  </button>
+                </div>
+                <button type="button" onClick={startVerify} disabled={smsBusy} className="mt-2 text-[11px] font-semibold text-gray-400 hover:text-slate-600">Kodu tekrar gönder</button>
+              </div>
+            )}
+            <div className="mt-1.5 text-[11px] text-gray-400 dark:text-navy-muted">
+              {phoneVerified ? "Doğrulanmış numara, eşleşen tarafla paylaşılır." : "Doğrula → güven rozeti kazan. Eşleşen tarafla iletişim için paylaşılır."}
+            </div>
           </div>
           <div>
             <label className={LBL}>Rol</label>

@@ -12,10 +12,12 @@ create table if not exists public.profiles (
   email       text,
   role        text not null default 'isveren',  -- isveren | tedarikci | nakliyeci
   phone       text default '',
+  phone_verified boolean not null default false,
   verified    boolean not null default false,
   rating      numeric(2,1) not null default 5.0,
   created_at  timestamptz not null default now()
 );
+alter table public.profiles add column if not exists phone_verified boolean not null default false;
 
 -- ──────────────────────────────────────────────
 -- 2) LISTINGS  (is / arac ilanlari)

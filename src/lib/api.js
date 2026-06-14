@@ -60,7 +60,7 @@ const rowToMessage = (r) => ({
 
 const rowToProfile = (r) => r && ({
   id: r.id, name: r.name, email: r.email, role: r.role,
-  phone: r.phone, verified: r.verified, rating: r.rating,
+  phone: r.phone, phoneVerified: r.phone_verified, verified: r.verified, rating: r.rating,
 });
 
 // ── Auth ────────────────────────────────────────────────────
@@ -105,6 +105,7 @@ export async function updateProfile(userId, patch) {
   if (patch.name != null) row.name = patch.name;
   if (patch.phone != null) row.phone = patch.phone;
   if (patch.role != null) row.role = patch.role;
+  if (patch.phoneVerified != null) row.phone_verified = patch.phoneVerified;
   const { data, error } = await supabase.from("profiles").update(row).eq("id", userId).select("*").single();
   if (error) return { ok: false, error: error.message };
   return { ok: true, profile: rowToProfile(data) };
