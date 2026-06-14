@@ -10,6 +10,7 @@ import {
 import { isSupabaseConfigured } from "./lib/supabase";
 import * as api from "./lib/api";
 import { buildNotifications } from "./utils/notifications";
+import usePushNotifications from "./hooks/usePushNotifications";
 import { ToastProvider } from "./components/Toast";
 import { ErrorBoundary, NotFoundPage } from "./components/ErrorBoundary";
 import { SkeletonGrid } from "./components/Skeleton";
@@ -258,6 +259,9 @@ function AppShell() {
 
   const notifSeenIso = user ? (notifSeen[user.id] || null) : null;
   const notif = buildNotifications(user, { listings, offers, messages }, notifSeenIso);
+
+  // Yeni teklif/mesaj/kabul gelince tarayıcı bildirimi göster (giriş yapılmışsa).
+  usePushNotifications(notif.items, Boolean(user));
 
   return (
     <div className="app-root">
