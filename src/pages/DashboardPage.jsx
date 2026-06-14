@@ -31,6 +31,40 @@ const QUICK = "rounded-full bg-white dark:bg-navy-card px-4 py-2.5 text-xs font-
 
 export default function DashboardPage({ user, listings = [], offers = [], messages = [], onRequireAuth }) {
   const navigate = useNavigate();
+  const uid = user?.id;
+
+  // Tüm hook'lar koşulsuz ve user-null'a dayanıklı (erken return hook'lardan SONRA).
+  const myListings = useMemo(() => (!uid ? [] : listings.filter((l) => l.ownerId === uid)), [listings, uid]);
+  const myOffers = useMemo(() => (!uid ? [] : offers.filter((o) => String(o.fromUserId) === String(uid))), [offers, uid]);
+  const acceptedOffers = useMemo(() => myOffers.filter((o) => o.status === "kabul"), [myOffers]);
+  const totalTon = useMemo(() => acceptedOffers.reduce((sum, o) => {
+    const l = listings.find((x) => String(x.id) === String(o.listingId));
+    return sum + (l?.amount || 0);
+  }, 0), [acceptedOffers, listings]);
+  const totalEarnings = useMemo(() => acceptedOffers.reduce((sum, o) => sum + (o.price || 0), 0), [acceptedOffers]);
+  const pendingOffers = useMemo(() => offers.filter((o) =>
+    o.status === "beklemede" && myListings.some((l) => String(l.id) === String(o.listingId))
+  ).length, [offers, myListings]);
+  const totalVolume = useMemo(() => myListings.filter((l) => l.status === "eslesti").reduce((s, l) => s + (l.amount || 0), 0), [myListings]);
+  const activity = useMemo(() => {
+    if (!uid) return [];
+    const items = [
+      ...messages.filter((m) => String(m.fromId) === String(uid) || String(m.toId) === String(uid)).map((m) => ({
+        key: `msg-${m.id}`, icon: "💬", text: `${m.fromId === uid ? "Mesaj gönderdiniz" : `${m.fromName} mesaj gönderdi`}: "${m.text.slice(0, 40)}${m.text.length > 40 ? "…" : ""}"`, date: m.createdAt, link: "/mesajlar",
+      })),
+      ...offers.filter((o) => String(o.fromUserId) === String(uid)).map((o) => ({
+        key: `offer-${o.id}`, icon: o.status === "kabul" ? "✅" : o.status === "ret" ? "❌" : "📝",
+        text: `Teklif ${o.status === "kabul" ? "kabul edildi" : o.status === "ret" ? "reddedildi" : "gönderildi"}${o.price ? ` — ${o.price.toLocaleString("tr-TR")} ₺` : ""}`,
+        date: o.createdAt, link: `/ilan/${o.listingId}`,
+      })),
+      ...offers.filter((o) => o.status !== "beklemede" && myListings.some((l) => String(l.id) === String(o.listingId))).map((o) => ({
+        key: `recv-${o.id}`, icon: o.status === "kabul" ? "🤝" : "📨",
+        text: `${o.fromUser} teklif ${o.status === "kabul" ? "kabul edildi" : "reddedildi"}${o.price ? ` — ${o.price.toLocaleString("tr-TR")} ₺` : ""}`,
+        date: o.createdAt, link: "/ilanlarim",
+      })),
+    ];
+    return items.sort((a, b) => (b.date || "").localeCompare(a.date || "")).slice(0, 10);
+  }, [messages, offers, myListings, uid]);
 
   if (!user) {
     return (
@@ -43,44 +77,10 @@ export default function DashboardPage({ user, listings = [], offers = [], messag
   }
 
   const isNakliyeci = user.role === "nakliyeci";
-  const myListings = useMemo(() => listings.filter((l) => l.ownerId === user.id), [listings, user.id]);
-  const myOffers = useMemo(() => offers.filter((o) => String(o.fromUserId) === String(user.id)), [offers, user.id]);
-
-  const acceptedOffers = myOffers.filter((o) => o.status === "kabul");
   const totalTrips = acceptedOffers.length;
-  const totalTon = useMemo(() => acceptedOffers.reduce((sum, o) => {
-    const l = listings.find((x) => String(x.id) === String(o.listingId));
-    return sum + (l?.amount || 0);
-  }, 0), [acceptedOffers, listings]);
-  const totalEarnings = useMemo(() => acceptedOffers.reduce((sum, o) => sum + (o.price || 0), 0), [acceptedOffers]);
   const activeVehicles = myListings.filter((l) => l.type === "arac" && l.status === "aktif").length;
-
   const activeListings = myListings.filter((l) => l.status === "aktif").length;
   const matchedListings = myListings.filter((l) => l.status === "eslesti").length;
-  const pendingOffers = useMemo(() => offers.filter((o) =>
-    o.status === "beklemede" && myListings.some((l) => String(l.id) === String(o.listingId))
-  ).length, [offers, myListings]);
-  const totalVolume = useMemo(() => myListings.filter((l) => l.status === "eslesti").reduce((s, l) => s + (l.amount || 0), 0), [myListings]);
-
-  const activity = useMemo(() => {
-    const items = [
-      ...messages.filter((m) => String(m.fromId) === String(user.id) || String(m.toId) === String(user.id)).map((m) => ({
-        key: `msg-${m.id}`, icon: "💬", text: `${m.fromId === user.id ? "Mesaj gönderdiniz" : `${m.fromName} mesaj gönderdi`}: "${m.text.slice(0, 40)}${m.text.length > 40 ? "…" : ""}"`, date: m.createdAt, link: "/mesajlar",
-      })),
-      ...offers.filter((o) => String(o.fromUserId) === String(user.id)).map((o) => ({
-        key: `offer-${o.id}`, icon: o.status === "kabul" ? "✅" : o.status === "ret" ? "❌" : "📝",
-        text: `Teklif ${o.status === "kabul" ? "kabul edildi" : o.status === "ret" ? "reddedildi" : "gönderildi"}${o.price ? ` — ${o.price.toLocaleString("tr-TR")} ₺` : ""}`,
-        date: o.createdAt, link: `/ilan/${o.listingId}`,
-      })),
-      ...offers.filter((o) => o.status !== "beklemede" && myListings.some((l) => String(l.id) === String(o.listingId))).map((o) => ({
-        key: `recv-${o.id}`, icon: o.status === "kabul" ? "🤝" : "📨",
-        text: `${o.fromUser} teklif ${o.status === "kabul" ? "kabul edildi" : "reddedildi"}${o.price ? ` — ${o.price.toLocaleString("tr-TR")} ₺` : ""}`,
-        date: o.createdAt, link: "/ilanlarim",
-      })),
-    ];
-    return items.sort((a, b) => (b.date || "").localeCompare(a.date || "")).slice(0, 10);
-  }, [messages, offers, myListings, user.id]);
-
   const roleLabel = isNakliyeci ? "Nakliyeci" : user.role === "tedarikci" ? "Tedarikçi" : "İş Veren";
   const roleCls = isNakliyeci ? "text-emerald-700 bg-emerald-100" : user.role === "tedarikci" ? "text-sky-700 bg-sky-100" : "text-amber-700 bg-amber-100";
 

@@ -59,6 +59,10 @@ function Row({ listings, o, sign }) {
 export default function CuzdanPage({ user, listings = [], offers = [], onRequireAuth }) {
   const navigate = useNavigate();
 
+  // Hook'lar her render'da aynı sırada çağrılmalı → erken return'den ÖNCE, null-safe.
+  const earned = useMemo(() => (!user ? [] : offers.filter((o) => o.status === "kabul" && String(o.fromUserId) === String(user.id) && o.price)), [offers, user, listings]);
+  const spent = useMemo(() => (!user ? [] : offers.filter((o) => o.status === "kabul" && o.price && listings.some((l) => String(l.id) === String(o.listingId) && String(l.ownerId) === String(user.id)))), [offers, listings, user]);
+
   if (!user) {
     return (
       <div className="mx-auto flex w-full max-w-[460px] flex-col items-center gap-3 px-4 pt-12 text-center text-slate-900 dark:text-slate-100">
@@ -69,9 +73,6 @@ export default function CuzdanPage({ user, listings = [], offers = [], onRequire
       </div>
     );
   }
-
-  const earned = useMemo(() => offers.filter((o) => o.status === "kabul" && String(o.fromUserId) === String(user.id) && o.price), [offers, user.id]);
-  const spent = useMemo(() => offers.filter((o) => o.status === "kabul" && o.price && listings.some((l) => String(l.id) === String(o.listingId) && String(l.ownerId) === String(user.id))), [offers, listings, user.id]);
 
   const sum = (arr) => arr.reduce((s, o) => s + (o.price || 0), 0);
   // Nakliyeci kazancı komisyon SONRASI net
