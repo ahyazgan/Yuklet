@@ -1,259 +1,241 @@
+// HamTed — Ana Sayfa (Variant A · Sade)
+// Figma tasarımından React/Tailwind uyarlaması.
+// Alt tab bar App.jsx'teki global <MobileTabBar> tarafından sağlanır (burada yok).
+
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import {
+  Bell, Search, List, MapPin, ChevronRight, RefreshCw, Truck, Package,
+  Star, TrendingUp, Wallet, Clock, CheckCircle2, AlertCircle, ArrowRight, User,
+} from "lucide-react";
 import { LISTINGS } from "../data/listings";
-import { CATS } from "../data/categories";
-import CategoryIcon from "../components/CategoryIcon";
 import SEO from "../components/SEO";
 
-// ── Ana sayfa (Dashboard Home) — kullanıcı-duyarlı: giriş yapınca kişiselleşir.
+// ── Durum rozeti yapılandırması ──────────────────────────────
+const STATUS_CONFIG = {
+  aktif: { label: "Aktif", bg: "bg-emerald-50", text: "text-emerald-700", icon: <CheckCircle2 size={10} /> },
+  teklif: { label: "Teklif var", bg: "bg-amber-50", text: "text-amber-700", icon: <AlertCircle size={10} /> },
+  tamamlandı: { label: "Tamamlandı", bg: "bg-sky-50", text: "text-sky-700", icon: <CheckCircle2 size={10} /> },
+  eslesti: { label: "Eşleşti", bg: "bg-emerald-50", text: "text-emerald-700", icon: <CheckCircle2 size={10} /> },
+};
 
-const PERSONAS = [
-  { id: "muteahhit", letter: "M", title: "Müteahhit / Alıcı", desc: "İş ilanı aç, teklif topla", route: "/muteahhit", ring: "text-amber-600 bg-amber-100" },
-  { id: "tedarikci", letter: "T", title: "Tedarikçi", desc: "Ocak/santral ürününü listele", route: "/tedarikci", ring: "text-emerald-600 bg-emerald-100" },
-  { id: "nakliyeci", letter: "N", title: "Nakliyeci", desc: "Araç ilanı ver, yük bul", route: "/nakliyeci", ring: "text-sky-600 bg-sky-100" },
-];
-const STATUS_PILL = { aktif: "bg-amber-50 text-amber-600", eslesti: "bg-emerald-50 text-emerald-600", kapali: "bg-slate-100 text-slate-500" };
-const STATUS_TR = { aktif: "Yayında", eslesti: "Eşleşti", kapali: "Kapandı" };
-const idText = (l) => "HMT-" + String(l.id).padStart(4, "0");
+function resolveStatus(l) {
+  if (l.status === "eslesti") return "eslesti";
+  if (l.status === "kapali") return "tamamlandı";
+  return l.offers > 0 ? "teklif" : "aktif";
+}
 
-export default function NakliyeHome({ listings = LISTINGS, user, offers = [], pendingOffersCount = 0, unreadCount = 0, onLoginClick }) {
-  const navigate = useNavigate();
-  const open = listings.filter((l) => l.status !== "kapali");
+function Logo() {
+  return (
+    <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-slate-950 to-yellow-400">
+      <span className="font-black text-white" style={{ fontSize: 16, letterSpacing: -1 }}>H</span>
+    </div>
+  );
+}
 
-  // Kişiselleştirme
-  const myListings = user ? listings.filter((l) => String(l.ownerId) === String(user.id)) : [];
-  const myActiveCount = myListings.filter((l) => l.status === "aktif" || l.status === "eslesti").length;
-  const myAcceptedJob = user
-    ? offers.filter((o) => String(o.fromUserId) === String(user.id) && o.status === "kabul")
-        .map((o) => listings.find((l) => String(l.id) === String(o.listingId))).find(Boolean)
-    : null;
-
-  // Aktif sevkiyat: kullanıcının kendi işi (eşleşen > kabul ettiğim > aktif), yoksa öne çıkan demo
-  const current = (user && (
-    myListings.find((l) => l.status === "eslesti") || myAcceptedJob || myListings.find((l) => l.status === "aktif")
-  )) || open.find((l) => l.type === "is") || open[0];
-
-  const recent = open.filter((l) => l !== current).slice(0, 3);
-  const hasOffers = current && (current.offers || 0) > 0;
-  const matched = current && current.status === "eslesti";
-  const greet = user ? `Merhaba, ${String(user.name || "").split(" ")[0] || "👋"}` : "Hoş geldin 👋";
+function ListingCard({ item, onClick }) {
+  const st = STATUS_CONFIG[resolveStatus(item)] || STATUS_CONFIG.aktif;
+  const isHafriyat = item.cat === "hafriyat";
+  const price = item.priceType === "sabit" && item.price
+    ? `₺${item.price.toLocaleString("tr-TR")}` : "Teklife açık";
 
   return (
-    <div className="mx-auto flex w-full max-w-[460px] flex-col gap-5 px-4 pb-24 pt-2 text-slate-900 dark:text-slate-100">
-      <SEO description="Hafriyat ve silobas işleri doğru araçla buluşuyor. Müteahhit, tedarikçi ve nakliyeciler için Türkiye'nin yük eşleştirme platformu." />
+    <motion.button onClick={onClick} whileTap={{ scale: 0.98 }}
+      className="flex w-full items-center gap-3 rounded-2xl bg-white p-3.5 text-left shadow-sm transition-shadow hover:shadow-md dark:bg-navy-card">
+      <div className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full ${isHafriyat ? "bg-yellow-100" : "bg-sky-100"}`}>
+        {isHafriyat ? <Truck size={20} className="text-amber-600" /> : <Package size={20} className="text-sky-600" />}
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center justify-between gap-2">
+          <span className="truncate text-[13px] font-bold text-slate-900 dark:text-slate-100">{item.title}</span>
+          <span className="flex-shrink-0 text-[13px] font-extrabold text-yellow-500">{price}</span>
+        </div>
+        <div className="mt-0.5 flex items-center gap-1">
+          <MapPin size={10} className="flex-shrink-0 text-gray-400" />
+          <span className="truncate text-[11px] text-gray-500 dark:text-slate-400">
+            {item.il}{item.ilce ? `, ${item.ilce}` : ""}{item.amount ? ` · ${item.amount} ${item.unit || ""}` : ""}
+          </span>
+        </div>
+        <div className="mt-1.5 flex items-center justify-between">
+          <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${st.bg} ${st.text}`}>
+            {st.icon}{st.label}
+          </span>
+          <span className="flex items-center gap-1 text-[10px] text-gray-400">
+            <Clock size={9} />{item.createdText || "Bugün"}
+          </span>
+        </div>
+      </div>
+    </motion.button>
+  );
+}
+
+export default function NakliyeHome({ listings = LISTINGS, user, pendingOffersCount = 0, unreadCount = 0, onLoginClick }) {
+  const navigate = useNavigate();
+
+  const myListings = user ? listings.filter((l) => String(l.ownerId) === String(user?.id)) : [];
+  const myActiveCount = myListings.filter((l) => l.status === "aktif" || l.status === "eslesti").length;
+  const recentListings = listings.filter((l) => l.status !== "kapali").slice(0, 4);
+  const backhaulCount = listings.filter((l) => l.status === "aktif" && l.type === "is").length;
+  const firstName = user ? (String(user.name || "").split(" ")[0] || "Kullanıcı") : null;
+
+  return (
+    <div className="mx-auto flex w-full max-w-[460px] flex-col pb-24 text-slate-900 dark:text-slate-100">
+      <SEO title="Ana Sayfa" description="Hafriyat ve silobas iş ilanları. Nakliyecilerden teklif alın, komisyonsuz eşleşin." />
 
       {/* TOP BAR */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between px-5 pt-5">
+        <div className="flex items-center gap-2.5">
+          <Logo />
+          <div>
+            <div className="text-[16px] font-extrabold leading-tight text-slate-900 dark:text-slate-100">
+              {user ? `Merhaba, ${firstName} 👋` : "HamTed"}
+            </div>
+            <div className="flex items-center gap-1 text-[11px] text-gray-500 dark:text-slate-400">
+              <MapPin size={10} className="text-yellow-400" />
+              {user ? (user.role === "nakliyeci" ? "Nakliyeci" : user.role === "tedarikci" ? "Tedarikçi" : "Müteahhit") : "Yük & Nakliye Platformu"}
+            </div>
+          </div>
+        </div>
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate(user ? "/profil" : "/")} className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-100 bg-white text-slate-600 shadow-sm dark:border-navy-line dark:bg-navy-card dark:text-slate-300">
-            {user ? (user.name?.[0]?.toUpperCase() || "👤") : "🚚"}
+          <button onClick={() => navigate("/mesajlar")} className="relative" aria-label="Bildirimler">
+            <Bell size={22} className="text-slate-900 dark:text-slate-100" />
+            {(unreadCount > 0 || pendingOffersCount > 0) && (
+              <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full border-2 border-gray-100 bg-red-500 dark:border-navy-card" />
+            )}
           </button>
-          <div>
-            <span className="block text-[9px] font-semibold leading-tight text-gray-400 dark:text-navy-muted">Türkiye yük borsası</span>
-            <span className="block text-xs font-bold leading-tight text-slate-800 dark:text-slate-100">{greet}</span>
-          </div>
+          <button onClick={() => navigate(user ? "/profil" : "/")} aria-label="Profil">
+            <User size={22} className="text-slate-900 dark:text-slate-100" />
+          </button>
         </div>
-        <button onClick={() => navigate("/mesajlar")} aria-label="Bildirimler" className="relative flex h-9 w-9 items-center justify-center rounded-full border border-gray-100 bg-white text-slate-600 shadow-sm dark:border-navy-line dark:bg-navy-card dark:text-slate-300">
-          🔔
-          {unreadCount > 0
-            ? <span className="absolute -right-1 -top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-extrabold text-white">{unreadCount > 9 ? "9+" : unreadCount}</span>
-            : <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-white bg-yellow-400 dark:border-navy-card" />}
+      </div>
+
+      {/* ARAMA */}
+      <div className="px-5 pt-4">
+        <button onClick={() => navigate("/ilanlar")}
+          className="flex w-full items-center gap-2.5 rounded-full bg-white px-4 py-3 shadow-sm dark:bg-navy-card">
+          <Search size={16} className="flex-shrink-0 text-gray-400" />
+          <span className="text-[13px] text-gray-400">İl, malzeme veya güzergah ara…</span>
         </button>
       </div>
 
-      {/* ARAMA + FILTRE */}
-      <div className="flex items-center gap-3">
-        <div className="flex flex-1 items-center rounded-2xl border border-gray-100 bg-white px-3.5 py-3 shadow-sm dark:border-navy-line dark:bg-navy-card">
-          <span className="mr-2 text-xs text-gray-400 dark:text-navy-muted">🔍</span>
-          <input
-            placeholder="İl, malzeme veya güzergah ara…"
-            onKeyDown={(e) => { if (e.key === "Enter") navigate("/ilanlar"); }}
-            aria-label="İlan ara"
-            className="w-full bg-transparent text-xs font-medium text-slate-900 outline-none placeholder:text-gray-400 dark:text-slate-100 dark:placeholder:text-navy-muted"
-          />
-        </div>
-        <button onClick={() => navigate("/ilanlar")} aria-label="Tüm ilanlar" className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-950 text-lg text-white shadow-md transition active:scale-95 dark:bg-navy-soft dark:text-slate-100">☰</button>
-      </div>
-
-      {/* GIRIS YAPMAMIS: KAYIT CTA */}
-      {!user && (
-        <div className="flex items-center justify-between gap-3 rounded-[20px] bg-yellow-400 p-4 text-slate-950">
-          <div>
-            <div className="text-sm font-extrabold">Ücretsiz hesap aç</div>
-            <div className="text-[11px] font-semibold text-slate-800">Dakikada ilan ver · komisyon yok</div>
-          </div>
-          <button onClick={() => onLoginClick?.()} className="whitespace-nowrap rounded-full bg-slate-950 px-4 py-2.5 text-xs font-extrabold text-white">Giriş / Kayıt</button>
-        </div>
-      )}
-
-      {/* GIRIS YAPMIS: HIZLI DURUM */}
-      {user && (
-        <div className="flex gap-2.5">
-          <button onClick={() => navigate("/ilanlarim")} className="flex-1 rounded-2xl border border-gray-100 bg-white p-3 text-left shadow-sm dark:border-navy-line dark:bg-navy-card">
-            <div className="text-xl font-extrabold tracking-tight text-slate-950 dark:text-slate-100">{myActiveCount}</div>
-            <div className="text-[10px] font-medium text-gray-500 dark:text-slate-400">Aktif ilanım</div>
-          </button>
-          <button onClick={() => navigate("/ilanlarim")} className="relative flex-1 rounded-2xl border border-gray-100 bg-white p-3 text-left shadow-sm dark:border-navy-line dark:bg-navy-card">
-            <div className="text-xl font-extrabold tracking-tight text-amber-600">{pendingOffersCount}</div>
-            <div className="text-[10px] font-medium text-gray-500 dark:text-slate-400">Bekleyen teklif</div>
-          </button>
-          <button onClick={() => navigate("/cuzdan")} className="flex-1 rounded-2xl border border-gray-100 bg-white p-3 text-left shadow-sm dark:border-navy-line dark:bg-navy-card">
-            <div className="text-xl">💰</div>
-            <div className="text-[10px] font-medium text-gray-500 dark:text-slate-400">Cüzdan</div>
-          </button>
-        </div>
-      )}
-
-      {/* PROMO KARTLAR */}
-      <div className="grid grid-cols-2 gap-3">
-        <button onClick={() => navigate("/ilan-ver")} className="relative flex h-28 flex-col justify-between overflow-hidden rounded-[20px] border border-gray-100 bg-white p-3.5 text-left shadow-sm transition hover:shadow-md dark:border-navy-line dark:bg-navy-card">
-          <div className="text-[13px] font-extrabold leading-tight text-slate-900 dark:text-slate-100">Yeni<br />İlan</div>
-          <span className="absolute -bottom-1 -right-1 text-4xl">🚛</span>
-          <span className="text-[10px] font-bold text-amber-600">+ Oluştur</span>
-        </button>
-        <button onClick={() => navigate(current ? `/takip/${current.id}` : "/ilanlar")} className="relative flex h-28 flex-col justify-between overflow-hidden rounded-[20px] bg-yellow-400 p-3.5 text-left shadow-sm transition hover:shadow-md">
-          <div className="text-[13px] font-extrabold leading-tight text-slate-950">İlan<br />Takip</div>
-          <span className="absolute -bottom-1 -right-1 text-4xl">📦</span>
-          <span className="text-[10px] font-bold text-slate-800">Sevkiyatı izle</span>
-        </button>
-      </div>
-
-      {/* BOS DONUS FIRSATI */}
-      <button onClick={() => navigate("/ilanlar?mode=backhaul")} className="flex items-center justify-between gap-3 rounded-2xl bg-slate-950 p-4 text-left text-white shadow-sm transition hover:-translate-y-0.5 dark:bg-navy-soft">
-        <div className="flex items-center gap-3">
-          <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-yellow-400 text-lg">🔄</span>
-          <div>
-            <div className="text-sm font-extrabold">Boş dönme — dönüş yükü bul</div>
-            <div className="text-[11px] text-slate-400">Aracının olduğu ile yakın açık yükler</div>
-          </div>
-        </div>
-        <span className="text-xl text-yellow-400">›</span>
-      </button>
-
-      {/* KATEGORI HIZLI */}
-      <div className="flex gap-2.5">
-        <button onClick={() => navigate("/ilanlar?cat=hafriyat")} className="flex flex-1 items-center gap-2 rounded-2xl border border-gray-100 bg-white px-3.5 py-3 text-left shadow-sm dark:border-navy-line dark:bg-navy-card">
-          <CategoryIcon catId="hafriyat" size={22} fallback="🚛" />
-          <span className="text-xs font-bold text-slate-900 dark:text-slate-100">Hafriyat</span>
-        </button>
-        <button onClick={() => navigate("/ilanlar?cat=silobas")} className="flex flex-1 items-center gap-2 rounded-2xl border border-gray-100 bg-white px-3.5 py-3 text-left shadow-sm dark:border-navy-line dark:bg-navy-card">
-          <CategoryIcon catId="silobas" size={22} fallback="🛢️" />
-          <span className="text-xs font-bold text-slate-900 dark:text-slate-100">Silobas</span>
-        </button>
-        <button onClick={() => navigate("/ilanlar?type=arac")} className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-gray-100 bg-white px-3.5 py-3 text-center shadow-sm dark:border-navy-line dark:bg-navy-card">
-          <span className="text-xs font-bold text-slate-900 dark:text-slate-100">🚚 Boş araç</span>
-        </button>
-      </div>
-
-      {/* AKTIF SEVKIYAT */}
-      {current && (
-        <section>
-          <div className="mb-2.5 flex items-center justify-between">
-            <span className="text-xs font-extrabold text-slate-800 dark:text-slate-100">{user && (myListings.includes(current) || current === myAcceptedJob) ? "Aktif sevkiyatın" : "Öne çıkan iş"}</span>
-            <button onClick={() => navigate(user ? "/ilanlarim" : "/ilanlar")} className="text-[10px] font-bold text-gray-400 dark:text-navy-muted">Tümü</button>
-          </div>
-
-          <motion.button
-            onClick={() => navigate(`/takip/${current.id}`)}
-            initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}
-            className="relative w-full overflow-hidden rounded-[24px] border border-gray-100 bg-white p-4 text-left shadow-sm transition hover:shadow-md dark:border-navy-line dark:bg-navy-card"
-          >
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-100 bg-slate-50 dark:border-navy-line dark:bg-navy-soft">
-                  <CategoryIcon catId={current.cat} size={18} fallback={current.cat === "silobas" ? "🛢️" : "🚛"} />
-                </div>
-                <div>
-                  <span className="block text-[11px] font-extrabold text-slate-900 dark:text-slate-100">No: {idText(current)}</span>
-                  <span className="block max-w-[150px] truncate text-[9px] font-bold text-gray-400 dark:text-navy-muted">{current.title}</span>
-                </div>
-              </div>
-              <span className={`rounded-full px-2 py-0.5 text-[9px] font-extrabold ${matched ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-500"}`}>{matched ? "Yolda" : "Teklif"}</span>
-            </div>
-
-            <div className="relative mt-4 flex items-center justify-between px-2">
-              <div className="absolute left-6 right-6 top-[5px] z-0 h-[2px] border-t-2 border-dashed border-yellow-400" />
-              <span className="z-10 flex h-3.5 w-3.5 items-center justify-center rounded-full border-2 border-white bg-yellow-400 text-[6px] text-slate-950 shadow-sm dark:border-navy-card">✓</span>
-              <span className={`z-10 flex h-3.5 w-3.5 items-center justify-center rounded-full border-2 border-white text-[6px] shadow-sm dark:border-navy-card ${hasOffers ? "bg-yellow-400 text-slate-950" : "bg-slate-200 dark:bg-navy-line"}`}>{hasOffers ? "✓" : ""}</span>
-              <div className="relative -top-1 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-yellow-400 text-[8px] text-slate-950 shadow-sm">
-                🚚
-                <span className="absolute -bottom-4 whitespace-nowrap text-[7px] font-bold text-amber-600">{matched ? "Yolda" : `${current.offers || 0} teklif`}</span>
-              </div>
-              <span className="z-10 h-3.5 w-3.5 rounded-full border-2 border-white bg-slate-200 shadow-sm dark:border-navy-card dark:bg-navy-line" />
-            </div>
-
-            <div className="mt-5 grid grid-cols-2 gap-4 border-t border-slate-50 pt-2.5 dark:border-navy-line">
-              <div>
-                <span className="block text-[8px] font-bold uppercase text-gray-400 dark:text-navy-muted">{current.dateText || "—"}</span>
-                <span className="block text-[9px] font-extrabold text-slate-700 dark:text-slate-100">{current.il}{current.ilce ? `, ${current.ilce}` : ""}</span>
-              </div>
-              <div className="text-right">
-                <span className="block text-[8px] font-bold uppercase text-gray-400 dark:text-navy-muted">Boşaltma</span>
-                <span className="block text-[9px] font-extrabold text-slate-700 dark:text-slate-100">{current.varisIl || (current.bosaltma ? current.bosaltma.split(",")[0] : "Saha")}</span>
-              </div>
-            </div>
-
-            <div className="pointer-events-none absolute -right-4 top-6 h-20 w-20 rotate-12 rounded-lg bg-yellow-400/20" />
+      {/* İSTATİSTİK ŞERIDI */}
+      <div className="grid grid-cols-3 gap-2.5 px-5 pt-3.5">
+        {[
+          { label: "Aktif ilan", value: user ? String(myActiveCount) : `${listings.filter((l) => l.status === "aktif").length}+`, icon: <List size={14} className="text-yellow-500" />, onClick: () => navigate(user ? "/ilanlarim" : "/ilanlar") },
+          { label: "Bekleyen teklif", value: user ? String(pendingOffersCount) : "—", icon: <TrendingUp size={14} className="text-yellow-500" />, onClick: () => navigate(user ? "/ilanlarim" : "/") },
+          { label: "Cüzdan", value: user ? "₺—" : "—", icon: <Wallet size={14} className="text-yellow-500" />, onClick: () => navigate(user ? "/cuzdan" : "/") },
+        ].map((s) => (
+          <motion.button key={s.label} onClick={s.onClick} whileTap={{ scale: 0.96 }}
+            className="flex flex-col items-center rounded-2xl bg-white px-2 py-3 text-center shadow-sm dark:bg-navy-card">
+            <div className="mb-1">{s.icon}</div>
+            <div className="text-[15px] font-extrabold text-slate-900 dark:text-slate-100">{s.value}</div>
+            <div className="mt-0.5 text-[9px] font-semibold leading-tight text-gray-400">{s.label}</div>
           </motion.button>
-        </section>
-      )}
+        ))}
+      </div>
 
-      {/* SON ILANLAR */}
-      <section>
+      {/* PROMO KARTI */}
+      <div className="px-5 pt-3.5">
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+          className="flex items-center justify-between rounded-3xl px-5 py-5"
+          style={{ background: "linear-gradient(135deg,#FACC15 0%,#FDE68A 100%)", boxShadow: "0 4px 20px rgba(250,204,21,0.35)" }}>
+          <div>
+            <div className="text-[10px] font-bold uppercase tracking-widest text-amber-800">0 komisyon</div>
+            <div className="mt-1 text-[18px] font-black leading-tight tracking-tight text-slate-950">İlanını ücretsiz aç</div>
+            <div className="mt-1 text-[11px] leading-snug text-amber-900">Nakliyecilerden teklif al,<br />sefer başlat.</div>
+            <button onClick={() => navigate("/ilan-ver")}
+              className="mt-3.5 flex items-center gap-1.5 rounded-full bg-slate-950 px-4 py-2 text-[12px] font-bold text-yellow-400">
+              İlan ver <ArrowRight size={13} />
+            </button>
+          </div>
+          <div className="select-none text-[56px] leading-none">🚛</div>
+        </motion.div>
+      </div>
+
+      {/* DÖNÜŞ YÜKÜ WIDGET */}
+      <div className="px-5 pt-3">
+        <button onClick={() => navigate("/ilanlar?mode=backhaul")}
+          className="flex w-full items-center gap-3 rounded-2xl bg-white p-3.5 shadow-sm transition-shadow hover:shadow-md dark:bg-navy-card">
+          <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-emerald-50">
+            <RefreshCw size={18} className="text-emerald-600" />
+          </div>
+          <div className="flex-1 text-left">
+            <div className="text-[13px] font-bold text-slate-900 dark:text-slate-100">Dönüş yükü bul</div>
+            <div className="mt-0.5 text-[11px] text-gray-500 dark:text-slate-400">Güzergahına uygun boş dönüş ilanları</div>
+          </div>
+          <div className="rounded-full bg-emerald-50 px-3 py-1.5 text-[11px] font-bold text-emerald-600">{backhaulCount} ilan</div>
+        </button>
+      </div>
+
+      {/* KATEGORİ KARTLARI */}
+      <div className="px-5 pt-4">
+        <div className="mb-2.5 text-[11px] font-extrabold uppercase tracking-[0.8px] text-slate-900 dark:text-slate-100">Kategori</div>
+        <div className="grid grid-cols-2 gap-2.5">
+          {[
+            { id: "hafriyat", label: "Hafriyat", emoji: "🚛", active: true },
+            { id: "silobas", label: "Silobas", emoji: "🏗️", active: false },
+          ].map((c) => (
+            <motion.button key={c.id} onClick={() => navigate(`/ilanlar?cat=${c.id}`)} whileTap={{ scale: 0.97 }}
+              className={`flex flex-col items-center gap-1.5 rounded-2xl py-4 font-bold transition ${c.active ? "bg-yellow-400 text-slate-950 shadow-md" : "bg-white text-slate-900 shadow-sm hover:shadow-md dark:bg-navy-card dark:text-slate-100"}`}
+              style={c.active ? { boxShadow: "0 4px 14px rgba(250,204,21,0.4)" } : {}}>
+              <span className="text-[28px] leading-none">{c.emoji}</span>
+              <span className="text-[12px]">{c.label}</span>
+            </motion.button>
+          ))}
+        </div>
+      </div>
+
+      {/* SON İLANLAR */}
+      <div className="px-5 pt-4">
         <div className="mb-2.5 flex items-center justify-between">
-          <span className="text-xs font-extrabold text-slate-800 dark:text-slate-100">Son ilanlar</span>
-          <button onClick={() => navigate("/ilanlar")} className="text-[10px] font-bold text-gray-400 dark:text-navy-muted">Tümü</button>
+          <span className="text-[11px] font-extrabold uppercase tracking-[0.8px] text-slate-900 dark:text-slate-100">Son ilanlar</span>
+          <button onClick={() => navigate("/ilanlar")} className="flex items-center gap-0.5 text-[12px] font-bold text-amber-600">
+            Tümü <ChevronRight size={13} />
+          </button>
         </div>
         <div className="flex flex-col gap-2.5">
-          {recent.map((l) => {
-            const cat = CATS.find((c) => c.id === l.cat);
-            return (
-              <button key={l.id} onClick={() => navigate(`/ilan/${l.id}`)} className="flex items-center justify-between rounded-2xl border border-gray-100 bg-white p-3 text-left shadow-sm transition hover:shadow-md dark:border-navy-line dark:bg-navy-card">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-50 dark:bg-navy-soft">
-                    <CategoryIcon catId={l.cat} size={18} fallback={cat?.icon} />
-                  </div>
-                  <div className="min-w-0">
-                    <span className="block text-[10px] font-extrabold text-slate-900 dark:text-slate-100">No: {idText(l)}</span>
-                    <span className="block max-w-[180px] truncate text-[9px] font-bold text-gray-400 dark:text-navy-muted">{l.title}</span>
-                  </div>
-                </div>
-                <span className={`whitespace-nowrap rounded-full px-2.5 py-0.5 text-[8px] font-extrabold ${STATUS_PILL[l.status] || STATUS_PILL.aktif}`}>{STATUS_TR[l.status] || "Yayında"}</span>
-              </button>
-            );
-          })}
+          {recentListings.map((item, i) => (
+            <motion.div key={item.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06, duration: 0.25 }}>
+              <ListingCard item={item} onClick={() => navigate(`/ilan/${item.id}`)} />
+            </motion.div>
+          ))}
         </div>
-      </section>
-
-      {/* GUVEN / SOSYAL KANIT */}
-      <div className="flex gap-2.5">
-        {[["2.400+", "Aktif ilan"], ["850+", "Nakliyeci"], ["%0", "Komisyon"]].map(([n, l]) => (
-          <div key={l} className="flex-1 rounded-2xl bg-white p-3 text-center shadow-sm dark:bg-navy-card">
-            <div className="text-base font-black tracking-tight text-slate-950 dark:text-slate-100">{n}</div>
-            <div className="mt-0.5 text-[10px] text-gray-500 dark:text-slate-400">{l}</div>
-          </div>
-        ))}
       </div>
 
-      {/* ROLLER */}
-      <section className="flex flex-col gap-3">
-        <span className="text-xs font-extrabold text-slate-800 dark:text-slate-100">Ne yapmak istiyorsun?</span>
-        {PERSONAS.map((p, i) => (
-          <motion.button
-            key={p.id}
-            onClick={() => navigate(p.route)}
-            initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: i * 0.06 }}
-            className="flex w-full items-center gap-3.5 rounded-2xl border border-gray-100 bg-white p-3.5 text-left shadow-sm transition hover:-translate-y-0.5 dark:border-navy-line dark:bg-navy-card"
-          >
-            <span className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl text-base font-extrabold ${p.ring}`}>{p.letter}</span>
-            <span className="min-w-0">
-              <span className="block text-[13px] font-bold text-slate-950 dark:text-slate-100">{p.title}</span>
-              <span className="block text-[11px] text-gray-500 dark:text-slate-400">{p.desc}</span>
-            </span>
-            <span className="ml-auto text-xl text-gray-300 dark:text-slate-600">›</span>
-          </motion.button>
+      {/* GİRİŞ YAPMAMIŞ KULLANICI CTA */}
+      {!user && (
+        <div className="px-5 pt-4">
+          <div className="flex items-center justify-between rounded-2xl bg-slate-950 p-4 dark:bg-navy-soft">
+            <div>
+              <div className="text-[13px] font-extrabold text-white">Ücretsiz hesap aç</div>
+              <div className="mt-0.5 text-[11px] text-slate-400">İlan ver, teklif al. Komisyon yok.</div>
+            </div>
+            <button onClick={() => onLoginClick?.()} className="rounded-full bg-yellow-400 px-4 py-2 text-[12px] font-extrabold text-slate-950">
+              Giriş / Kayıt
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* GÜVEN SAYILARI */}
+      <div className="px-5 pb-4 pt-4">
+        <div className="flex justify-around rounded-3xl bg-slate-950 px-6 py-5 dark:bg-navy-soft">
+          {[{ value: "2.400+", label: "İlan" }, { value: "850+", label: "Nakliyeci" }, { value: "%0", label: "Komisyon" }].map((s) => (
+            <div key={s.label} className="text-center">
+              <div className="text-[18px] font-black tracking-tight text-yellow-400">{s.value}</div>
+              <div className="mt-0.5 text-[10px] font-semibold text-gray-500">{s.label}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* DEĞERLENDİRME ŞERİDİ */}
+      <div className="flex items-center justify-center gap-1 pb-2">
+        {[...Array(5)].map((_, i) => (
+          <Star key={i} size={12} className="fill-yellow-400 text-yellow-400" />
         ))}
-      </section>
+        <span className="ml-1.5 text-[11px] text-gray-500">4.8 · 1.200+ değerlendirme</span>
+      </div>
     </div>
   );
 }
