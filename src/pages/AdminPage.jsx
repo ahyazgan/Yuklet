@@ -2,13 +2,10 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import SEO from "../components/SEO";
 import { isSupabaseConfigured } from "../lib/supabase";
+import { isAdmin } from "../utils/admin";
 
 // ── Admin / moderasyon paneli — şikayetler, belge doğrulama, kullanıcılar.
-//    Erişim: role==="admin" veya bilinen admin e-postası.
-
-const ADMIN_EMAILS = ["a.hakan_@hotmail.com"]; // platform sahibi
-export const isAdmin = (u) =>
-  Boolean(u) && (u.role === "admin" || ADMIN_EMAILS.includes(String(u.email || "").toLowerCase()));
+//    Erişim: role==="admin" veya bilinen admin e-postası (utils/admin.js).
 
 const fmt = (iso) => { try { return new Date(iso).toLocaleString("tr-TR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }); } catch { return ""; } };
 

@@ -5,6 +5,7 @@ import { CATS, LISTING_TYPES, VEHICLE_TYPES, MATERIALS, UNITS } from "../data/ca
 import { IL_LIST } from "../data/listings";
 import CategoryIcon from "../components/CategoryIcon";
 import { estimatePrice, fmtTL, haversineKm } from "../utils/priceEstimate";
+import { newId } from "../utils/id";
 import SEO from "../components/SEO";
 
 const LocationPicker = lazy(() => import("../components/LocationPicker"));
@@ -79,7 +80,7 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], user, 
     }
 
     const listing = {
-      id: Date.now(),
+      id: newId(),
       ...data,
       date: "", recurring: false, recurringText: "",
       owner: user?.name || form.owner.trim(),

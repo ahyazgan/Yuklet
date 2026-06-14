@@ -4,8 +4,8 @@ import { motion } from "framer-motion";
 import { useToast } from "../components/Toast";
 import { StarsDisplay } from "../components/Stars";
 import SEO from "../components/SEO";
-import { sendSmsCode, verifySmsCode, isValidPhone, isSmsConfigured } from "../lib/smsProvider";
-import { isAdmin } from "./AdminPage";
+import { sendSmsCode, verifySmsCode, isValidPhone } from "../lib/smsProvider";
+import { isAdmin } from "../utils/admin";
 
 function fmtRev(iso) {
   try { return new Date(iso).toLocaleDateString("tr-TR", { day: "numeric", month: "short", year: "numeric" }); }
@@ -156,7 +156,7 @@ export default function ProfilPage({ user, onUpdateProfile, onVerifyPhone, onReq
             {user.verified ? "✓ Doğrulandı" : docs.length ? "İnceleniyor" : "Eksik"}
           </span>
         </div>
-        <p className="mb-3 text-xs text-gray-500 dark:text-slate-400">K belgesi, araç ruhsatı, vergi levhası yükle → <b>doğrulanmış rozeti</b> kazan. (İnceleme yakında otomatikleşecek.)</p>
+        <p className="mb-3 text-xs text-gray-500 dark:text-slate-400">K belgesi, araç ruhsatı, vergi levhası yükle → ekibimiz inceleyip <b>doğrulanmış rozeti</b> verir.</p>
         <div className="flex gap-2">
           <select value={docType} onChange={(e) => setDocType(e.target.value)} className="rounded-xl bg-slate-50 px-3 py-2.5 text-xs text-slate-900 outline-none dark:bg-navy-soft dark:text-slate-100">
             {DOC_TYPES.map((t) => <option key={t}>{t}</option>)}

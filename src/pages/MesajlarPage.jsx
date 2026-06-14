@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { newId, nowIso } from "../utils/id";
 import SEO from "../components/SEO";
 
 // ── MoveIQ LIGHT mesajlar (Tailwind).
@@ -54,9 +55,9 @@ export default function MesajlarPage({ user, listings = [], offers = [], message
     e.preventDefault();
     if (!text.trim() || !active) return;
     onSendMessage?.({
-      id: Date.now(), listingId: active.listingId, offerId: active.offerId,
+      id: newId(), listingId: active.listingId, offerId: active.offerId,
       fromId: user.id, fromName: user.name, toId: active.other.id, toName: active.other.name,
-      text: text.trim(), createdAt: new Date().toISOString(),
+      text: text.trim(), createdAt: nowIso(),
     });
     setText("");
   };
@@ -67,9 +68,9 @@ export default function MesajlarPage({ user, listings = [], offers = [], message
     if (f.size > 1_800_000) { e.target.value = ""; return; } // ~1.8MB sınır
     const reader = new FileReader();
     reader.onload = () => onSendMessage?.({
-      id: Date.now(), listingId: active.listingId, offerId: active.offerId,
+      id: newId(), listingId: active.listingId, offerId: active.offerId,
       fromId: user.id, fromName: user.name, toId: active.other.id, toName: active.other.name,
-      text: "", image: reader.result, createdAt: new Date().toISOString(),
+      text: "", image: reader.result, createdAt: nowIso(),
     });
     reader.readAsDataURL(f);
     e.target.value = "";

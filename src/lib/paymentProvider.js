@@ -12,9 +12,11 @@ export const isPaymentConfigured = Boolean(merchantKey);
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // Müteahhit ödemeyi emanete yatırır. Döner: { ok, providerRef, error }
+// amount: gerçek entegrasyonda iyzico'ya gönderilecek (mock'ta kullanılmaz).
 export async function chargeToEscrow({ amount, listingId, payerId }) {
   if (isPaymentConfigured) {
-    // TODO: iyzico Pazaryeri "ödeme oluştur + bloke" çağrısı buraya.
+    // TODO: iyzico Pazaryeri "ödeme oluştur + bloke" çağrısı buraya (amount kullanılır).
+    void amount;
     throw new Error("Gerçek ödeme sağlayıcı henüz bağlanmadı (anahtar var ama entegrasyon TODO).");
   }
   // MOCK: her zaman başarılı, sahte referans üret.
@@ -26,7 +28,8 @@ export async function chargeToEscrow({ amount, listingId, payerId }) {
 // Teslim onayında emanetteki parayı nakliyeciye serbest bırakır.
 export async function releaseFromEscrow({ providerRef, payoutTo }) {
   if (isPaymentConfigured) {
-    // TODO: iyzico "onayla / alt üye işyerine aktar" çağrısı.
+    // TODO: iyzico "onayla / alt üye işyerine aktar" çağrısı (providerRef kullanılır).
+    void providerRef;
     throw new Error("Gerçek serbest bırakma henüz bağlanmadı.");
   }
   await wait(500);

@@ -5,6 +5,7 @@ import { LISTINGS } from "../data/listings";
 import { CATS } from "../data/categories";
 import { backhaulForJob, loadsForVehicle, vehicleClassOf } from "../utils/backhaul";
 import { estimatePrice, fmtTL } from "../utils/priceEstimate";
+import { newId, nowIso } from "../utils/id";
 import { useToast } from "../components/Toast";
 import ReportModal from "../components/ReportModal";
 import SEO from "../components/SEO";
@@ -70,9 +71,9 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
     if (!user) { onRequireAuth?.(); return; }
     if (!price && !message.trim()) { toast("Fiyat veya mesaj girin", "error"); return; }
     onAddOffer?.({
-      id: Date.now(), listingId: l.id, fromUser: user.name, fromUserId: user.id,
+      id: newId(), listingId: l.id, fromUser: user.name, fromUserId: user.id,
       price: price ? Number(price) : null, message: message.trim(),
-      status: "beklemede", createdAt: new Date().toISOString(),
+      status: "beklemede", createdAt: nowIso(),
     });
     setPrice(""); setMessage("");
     toast("Teklifiniz iletildi", "success");

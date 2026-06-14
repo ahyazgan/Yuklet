@@ -60,7 +60,7 @@ export default function CuzdanPage({ user, listings = [], offers = [], onRequire
   const navigate = useNavigate();
 
   // Hook'lar her render'da aynı sırada çağrılmalı → erken return'den ÖNCE, null-safe.
-  const earned = useMemo(() => (!user ? [] : offers.filter((o) => o.status === "kabul" && String(o.fromUserId) === String(user.id) && o.price)), [offers, user, listings]);
+  const earned = useMemo(() => (!user ? [] : offers.filter((o) => o.status === "kabul" && String(o.fromUserId) === String(user.id) && o.price)), [offers, user]);
   const spent = useMemo(() => (!user ? [] : offers.filter((o) => o.status === "kabul" && o.price && listings.some((l) => String(l.id) === String(o.listingId) && String(l.ownerId) === String(user.id)))), [offers, listings, user]);
 
   if (!user) {

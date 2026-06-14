@@ -7,6 +7,7 @@ import { StarsDisplay, StarsInput } from "../components/Stars";
 import ReportModal from "../components/ReportModal";
 import SEO from "../components/SEO";
 import { splitAmount, payableAmount, fmtTL, PAYMENT_LABEL } from "../utils/payments";
+import { newId, nowIso } from "../utils/id";
 
 // ── "Sevkiyat Takibi" — logistics prototip (Shipment Review + Dark Detail) HamTed'e uyarlandi.
 //    Acik ust (kunye + ozellikler) + koyu alt sayfa (zaman cizelgesi + nakliyeci).
@@ -15,7 +16,7 @@ const idText = (l) => "HMT-" + String(l.id).padStart(4, "0");
 
 const PHASES = [["eslesti", "Eşleşti"], ["yuklendi", "Yüklendi"], ["yolda", "Yolda"], ["teslim", "Teslim"]];
 
-export default function TakipPage({ listings = LISTINGS, user, offers = [], getContact, reviews = [], onAddReview, getUserRating, onUpdateListing, onReport, onPayToEscrow, onReleasePayment, onRefundPayment }) {
+export default function TakipPage({ listings = LISTINGS, user, offers = [], getContact, reviews = [], onAddReview, getUserRating, onUpdateListing, onReport, onPayToEscrow, onReleasePayment }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const [rateVal, setRateVal] = useState(0);
@@ -119,9 +120,9 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
   const submitReview = () => {
     if (!counterpart || !rateVal) return;
     onAddReview?.({
-      id: Date.now(), listingId: l.id, offerId: accepted?.id,
+      id: newId(), listingId: l.id, offerId: accepted?.id,
       fromId: user.id, fromName: user.name, toId: counterpart.id, toName: counterpart.name,
-      rating: rateVal, comment: rateComment.trim(), createdAt: new Date().toISOString(),
+      rating: rateVal, comment: rateComment.trim(), createdAt: nowIso(),
     });
     setRateVal(0); setRateComment("");
   };
