@@ -18,6 +18,7 @@ const rowToListing = (r) => ({
   owner: r.owner_name, ownerId: r.owner_id, ownerVerified: r.owner_verified, ownerRating: r.owner_rating,
   status: r.status, offers: r.offers_count, createdText: r.created_text, createdAt: r.created_at,
   km: r.km, pickup: r.pickup, dropoff: r.dropoff, phase: r.phase, tripsDone: r.trips_done,
+  paymentStatus: r.payment_status, paymentAmount: r.payment_amount, paymentFee: r.payment_fee, paymentRef: r.payment_ref,
 });
 
 const listingToRow = (l) => ({
@@ -38,6 +39,7 @@ const LISTING_KEYMAP = {
   capacity: "capacity", priceType: "price_type", price: "price", desc: "description",
   status: "status", createdText: "created_text", type: "type", cat: "cat",
   km: "km", pickup: "pickup", dropoff: "dropoff", phase: "phase", tripsDone: "trips_done",
+  paymentStatus: "payment_status", paymentAmount: "payment_amount", paymentFee: "payment_fee", paymentRef: "payment_ref",
 };
 const mapPatch = (patch, keymap) => {
   const out = {};

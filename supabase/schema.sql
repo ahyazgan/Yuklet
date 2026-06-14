@@ -52,12 +52,22 @@ create table if not exists public.listings (
   dropoff         jsonb,                           -- [lat,lng] bosaltma noktasi
   phase           text,                            -- eslesti | yuklendi | yolda | teslim (sefer akisi)
   trips_done      integer not null default 0,      -- tamamlanan sefer sayisi
+  payment_status  text not null default 'yok',     -- yok | bloke | serbest | iade (escrow)
+  payment_amount  numeric,                          -- emanete alinan toplam bedel
+  payment_fee     numeric,                          -- platform komisyonu (kesilen)
+  payment_ref     text,                             -- saglayici referansi (mock veya gercek)
   created_text    text default 'az once',
   created_at      timestamptz not null default now()
 );
 create index if not exists listings_owner_idx  on public.listings(owner_id);
 create index if not exists listings_status_idx on public.listings(status);
 create index if not exists listings_cat_idx    on public.listings(cat);
+
+-- Mevcut tabloya (onceden kurulmussa) odeme kolonlarini ekle — tekrar calistirilabilir.
+alter table public.listings add column if not exists payment_status text not null default 'yok';
+alter table public.listings add column if not exists payment_amount numeric;
+alter table public.listings add column if not exists payment_fee    numeric;
+alter table public.listings add column if not exists payment_ref    text;
 
 -- ──────────────────────────────────────────────
 -- 3) OFFERS  (teklifler)

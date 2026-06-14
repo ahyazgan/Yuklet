@@ -6,6 +6,7 @@ import { CATS } from "../data/categories";
 import { StarsDisplay, StarsInput } from "../components/Stars";
 import ReportModal from "../components/ReportModal";
 import SEO from "../components/SEO";
+import { splitAmount, payableAmount, fmtTL, PAYMENT_LABEL } from "../utils/payments";
 
 // ── "Sevkiyat Takibi" — logistics prototip (Shipment Review + Dark Detail) HamTed'e uyarlandi.
 //    Acik ust (kunye + ozellikler) + koyu alt sayfa (zaman cizelgesi + nakliyeci).
@@ -14,12 +15,14 @@ const idText = (l) => "HMT-" + String(l.id).padStart(4, "0");
 
 const PHASES = [["eslesti", "Eşleşti"], ["yuklendi", "Yüklendi"], ["yolda", "Yolda"], ["teslim", "Teslim"]];
 
-export default function TakipPage({ listings = LISTINGS, user, offers = [], getContact, reviews = [], onAddReview, getUserRating, onUpdateListing, onReport }) {
+export default function TakipPage({ listings = LISTINGS, user, offers = [], getContact, reviews = [], onAddReview, getUserRating, onUpdateListing, onReport, onPayToEscrow, onReleasePayment, onRefundPayment }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const [rateVal, setRateVal] = useState(0);
   const [rateComment, setRateComment] = useState("");
   const [showReport, setShowReport] = useState(false);
+  const [payBusy, setPayBusy] = useState(false);
+  const [payMsg, setPayMsg] = useState("");
   const l = listings.find((x) => String(x.id) === String(id));
 
   if (!l) {
@@ -92,6 +95,25 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
   const advancePhase = () => {
     if (!nextPhase) return;
     onUpdateListing?.(l.id, { phase: nextPhase[0], ...(nextPhase[0] === "teslim" ? { status: "kapali" } : {}) });
+  };
+
+  // ── Ödeme / Escrow (emanet) ──
+  const payStatus = l.paymentStatus || "yok";
+  const amountToPay = payableAmount(l, accepted);
+  const split = splitAmount(l.paymentAmount || amountToPay);
+  const canPay = matched && isOwner && payStatus === "yok" && amountToPay > 0;        // müteahhit emanete öder
+  const canRelease = isOwner && payStatus === "bloke" && phase === "teslim";          // teslim sonrası serbest bırakır
+  const doPay = async () => {
+    setPayBusy(true); setPayMsg("");
+    const res = await onPayToEscrow?.(l.id, amountToPay);
+    setPayBusy(false);
+    setPayMsg(res?.ok ? (res.mock ? "Ödeme alındı (demo). Para emanette bloke." : "Ödeme alındı. Para emanette.") : (res?.error || "Ödeme başarısız."));
+  };
+  const doRelease = async () => {
+    setPayBusy(true); setPayMsg("");
+    const res = await onReleasePayment?.(l);
+    setPayBusy(false);
+    setPayMsg(res?.ok ? "Ödeme nakliyeciye serbest bırakıldı 🎉" : (res?.error || "İşlem başarısız."));
   };
 
   const submitReview = () => {
@@ -180,6 +202,77 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
             </div>
           )}
           {!canManage && phase === "teslim" && <p className="mt-3 text-xs font-semibold text-emerald-600">✓ Bu iş tamamlandı.</p>}
+        </div>
+      )}
+
+      {/* ODEME / ESCROW (emanet) */}
+      {matched && amountToPay > 0 && (
+        <div className="rounded-3xl bg-white p-5 shadow-sm dark:bg-navy-card">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-base font-bold text-slate-950 dark:text-slate-100">Güvenli ödeme</h2>
+            <span className={`rounded-full px-2.5 py-1 text-[10px] font-extrabold ${
+              payStatus === "serbest" ? "bg-emerald-50 text-emerald-600"
+              : payStatus === "bloke" ? "bg-amber-50 text-amber-600"
+              : payStatus === "iade" ? "bg-rose-50 text-rose-600"
+              : "bg-slate-100 text-slate-500 dark:bg-navy-soft dark:text-slate-400"}`}>
+              {PAYMENT_LABEL[payStatus]}
+            </span>
+          </div>
+
+          {/* Tutar dökümü */}
+          <div className="space-y-2 rounded-2xl bg-slate-50 p-4 dark:bg-navy-soft">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-500 dark:text-slate-400">İş bedeli</span>
+              <span className="font-extrabold text-slate-900 dark:text-slate-100">{fmtTL(split.total)}</span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-500 dark:text-slate-400">Platform komisyonu (%{Math.round(split.feeRate * 100)})</span>
+              <span className="font-semibold text-rose-500">−{fmtTL(split.fee)}</span>
+            </div>
+            <div className="flex items-center justify-between border-t border-gray-200 pt-2 text-sm dark:border-navy-line">
+              <span className="font-bold text-slate-700 dark:text-slate-200">Nakliyecinin eline geçen</span>
+              <span className="font-extrabold text-emerald-600">{fmtTL(split.payout)}</span>
+            </div>
+          </div>
+
+          {/* Açıklama / aksiyon */}
+          {payStatus === "yok" && (
+            <p className="mt-3 text-[12px] leading-relaxed text-gray-500 dark:text-slate-400">
+              Ödemeyi <b className="text-slate-700 dark:text-slate-200">emanete</b> yatır. Para platformda bloke kalır; <b>teslim aldığında</b> serbest bırakırsın. İş yapılmazsa iade edilir.
+            </p>
+          )}
+          {payStatus === "bloke" && (
+            <p className="mt-3 text-[12px] leading-relaxed text-amber-700 dark:text-yellow-300">
+              💰 Para emanette güvende. Yük <b>teslim edildiğinde</b> “Ödemeyi serbest bırak” ile nakliyeciye aktarılır.
+            </p>
+          )}
+          {payStatus === "serbest" && (
+            <p className="mt-3 text-[12px] font-semibold text-emerald-600">✓ Ödeme tamamlandı, nakliyeciye {fmtTL(split.payout)} aktarıldı.</p>
+          )}
+
+          {canPay && (
+            <button onClick={doPay} disabled={payBusy}
+              className="mt-4 w-full rounded-2xl bg-yellow-400 py-3.5 text-sm font-extrabold text-slate-950 transition hover:bg-yellow-500 disabled:opacity-60">
+              {payBusy ? "İşleniyor…" : `${fmtTL(split.total)} emanete öde`}
+            </button>
+          )}
+          {canRelease && (
+            <button onClick={doRelease} disabled={payBusy}
+              className="mt-4 w-full rounded-2xl bg-emerald-500 py-3.5 text-sm font-extrabold text-white transition hover:bg-emerald-600 disabled:opacity-60">
+              {payBusy ? "İşleniyor…" : "Teslim aldım — ödemeyi serbest bırak"}
+            </button>
+          )}
+          {payStatus === "bloke" && !canRelease && isOwner && phase !== "teslim" && (
+            <p className="mt-3 text-[11px] text-gray-400 dark:text-slate-500">Serbest bırakma, iş “Teslim” aşamasına gelince açılır.</p>
+          )}
+          {isNakliyeci && payStatus === "bloke" && (
+            <p className="mt-3 text-[12px] font-semibold text-amber-700 dark:text-yellow-300">💰 İş bedeli emanette güvende. Teslimden sonra hesabına geçecek.</p>
+          )}
+          {isNakliyeci && payStatus === "serbest" && (
+            <p className="mt-3 text-[12px] font-semibold text-emerald-600">✓ {fmtTL(split.payout)} hesabına aktarıldı.</p>
+          )}
+
+          {payMsg && <div className="mt-3 rounded-2xl bg-slate-50 px-4 py-2.5 text-[12px] font-semibold text-slate-700 dark:bg-navy-soft dark:text-slate-200">{payMsg}</div>}
         </div>
       )}
 

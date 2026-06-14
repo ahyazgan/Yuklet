@@ -1,15 +1,24 @@
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import SEO from "../components/SEO";
+import { splitAmount, DEFAULT_FEE_RATE } from "../utils/payments";
 
-// ── Cüzdan / hakediş — kabul edilen tekliflerden kazanç & harcama özeti.
-//    (Gerçek ödeme/escrow dış servis gerektirir; bu ekran muhasebe/özet katmanı.)
+// ── Cüzdan / hakediş — kabul edilen tekliflerden kazanç & harcama özeti + escrow durumu.
 
 const fmt = (n) => "₺" + Math.round(n || 0).toLocaleString("tr-TR");
-const titleOf = (listings, id) => listings.find((l) => String(l.id) === String(id))?.title || "ilan";
+const listingOf = (listings, id) => listings.find((l) => String(l.id) === String(id));
+const titleOf = (listings, id) => listingOf(listings, id)?.title || "ilan";
 const isDone = (listings, id) => {
-  const l = listings.find((x) => String(x.id) === String(id));
+  const l = listingOf(listings, id);
   return l?.phase === "teslim" || l?.status === "kapali";
+};
+// Escrow durumu etiketi (ilana göre)
+const payInfo = (listings, id) => {
+  const s = listingOf(listings, id)?.paymentStatus || "yok";
+  if (s === "serbest") return { label: "Ödendi", cls: "bg-emerald-100 text-emerald-700" };
+  if (s === "bloke") return { label: "Emanette", cls: "bg-amber-100 text-amber-700" };
+  if (s === "iade") return { label: "İade", cls: "bg-rose-100 text-rose-700" };
+  return null;
 };
 
 function Stat({ label, value, sub, accent = "text-slate-950 dark:text-slate-100" }) {
@@ -24,17 +33,24 @@ function Stat({ label, value, sub, accent = "text-slate-950 dark:text-slate-100"
 
 function Row({ listings, o, sign }) {
   const done = isDone(listings, o.listingId);
+  const pay = payInfo(listings, o.listingId);
+  // Nakliyeci satırında komisyon sonrası net göster
+  const net = sign === "+" ? splitAmount(o.price).payout : o.price;
   return (
     <div className="flex items-center justify-between gap-3 rounded-2xl border border-gray-100 p-3.5 dark:border-navy-line">
       <div className="min-w-0">
         <div className="truncate text-sm font-bold text-slate-900 dark:text-slate-100">{titleOf(listings, o.listingId)}</div>
-        <div className="mt-0.5 flex items-center gap-1.5 text-[11px]">
+        <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11px]">
           <span className={`rounded-md px-1.5 py-0.5 font-bold ${done ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>{done ? "Tamamlandı" : "Devam ediyor"}</span>
+          {pay && <span className={`rounded-md px-1.5 py-0.5 font-bold ${pay.cls}`}>{pay.label}</span>}
           <span className="text-gray-400">{sign === "+" ? o.fromUser : "—"}</span>
         </div>
       </div>
-      <div className={`whitespace-nowrap text-base font-extrabold ${sign === "+" ? "text-emerald-600" : "text-slate-900 dark:text-slate-100"}`}>
-        {sign}{fmt(o.price)}
+      <div className="whitespace-nowrap text-right">
+        <div className={`text-base font-extrabold ${sign === "+" ? "text-emerald-600" : "text-slate-900 dark:text-slate-100"}`}>
+          {sign}{fmt(net)}
+        </div>
+        {sign === "+" && <div className="text-[10px] text-gray-400">brüt {fmt(o.price)}</div>}
       </div>
     </div>
   );
@@ -58,10 +74,16 @@ export default function CuzdanPage({ user, listings = [], offers = [], onRequire
   const spent = useMemo(() => offers.filter((o) => o.status === "kabul" && o.price && listings.some((l) => String(l.id) === String(o.listingId) && String(l.ownerId) === String(user.id))), [offers, listings, user.id]);
 
   const sum = (arr) => arr.reduce((s, o) => s + (o.price || 0), 0);
-  const earnTotal = sum(earned);
-  const earnPending = sum(earned.filter((o) => !isDone(listings, o.listingId)));
-  const earnDone = earnTotal - earnPending;
+  // Nakliyeci kazancı komisyon SONRASI net
+  const sumNet = (arr) => arr.reduce((s, o) => s + splitAmount(o.price).payout, 0);
+  const earnTotal = sumNet(earned);
+  // Emanette bekleyen (bloke) vs serbest bırakılmış (ödendi)
+  const stOf = (o) => listings.find((l) => String(l.id) === String(o.listingId))?.paymentStatus || "yok";
+  const earnReleased = sumNet(earned.filter((o) => stOf(o) === "serbest"));
+  const earnInEscrow = sumNet(earned.filter((o) => stOf(o) === "bloke"));
+  const earnPending = earnTotal - earnReleased - earnInEscrow; // henüz ödeme başlamamış
   const spendTotal = sum(spent);
+  const feeTotal = earned.reduce((s, o) => s + splitAmount(o.price).fee, 0);
 
   return (
     <div className="mx-auto flex w-full max-w-[460px] flex-col gap-4 px-4 pb-24 pt-2 text-slate-900 dark:text-slate-100">
@@ -70,14 +92,15 @@ export default function CuzdanPage({ user, listings = [], offers = [], onRequire
 
       {/* Kazanç özeti */}
       <div className="rounded-[28px] bg-slate-950 p-5 text-white dark:bg-navy-card">
-        <div className="text-xs text-slate-400">Toplam hakediş (kabul edilen işler)</div>
+        <div className="text-xs text-slate-400">Net hakediş (komisyon sonrası)</div>
         <div className="mt-1 text-4xl font-black tracking-tight text-yellow-400">{fmt(earnTotal)}</div>
-        <div className="mt-3 flex gap-4 text-xs">
+        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs">
+          <div><span className="text-slate-400">Ödendi </span><b className="text-emerald-400">{fmt(earnReleased)}</b></div>
+          <div><span className="text-slate-400">Emanette </span><b className="text-amber-300">{fmt(earnInEscrow)}</b></div>
           <div><span className="text-slate-400">Bekleyen </span><b>{fmt(earnPending)}</b></div>
-          <div><span className="text-slate-400">Tamamlanan </span><b className="text-emerald-400">{fmt(earnDone)}</b></div>
         </div>
         <div className="mt-4 rounded-xl bg-white/10 p-2.5 text-[11px] text-slate-300">
-          💡 Güvenli ödeme (escrow) yakında — iş tamamlanınca hakediş otomatik serbest kalacak.
+          🔒 Güvenli ödeme aktif — para emanette bloke kalır, <b>teslimde</b> serbest bırakılır. Platform komisyonu %{Math.round(DEFAULT_FEE_RATE * 100)} (toplam {fmt(feeTotal)}).
         </div>
       </div>
 
