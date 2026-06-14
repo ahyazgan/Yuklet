@@ -13,27 +13,37 @@ export default function AuthModal({ onClose, onLogin, onRegister }) {
   const [mode, setMode] = useState("login"); // login | register
   const [values, setValues] = useState({ role: "isveren" });
   const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [info, setInfo] = useState("");
 
   const set = (key, val) => { setValues((v) => ({ ...v, [key]: val })); setError(""); };
-  const switchMode = (m) => { setMode(m); setError(""); };
+  const switchMode = (m) => { setMode(m); setError(""); setInfo(""); };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const email = (values.email || "").trim();
     const password = (values.password || "").trim();
     if (!email || !password) { setError("E-posta ve şifre zorunludur."); return; }
 
     let res;
-    if (mode === "register") {
-      const name = (values.name || "").trim();
-      if (!name) { setError("Ad / firma zorunludur."); return; }
-      if (password.length < 6) { setError("Şifre en az 6 karakter olmalıdır."); return; }
-      res = onRegister({ name, email, password, role: values.role || "isveren", phone: (values.phone || "").trim() });
-    } else {
-      res = onLogin({ email, password });
+    setBusy(true); setError(""); setInfo("");
+    try {
+      if (mode === "register") {
+        const name = (values.name || "").trim();
+        if (!name) { setError("Ad / firma zorunludur."); setBusy(false); return; }
+        if (password.length < 6) { setError("Şifre en az 6 karakter olmalıdır."); setBusy(false); return; }
+        res = await onRegister({ name, email, password, role: values.role || "isveren", phone: (values.phone || "").trim() });
+      } else {
+        res = await onLogin({ email, password });
+      }
+    } catch (err) {
+      setError(err?.message || "Bir hata oluştu."); setBusy(false); return;
     }
+    setBusy(false);
 
     if (res && res.ok === false) { setError(res.error || "Bir hata oluştu."); return; }
+    // E-posta onayı gerekiyorsa modal'ı kapatma; kullanıcıya bildir.
+    if (res && res.needsConfirm) { setInfo(res.message || "E-postanı kontrol et: onay bağlantısı gönderdik."); return; }
     onClose();
   };
 
@@ -100,9 +110,10 @@ export default function AuthModal({ onClose, onLogin, onRegister }) {
           </div>
 
           {error && <div className="text-sm font-semibold text-red-600">{error}</div>}
+          {info && <div className="rounded-2xl bg-green-50 px-4 py-3 text-sm font-semibold text-green-700">{info}</div>}
 
-          <button type="submit" className="mt-1 w-full rounded-2xl bg-yellow-400 py-3.5 text-sm font-extrabold text-slate-950 transition hover:bg-yellow-500">
-            {mode === "register" ? "Hesap Oluştur" : "Giriş Yap"}
+          <button type="submit" disabled={busy} className="mt-1 w-full rounded-2xl bg-yellow-400 py-3.5 text-sm font-extrabold text-slate-950 transition hover:bg-yellow-500 disabled:opacity-60">
+            {busy ? "Lütfen bekleyin…" : mode === "register" ? "Hesap Oluştur" : "Giriş Yap"}
           </button>
         </form>
 

@@ -7,6 +7,8 @@ import {
   loadMsgSeen, saveMsgSeen, loadNotifSeen, saveNotifSeen, loadReviews, saveReviews, loadDocs, saveDocs,
   loadOnboarded, saveOnboarded, loadReports, saveReports,
 } from "./utils/storage";
+import { isSupabaseConfigured } from "./lib/supabase";
+import * as api from "./lib/api";
 import { buildNotifications } from "./utils/notifications";
 import { ToastProvider } from "./components/Toast";
 import { ErrorBoundary, NotFoundPage } from "./components/ErrorBoundary";
@@ -62,63 +64,129 @@ function AppShell() {
     saveTheme(darkMode ? "dark" : "light");
   }, [darkMode]);
 
-  // Ilanlar: demo seed + kullanicinin ekledikleri (kalici)
-  const [userListings, setUserListings] = useState(() => loadListings());
-  useEffect(() => { saveListings(userListings); }, [userListings]);
-  const listings = [...userListings, ...LISTINGS];
-  const publishListing = (listing) => setUserListings(prev => [listing, ...prev]);
-  const updateListing = (id, patch) => setUserListings(prev => prev.map(l => l.id === id ? { ...l, ...patch } : l));
-  const removeListing = (id) => {
-    setUserListings(prev => prev.filter(l => l.id !== id));
-    setOffers(prev => prev.filter(o => String(o.listingId) !== String(id)));
+  // ── VERI KATMANI: Supabase yapilandirilmissa async DB, yoksa localStorage ──
+  const SB = isSupabaseConfigured;
+
+  // Ilanlar
+  // SB modunda demo ilanlar veritabaninda (seed) oldugu icin LISTINGS eklenmez.
+  const [userListings, setUserListings] = useState(() => (SB ? [] : loadListings()));
+  useEffect(() => { if (!SB) saveListings(userListings); }, [userListings, SB]);
+  const listings = SB ? userListings : [...userListings, ...LISTINGS];
+  const reloadListings = async () => { try { setUserListings(await api.fetchListings()); } catch (e) { console.error(e); } };
+  const publishListing = async (listing) => {
+    if (SB) { try { await api.createListing(listing, profile || user); await reloadListings(); } catch (e) { console.error(e); } }
+    else setUserListings(prev => [listing, ...prev]);
+  };
+  const updateListing = async (id, patch) => {
+    if (SB) { try { await api.updateListing(id, patch); setUserListings(prev => prev.map(l => l.id === id ? { ...l, ...patch } : l)); } catch (e) { console.error(e); } }
+    else setUserListings(prev => prev.map(l => l.id === id ? { ...l, ...patch } : l));
+  };
+  const removeListing = async (id) => {
+    if (SB) { try { await api.deleteListing(id); setUserListings(prev => prev.filter(l => l.id !== id)); } catch (e) { console.error(e); } }
+    else { setUserListings(prev => prev.filter(l => l.id !== id)); setOffers(prev => prev.filter(o => String(o.listingId) !== String(id))); }
   };
 
   // Teklifler
-  const [offers, setOffers] = useState(() => loadOffers());
-  useEffect(() => { saveOffers(offers); }, [offers]);
-  const addOffer = (offer) => setOffers(prev => [offer, ...prev]);
-  const updateOffer = (id, patch) => setOffers(prev => prev.map(o => o.id === id ? { ...o, ...patch, ...(patch.status ? { updatedAt: new Date().toISOString() } : {}) } : o));
+  const [offers, setOffers] = useState(() => (SB ? [] : loadOffers()));
+  useEffect(() => { if (!SB) saveOffers(offers); }, [offers, SB]);
+  const reloadOffers = async () => { try { setOffers(await api.fetchOffers()); } catch (e) { console.error(e); } };
+  const addOffer = async (offer) => {
+    if (SB) { try { await api.createOffer(offer, profile || user); await Promise.all([reloadOffers(), reloadListings()]); } catch (e) { console.error(e); } }
+    else setOffers(prev => [offer, ...prev]);
+  };
+  const updateOffer = async (id, patch) => {
+    if (SB) { try { await api.updateOffer(id, patch); setOffers(prev => prev.map(o => o.id === id ? { ...o, ...patch } : o)); } catch (e) { console.error(e); } }
+    else setOffers(prev => prev.map(o => o.id === id ? { ...o, ...patch, ...(patch.status ? { updatedAt: new Date().toISOString() } : {}) } : o));
+  };
 
   // Mesajlar
-  const [messages, setMessages] = useState(() => loadMessages());
-  useEffect(() => { saveMessages(messages); }, [messages]);
-  const addMessage = (msg) => setMessages(prev => [...prev, msg]);
+  const [messages, setMessages] = useState(() => (SB ? [] : loadMessages()));
+  useEffect(() => { if (!SB) saveMessages(messages); }, [messages, SB]);
+  const addMessage = async (msg) => {
+    if (SB) { try { const saved = await api.sendMessage(msg); setMessages(prev => [...prev, saved]); } catch (e) { console.error(e); } }
+    else setMessages(prev => [...prev, msg]);
+  };
+  // "Goruldu" ve bildirim okundu durumu — yerel tercih, her modda localStorage'da kalir
   const [msgSeen, setMsgSeen] = useState(() => loadMsgSeen());
   useEffect(() => { saveMsgSeen(msgSeen); }, [msgSeen]);
   const [notifSeen, setNotifSeen] = useState(() => loadNotifSeen());
   useEffect(() => { saveNotifSeen(notifSeen); }, [notifSeen]);
 
   // Degerlendirmeler (puan + yorum)
-  const [reviews, setReviews] = useState(() => loadReviews());
-  useEffect(() => { saveReviews(reviews); }, [reviews]);
-  const addReview = (r) => setReviews(prev => [r, ...prev]);
+  const [reviews, setReviews] = useState(() => (SB ? [] : loadReviews()));
+  useEffect(() => { if (!SB) saveReviews(reviews); }, [reviews, SB]);
+  const addReview = async (r) => {
+    if (SB) { try { await api.addReview(r); setReviews(await api.fetchReviews()); } catch (e) { console.error(e); } }
+    else setReviews(prev => [r, ...prev]);
+  };
 
-  // Belgeler (K belgesi, ruhsat, vergi levhasi) — base64
-  const [docs, setDocs] = useState(() => loadDocs());
-  useEffect(() => { saveDocs(docs); }, [docs]);
-  const addDoc = (d) => setDocs(prev => [d, ...prev]);
-  const removeDoc = (id) => setDocs(prev => prev.filter(x => x.id !== id));
+  // Belgeler (K belgesi, ruhsat, vergi levhasi)
+  const [docs, setDocs] = useState(() => (SB ? [] : loadDocs()));
+  useEffect(() => { if (!SB) saveDocs(docs); }, [docs, SB]);
+  const addDoc = async (d) => {
+    if (SB) { try { const saved = await api.addDoc({ ...d, ownerId: (profile || user)?.id }); setDocs(prev => [{ ...d, ...saved, ownerId: (profile || user)?.id }, ...prev]); } catch (e) { console.error(e); } }
+    else setDocs(prev => [d, ...prev]);
+  };
+  const removeDoc = async (id) => {
+    if (SB) { try { await api.removeDoc(id); } catch (e) { console.error(e); } }
+    setDocs(prev => prev.filter(x => x.id !== id));
+  };
 
   // Sikayet / uyusmazlik bildirimleri
-  const [reports, setReports] = useState(() => loadReports());
-  useEffect(() => { saveReports(reports); }, [reports]);
-  const addReport = (r) => setReports(prev => [{ ...r, id: Date.now(), createdAt: new Date().toISOString(), status: "acik" }, ...prev]);
+  const [reports, setReports] = useState(() => (SB ? [] : loadReports()));
+  useEffect(() => { if (!SB) saveReports(reports); }, [reports, SB]);
+  const addReport = async (r) => {
+    if (SB) { try { await api.addReport({ ...r, fromId: (profile || user)?.id, fromName: (profile || user)?.name }); } catch (e) { console.error(e); } }
+    else setReports(prev => [{ ...r, id: Date.now(), createdAt: new Date().toISOString(), status: "acik" }, ...prev]);
+  };
   const getUserRating = (userId) => {
     const rs = reviews.filter(r => String(r.toId) === String(userId));
     if (!rs.length) return null;
     return { avg: rs.reduce((s, r) => s + r.rating, 0) / rs.length, count: rs.length };
   };
 
-  // Kullanici / kimlik dogrulama
-  const [users, setUsers] = useState(() => loadUsers());
-  useEffect(() => { saveUsers(users); }, [users]);
-  const [user, setUser] = useState(() => loadUser());
-  useEffect(() => { saveUser(user); }, [user]);
+  // ── Kullanici / kimlik dogrulama ──
+  const [users, setUsers] = useState(() => loadUsers());            // sadece localStorage modunda kullanilir
+  useEffect(() => { if (!SB) saveUsers(users); }, [users, SB]);
+  const [user, setUser] = useState(() => (SB ? null : loadUser())); // SB: profil; local: kullanici
+  const [profile, setProfile] = useState(null);                     // SB modunda profiles satiri
+  useEffect(() => { if (!SB) saveUser(user); }, [user, SB]);
+  const [authReady, setAuthReady] = useState(!SB);                  // SB: oturum cozulene kadar bekle
   const [showAuth, setShowAuth] = useState(false);
   const [showOnboard, setShowOnboard] = useState(() => !loadOnboarded());
   const finishOnboard = () => { saveOnboarded(); setShowOnboard(false); };
 
-  const registerUser = ({ name, email, password, role, phone }) => {
+  // SB: oturum degisimini dinle, profil + verileri yukle
+  useEffect(() => {
+    if (!SB) return;
+    let unsub = () => {};
+    const hydrate = async (authUser) => {
+      if (authUser) {
+        const prof = await api.getProfile(authUser.id).catch(() => null);
+        setProfile(prof); setUser(prof || { id: authUser.id, email: authUser.email });
+      } else { setProfile(null); setUser(null); }
+      setAuthReady(true);
+    };
+    (async () => {
+      const u = await api.getSessionUser().catch(() => null);
+      await hydrate(u);
+      await Promise.all([reloadListings(), reloadOffers(),
+        api.fetchMessages().then(setMessages).catch(() => {}),
+        api.fetchReviews().then(setReviews).catch(() => {})]);
+      unsub = api.onAuthChange((au) => hydrate(au));
+    })();
+    return () => unsub();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // SB modunda kullanici giris yapinca kendi belgelerini yukle
+  useEffect(() => {
+    if (!SB || !user?.id) { return; }
+    api.fetchDocs(user.id).then(setDocs).catch(() => {});
+  }, [SB, user?.id]);
+
+  const registerUser = async ({ name, email, password, role, phone }) => {
+    if (SB) return api.signUp({ name, email, password, role, phone });
     if (users.some(u => u.email.toLowerCase() === email.toLowerCase()))
       return { ok: false, error: "Bu e-posta zaten kayitli. Giris yapin." };
     const newUser = { id: Date.now(), name, email, password, role, phone: phone || "", verified: false, rating: 5.0 };
@@ -127,7 +195,8 @@ function AppShell() {
     setUser(safe);
     return { ok: true };
   };
-  const loginUser = ({ email, password }) => {
+  const loginUser = async ({ email, password }) => {
+    if (SB) return api.signIn({ email, password });
     const found = users.find(u => u.email.toLowerCase() === email.toLowerCase());
     if (!found) return { ok: false, error: "Kullanici bulunamadi. Once kayit olun." };
     if (found.password && found.password !== password) return { ok: false, error: "Sifre hatali." };
@@ -135,21 +204,34 @@ function AppShell() {
     setUser(safe);
     return { ok: true };
   };
-  const logout = () => setUser(null);
+  const logout = async () => { if (SB) { await api.signOut().catch(() => {}); } setUser(null); setProfile(null); };
   const requireAuth = () => setShowAuth(true);
   const markMessagesSeen = () => { if (user) setMsgSeen(prev => ({ ...prev, [user.id]: new Date().toISOString() })); };
   const markNotifSeen = () => { if (user) setNotifSeen(prev => ({ ...prev, [user.id]: new Date().toISOString() })); };
   const getContact = (id) => {
+    if (SB) {
+      // Iletisim bilgileri profiles'tan; eslesen taraf icin isim/ telefon
+      const fromMsg = messages.find(m => String(m.fromId) === String(id));
+      const fromOffer = offers.find(o => String(o.fromUserId) === String(id));
+      const name = fromMsg?.fromName || fromOffer?.fromUser || listings.find(l => String(l.ownerId) === String(id))?.owner;
+      return name ? { name, phone: "", email: "" } : null;
+    }
     const u = users.find(x => String(x.id) === String(id));
     return u ? { name: u.name, phone: u.phone, email: u.email } : null;
   };
-  const updateProfile = (patch) => {
+  const updateProfile = async (patch) => {
+    if (SB) {
+      try { const res = await api.updateProfile(user.id, patch); if (res.ok) { setProfile(res.profile); setUser(res.profile); } }
+      catch (e) { console.error(e); }
+      return;
+    }
     setUser(prev => prev ? { ...prev, ...patch } : prev);
     setUsers(prev => prev.map(u => (user && u.id === user.id) ? { ...u, ...patch } : u));
   };
 
-  // Sekmeler arasi canli senkron: baska sekmede localStorage degisince state'i tazele
+  // Sekmeler arasi canli senkron (sadece localStorage modu)
   useEffect(() => {
+    if (SB) return;
     const onStorage = (e) => {
       if (!e.key) return;
       if (e.key === "hamted_offers") setOffers(loadOffers());
@@ -163,7 +245,7 @@ function AppShell() {
     };
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
-  }, []);
+  }, [SB]);
 
   // Bildirim sayilari
   const pendingOffersCount = user

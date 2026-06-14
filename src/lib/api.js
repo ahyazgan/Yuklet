@@ -63,11 +63,15 @@ const rowToProfile = (r) => r && ({
 
 // ── Auth ────────────────────────────────────────────────────
 export async function signUp({ name, email, password, role, phone }) {
-  const { error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email, password,
     options: { data: { name, role: role || "isveren", phone: phone || "" } },
   });
   if (error) return { ok: false, error: error.message };
+  // E-posta onayi aciksa session gelmez -> kullanici onaylamadan giremez.
+  if (data?.user && !data.session) {
+    return { ok: true, needsConfirm: true, message: "E-postani kontrol et: onay baglantisi gonderdik. Onayladiktan sonra giris yap." };
+  }
   return { ok: true };
 }
 
