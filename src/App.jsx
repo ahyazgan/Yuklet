@@ -24,6 +24,7 @@ import MobileTabBar from "./components/MobileTabBar";
 import WhatsAppButton from "./components/WhatsAppButton";
 import AuthModal from "./components/AuthModal";
 import OnboardingModal from "./components/OnboardingModal";
+import InstallPrompt from "./components/InstallPrompt";
 
 import { LISTINGS } from "./data/listings";
 
@@ -332,6 +333,7 @@ function AppShell() {
 
       <Footer />
       <WhatsAppButton />
+      <InstallPrompt />
       <MobileTabBar unreadCount={unreadCount} />
 
       {showAuth && <AuthModal onClose={() => setShowAuth(false)} onLogin={loginUser} onRegister={registerUser} />}
