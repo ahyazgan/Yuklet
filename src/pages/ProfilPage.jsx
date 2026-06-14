@@ -5,6 +5,7 @@ import { useToast } from "../components/Toast";
 import { StarsDisplay } from "../components/Stars";
 import SEO from "../components/SEO";
 import { sendSmsCode, verifySmsCode, isValidPhone, isSmsConfigured } from "../lib/smsProvider";
+import { isAdmin } from "./AdminPage";
 
 function fmtRev(iso) {
   try { return new Date(iso).toLocaleDateString("tr-TR", { day: "numeric", month: "short", year: "numeric" }); }
@@ -186,6 +187,16 @@ export default function ProfilPage({ user, onUpdateProfile, onVerifyPhone, onReq
       {/* Hizli erisim */}
       <section className="flex flex-col gap-3">
         <h2 className="text-base font-bold text-slate-950 dark:text-slate-100">Hızlı erişim</h2>
+        {isAdmin(user) && (
+          <button onClick={() => navigate("/admin")} className="flex w-full items-center gap-3.5 rounded-3xl bg-slate-950 p-4 text-left shadow-sm transition hover:-translate-y-0.5 dark:bg-navy-soft">
+            <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-yellow-400 text-xl">🛡️</span>
+            <span className="min-w-0">
+              <span className="block text-sm font-bold text-white">Yönetim Paneli</span>
+              <span className="block text-xs text-slate-400">Şikayet, belge ve kullanıcı moderasyonu</span>
+            </span>
+            <span className="ml-auto text-2xl text-slate-600">›</span>
+          </button>
+        )}
         {QUICK.map((q) => (
           <button key={q.to} onClick={() => navigate(q.to)} className="flex w-full items-center gap-3.5 rounded-3xl bg-white dark:bg-navy-card p-4 text-left shadow-sm transition hover:-translate-y-0.5">
             <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-xl">{q.icon}</span>

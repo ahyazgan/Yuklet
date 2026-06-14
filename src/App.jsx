@@ -39,6 +39,7 @@ const IlanVerPage = lazy(() => import("./pages/IlanVerPage"));
 const IlanlarimPage = lazy(() => import("./pages/IlanlarimPage"));
 const MesajlarPage = lazy(() => import("./pages/MesajlarPage"));
 const ProfilPage = lazy(() => import("./pages/ProfilPage"));
+const AdminPage = lazy(() => import("./pages/AdminPage"));
 const DashboardPage = lazy(() => import("./pages/DashboardPage"));
 const MuteahhitPage = lazy(() => import("./pages/MuteahhitPage"));
 const TedarikciPage = lazy(() => import("./pages/TedarikciPage"));
@@ -170,6 +171,18 @@ function AppShell() {
     const rs = reviews.filter(r => String(r.toId) === String(userId));
     if (!rs.length) return null;
     return { avg: rs.reduce((s, r) => s + r.rating, 0) / rs.length, count: rs.length };
+  };
+
+  // ── Admin / moderasyon (yerel modda tam çalışır; SB için servis rolü ileride) ──
+  const setReportStatus = (id, status) => setReports(prev => prev.map(r => r.id === id ? { ...r, status } : r));
+  const reviewDoc = (docId, decision) => {
+    // decision: "dogrulandi" | "red". Onaylanırsa belge sahibini verified yap.
+    const d = docs.find(x => x.id === docId);
+    setDocs(prev => prev.map(x => x.id === docId ? { ...x, status: decision } : x));
+    if (decision === "dogrulandi" && d) {
+      setUsers(prev => prev.map(u => String(u.id) === String(d.ownerId) ? { ...u, verified: true } : u));
+      setUser(prev => prev && String(prev.id) === String(d.ownerId) ? { ...prev, verified: true } : prev);
+    }
   };
 
   // ── Kullanici / kimlik dogrulama ──
@@ -319,6 +332,7 @@ function AppShell() {
                 <Route path="/mesajlar" element={<PageTransition><MesajlarPage user={user} listings={listings} offers={offers} messages={messages} onSendMessage={addMessage} onRequireAuth={requireAuth} onSeen={markMessagesSeen} getContact={getContact} /></PageTransition>} />
                 <Route path="/profil" element={<PageTransition><ProfilPage user={user} onUpdateProfile={updateProfile} onVerifyPhone={verifyPhone} onRequireAuth={requireAuth} reviews={reviews} getUserRating={getUserRating} docs={docs.filter(d => user && String(d.ownerId) === String(user.id))} onAddDoc={addDoc} onRemoveDoc={removeDoc} /></PageTransition>} />
                 <Route path="/panel" element={<PageTransition><DashboardPage user={user} listings={listings} offers={offers} messages={messages} onRequireAuth={requireAuth} /></PageTransition>} />
+                <Route path="/admin" element={<PageTransition><AdminPage user={user} reports={reports} docs={docs} users={users} listings={listings} onRequireAuth={requireAuth} onSetReportStatus={setReportStatus} onReviewDoc={reviewDoc} /></PageTransition>} />
                 <Route path="/muteahhit" element={<PageTransition><MuteahhitPage /></PageTransition>} />
                 <Route path="/tedarikci" element={<PageTransition><TedarikciPage /></PageTransition>} />
                 <Route path="/nakliyeci" element={<PageTransition><NakliyeciPage /></PageTransition>} />
