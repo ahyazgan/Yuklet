@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { LISTINGS, IL_LIST } from "../data/listings";
 import { CATS, MATERIALS } from "../data/categories";
 import { loadsNearCity } from "../utils/backhaul";
+import { loadSavedSearches, saveSavedSearches } from "../utils/storage";
 import SEO from "../components/SEO";
 
 const ListingsMap = lazy(() => import("../components/ListingsMap"));
@@ -64,6 +65,32 @@ export default function ListingsPage({ listings = LISTINGS }) {
   const [sort, setSort] = useState("yeni"); // yeni | teklif | ucuz | pahali
   const [showFilters, setShowFilters] = useState(false);
   const [view, setView] = useState(sp.get("view") === "map" ? "map" : "list"); // list | map
+
+  // ── Kaydedilmiş aramalar ──
+  const [saved, setSaved] = useState(() => loadSavedSearches());
+  const persistSaved = (next) => { setSaved(next); saveSavedSearches(next); };
+  const currentSearch = { type, cat, il, q, material, priceMin, priceMax, sort };
+  const isDefaultSearch = type === "all" && cat === "all" && il === "all" && !q && material === "all" && !priceMin && !priceMax && sort === "yeni";
+  const labelFor = (s) => {
+    const parts = [];
+    if (s.cat !== "all") parts.push(s.cat === "hafriyat" ? "Hafriyat" : "Silobas");
+    if (s.type !== "all") parts.push(s.type === "arac" ? "Araç" : "İş");
+    if (s.il !== "all") parts.push(s.il);
+    if (s.material !== "all") parts.push(s.material);
+    if (s.q) parts.push(`"${s.q}"`);
+    return parts.join(" · ") || "Tüm ilanlar";
+  };
+  const saveCurrent = () => {
+    const key = JSON.stringify(currentSearch);
+    if (saved.some((s) => JSON.stringify({ type: s.type, cat: s.cat, il: s.il, q: s.q, material: s.material, priceMin: s.priceMin, priceMax: s.priceMax, sort: s.sort }) === key)) return;
+    persistSaved([{ id: key, ...currentSearch, label: labelFor(currentSearch) }, ...saved].slice(0, 8));
+  };
+  const applySearch = (s) => {
+    setType(s.type); setCat(s.cat); setIl(s.il); setQ(s.q);
+    setMaterial(s.material); setPriceMin(s.priceMin); setPriceMax(s.priceMax); setSort(s.sort);
+    setMode("normal");
+  };
+  const removeSearch = (id) => persistSaved(saved.filter((s) => s.id !== id));
 
   const materialOpts = cat === "all"
     ? [...(MATERIALS.hafriyat || []), ...(MATERIALS.silobas || [])]
@@ -143,6 +170,23 @@ export default function ListingsPage({ listings = LISTINGS }) {
           </button>
         )}
       </div>
+
+      {/* Kaydedilmis aramalar */}
+      {mode === "normal" && (saved.length > 0 || !isDefaultSearch) && (
+        <div className="flex items-center gap-2 overflow-x-auto pb-0.5">
+          {!isDefaultSearch && (
+            <button onClick={saveCurrent} className="flex flex-shrink-0 items-center gap-1 whitespace-nowrap rounded-xl border border-dashed border-amber-300 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-700 transition hover:bg-amber-100 dark:bg-navy-soft dark:text-yellow-300">
+              ☆ Aramayı kaydet
+            </button>
+          )}
+          {saved.map((s) => (
+            <span key={s.id} className="group flex flex-shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl bg-white px-3 py-2 text-xs font-bold text-slate-700 shadow-sm dark:bg-navy-card dark:text-slate-200">
+              <button onClick={() => applySearch(s)} className="transition hover:text-amber-600">🔖 {s.label}</button>
+              <button onClick={() => removeSearch(s.id)} aria-label="Kaldır" className="text-gray-300 transition hover:text-red-500">✕</button>
+            </span>
+          ))}
+        </div>
+      )}
 
       {/* Gelismis filtre paneli */}
       {mode === "normal" && showFilters && (
