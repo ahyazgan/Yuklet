@@ -30,7 +30,7 @@ const FIELD = "w-full rounded-2xl bg-slate-50 dark:bg-navy-soft px-4 py-3 text-s
 
 const DOC_TYPES = ["K Belgesi", "Araç Ruhsatı", "Vergi Levhası", "Sigorta Poliçesi", "Diğer"];
 
-export default function ProfilPage({ user, onUpdateProfile, onVerifyPhone, onRequireAuth, reviews = [], getUserRating, docs = [], onAddDoc, onRemoveDoc }) {
+export default function ProfilPage({ user, onUpdateProfile, onVerifyPhone, onRequireAuth, onLogout, reviews = [], getUserRating, docs = [], onAddDoc, onRemoveDoc }) {
   const toast = useToast();
   const navigate = useNavigate();
   const [docType, setDocType] = useState("K Belgesi");
@@ -273,6 +273,12 @@ export default function ProfilPage({ user, onUpdateProfile, onVerifyPhone, onReq
           <button type="submit" className="w-full rounded-2xl bg-yellow-400 py-3.5 text-sm font-extrabold text-slate-950 transition hover:bg-yellow-500">Değişiklikleri kaydet</button>
         </motion.form>
       </section>
+
+      {/* Çıkış */}
+      <button type="button" onClick={() => onLogout?.()}
+        className="mt-1 w-full rounded-2xl border border-gray-200 bg-white py-3.5 text-sm font-bold text-red-600 transition hover:bg-red-50 dark:border-navy-line dark:bg-navy-card">
+        Çıkış yap
+      </button>
     </div>
   );
 }

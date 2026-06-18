@@ -2,9 +2,9 @@ import { useState, useEffect, lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import {
-  loadTheme, saveTheme, loadListings, saveListings, loadUser, saveUser,
+  saveTheme, loadListings, saveListings, loadUser, saveUser,
   loadUsers, saveUsers, loadOffers, saveOffers, loadMessages, saveMessages,
-  loadMsgSeen, saveMsgSeen, loadNotifSeen, saveNotifSeen, loadReviews, saveReviews, loadDocs, saveDocs,
+  loadMsgSeen, saveMsgSeen, loadNotifSeen, loadReviews, saveReviews, loadDocs, saveDocs,
   loadOnboarded, saveOnboarded, loadReports, saveReports,
 } from "./utils/storage";
 import { isSupabaseConfigured } from "./lib/supabase";
@@ -18,10 +18,7 @@ import { ErrorBoundary, NotFoundPage } from "./components/ErrorBoundary";
 import { SkeletonGrid } from "./components/Skeleton";
 import PageTransition from "./components/PageTransition";
 
-import Header from "./components/Header";
-import Footer from "./components/Footer";
 import MobileTabBar from "./components/MobileTabBar";
-import WhatsAppButton from "./components/WhatsAppButton";
 import AuthModal from "./components/AuthModal";
 import OnboardingModal from "./components/OnboardingModal";
 import InstallPrompt from "./components/InstallPrompt";
@@ -63,12 +60,11 @@ function PageLoader() {
 function AppShell() {
   const location = useLocation();
 
-  // Theme
-  const [darkMode, setDarkMode] = useState(() => loadTheme() === "dark");
+  // Tema: SAHA mobil app tek tema (light/manila). Dark mode kaldırıldı.
   useEffect(() => {
-    document.documentElement.setAttribute("data-theme", darkMode ? "dark" : "light");
-    saveTheme(darkMode ? "dark" : "light");
-  }, [darkMode]);
+    document.documentElement.setAttribute("data-theme", "light");
+    saveTheme("light");
+  }, []);
 
   // ── VERI KATMANI: Supabase yapilandirilmissa async DB, yoksa localStorage ──
   const SB = isSupabaseConfigured;
@@ -132,8 +128,8 @@ function AppShell() {
   // "Goruldu" ve bildirim okundu durumu — yerel tercih, her modda localStorage'da kalir
   const [msgSeen, setMsgSeen] = useState(() => loadMsgSeen());
   useEffect(() => { saveMsgSeen(msgSeen); }, [msgSeen]);
-  const [notifSeen, setNotifSeen] = useState(() => loadNotifSeen());
-  useEffect(() => { saveNotifSeen(notifSeen); }, [notifSeen]);
+  // Bildirim "okundu" durumu (yalnızca okuma — push bildirim filtresi için).
+  const [notifSeen] = useState(() => loadNotifSeen());
 
   // Degerlendirmeler (puan + yorum)
   const [reviews, setReviews] = useState(() => (SB ? [] : loadReviews()));
@@ -242,7 +238,6 @@ function AppShell() {
   const logout = async () => { if (SB) { await api.signOut().catch(() => {}); } setUser(null); setProfile(null); };
   const requireAuth = () => setShowAuth(true);
   const markMessagesSeen = () => { if (user) setMsgSeen(prev => ({ ...prev, [user.id]: new Date().toISOString() })); };
-  const markNotifSeen = () => { if (user) setNotifSeen(prev => ({ ...prev, [user.id]: new Date().toISOString() })); };
   const getContact = (id) => {
     if (SB) {
       // Iletisim bilgileri profiles'tan; eslesen taraf icin isim/ telefon
@@ -303,13 +298,6 @@ function AppShell() {
     <div className="app-root">
       <ScrollToTop />
 
-      <Header
-        darkMode={darkMode} toggleDark={() => setDarkMode(d => !d)}
-        user={user} onLoginClick={requireAuth} onLogout={logout}
-        pendingOffersCount={pendingOffersCount} unreadCount={unreadCount}
-        notifItems={notif.items} notifUnread={notif.unread} onNotifSeen={markNotifSeen}
-      />
-
       <main>
         <ErrorBoundary>
           {!authReady ? (
@@ -329,7 +317,7 @@ function AppShell() {
                 <Route path="/ilan-duzenle/:id" element={<PageTransition><IlanVerPage onPublish={publishListing} onUpdate={updateListing} listings={listings} user={user} onRequireAuth={requireAuth} /></PageTransition>} />
                 <Route path="/ilanlarim" element={<PageTransition><IlanlarimPage listings={listings} user={user} offers={offers} onUpdateOffer={updateOffer} onUpdateListing={updateListing} onDeleteListing={removeListing} onRequireAuth={requireAuth} getContact={getContact} /></PageTransition>} />
                 <Route path="/mesajlar" element={<PageTransition><MesajlarPage user={user} listings={listings} offers={offers} messages={messages} onSendMessage={addMessage} onRequireAuth={requireAuth} onSeen={markMessagesSeen} getContact={getContact} /></PageTransition>} />
-                <Route path="/profil" element={<PageTransition><ProfilPage user={user} onUpdateProfile={updateProfile} onVerifyPhone={verifyPhone} onRequireAuth={requireAuth} reviews={reviews} getUserRating={getUserRating} docs={docs.filter(d => user && String(d.ownerId) === String(user.id))} onAddDoc={addDoc} onRemoveDoc={removeDoc} /></PageTransition>} />
+                <Route path="/profil" element={<PageTransition><ProfilPage user={user} onUpdateProfile={updateProfile} onVerifyPhone={verifyPhone} onRequireAuth={requireAuth} onLogout={logout} reviews={reviews} getUserRating={getUserRating} docs={docs.filter(d => user && String(d.ownerId) === String(user.id))} onAddDoc={addDoc} onRemoveDoc={removeDoc} /></PageTransition>} />
                 <Route path="/panel" element={<PageTransition><DashboardPage user={user} listings={listings} offers={offers} messages={messages} onRequireAuth={requireAuth} /></PageTransition>} />
                 <Route path="/admin" element={<PageTransition><AdminPage user={user} reports={reports} docs={docs} users={users} listings={listings} onRequireAuth={requireAuth} onSetReportStatus={setReportStatus} onReviewDoc={reviewDoc} /></PageTransition>} />
                 <Route path="/muteahhit" element={<PageTransition><MuteahhitPage /></PageTransition>} />
@@ -347,8 +335,6 @@ function AppShell() {
         </ErrorBoundary>
       </main>
 
-      <Footer />
-      <WhatsAppButton />
       <InstallPrompt />
       <MobileTabBar unreadCount={unreadCount} />
 

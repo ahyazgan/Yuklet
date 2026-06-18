@@ -14,7 +14,7 @@ export default function MobileTabBar({ unreadCount = 0 }) {
   const { pathname } = useLocation();
 
   return (
-    <nav aria-label="Alt gezinme" className="fixed inset-x-0 bottom-0 z-50 flex items-end justify-around border-t border-gray-100 dark:border-navy-line bg-white/95 dark:bg-navy-card/95 px-2 pb-[max(8px,env(safe-area-inset-bottom))] pt-2 backdrop-blur-md md:hidden">
+    <nav aria-label="Alt gezinme" className="fixed inset-x-0 bottom-0 z-50 mx-auto flex w-full max-w-[460px] items-end justify-around border-t border-gray-100 dark:border-navy-line bg-white/95 dark:bg-navy-card/95 px-2 pb-[max(8px,env(safe-area-inset-bottom))] pt-2 backdrop-blur-md">
       {TABS.map((tab) => {
         const active = tab.match(pathname);
         if (tab.center) {
