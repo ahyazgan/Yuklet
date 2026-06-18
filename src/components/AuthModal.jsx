@@ -3,8 +3,9 @@ import { useState } from "react";
 // ── MoveIQ LIGHT auth modal (Tailwind).
 
 const ROLES = [
-  { id: "isveren", label: "İş veren", desc: "İş ilanı açar, teklif alır" },
-  { id: "tedarikci", label: "Tedarikçi", desc: "Araç ilanı / teklif verir" },
+  { id: "isveren", label: "Müteahhit / Alıcı", desc: "İş ilanı açar, teklif alır" },
+  { id: "nakliyeci", label: "Nakliyeci / Taşıyıcı", desc: "Araç ilanı açar, yük taşır" },
+  { id: "tedarikci", label: "Tedarikçi", desc: "Malzeme satar: ocak, beton, kum" },
 ];
 
 const FIELD = "w-full rounded-2xl bg-slate-50 dark:bg-navy-soft px-4 py-3 text-sm text-slate-900 dark:text-slate-100 dark:placeholder:text-navy-muted outline-none focus:ring-2 focus:ring-slate-300";
@@ -79,12 +80,17 @@ export default function AuthModal({ onClose, onLogin, onRegister }) {
               </div>
               <div>
                 <label className="mb-1.5 block text-xs font-semibold text-gray-500 dark:text-slate-400">Rol</label>
-                <div className="flex gap-2">
+                <div className="flex flex-col gap-2">
                   {ROLES.map((r) => (
                     <button type="button" key={r.id} onClick={() => set("role", r.id)}
-                      className={`flex-1 rounded-2xl border p-3 text-left transition ${values.role === r.id ? "border-yellow-400 bg-yellow-50" : "border-gray-200 dark:border-navy-line bg-white dark:bg-navy-card"}`}>
-                      <div className={`text-sm font-bold ${values.role === r.id ? "text-amber-700" : "text-slate-900 dark:text-slate-100"}`}>{r.label}</div>
-                      <div className="mt-0.5 text-[11px] text-gray-500 dark:text-slate-400">{r.desc}</div>
+                      className={`flex items-center justify-between gap-2 rounded-2xl border p-3 text-left transition ${values.role === r.id ? "border-yellow-400 bg-yellow-50" : "border-gray-200 dark:border-navy-line bg-white dark:bg-navy-card"}`}>
+                      <div>
+                        <div className={`text-sm font-bold ${values.role === r.id ? "text-amber-700" : "text-slate-900 dark:text-slate-100"}`}>{r.label}</div>
+                        <div className="mt-0.5 text-[11px] text-gray-500 dark:text-slate-400">{r.desc}</div>
+                      </div>
+                      <span className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border-2 ${values.role === r.id ? "border-yellow-400 bg-yellow-400 text-slate-950" : "border-gray-300 dark:border-navy-line"}`}>
+                        {values.role === r.id && <span className="text-[11px] font-black leading-none">✓</span>}
+                      </span>
                     </button>
                   ))}
                 </div>
