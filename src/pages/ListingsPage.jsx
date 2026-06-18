@@ -1,6 +1,11 @@
+// HamTed — İlanlar (SAHA marka dili)
+// Endüstriyel/şantiye · manila zemin · siyah çerçeve · Space Mono rakamlar.
+// TÜM filtreleme/işlevsellik korunur: URL params, kaydedilmiş aramalar,
+// gelişmiş filtreler (malzeme/fiyat/sıralama), dönüş yükü (backhaul), harita.
+
 import { useState, useMemo, lazy, Suspense } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { motion } from "framer-motion";
+import { Search, SlidersHorizontal, X } from "lucide-react";
 import { LISTINGS, IL_LIST } from "../data/listings";
 import { CATS, MATERIALS } from "../data/categories";
 import { loadsNearCity } from "../utils/backhaul";
@@ -9,45 +14,220 @@ import SEO from "../components/SEO";
 
 const ListingsMap = lazy(() => import("../components/ListingsMap"));
 
-// ── MoveIQ LIGHT "Orders" tasarimi (Tailwind).
+// ── SAHA token'ları (inline) ──
+const C = {
+  ink: "#0A0A0A",
+  header: "#EAE3D6",
+  yellow: "#FACC15",
+  green: "#16803C",
+  bg: "#F1EDE5",
+  card: "#FFFFFF",
+  stone: "#F4F1EA",
+  border: "#E3DDD0",
+  line: "#F0ECE3",
+  sub: "#5A5852",
+  muted: "#9A968D",
+  faint: "#A8A39A",
+};
+const MONO = { fontFamily: "'Space Mono', ui-monospace, monospace" };
 
-const CAT_TAG = {
-  hafriyat: { label: "HAFRİYAT", cls: "text-amber-700 bg-amber-100" },
-  silobas: { label: "SİLOBAS", cls: "text-sky-700 bg-sky-100" },
+const shell = {
+  maxWidth: 460,
+  margin: "0 auto",
+  width: "100%",
+  minHeight: "100vh",
+  background: C.bg,
+  color: C.ink,
+  display: "flex",
+  flexDirection: "column",
 };
 
-function ListingCard({ l, onClick }) {
-  const tag = CAT_TAG[l.cat] || CAT_TAG.hafriyat;
-  const isFixed = l.priceType === "sabit" && l.price;
+const fmtPrice = (l) =>
+  l.priceType === "sabit" && l.price ? `₺${l.price.toLocaleString("tr-TR")}` : null;
+
+// ── İlan kartı ──
+function ListingCard({ l }) {
+  const isH = l.cat === "hafriyat";
+  const fixed = fmtPrice(l);
+  const fromTxt = l.il || "—";
+  const toTxt = l.bosaltma || l.ilce || "Belirtilmemiş";
+  const chips = [];
+  if (l.amount) chips.push(`${l.amount} ${(l.unit || "").toUpperCase()}`);
+  if (l.vehicle) chips.push(l.vehicle);
+
   return (
-    <motion.button
-      onClick={onClick}
-      initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.28 }}
-      className="flex w-full flex-col gap-2 rounded-3xl bg-white dark:bg-navy-card p-5 text-left shadow-sm transition hover:-translate-y-0.5"
+    <div
+      style={{
+        background: C.card,
+        border: `2px solid ${C.ink}`,
+        borderRadius: 8,
+        overflow: "hidden",
+      }}
     >
-      <div className="flex flex-wrap items-center gap-1.5">
-        <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold tracking-wide ${tag.cls}`}>{tag.label}</span>
-        <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold tracking-wide ${l.type === "is" ? "text-amber-700 bg-amber-100" : "text-sky-700 bg-sky-100"}`}>
-          {l.type === "is" ? "İŞ İLANI" : "ARAÇ"}
+      {/* üst satır: kategori rozeti + zaman */}
+      <div
+        className="flex items-center justify-between"
+        style={{ padding: "10px 12px 0 12px" }}
+      >
+        <span
+          style={{
+            ...MONO,
+            fontSize: 9,
+            fontWeight: 700,
+            letterSpacing: "0.06em",
+            padding: "2px 7px",
+            border: `1.5px solid ${C.ink}`,
+            borderRadius: 4,
+            background: isH ? C.ink : C.stone,
+            color: isH ? C.yellow : C.ink,
+          }}
+        >
+          {isH ? "HAFRİYAT" : "SİLOBAS"}
         </span>
-        {l.status === "eslesti" && <span className="rounded-md bg-emerald-100 px-2 py-0.5 text-[10px] font-bold tracking-wide text-emerald-700">EŞLEŞTİ</span>}
-        <span className="text-[11px] text-gray-400 dark:text-navy-muted">• {l.createdText}</span>
+        <div className="flex items-center gap-1.5">
+          {l.status === "eslesti" && (
+            <span
+              style={{
+                ...MONO,
+                fontSize: 8.5,
+                fontWeight: 700,
+                padding: "2px 6px",
+                borderRadius: 4,
+                background: C.green,
+                color: "#fff",
+                border: `1.5px solid ${C.ink}`,
+              }}
+            >
+              ● EŞLEŞTİ
+            </span>
+          )}
+          <span style={{ ...MONO, fontSize: 9.5, color: C.muted }}>
+            {l.type === "arac" ? "ARAÇ" : "İŞ"} · {l.createdText}
+          </span>
+        </div>
       </div>
-      <div className="text-base font-bold leading-snug text-slate-950 dark:text-slate-100">{l.title}</div>
-      <div className="flex flex-wrap items-center gap-1 text-xs text-gray-500 dark:text-slate-400">📍 {l.il}{l.ilce ? `, ${l.ilce}` : ""}{l.amount ? ` • ${l.amount} ${l.unit || ""}` : ""}</div>
-      <div className="flex flex-wrap items-center gap-2 text-xs">
-        <span className="font-semibold text-slate-700 dark:text-slate-100">{l.owner}</span>
-        {l.ownerVerified && <span className="font-bold text-emerald-600">✓ Onaylı</span>}
-        {l.ownerRating && <span className="text-amber-600">★ {l.ownerRating}</span>}
+
+      {/* başlık */}
+      <div
+        style={{
+          fontSize: 15,
+          fontWeight: 800,
+          letterSpacing: "-0.01em",
+          lineHeight: 1.2,
+          padding: "8px 12px 0 12px",
+        }}
+      >
+        {l.title}
       </div>
-      <div className="flex items-center justify-between gap-2 border-t border-gray-100 dark:border-navy-line pt-3">
-        <span>
-          <span className="text-xl font-extrabold tracking-tight text-slate-950 dark:text-slate-100">{isFixed ? `₺${l.price.toLocaleString("tr-TR")}` : "Teklif"}</span>
-          <span className="text-[11px] text-gray-400 dark:text-navy-muted"> {isFixed ? (l.unit ? `/${l.unit}` : "") : "usulü"}</span>
+
+      {/* güzergah: from ● —— to ○ */}
+      <div
+        className="flex items-center gap-2"
+        style={{ padding: "8px 12px 0 12px" }}
+      >
+        <span
+          style={{ width: 8, height: 8, borderRadius: "50%", background: C.ink, flexShrink: 0 }}
+        />
+        <span style={{ ...MONO, fontSize: 10.5, fontWeight: 700 }}>{fromTxt}</span>
+        <span style={{ flex: 1, height: 2, background: C.border, borderRadius: 1 }} />
+        <span
+          style={{
+            width: 9,
+            height: 9,
+            borderRadius: "50%",
+            border: `2px solid ${C.ink}`,
+            background: C.card,
+            flexShrink: 0,
+          }}
+        />
+        <span
+          style={{ ...MONO, fontSize: 10.5, fontWeight: 700, maxWidth: 130 }}
+          className="truncate"
+        >
+          {toTxt}
         </span>
-        <span className="whitespace-nowrap rounded-full bg-yellow-400 px-4 py-2 text-xs font-extrabold text-slate-950">Teklif ver</span>
       </div>
-    </motion.button>
+
+      {/* sahip + onaylı + puan */}
+      <div
+        className="flex items-center gap-2"
+        style={{ ...MONO, padding: "8px 12px 0 12px", fontSize: 9.5, color: C.sub }}
+      >
+        <span style={{ fontWeight: 700, color: C.ink }} className="truncate">
+          {l.owner}
+        </span>
+        {l.ownerVerified && <span style={{ color: C.green, fontWeight: 700 }}>✓ ONAYLI</span>}
+        {l.ownerRating && <span>★ {l.ownerRating}</span>}
+      </div>
+
+      {/* alt: etiket chip'leri + fiyat + aksiyon */}
+      <div
+        className="flex items-center justify-between gap-2"
+        style={{ padding: "10px 12px 12px 12px", marginTop: 8 }}
+      >
+        <div className="flex flex-wrap items-center gap-1.5" style={{ minWidth: 0 }}>
+          {chips.map((c) => (
+            <span
+              key={c}
+              style={{
+                ...MONO,
+                fontSize: 9,
+                fontWeight: 700,
+                padding: "2px 6px",
+                borderRadius: 4,
+                background: C.stone,
+                border: `1.5px solid ${C.border}`,
+                color: C.sub,
+                whiteSpace: "nowrap",
+              }}
+            >
+              {c}
+            </span>
+          ))}
+        </div>
+        <div className="flex flex-shrink-0 items-center gap-2.5">
+          {fixed ? (
+            <span style={{ ...MONO, fontSize: 14, fontWeight: 700, color: C.green }}>
+              {fixed}
+            </span>
+          ) : (
+            <span style={{ ...MONO, fontSize: 10, fontWeight: 700, color: C.sub }}>
+              TEKLİFE AÇIK
+            </span>
+          )}
+          <span
+            style={{
+              ...MONO,
+              fontSize: 10,
+              fontWeight: 700,
+              color: C.ink,
+              whiteSpace: "nowrap",
+            }}
+          >
+            {l.offers > 0 ? `${l.offers} TEKLİF →` : "TEKLİF VER →"}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Boş durum kutusu ──
+function EmptyBox({ emoji, title, sub }) {
+  return (
+    <div
+      className="flex flex-col items-center gap-2 text-center"
+      style={{
+        background: C.card,
+        border: `2px dashed ${C.border}`,
+        borderRadius: 8,
+        padding: "44px 24px",
+      }}
+    >
+      <div style={{ fontSize: 32 }}>{emoji}</div>
+      <div style={{ fontSize: 14, fontWeight: 800 }}>{title}</div>
+      <div style={{ ...MONO, fontSize: 10.5, color: C.sub }}>{sub}</div>
+    </div>
   );
 }
 
@@ -55,7 +235,9 @@ export default function ListingsPage({ listings = LISTINGS }) {
   const navigate = useNavigate();
   const [sp] = useSearchParams();
   const [type, setType] = useState(sp.get("type") === "arac" ? "arac" : "all");
-  const [cat, setCat] = useState(["hafriyat", "silobas"].includes(sp.get("cat")) ? sp.get("cat") : "all");
+  const [cat, setCat] = useState(
+    ["hafriyat", "silobas"].includes(sp.get("cat")) ? sp.get("cat") : "all"
+  );
   const [il, setIl] = useState("all");
   const [q, setQ] = useState("");
   const [mode, setMode] = useState(sp.get("mode") === "backhaul" ? "backhaul" : "normal"); // normal | backhaul
@@ -66,11 +248,22 @@ export default function ListingsPage({ listings = LISTINGS }) {
   const [showFilters, setShowFilters] = useState(false);
   const [view, setView] = useState(sp.get("view") === "map" ? "map" : "list"); // list | map
 
-  // ── Kaydedilmiş aramalar ──
+  // ── Kaydedilmiş aramalar (mantık birebir korunur) ──
   const [saved, setSaved] = useState(() => loadSavedSearches());
-  const persistSaved = (next) => { setSaved(next); saveSavedSearches(next); };
+  const persistSaved = (next) => {
+    setSaved(next);
+    saveSavedSearches(next);
+  };
   const currentSearch = { type, cat, il, q, material, priceMin, priceMax, sort };
-  const isDefaultSearch = type === "all" && cat === "all" && il === "all" && !q && material === "all" && !priceMin && !priceMax && sort === "yeni";
+  const isDefaultSearch =
+    type === "all" &&
+    cat === "all" &&
+    il === "all" &&
+    !q &&
+    material === "all" &&
+    !priceMin &&
+    !priceMax &&
+    sort === "yeni";
   const labelFor = (s) => {
     const parts = [];
     if (s.cat !== "all") parts.push(s.cat === "hafriyat" ? "Hafriyat" : "Silobas");
@@ -82,32 +275,57 @@ export default function ListingsPage({ listings = LISTINGS }) {
   };
   const saveCurrent = () => {
     const key = JSON.stringify(currentSearch);
-    if (saved.some((s) => JSON.stringify({ type: s.type, cat: s.cat, il: s.il, q: s.q, material: s.material, priceMin: s.priceMin, priceMax: s.priceMax, sort: s.sort }) === key)) return;
+    if (
+      saved.some(
+        (s) =>
+          JSON.stringify({
+            type: s.type,
+            cat: s.cat,
+            il: s.il,
+            q: s.q,
+            material: s.material,
+            priceMin: s.priceMin,
+            priceMax: s.priceMax,
+            sort: s.sort,
+          }) === key
+      )
+    )
+      return;
     persistSaved([{ id: key, ...currentSearch, label: labelFor(currentSearch) }, ...saved].slice(0, 8));
   };
   const applySearch = (s) => {
-    setType(s.type); setCat(s.cat); setIl(s.il); setQ(s.q);
-    setMaterial(s.material); setPriceMin(s.priceMin); setPriceMax(s.priceMax); setSort(s.sort);
+    setType(s.type);
+    setCat(s.cat);
+    setIl(s.il);
+    setQ(s.q);
+    setMaterial(s.material);
+    setPriceMin(s.priceMin);
+    setPriceMax(s.priceMax);
+    setSort(s.sort);
     setMode("normal");
   };
   const removeSearch = (id) => persistSaved(saved.filter((s) => s.id !== id));
 
-  const materialOpts = cat === "all"
-    ? [...(MATERIALS.hafriyat || []), ...(MATERIALS.silobas || [])]
-    : (MATERIALS[cat] || []);
+  const materialOpts =
+    cat === "all"
+      ? [...(MATERIALS.hafriyat || []), ...(MATERIALS.silobas || [])]
+      : MATERIALS[cat] || [];
 
   const filtered = useMemo(() => {
     const min = priceMin ? Number(priceMin) : null;
     const max = priceMax ? Number(priceMax) : null;
-    let out = listings.filter((l) =>
-      l.status !== "kapali" &&
-      (type === "all" || l.type === type) &&
-      (cat === "all" || l.cat === cat) &&
-      (il === "all" || l.il === il) &&
-      (material === "all" || l.material === material) &&
-      (min == null || (l.price != null && l.price >= min)) &&
-      (max == null || (l.price != null && l.price <= max)) &&
-      (q === "" || l.title.toLowerCase().includes(q.toLowerCase()) || (l.ilce || "").toLowerCase().includes(q.toLowerCase()))
+    let out = listings.filter(
+      (l) =>
+        l.status !== "kapali" &&
+        (type === "all" || l.type === type) &&
+        (cat === "all" || l.cat === cat) &&
+        (il === "all" || l.il === il) &&
+        (material === "all" || l.material === material) &&
+        (min == null || (l.price != null && l.price >= min)) &&
+        (max == null || (l.price != null && l.price <= max)) &&
+        (q === "" ||
+          l.title.toLowerCase().includes(q.toLowerCase()) ||
+          (l.ilce || "").toLowerCase().includes(q.toLowerCase()))
     );
     if (sort === "teklif") out = [...out].sort((a, b) => (b.offers || 0) - (a.offers || 0));
     else if (sort === "ucuz") out = [...out].sort((a, b) => (a.price ?? Infinity) - (b.price ?? Infinity));
@@ -115,183 +333,625 @@ export default function ListingsPage({ listings = LISTINGS }) {
     return out;
   }, [listings, type, cat, il, q, material, priceMin, priceMax, sort]);
 
-  const activeFilters = (material !== "all" ? 1 : 0) + (priceMin || priceMax ? 1 : 0) + (sort !== "yeni" ? 1 : 0);
+  const activeFilters =
+    (material !== "all" ? 1 : 0) + (priceMin || priceMax ? 1 : 0) + (sort !== "yeni" ? 1 : 0);
 
-  // Donus yuku: referans il'e yakin acik is yukleri
+  // Dönüş yükü: referans il'e yakın açık iş yükleri
   const backhaul = useMemo(() => {
     if (mode !== "backhaul" || il === "all") return [];
     return loadsNearCity(il, listings, { cat: cat === "all" ? null : cat, limit: 30 });
   }, [mode, il, cat, listings]);
 
-  const segBtn = (active) =>
-    `flex-1 rounded-xl py-2.5 text-sm font-bold transition ${active ? "bg-slate-950 text-white dark:bg-navy-soft dark:text-slate-100 shadow" : "text-gray-500 dark:text-slate-400"}`;
-  const chip = (active) =>
-    `flex-shrink-0 whitespace-nowrap rounded-xl px-4 py-2.5 text-xs font-bold transition ${active ? "bg-slate-950 text-white dark:bg-navy-soft dark:text-slate-100 shadow" : "bg-white dark:bg-navy-card text-gray-500 dark:text-slate-400 shadow-sm"}`;
+  const openCount = mode === "backhaul" ? backhaul.length : filtered.length;
+
+  // ── Sekme yardımcı: tab tasarımı ──
+  const tabStyle = (active) => ({
+    ...MONO,
+    fontSize: 11,
+    fontWeight: 700,
+    letterSpacing: "0.02em",
+    padding: "8px 12px",
+    borderRadius: 6,
+    border: `2px solid ${C.ink}`,
+    background: active ? C.ink : C.card,
+    color: active ? C.yellow : C.ink,
+    whiteSpace: "nowrap",
+    display: "flex",
+    alignItems: "center",
+    gap: 5,
+  });
+
+  const chip = (active) => ({
+    ...MONO,
+    fontSize: 10,
+    fontWeight: 700,
+    padding: "6px 11px",
+    borderRadius: 5,
+    border: `2px solid ${active ? C.ink : C.border}`,
+    background: active ? C.ink : C.card,
+    color: active ? C.yellow : C.sub,
+    whiteSpace: "nowrap",
+    flexShrink: 0,
+  });
 
   return (
-    <div className="mx-auto flex w-full max-w-[460px] flex-col gap-4 px-4 pb-24 pt-2 text-slate-900 dark:text-slate-100">
-      <SEO title="İlanlar" description="Hafriyat ve silobas iş ve araç ilanları. Konuma, kategoriye ve türüne göre filtreleyin." />
+    <div style={shell}>
+      <SEO
+        title="İlanlar"
+        description="Hafriyat ve silobas iş ve araç ilanları. Konuma, kategoriye ve türüne göre filtreleyin."
+      />
 
-      {/* Baslik */}
-      <div className="flex items-center justify-between pt-2">
-        <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-black tracking-tight text-slate-950 dark:text-slate-100">İlanlar</h1>
-          <span className="rounded-full bg-white dark:bg-navy-card px-2.5 py-1 text-xs font-bold text-slate-800 dark:text-slate-100 shadow-sm">{mode === "backhaul" ? backhaul.length : filtered.length}</span>
-        </div>
-        {mode === "normal" && (
-          <div className="flex gap-1 rounded-xl bg-white p-1 shadow-sm dark:bg-navy-card">
-            <button onClick={() => setView("list")} className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${view === "list" ? "bg-slate-950 text-white dark:bg-navy-soft dark:text-slate-100" : "text-gray-500 dark:text-slate-400"}`}>Liste</button>
-            <button onClick={() => setView("map")} className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${view === "map" ? "bg-slate-950 text-white dark:bg-navy-soft dark:text-slate-100" : "text-gray-500 dark:text-slate-400"}`}>🗺️ Harita</button>
+      {/* ── HEADER ── */}
+      <div style={{ background: C.header, borderBottom: `2px solid ${C.ink}` }}>
+        <div style={{ padding: "14px 16px 12px 16px" }}>
+          {/* başlık + sayaç */}
+          <div className="flex items-end justify-between">
+            <div className="flex items-baseline gap-2.5">
+              <h1
+                style={{ fontSize: 26, fontWeight: 900, letterSpacing: "-0.02em", lineHeight: 1 }}
+              >
+                İlanlar
+              </h1>
+              <span style={{ ...MONO, fontSize: 11, fontWeight: 700, color: C.sub }}>
+                {openCount} AÇIK İŞ
+              </span>
+            </div>
+            {/* Liste / Harita toggle — sadece normal modda */}
+            {mode === "normal" && (
+              <div className="flex" style={{ border: `2px solid ${C.ink}`, borderRadius: 6, overflow: "hidden" }}>
+                <button
+                  onClick={() => setView("list")}
+                  style={{
+                    ...MONO,
+                    fontSize: 9.5,
+                    fontWeight: 700,
+                    padding: "5px 9px",
+                    background: view === "list" ? C.ink : C.card,
+                    color: view === "list" ? C.yellow : C.ink,
+                  }}
+                >
+                  LİSTE
+                </button>
+                <button
+                  onClick={() => setView("map")}
+                  style={{
+                    ...MONO,
+                    fontSize: 9.5,
+                    fontWeight: 700,
+                    padding: "5px 9px",
+                    borderLeft: `2px solid ${C.ink}`,
+                    background: view === "map" ? C.ink : C.card,
+                    color: view === "map" ? C.yellow : C.ink,
+                  }}
+                >
+                  HARİTA
+                </button>
+              </div>
+            )}
           </div>
-        )}
-      </div>
 
-      {/* Mod: Tum ilanlar / Donus yuku */}
-      <div className="flex gap-1 rounded-2xl bg-white dark:bg-navy-card p-1 shadow-sm">
-        <button className={segBtn(mode === "normal")} onClick={() => setMode("normal")}>Tüm ilanlar</button>
-        <button className={segBtn(mode === "backhaul")} onClick={() => setMode("backhaul")}>🔄 Dönüş yükü</button>
-      </div>
+          {/* arama + filtre */}
+          <div className="flex items-center gap-2" style={{ marginTop: 12 }}>
+            <div
+              className="flex flex-1 items-center gap-2"
+              style={{
+                background: C.card,
+                border: `2px solid ${C.ink}`,
+                borderRadius: 6,
+                padding: "0 11px",
+                height: 42,
+              }}
+            >
+              <Search size={16} color={C.sub} strokeWidth={2.5} />
+              <input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="İL · MALZEME · GÜZERGAH ARA"
+                aria-label="İlan ara"
+                style={{
+                  ...MONO,
+                  fontSize: 11,
+                  fontWeight: 700,
+                  letterSpacing: "0.02em",
+                  background: "transparent",
+                  border: "none",
+                  outline: "none",
+                  width: "100%",
+                  color: C.ink,
+                }}
+              />
+            </div>
+            {mode === "normal" && (
+              <button
+                onClick={() => setShowFilters(true)}
+                aria-label="Filtreler"
+                style={{
+                  position: "relative",
+                  width: 42,
+                  height: 42,
+                  borderRadius: 6,
+                  border: `2px solid ${C.ink}`,
+                  background: activeFilters > 0 ? C.yellow : C.card,
+                  flexShrink: 0,
+                }}
+                className="flex items-center justify-center"
+              >
+                <SlidersHorizontal size={17} color={C.ink} strokeWidth={2.5} />
+                {activeFilters > 0 && (
+                  <span
+                    style={{
+                      ...MONO,
+                      position: "absolute",
+                      top: -6,
+                      right: -6,
+                      background: C.ink,
+                      color: C.yellow,
+                      fontSize: 9,
+                      fontWeight: 700,
+                      border: `1.5px solid ${C.ink}`,
+                      borderRadius: 4,
+                      padding: "0 4px",
+                      minWidth: 16,
+                      textAlign: "center",
+                    }}
+                  >
+                    {activeFilters}
+                  </span>
+                )}
+              </button>
+            )}
+          </div>
 
-      {/* Arama + Filtre */}
-      <div className="flex gap-2.5">
-        <div className="relative flex-1">
-          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-navy-muted">🔍</span>
-          <input
-            value={q} onChange={(e) => setQ(e.target.value)}
-            placeholder="İl, malzeme veya güzergah ara…" aria-label="İlan ara"
-            className="w-full rounded-2xl bg-white dark:bg-navy-card py-3 pl-11 pr-4 text-xs text-slate-900 dark:text-slate-100 shadow-sm outline-none focus:ring-2 focus:ring-slate-300"
-          />
-        </div>
-        {mode === "normal" && (
-          <button onClick={() => setShowFilters((s) => !s)} aria-label="Filtreler"
-            className={`relative flex h-11 w-11 items-center justify-center rounded-2xl text-lg shadow-sm transition ${showFilters || activeFilters ? "bg-slate-950 text-white dark:bg-navy-soft dark:text-slate-100" : "bg-white text-slate-700 dark:bg-navy-card dark:text-slate-300"}`}>
-            ⚙
-            {activeFilters > 0 && <span className="absolute -right-1 -top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-yellow-400 px-1 text-[9px] font-extrabold text-slate-950">{activeFilters}</span>}
-          </button>
-        )}
-      </div>
-
-      {/* Kaydedilmis aramalar */}
-      {mode === "normal" && (saved.length > 0 || !isDefaultSearch) && (
-        <div className="flex items-center gap-2 overflow-x-auto pb-0.5">
-          {!isDefaultSearch && (
-            <button onClick={saveCurrent} className="flex flex-shrink-0 items-center gap-1 whitespace-nowrap rounded-xl border border-dashed border-amber-300 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-700 transition hover:bg-amber-100 dark:bg-navy-soft dark:text-yellow-300">
-              ☆ Aramayı kaydet
+          {/* SEKMELER: Tümü / Hafriyat / Silobas / Dönüş */}
+          <div className="flex gap-2 overflow-x-auto" style={{ marginTop: 12, paddingBottom: 2 }}>
+            <button
+              style={tabStyle(mode === "normal" && cat === "all")}
+              onClick={() => {
+                setMode("normal");
+                setCat("all");
+              }}
+            >
+              TÜMÜ
             </button>
-          )}
-          {saved.map((s) => (
-            <span key={s.id} className="group flex flex-shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl bg-white px-3 py-2 text-xs font-bold text-slate-700 shadow-sm dark:bg-navy-card dark:text-slate-200">
-              <button onClick={() => applySearch(s)} className="transition hover:text-amber-600">🔖 {s.label}</button>
-              <button onClick={() => removeSearch(s.id)} aria-label="Kaldır" className="text-gray-300 transition hover:text-red-500">✕</button>
-            </span>
+            {CATS.map((c) => (
+              <button
+                key={c.id}
+                style={tabStyle(mode === "normal" && cat === c.id)}
+                onClick={() => {
+                  setMode("normal");
+                  setCat(c.id);
+                }}
+              >
+                {c.id === "hafriyat" && (
+                  <span
+                    style={{
+                      width: 9,
+                      height: 9,
+                      background: C.yellow,
+                      border: `1.5px solid ${mode === "normal" && cat === "hafriyat" ? C.yellow : C.ink}`,
+                      borderRadius: 2,
+                    }}
+                  />
+                )}
+                {c.id === "hafriyat" ? "HAFRİYAT" : "SİLOBAS"}
+              </button>
+            ))}
+            <button
+              style={tabStyle(mode === "backhaul")}
+              onClick={() => setMode("backhaul")}
+            >
+              🔄 DÖNÜŞ
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ── GÖVDE ── */}
+      <div
+        style={{ flex: 1, padding: "12px 16px 110px 16px", display: "flex", flexDirection: "column", gap: 12 }}
+      >
+        {/* İL filtresi (kaydırılabilir chip'ler) */}
+        <div className="flex gap-1.5 overflow-x-auto" style={{ paddingBottom: 2 }}>
+          <button style={chip(il === "all")} onClick={() => setIl("all")}>
+            TÜM İLLER
+          </button>
+          {IL_LIST.map((i) => (
+            <button key={i} style={chip(il === i)} onClick={() => setIl(i)}>
+              {i}
+            </button>
           ))}
         </div>
-      )}
 
-      {/* Gelismis filtre paneli */}
-      {mode === "normal" && showFilters && (
-        <div className="flex flex-col gap-3 rounded-2xl bg-white p-4 shadow-sm dark:bg-navy-card">
-          <div>
-            <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wide text-gray-400">Malzeme</label>
-            <select value={material} onChange={(e) => setMaterial(e.target.value)} className="w-full rounded-xl bg-slate-50 px-3 py-2.5 text-xs text-slate-900 outline-none dark:bg-navy-soft dark:text-slate-100">
-              <option value="all">Tümü</option>
-              {materialOpts.map((m) => <option key={m} value={m}>{m}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wide text-gray-400">Fiyat aralığı (sabit fiyatlı ilanlar)</label>
-            <div className="flex items-center gap-2">
-              <input type="number" min="0" value={priceMin} onChange={(e) => setPriceMin(e.target.value)} placeholder="Min ₺" className="w-full rounded-xl bg-slate-50 px-3 py-2.5 text-xs text-slate-900 outline-none dark:bg-navy-soft dark:text-slate-100" />
-              <span className="text-gray-400">–</span>
-              <input type="number" min="0" value={priceMax} onChange={(e) => setPriceMax(e.target.value)} placeholder="Max ₺" className="w-full rounded-xl bg-slate-50 px-3 py-2.5 text-xs text-slate-900 outline-none dark:bg-navy-soft dark:text-slate-100" />
-            </div>
-          </div>
-          <div>
-            <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wide text-gray-400">Sıralama</label>
-            <div className="flex flex-wrap gap-1.5">
-              {[["yeni", "Yeni"], ["teklif", "En çok teklif"], ["ucuz", "Fiyat ↑"], ["pahali", "Fiyat ↓"]].map(([k, lbl]) => (
-                <button key={k} onClick={() => setSort(k)} className={chip(sort === k)}>{lbl}</button>
-              ))}
-            </div>
-          </div>
-          {activeFilters > 0 && (
-            <button onClick={() => { setMaterial("all"); setPriceMin(""); setPriceMax(""); setSort("yeni"); }}
-              className="self-start text-xs font-bold text-amber-600">Filtreleri temizle</button>
-          )}
-        </div>
-      )}
-
-      {/* Segment Is/Arac — sadece normal modda */}
-      {mode === "normal" && (
-        <div className="flex gap-1 rounded-2xl bg-white dark:bg-navy-card p-1 shadow-sm">
-          <button className={segBtn(type === "is" || type === "all")} onClick={() => setType("is")}>İş ilanları</button>
-          <button className={segBtn(type === "arac")} onClick={() => setType("arac")}>Araç ilanları</button>
-        </div>
-      )}
-
-      {mode === "backhaul" && (
-        <p className="-mb-1 px-1 text-xs text-gray-500 dark:text-slate-400">
-          Aracın <b className="text-slate-800 dark:text-slate-200">hangi ildeyse</b> aşağıdan seç — o ile yakın açık yükleri (boş dönmeyesin) sıralayalım.
-        </p>
-      )}
-
-      {/* Kategori chip */}
-      <div className="flex gap-1.5">
-        <button className={chip(cat === "all")} onClick={() => setCat("all")}>Tümü</button>
-        {CATS.map((c) => (
-          <button key={c.id} className={chip(cat === c.id)} onClick={() => setCat(c.id)}>{c.name}</button>
-        ))}
-      </div>
-
-      {/* Il chip (kaydirilabilir) */}
-      <div className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1">
-        <button className={chip(il === "all")} onClick={() => setIl("all")}>Tüm iller</button>
-        {IL_LIST.map((i) => (
-          <button key={i} className={chip(il === i)} onClick={() => setIl(i)}>{i}</button>
-        ))}
-      </div>
-
-      {mode === "backhaul" ? (
-        il === "all" ? (
-          <div className="flex flex-col items-center gap-2 rounded-3xl bg-white dark:bg-navy-card py-12 text-center shadow-sm">
-            <div className="text-4xl">🧭</div>
-            <div className="text-base font-bold text-slate-950 dark:text-slate-100">Bir referans il seç</div>
-            <div className="px-6 text-sm text-gray-500 dark:text-slate-400">Yukarıdaki illerden aracının bulunduğu ili seç; o ile yakın açık yükleri gösterelim.</div>
-          </div>
-        ) : backhaul.length === 0 ? (
-          <div className="flex flex-col items-center gap-2 rounded-3xl bg-white dark:bg-navy-card py-12 text-center shadow-sm">
-            <div className="text-4xl">📭</div>
-            <div className="text-base font-bold text-slate-950 dark:text-slate-100">{il} çevresinde açık yük yok</div>
-            <div className="text-sm text-gray-500 dark:text-slate-400">Komşu illeri de deneyebilirsin.</div>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-3">
-            {backhaul.map((m) => (
-              <div key={m.listing.id} className="flex flex-col gap-1.5">
-                <div className="flex items-center gap-1.5 px-1">
-                  <span className="rounded-md bg-slate-100 dark:bg-navy-soft px-2 py-0.5 text-[10px] font-bold text-slate-600 dark:text-slate-300">📍 {m.fromIl || "—"} → {m.toIl || "—"}</span>
-                  <span className="rounded-full bg-yellow-400 px-2.5 py-0.5 text-[10px] font-extrabold text-slate-950">{m.fit}</span>
-                </div>
-                <ListingCard l={m.listing} onClick={() => navigate(`/ilan/${m.listing.id}`)} />
-              </div>
+        {/* İş / Araç türü (sadece normal modda) */}
+        {mode === "normal" && (
+          <div className="flex gap-1.5">
+            {[
+              ["all", "TÜMÜ"],
+              ["is", "İŞ İLANLARI"],
+              ["arac", "ARAÇ İLANLARI"],
+            ].map(([k, lbl]) => (
+              <button key={k} style={chip(type === k)} onClick={() => setType(k)}>
+                {lbl}
+              </button>
             ))}
           </div>
-        )
-      ) : view === "map" ? (
-        <Suspense fallback={<div className="flex h-[460px] items-center justify-center rounded-2xl bg-white text-sm text-gray-400 shadow-sm dark:bg-navy-card">Harita yükleniyor…</div>}>
-          <ListingsMap listings={filtered} onPickIl={(picked) => { setIl(picked); setView("list"); }} />
-        </Suspense>
-      ) : filtered.length === 0 ? (
-        <div className="flex flex-col items-center gap-2 rounded-3xl bg-white dark:bg-navy-card py-14 text-center shadow-sm">
-          <div className="text-4xl">🔍</div>
-          <div className="text-base font-bold text-slate-950 dark:text-slate-100">İlan bulunamadı</div>
-          <div className="text-sm text-gray-500 dark:text-slate-400">Filtreleri değiştirip tekrar dene.</div>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-3">
-          {filtered.map((l) => (
-            <ListingCard key={l.id} l={l} onClick={() => navigate(`/ilan/${l.id}`)} />
-          ))}
+        )}
+
+        {/* Kaydedilmiş aramalar */}
+        {mode === "normal" && (saved.length > 0 || !isDefaultSearch) && (
+          <div className="flex items-center gap-1.5 overflow-x-auto" style={{ paddingBottom: 2 }}>
+            {!isDefaultSearch && (
+              <button
+                onClick={saveCurrent}
+                style={{
+                  ...MONO,
+                  fontSize: 10,
+                  fontWeight: 700,
+                  padding: "6px 10px",
+                  borderRadius: 5,
+                  border: `2px dashed ${C.ink}`,
+                  background: C.yellow,
+                  color: C.ink,
+                  whiteSpace: "nowrap",
+                  flexShrink: 0,
+                }}
+              >
+                ☆ ARAMAYI KAYDET
+              </button>
+            )}
+            {saved.map((s) => (
+              <span
+                key={s.id}
+                className="flex items-center gap-1.5"
+                style={{
+                  ...MONO,
+                  fontSize: 10,
+                  fontWeight: 700,
+                  padding: "6px 9px",
+                  borderRadius: 5,
+                  border: `2px solid ${C.border}`,
+                  background: C.card,
+                  color: C.ink,
+                  whiteSpace: "nowrap",
+                  flexShrink: 0,
+                }}
+              >
+                <button onClick={() => applySearch(s)}>🔖 {s.label}</button>
+                <button
+                  onClick={() => removeSearch(s.id)}
+                  aria-label="Kaldır"
+                  style={{ color: C.muted, display: "flex" }}
+                >
+                  <X size={12} strokeWidth={3} />
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Dönüş yükü açıklaması */}
+        {mode === "backhaul" && (
+          <p style={{ ...MONO, fontSize: 10.5, color: C.sub, lineHeight: 1.5 }}>
+            Aracın <b style={{ color: C.ink }}>hangi ildeyse</b> yukarıdan seç — o ile yakın açık
+            yükleri (boş dönmeyesin) sıralayalım.
+          </p>
+        )}
+
+        {/* ── İÇERİK ── */}
+        {mode === "backhaul" ? (
+          il === "all" ? (
+            <EmptyBox
+              emoji="🧭"
+              title="Bir referans il seç"
+              sub="Aracının bulunduğu ili seç; yakın açık yükleri gösterelim."
+            />
+          ) : backhaul.length === 0 ? (
+            <EmptyBox
+              emoji="📭"
+              title={`${il} çevresinde açık yük yok`}
+              sub="Komşu illeri de deneyebilirsin."
+            />
+          ) : (
+            <div className="flex flex-col gap-3">
+              {backhaul.map((m) => (
+                <div key={m.listing.id} className="flex flex-col gap-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <span
+                      style={{
+                        ...MONO,
+                        fontSize: 9.5,
+                        fontWeight: 700,
+                        padding: "2px 7px",
+                        borderRadius: 4,
+                        background: C.stone,
+                        border: `1.5px solid ${C.border}`,
+                        color: C.sub,
+                      }}
+                    >
+                      📍 {m.fromIl || "—"} → {m.toIl || "—"}
+                    </span>
+                    <span
+                      style={{
+                        ...MONO,
+                        fontSize: 9,
+                        fontWeight: 700,
+                        padding: "2px 7px",
+                        borderRadius: 4,
+                        background: C.yellow,
+                        border: `1.5px solid ${C.ink}`,
+                        color: C.ink,
+                      }}
+                    >
+                      {m.fit}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => navigate(`/ilan/${m.listing.id}`)}
+                    style={{ display: "block", width: "100%", textAlign: "left" }}
+                  >
+                    <ListingCard l={m.listing} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )
+        ) : view === "map" ? (
+          <Suspense
+            fallback={
+              <div
+                className="flex items-center justify-center"
+                style={{
+                  height: 460,
+                  borderRadius: 8,
+                  background: C.card,
+                  border: `2px solid ${C.ink}`,
+                  ...MONO,
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: C.sub,
+                }}
+              >
+                HARİTA YÜKLENİYOR…
+              </div>
+            }
+          >
+            <ListingsMap
+              listings={filtered}
+              onPickIl={(picked) => {
+                setIl(picked);
+                setView("list");
+              }}
+            />
+          </Suspense>
+        ) : filtered.length === 0 ? (
+          <EmptyBox
+            emoji="🔍"
+            title="İlan bulunamadı"
+            sub="Filtreleri değiştirip tekrar dene."
+          />
+        ) : (
+          <div className="flex flex-col gap-3">
+            {filtered.map((l) => (
+              <button
+                key={l.id}
+                onClick={() => navigate(`/ilan/${l.id}`)}
+                style={{ display: "block", width: "100%", textAlign: "left" }}
+              >
+                <ListingCard l={l} />
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* ── FİLTRE ALT SAYFASI ── */}
+      {mode === "normal" && showFilters && (
+        <div
+          style={{ position: "fixed", inset: 0, zIndex: 50 }}
+          className="mx-auto flex flex-col justify-end"
+        >
+          {/* overlay */}
+          <button
+            onClick={() => setShowFilters(false)}
+            aria-label="Kapat"
+            style={{ position: "absolute", inset: 0, background: "rgba(10,10,10,0.45)" }}
+          />
+          {/* sheet */}
+          <div
+            style={{
+              position: "relative",
+              maxWidth: 460,
+              width: "100%",
+              margin: "0 auto",
+              background: C.bg,
+              borderTop: `3px solid ${C.ink}`,
+              borderTopLeftRadius: 12,
+              borderTopRightRadius: 12,
+              maxHeight: "85vh",
+              overflowY: "auto",
+            }}
+          >
+            {/* başlık */}
+            <div
+              className="flex items-center justify-between"
+              style={{ padding: "16px 16px 12px 16px", borderBottom: `2px solid ${C.line}` }}
+            >
+              <h2 style={{ fontSize: 18, fontWeight: 900, letterSpacing: "-0.01em" }}>FİLTRELER</h2>
+              <button onClick={() => setShowFilters(false)} aria-label="Kapat" style={{ display: "flex" }}>
+                <X size={22} strokeWidth={2.5} color={C.ink} />
+              </button>
+            </div>
+
+            <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 18 }}>
+              {/* Kategori */}
+              <div>
+                <div style={{ ...MONO, fontSize: 10, fontWeight: 700, color: C.sub, marginBottom: 8, letterSpacing: "0.06em" }}>
+                  KATEGORİ
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  <button style={chip(cat === "all")} onClick={() => setCat("all")}>
+                    TÜMÜ
+                  </button>
+                  {CATS.map((c) => (
+                    <button key={c.id} style={chip(cat === c.id)} onClick={() => setCat(c.id)}>
+                      {c.id === "hafriyat" ? "HAFRİYAT" : "SİLOBAS"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Araç / İş türü */}
+              <div>
+                <div style={{ ...MONO, fontSize: 10, fontWeight: 700, color: C.sub, marginBottom: 8, letterSpacing: "0.06em" }}>
+                  TÜR
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    ["all", "TÜMÜ"],
+                    ["is", "İŞ İLANI"],
+                    ["arac", "ARAÇ İLANI"],
+                  ].map(([k, lbl]) => (
+                    <button key={k} style={chip(type === k)} onClick={() => setType(k)}>
+                      {lbl}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Malzeme */}
+              <div>
+                <div style={{ ...MONO, fontSize: 10, fontWeight: 700, color: C.sub, marginBottom: 8, letterSpacing: "0.06em" }}>
+                  MALZEME
+                </div>
+                <select
+                  value={material}
+                  onChange={(e) => setMaterial(e.target.value)}
+                  style={{
+                    ...MONO,
+                    fontSize: 12,
+                    fontWeight: 700,
+                    width: "100%",
+                    padding: "10px 12px",
+                    borderRadius: 6,
+                    border: `2px solid ${C.ink}`,
+                    background: C.card,
+                    color: C.ink,
+                    outline: "none",
+                  }}
+                >
+                  <option value="all">TÜMÜ</option>
+                  {materialOpts.map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Fiyat aralığı */}
+              <div>
+                <div style={{ ...MONO, fontSize: 10, fontWeight: 700, color: C.sub, marginBottom: 8, letterSpacing: "0.06em" }}>
+                  FİYAT ARALIĞI (SABİT FİYATLI)
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min="0"
+                    value={priceMin}
+                    onChange={(e) => setPriceMin(e.target.value)}
+                    placeholder="MIN ₺"
+                    style={{
+                      ...MONO,
+                      fontSize: 12,
+                      fontWeight: 700,
+                      width: "100%",
+                      padding: "10px 12px",
+                      borderRadius: 6,
+                      border: `2px solid ${C.ink}`,
+                      background: C.card,
+                      color: C.ink,
+                      outline: "none",
+                    }}
+                  />
+                  <span style={{ ...MONO, fontWeight: 700, color: C.muted }}>–</span>
+                  <input
+                    type="number"
+                    min="0"
+                    value={priceMax}
+                    onChange={(e) => setPriceMax(e.target.value)}
+                    placeholder="MAX ₺"
+                    style={{
+                      ...MONO,
+                      fontSize: 12,
+                      fontWeight: 700,
+                      width: "100%",
+                      padding: "10px 12px",
+                      borderRadius: 6,
+                      border: `2px solid ${C.ink}`,
+                      background: C.card,
+                      color: C.ink,
+                      outline: "none",
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Sıralama */}
+              <div>
+                <div style={{ ...MONO, fontSize: 10, fontWeight: 700, color: C.sub, marginBottom: 8, letterSpacing: "0.06em" }}>
+                  SIRALAMA
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    ["yeni", "YENİ"],
+                    ["teklif", "EN ÇOK TEKLİF"],
+                    ["ucuz", "FİYAT ↑"],
+                    ["pahali", "FİYAT ↓"],
+                  ].map(([k, lbl]) => (
+                    <button key={k} style={chip(sort === k)} onClick={() => setSort(k)}>
+                      {lbl}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Filtreleri temizle */}
+              {activeFilters > 0 && (
+                <button
+                  onClick={() => {
+                    setMaterial("all");
+                    setPriceMin("");
+                    setPriceMax("");
+                    setSort("yeni");
+                  }}
+                  style={{ ...MONO, fontSize: 11, fontWeight: 700, color: C.sub, textDecoration: "underline", alignSelf: "flex-start" }}
+                >
+                  FİLTRELERİ TEMİZLE
+                </button>
+              )}
+            </div>
+
+            {/* Sonuç butonu */}
+            <div style={{ padding: 16, borderTop: `2px solid ${C.line}`, background: C.bg, position: "sticky", bottom: 0 }}>
+              <button
+                onClick={() => setShowFilters(false)}
+                style={{
+                  width: "100%",
+                  background: C.ink,
+                  color: C.yellow,
+                  fontSize: 14,
+                  fontWeight: 900,
+                  letterSpacing: "0.02em",
+                  border: `2px solid ${C.ink}`,
+                  borderRadius: 8,
+                  padding: "14px 0",
+                  textTransform: "uppercase",
+                }}
+              >
+                {filtered.length} İLANI GÖSTER
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

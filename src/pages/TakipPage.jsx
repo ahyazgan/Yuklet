@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { ChevronLeft, Check, MapPin, Phone, MessageSquare } from "lucide-react";
 import { LISTINGS } from "../data/listings";
 import { CATS } from "../data/categories";
 import { StarsDisplay, StarsInput } from "../components/Stars";
@@ -9,12 +9,43 @@ import SEO from "../components/SEO";
 import { splitAmount, payableAmount, fmtTL, PAYMENT_LABEL } from "../utils/payments";
 import { newId, nowIso } from "../utils/id";
 
-// ── "Sevkiyat Takibi" — logistics prototip (Shipment Review + Dark Detail) HamTed'e uyarlandi.
-//    Acik ust (kunye + ozellikler) + koyu alt sayfa (zaman cizelgesi + nakliyeci).
+// ── "SAHA" sevkiyat takibi — open kunye card + job timeline + live trip counter
+//    + dark detail/nakliyeci panel. Brutalist C palette + Space Mono, inline styled.
+//    Tum eski islevsellik (faz akisi, escrow, degerlendirme, sikayet) korundu.
+
+const C = {
+  ink: "#0A0A0A",
+  header: "#EAE3D6",
+  yellow: "#FACC15",
+  yellowDeep: "#E0B400",
+  green: "#16803C",
+  bg: "#F1EDE5",
+  card: "#FFFFFF",
+  stone: "#F4F1EA",
+  border: "#E3DDD0",
+  line: "#F0ECE3",
+  sub: "#5A5852",
+  muted: "#9A968D",
+  faint: "#A8A39A",
+  rose: "#B91C1C",
+};
+const MONO = "'Space Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace";
 
 const idText = (l) => "HMT-" + String(l.id).padStart(4, "0");
 
 const PHASES = [["eslesti", "Eşleşti"], ["yuklendi", "Yüklendi"], ["yolda", "Yolda"], ["teslim", "Teslim"]];
+
+const shell = {
+  width: "100%",
+  maxWidth: 460,
+  margin: "0 auto",
+  minHeight: "100vh",
+  display: "flex",
+  flexDirection: "column",
+  background: C.bg,
+  color: C.ink,
+  fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
+};
 
 export default function TakipPage({ listings = LISTINGS, user, offers = [], getContact, reviews = [], onAddReview, getUserRating, onUpdateListing, onReport, onPayToEscrow, onReleasePayment }) {
   const { id } = useParams();
@@ -28,10 +59,17 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
 
   if (!l) {
     return (
-      <div className="mx-auto flex w-full max-w-[460px] flex-col items-center gap-3 px-4 pt-16 text-center text-slate-900 dark:text-slate-100">
-        <div className="text-4xl">📦</div>
-        <h1 className="text-xl font-bold text-slate-950 dark:text-slate-100">Takip kaydı bulunamadı</h1>
-        <button onClick={() => navigate("/ilanlar")} className="rounded-full bg-yellow-400 px-5 py-2.5 text-xs font-extrabold text-slate-950">İlanlara dön</button>
+      <div style={shell}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14, padding: "72px 20px", textAlign: "center" }}>
+          <div style={{ fontSize: 40 }}>📦</div>
+          <h1 style={{ fontFamily: MONO, fontSize: 20, fontWeight: 700, margin: 0 }}>Takip kaydı bulunamadı</h1>
+          <button
+            onClick={() => navigate("/ilanlar")}
+            style={{ background: C.yellow, border: `2px solid ${C.ink}`, padding: "11px 22px", fontFamily: MONO, fontSize: 12, fontWeight: 700, cursor: "pointer", color: C.ink }}
+          >
+            İLANLARA DÖN
+          </button>
+        </div>
       </div>
     );
   }
@@ -48,32 +86,6 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
   const to = l.bosaltma ? l.bosaltma.split(",")[0] : (l.ilce || "Saha");
   const fiyat = accepted?.price ? `₺${accepted.price.toLocaleString("tr-TR")}` : (l.priceType === "sabit" && l.price ? `₺${l.price.toLocaleString("tr-TR")}` : "Teklife açık");
   const statusLabel = matched ? "Yolda" : hasOffers ? "Teklif aşaması" : "İlan yayında";
-
-  // 4 adimli ilerleme (prototipteki gibi)
-  const milestones = [
-    { loc: from, status: "İlan oluşturuldu", time: l.createdText || "Bugün", done: true },
-    { loc: from, status: hasOffers ? `${l.offers || 1} teklif alındı` : "Teklif bekleniyor", time: "Bugün", done: hasOffers },
-    { loc: fromSub || from, status: matched ? `Eşleşti — ${nakliyeci}` : "Eşleşme bekleniyor", time: l.dateText || "—", done: matched },
-    { loc: to, status: matched ? "Yükleme & taşıma" : "Teslim bekleniyor", time: l.dateText || "—", done: false },
-  ];
-  const doneCount = milestones.filter((m) => m.done).length;
-
-  const SPECS = [
-    ["Yükleme", from],
-    ["Boşaltma", to],
-    ["Durum", statusLabel],
-    ["Miktar", l.amount ? `${l.amount} ${l.unit || ""}` : "—"],
-    ["Malzeme", l.material || cat?.name || "—"],
-    ["Tarih", l.dateText || "—"],
-  ];
-
-  // koyu detay grid (3. ekran)
-  const DETAIL = [
-    ["İş sahibi", l.owner || "—"],
-    ["Nakliyeci", nakliyeci],
-    ["Tutar", fiyat],
-    ["Kategori", cat?.name || "—"],
-  ];
 
   // ── Karşılıklı değerlendirme (eşleşince) ──
   const isOwner = user && String(user.id) === String(l.ownerId);
@@ -93,10 +105,17 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
   const phaseIdx = PHASES.findIndex((p) => p[0] === phase);
   const nextPhase = phaseIdx >= 0 && phaseIdx < PHASES.length - 1 ? PHASES[phaseIdx + 1] : null;
   const estTrips = l.amount && (l.unit === "ton" || l.unit === "m³") ? Math.ceil(l.amount / 18) : null;
+  const isDone = phase === "teslim" || l.status === "kapali";
   const advancePhase = () => {
     if (!nextPhase) return;
     onUpdateListing?.(l.id, { phase: nextPhase[0], ...(nextPhase[0] === "teslim" ? { status: "kapali" } : {}) });
   };
+
+  // Canli sefer sayaci — gercek l.tripsDone / estTrips (yoksa faz bazli)
+  const tripsDone = l.tripsDone || 0;
+  const tripsTotal = estTrips || PHASES.length;
+  const tripsCurrent = estTrips ? tripsDone : Math.max(0, phaseIdx + 1);
+  const tripsPct = tripsTotal > 0 ? Math.min(100, Math.round((tripsCurrent / tripsTotal) * 100)) : 0;
 
   // ── Ödeme / Escrow (emanet) ──
   const payStatus = l.paymentStatus || "yok";
@@ -127,268 +146,426 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
     setRateVal(0); setRateComment("");
   };
 
+  // ── Kunye kartindaki ozellik grid ──
+  const SPECS = [
+    ["YÜKLEME", from],
+    ["BOŞALTMA", to],
+    ["MİKTAR", l.amount ? `${l.amount} ${l.unit || ""}` : "—"],
+    ["MALZEME", l.material || cat?.name || "—"],
+    ["TARİH", l.dateText || "—"],
+    ["DURUM", statusLabel],
+  ];
+
+  // ── Koyu detay grid ──
+  const DETAIL = [
+    ["İŞ SAHİBİ", l.owner || "—"],
+    ["NAKLİYECİ", nakliyeci],
+    ["TUTAR", fiyat],
+    ["KATEGORİ", cat?.name || "—"],
+  ];
+
+  // ── Shared inline-style helpers ──
+  const sectionCard = {
+    background: C.card,
+    border: `2px solid ${C.ink}`,
+    padding: 18,
+    display: "flex",
+    flexDirection: "column",
+  };
+  const labelTiny = { fontFamily: MONO, fontSize: 9, fontWeight: 700, letterSpacing: "0.08em", color: C.muted, textTransform: "uppercase" };
+  const sectionTitle = { fontFamily: MONO, fontSize: 13, fontWeight: 700, letterSpacing: "0.04em", margin: 0, color: C.ink, textTransform: "uppercase" };
+
   return (
-    <div className="mx-auto flex w-full max-w-[460px] flex-col gap-4 px-4 pb-24 pt-2 text-slate-900 dark:text-slate-100">
+    <div style={shell}>
       <SEO title={`Takip · ${l.title}`} description="Eşleşen işin sevkiyat takibi." />
 
-      {/* Ust nav */}
-      <div className="flex items-center justify-between pt-1">
-        <button onClick={() => navigate(-1)} className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-slate-700 shadow-sm dark:bg-navy-card dark:text-slate-300">←</button>
-        <span className="text-sm font-extrabold text-slate-800 dark:text-slate-100">Sevkiyat Takibi</span>
-        <button onClick={() => navigate(`/ilan/${l.id}`)} className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-slate-700 shadow-sm dark:bg-navy-card dark:text-slate-300">⋯</button>
+      {/* ── DARK HEADER BLOCK (ink): nav + HMT no + title + status + trip counter + payout + bar ── */}
+      <div style={{ background: C.ink, color: "#fff", padding: "14px 18px 22px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <button
+            onClick={() => navigate(-1)}
+            aria-label="Geri"
+            style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, background: "transparent", border: `2px solid ${C.yellow}`, color: C.yellow, cursor: "pointer" }}
+          >
+            <ChevronLeft size={18} />
+          </button>
+          <span style={{ fontFamily: MONO, fontSize: 11, fontWeight: 700, letterSpacing: "0.16em", color: C.yellow }}>SAHA · TAKİP</span>
+          <button
+            onClick={() => navigate(`/ilan/${l.id}`)}
+            aria-label="İlana git"
+            style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, background: "transparent", border: `2px solid #2A2A2A`, color: "#9A968D", cursor: "pointer", fontFamily: MONO, fontSize: 16, fontWeight: 700 }}
+          >
+            ⋯
+          </button>
+        </div>
+
+        {/* HMT no + title + status badge */}
+        <div style={{ marginTop: 18, display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+          <div style={{ minWidth: 0 }}>
+            <span style={{ fontFamily: MONO, fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", color: "#7C7870" }}>TAKİP NO</span>
+            <div style={{ fontFamily: MONO, fontSize: 18, fontWeight: 700, color: C.yellow, marginTop: 2 }}>{idText(l)}</div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: "#C9C4BA", marginTop: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 230 }}>{l.title}</div>
+          </div>
+          <span
+            style={{
+              flexShrink: 0,
+              fontFamily: MONO, fontSize: 10, fontWeight: 700, letterSpacing: "0.06em",
+              padding: "6px 10px",
+              border: `2px solid ${isDone ? C.green : matched ? C.yellow : "#3A3A3A"}`,
+              color: isDone ? "#7BE3A0" : matched ? C.yellow : "#9A968D",
+              background: isDone ? "rgba(22,128,60,0.15)" : "transparent",
+              display: "inline-flex", alignItems: "center", gap: 6, whiteSpace: "nowrap",
+            }}
+          >
+            <span style={{ width: 7, height: 7, borderRadius: "50%", background: isDone ? C.green : matched ? C.yellow : "#5A5852" }} />
+            {isDone ? "TAMAMLANDI" : matched ? "DEVAM" : "BEKLEMEDE"}
+          </span>
+        </div>
+
+        {/* Live trip counter + payout */}
+        <div style={{ marginTop: 20, display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 12 }}>
+          <div>
+            <span style={{ fontFamily: MONO, fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", color: "#7C7870" }}>
+              {estTrips ? "SEFER" : "AŞAMA"}
+            </span>
+            <div style={{ fontFamily: MONO, fontSize: 40, fontWeight: 700, lineHeight: 1, color: C.yellow, marginTop: 4 }}>
+              {tripsCurrent}
+              <span style={{ fontSize: 22, color: "#5A5852" }}>/{tripsTotal}</span>
+            </div>
+          </div>
+          <div style={{ textAlign: "right" }}>
+            <span style={{ fontFamily: MONO, fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", color: "#7C7870" }}>HAKEDİŞ</span>
+            <div style={{ fontFamily: MONO, fontSize: 20, fontWeight: 700, color: "#fff", marginTop: 4 }}>{fiyat}</div>
+          </div>
+        </div>
+
+        {/* Progress bar */}
+        <div style={{ marginTop: 14, height: 8, background: "#1F1F1F", border: `1px solid #2A2A2A` }}>
+          <div style={{ height: "100%", width: `${tripsPct}%`, background: C.yellow, transition: "width 0.4s ease" }} />
+        </div>
       </div>
 
-      {/* ACIK KUNYE KARTI */}
-      <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} className="relative overflow-hidden rounded-3xl bg-white p-5 shadow-sm dark:bg-navy-card">
-        <div className="mb-4 flex items-start justify-between">
-          <div>
-            <span className="block text-[9px] font-bold uppercase text-gray-400 dark:text-navy-muted">Takip No</span>
-            <span className="block text-base font-extrabold text-slate-900 dark:text-slate-100">{idText(l)}</span>
-            <span className="mt-0.5 block max-w-[200px] truncate text-[11px] font-semibold text-gray-400 dark:text-navy-muted">{l.title}</span>
-          </div>
-          <span className={`rounded-full px-2.5 py-1 text-[9px] font-extrabold ${matched ? "bg-amber-50 text-amber-600" : "bg-slate-100 text-slate-500"}`}>{statusLabel}</span>
-        </div>
+      {/* ── BODY ── */}
+      <div style={{ flex: 1, padding: "16px 14px 96px", display: "flex", flexDirection: "column", gap: 14 }}>
 
-        {/* ozellik grid */}
-        <div className="relative z-10 grid grid-cols-2 gap-x-4 gap-y-3.5 pr-12">
-          {SPECS.map(([k, v]) => (
-            <div key={k}>
-              <span className="block text-[9px] font-bold uppercase text-gray-400 dark:text-navy-muted">{k}</span>
-              <span className="block text-[11px] font-extrabold text-slate-800 dark:text-slate-100">{v}</span>
-            </div>
-          ))}
-        </div>
-
-        {/* dekoratif sari kutu */}
-        <div className="pointer-events-none absolute -right-3 top-20 flex h-24 w-24 rotate-[-8deg] items-center justify-center rounded-2xl bg-yellow-200/60 p-3 shadow-inner">
-          <div className="relative flex h-full w-full flex-col justify-between rounded-lg bg-yellow-400/80">
-            <div className="absolute h-1.5 w-full bg-yellow-500" />
-            <div className="absolute left-1/2 h-full w-1.5 -translate-x-1/2 bg-yellow-500" />
-            <div className="mb-2 mr-2 self-end rounded-[2px] bg-white/95 px-1 py-0.5 text-[5px] font-bold text-neutral-800">HAMTED</div>
-          </div>
-        </div>
-      </motion.div>
-
-      {/* IS DURUMU AKISI */}
-      {phase && (
-        <div className="rounded-3xl bg-white p-5 shadow-sm dark:bg-navy-card">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-base font-bold text-slate-950 dark:text-slate-100">İş durumu</h2>
-            {estTrips && <span className="text-xs text-gray-500 dark:text-slate-400">{l.tripsDone || 0}/{estTrips} sefer</span>}
-          </div>
-          <div className="flex items-center">
-            {PHASES.map(([k], i) => (
-              <div key={k} className="flex flex-1 items-center last:flex-none">
-                <span className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-bold ${i <= phaseIdx ? "bg-yellow-400 text-slate-950" : "bg-gray-100 text-gray-400 dark:bg-navy-soft dark:text-slate-500"}`}>{i < phaseIdx ? "✓" : i + 1}</span>
-                {i < PHASES.length - 1 && <span className={`mx-1 h-0.5 flex-1 ${i < phaseIdx ? "bg-yellow-400" : "bg-gray-200 dark:bg-navy-line"}`} />}
-              </div>
-            ))}
-          </div>
-          <div className="mt-2 flex justify-between">
-            {PHASES.map(([k, lbl], i) => (
-              <span key={k} className={`flex-1 text-center text-[9.5px] font-semibold ${i <= phaseIdx ? "text-amber-600" : "text-gray-400 dark:text-slate-500"}`}>{lbl}</span>
-            ))}
-          </div>
-          {canManage && (
-            <div className="mt-4 flex flex-wrap items-center gap-2">
-              {nextPhase && (
-                <button onClick={advancePhase} className="rounded-full bg-slate-950 px-5 py-2.5 text-xs font-bold text-white dark:bg-navy-soft dark:text-slate-100">
-                  {nextPhase[1]} olarak işaretle →
-                </button>
-              )}
-              {estTrips && phaseIdx >= 1 && (l.tripsDone || 0) < estTrips && (
-                <button onClick={() => onUpdateListing?.(l.id, { tripsDone: (l.tripsDone || 0) + 1 })} className="rounded-full border border-gray-200 px-4 py-2.5 text-xs font-bold text-slate-700 dark:border-navy-line dark:text-slate-200">+1 sefer</button>
-              )}
-              {phase === "teslim" && <span className="text-xs font-bold text-emerald-600">✓ Teslim edildi — iş tamamlandı</span>}
-            </div>
-          )}
-          {!canManage && phase === "teslim" && <p className="mt-3 text-xs font-semibold text-emerald-600">✓ Bu iş tamamlandı.</p>}
-        </div>
-      )}
-
-      {/* ODEME / ESCROW (emanet) */}
-      {matched && amountToPay > 0 && (
-        <div className="rounded-3xl bg-white p-5 shadow-sm dark:bg-navy-card">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-base font-bold text-slate-950 dark:text-slate-100">Güvenli ödeme</h2>
-            <span className={`rounded-full px-2.5 py-1 text-[10px] font-extrabold ${
-              payStatus === "serbest" ? "bg-emerald-50 text-emerald-600"
-              : payStatus === "bloke" ? "bg-amber-50 text-amber-600"
-              : payStatus === "iade" ? "bg-rose-50 text-rose-600"
-              : "bg-slate-100 text-slate-500 dark:bg-navy-soft dark:text-slate-400"}`}>
-              {PAYMENT_LABEL[payStatus]}
+        {/* Tamamlandi vurgusu */}
+        {isDone && (
+          <div style={{ background: C.green, border: `2px solid ${C.ink}`, padding: "12px 16px", display: "flex", alignItems: "center", gap: 10, color: "#fff" }}>
+            <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, border: "2px solid #fff", flexShrink: 0 }}>
+              <Check size={16} />
             </span>
+            <span style={{ fontFamily: MONO, fontSize: 12, fontWeight: 700, letterSpacing: "0.04em" }}>İŞ TAMAMLANDI — TESLİM EDİLDİ</span>
           </div>
+        )}
 
-          {/* Tutar dökümü */}
-          <div className="space-y-2 rounded-2xl bg-slate-50 p-4 dark:bg-navy-soft">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-500 dark:text-slate-400">İş bedeli</span>
-              <span className="font-extrabold text-slate-900 dark:text-slate-100">{fmtTL(split.total)}</span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-500 dark:text-slate-400">Platform komisyonu (%{Math.round(split.feeRate * 100)})</span>
-              <span className="font-semibold text-rose-500">−{fmtTL(split.fee)}</span>
-            </div>
-            <div className="flex items-center justify-between border-t border-gray-200 pt-2 text-sm dark:border-navy-line">
-              <span className="font-bold text-slate-700 dark:text-slate-200">Nakliyecinin eline geçen</span>
-              <span className="font-extrabold text-emerald-600">{fmtTL(split.payout)}</span>
-            </div>
-          </div>
-
-          {/* Açıklama / aksiyon */}
-          {payStatus === "yok" && (
-            <p className="mt-3 text-[12px] leading-relaxed text-gray-500 dark:text-slate-400">
-              Ödemeyi <b className="text-slate-700 dark:text-slate-200">emanete</b> yatır. Para platformda bloke kalır; <b>teslim aldığında</b> serbest bırakırsın. İş yapılmazsa iade edilir.
-            </p>
-          )}
-          {payStatus === "bloke" && (
-            <p className="mt-3 text-[12px] leading-relaxed text-amber-700 dark:text-yellow-300">
-              💰 Para emanette güvende. Yük <b>teslim edildiğinde</b> “Ödemeyi serbest bırak” ile nakliyeciye aktarılır.
-            </p>
-          )}
-          {payStatus === "serbest" && (
-            <p className="mt-3 text-[12px] font-semibold text-emerald-600">✓ Ödeme tamamlandı, nakliyeciye {fmtTL(split.payout)} aktarıldı.</p>
-          )}
-
-          {canPay && (
-            <button onClick={doPay} disabled={payBusy}
-              className="mt-4 w-full rounded-2xl bg-yellow-400 py-3.5 text-sm font-extrabold text-slate-950 transition hover:bg-yellow-500 disabled:opacity-60">
-              {payBusy ? "İşleniyor…" : `${fmtTL(split.total)} emanete öde`}
-            </button>
-          )}
-          {canRelease && (
-            <button onClick={doRelease} disabled={payBusy}
-              className="mt-4 w-full rounded-2xl bg-emerald-500 py-3.5 text-sm font-extrabold text-white transition hover:bg-emerald-600 disabled:opacity-60">
-              {payBusy ? "İşleniyor…" : "Teslim aldım — ödemeyi serbest bırak"}
-            </button>
-          )}
-          {payStatus === "bloke" && !canRelease && isOwner && phase !== "teslim" && (
-            <p className="mt-3 text-[11px] text-gray-400 dark:text-slate-500">Serbest bırakma, iş “Teslim” aşamasına gelince açılır.</p>
-          )}
-          {isNakliyeci && payStatus === "bloke" && (
-            <p className="mt-3 text-[12px] font-semibold text-amber-700 dark:text-yellow-300">💰 İş bedeli emanette güvende. Teslimden sonra hesabına geçecek.</p>
-          )}
-          {isNakliyeci && payStatus === "serbest" && (
-            <p className="mt-3 text-[12px] font-semibold text-emerald-600">✓ {fmtTL(split.payout)} hesabına aktarıldı.</p>
-          )}
-
-          {payMsg && <div className="mt-3 rounded-2xl bg-slate-50 px-4 py-2.5 text-[12px] font-semibold text-slate-700 dark:bg-navy-soft dark:text-slate-200">{payMsg}</div>}
-        </div>
-      )}
-
-      {/* KOYU TAKIP SAYFASI */}
-      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.05 }} className="flex flex-col gap-4 rounded-[32px] bg-slate-900 p-5 text-white">
-        <div className="mx-auto h-1 w-10 rounded-full bg-slate-700" />
-
-        {/* rota ozeti */}
-        <div className="flex items-start justify-between border-b border-slate-800 pb-3">
-          <div>
-            <span className="block text-[9px] font-bold text-slate-500">Yükleme</span>
-            <span className="block text-[11px] font-extrabold text-slate-100">{from}</span>
-            <span className="block text-[9px] text-slate-500">{fromSub}</span>
-          </div>
-          <div className="text-right">
-            <span className="block text-[9px] font-bold text-slate-500">Boşaltma · {l.dateText || "—"}</span>
-            <span className="block text-[11px] font-extrabold text-slate-100">{to}</span>
-          </div>
-        </div>
-
-        {/* ilerleme cubugu (4 nokta) */}
-        <div className="flex items-center px-1">
-          {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="flex flex-1 items-center last:flex-none">
-              <span className={`flex h-5 w-5 items-center justify-center rounded-full border-2 border-slate-900 text-[7px] ${i < doneCount ? "bg-yellow-400 text-slate-950" : "bg-slate-800 text-slate-500"}`}>
-                {i < doneCount ? "✓" : "•"}
-              </span>
-              {i < 3 && <span className={`mx-1 h-0 flex-1 border-t-2 border-dashed ${i < doneCount - 1 ? "border-yellow-400" : "border-slate-700"}`} />}
-            </div>
-          ))}
-        </div>
-
-        {/* milestone listesi */}
-        <div className="flex flex-col gap-3.5 pt-1">
-          {milestones.map((m, i) => (
-            <div key={i} className="flex items-start justify-between">
-              <div>
-                <span className="block text-[8px] text-slate-400">{m.loc}</span>
-                <span className={`block text-[11px] font-extrabold ${m.done ? "text-slate-100" : "text-slate-400"}`}>{m.status}</span>
+        {/* AÇIK KÜNYE KARTI */}
+        <div style={sectionCard}>
+          <span style={labelTiny}>İŞ KÜNYESİ</span>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px 16px", marginTop: 14 }}>
+            {SPECS.map(([k, v]) => (
+              <div key={k} style={{ minWidth: 0 }}>
+                <span style={labelTiny}>{k}</span>
+                <div style={{ fontSize: 13, fontWeight: 700, color: C.ink, marginTop: 3, overflow: "hidden", textOverflow: "ellipsis" }}>{v}</div>
               </div>
-              <span className="whitespace-nowrap text-[9px] font-bold text-slate-400">{m.time}</span>
-            </div>
-          ))}
-        </div>
-
-        {/* koyu detay grid */}
-        <div className="grid grid-cols-2 gap-x-4 gap-y-3 border-t border-slate-800 pt-4">
-          {DETAIL.map(([k, v]) => (
-            <div key={k}>
-              <span className="block text-[8px] text-slate-500">{k}</span>
-              <span className="block text-[11px] font-extrabold text-white">{v}</span>
-            </div>
-          ))}
-        </div>
-
-        {/* nakliyeci widget */}
-        <div className="mt-1 flex items-center justify-between rounded-2xl bg-slate-800 p-2.5">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-yellow-400 bg-slate-700 text-sm font-extrabold text-yellow-400">
-              {(nakliyeci || "?").charAt(0).toUpperCase()}
-            </div>
-            <div>
-              <span className="block text-[11px] font-extrabold text-white">{nakliyeci}</span>
-              <span className="block text-[8px] text-slate-400">Nakliyeci</span>
-            </div>
+            ))}
           </div>
-          <div className="flex items-center gap-2">
-            {nakContact?.phone ? (
-              <a href={`tel:${nakContact.phone}`} className="flex h-9 w-9 items-center justify-center rounded-full bg-yellow-400 text-sm text-slate-950">📞</a>
-            ) : (
-              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-700 text-sm text-slate-500">📞</span>
+        </div>
+
+        {/* İŞ DURUMU ZAMAN ÇİZELGESİ */}
+        {phase && (
+          <div style={sectionCard}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+              <h2 style={sectionTitle}>Durum</h2>
+              {estTrips && (
+                <span style={{ fontFamily: MONO, fontSize: 11, fontWeight: 700, color: C.sub }}>{tripsDone}/{estTrips} SEFER</span>
+              )}
+            </div>
+
+            {/* Timeline: done / active / todo */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+              {PHASES.map(([k, lbl], i) => {
+                const done = i < phaseIdx;
+                const active = i === phaseIdx;
+                const isLast = i === PHASES.length - 1;
+                const dotBg = done ? C.green : active ? C.yellow : C.card;
+                const dotBorder = done ? C.green : active ? C.ink : C.border;
+                return (
+                  <div key={k} style={{ display: "flex", gap: 12 }}>
+                    {/* dot + connector */}
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                      <span
+                        style={{
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          width: 22, height: 22, borderRadius: "50%",
+                          background: dotBg, border: `2px solid ${dotBorder}`, flexShrink: 0,
+                          color: done ? "#fff" : C.ink,
+                        }}
+                      >
+                        {done ? <Check size={12} /> : active ? <span style={{ width: 7, height: 7, borderRadius: "50%", background: C.ink }} /> : null}
+                      </span>
+                      {!isLast && <span style={{ width: 2, flex: 1, minHeight: 22, background: done ? C.green : C.border }} />}
+                    </div>
+                    {/* label */}
+                    <div style={{ paddingBottom: isLast ? 0 : 14, paddingTop: 1 }}>
+                      <div style={{ fontFamily: MONO, fontSize: 12, fontWeight: 700, color: done || active ? C.ink : C.faint }}>{lbl}</div>
+                      <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>
+                        {done ? "Tamamlandı" : active ? "Şu an bu aşamada" : "Bekliyor"}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Faz ilerletme + sefer */}
+            {canManage && (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 16 }}>
+                {nextPhase && (
+                  <button
+                    onClick={advancePhase}
+                    style={{ background: C.ink, color: "#fff", border: `2px solid ${C.ink}`, padding: "11px 16px", fontFamily: MONO, fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+                  >
+                    {nextPhase[1].toUpperCase()} OLARAK İŞARETLE →
+                  </button>
+                )}
+                {estTrips && phaseIdx >= 1 && tripsDone < estTrips && (
+                  <button
+                    onClick={() => onUpdateListing?.(l.id, { tripsDone: tripsDone + 1 })}
+                    style={{ background: C.card, color: C.ink, border: `2px solid ${C.ink}`, padding: "11px 16px", fontFamily: MONO, fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+                  >
+                    +1 SEFER
+                  </button>
+                )}
+                {phase === "teslim" && (
+                  <span style={{ fontFamily: MONO, fontSize: 12, fontWeight: 700, color: C.green, display: "inline-flex", alignItems: "center", gap: 6 }}>
+                    <Check size={14} /> Teslim edildi — iş tamamlandı
+                  </span>
+                )}
+              </div>
             )}
-            <button onClick={() => navigate("/mesajlar")} className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-sm text-slate-900">💬</button>
+            {!canManage && phase === "teslim" && (
+              <p style={{ fontFamily: MONO, fontSize: 12, fontWeight: 700, color: C.green, margin: "14px 0 0", display: "inline-flex", alignItems: "center", gap: 6 }}>
+                <Check size={14} /> Bu iş tamamlandı.
+              </p>
+            )}
           </div>
-        </div>
-      </motion.div>
+        )}
 
-      {/* Sözleşme / irsaliye */}
-      {matched && accepted && (
-        <button onClick={() => navigate(`/sozlesme/${accepted.id}`)}
-          className="flex items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white py-3.5 text-sm font-bold text-slate-900 shadow-sm transition hover:-translate-y-0.5 dark:border-navy-line dark:bg-navy-card dark:text-slate-100">
-          📄 Taşıma sözleşmesi / irsaliye
-        </button>
-      )}
-
-      {/* Karşılıklı değerlendirme */}
-      {counterpart && (
-        <div className="rounded-3xl bg-white p-5 shadow-sm dark:bg-navy-card">
-          <div className="mb-1 flex items-center justify-between gap-2">
-            <h2 className="text-base font-bold text-slate-950 dark:text-slate-100">{counterpart.role} değerlendirmesi</h2>
-            {counterpartRating && <StarsDisplay value={counterpartRating.avg} count={counterpartRating.count} className="text-xs" />}
-          </div>
-          {myReview ? (
-            <div className="flex items-center gap-2 text-sm font-semibold text-emerald-600">
-              <StarsDisplay value={myReview.rating} className="text-sm" /> Değerlendirdin, teşekkürler ✓
+        {/* ÖDEME / ESCROW (emanet) */}
+        {matched && amountToPay > 0 && (
+          <div style={sectionCard}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+              <h2 style={sectionTitle}>Güvenli Ödeme</h2>
+              <span
+                style={{
+                  fontFamily: MONO, fontSize: 10, fontWeight: 700, letterSpacing: "0.04em",
+                  padding: "5px 9px", border: `2px solid ${C.ink}`,
+                  background: payStatus === "serbest" ? C.green : payStatus === "bloke" ? C.yellow : payStatus === "iade" ? C.rose : C.stone,
+                  color: payStatus === "serbest" || payStatus === "iade" ? "#fff" : C.ink,
+                }}
+              >
+                {PAYMENT_LABEL[payStatus]}
+              </span>
             </div>
-          ) : (
-            <>
-              <p className="mb-3 text-xs text-gray-500 dark:text-slate-400"><b className="text-slate-700 dark:text-slate-200">{counterpart.name}</b> ile çalışman nasıldı? Puan ver, topluluk güvenini büyüt.</p>
-              <StarsInput value={rateVal} onChange={setRateVal} />
-              <textarea value={rateComment} onChange={(e) => setRateComment(e.target.value)} placeholder="Kısa yorum (opsiyonel)"
-                className="mt-3 min-h-[64px] w-full rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-slate-300 dark:bg-navy-soft dark:text-slate-100" />
-              <button onClick={submitReview} disabled={!rateVal} className="mt-3 w-full rounded-2xl bg-yellow-400 py-3 text-sm font-extrabold text-slate-950 transition hover:bg-yellow-500 disabled:opacity-50">Değerlendir</button>
-            </>
-          )}
+
+            {/* Tutar dökümü */}
+            <div style={{ background: C.stone, border: `2px solid ${C.border}`, padding: 14, display: "flex", flexDirection: "column", gap: 9 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 13 }}>
+                <span style={{ color: C.sub }}>İş bedeli</span>
+                <span style={{ fontFamily: MONO, fontWeight: 700, color: C.ink }}>{fmtTL(split.total)}</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 13 }}>
+                <span style={{ color: C.sub }}>Platform komisyonu (%{Math.round(split.feeRate * 100)})</span>
+                <span style={{ fontFamily: MONO, fontWeight: 700, color: C.rose }}>−{fmtTL(split.fee)}</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 13, borderTop: `2px solid ${C.border}`, paddingTop: 9 }}>
+                <span style={{ fontWeight: 700, color: C.ink }}>Nakliyecinin eline geçen</span>
+                <span style={{ fontFamily: MONO, fontWeight: 700, color: C.green }}>{fmtTL(split.payout)}</span>
+              </div>
+            </div>
+
+            {/* Açıklama */}
+            {payStatus === "yok" && (
+              <p style={{ fontSize: 12, lineHeight: 1.6, color: C.sub, margin: "12px 0 0" }}>
+                Ödemeyi <b style={{ color: C.ink }}>emanete</b> yatır. Para platformda bloke kalır; <b>teslim aldığında</b> serbest bırakırsın. İş yapılmazsa iade edilir.
+              </p>
+            )}
+            {payStatus === "bloke" && (
+              <p style={{ fontSize: 12, lineHeight: 1.6, color: C.yellowDeep, margin: "12px 0 0" }}>
+                💰 Para emanette güvende. Yük <b>teslim edildiğinde</b> “Ödemeyi serbest bırak” ile nakliyeciye aktarılır.
+              </p>
+            )}
+            {payStatus === "serbest" && (
+              <p style={{ fontFamily: MONO, fontSize: 12, fontWeight: 700, color: C.green, margin: "12px 0 0", display: "inline-flex", alignItems: "center", gap: 6 }}>
+                <Check size={14} /> Ödeme tamamlandı, nakliyeciye {fmtTL(split.payout)} aktarıldı.
+              </p>
+            )}
+
+            {canPay && (
+              <button
+                onClick={doPay}
+                disabled={payBusy}
+                style={{ marginTop: 14, width: "100%", background: C.yellow, border: `2px solid ${C.ink}`, padding: "13px 0", fontFamily: MONO, fontSize: 13, fontWeight: 700, color: C.ink, cursor: payBusy ? "default" : "pointer", opacity: payBusy ? 0.6 : 1 }}
+              >
+                {payBusy ? "İŞLENİYOR…" : `${fmtTL(split.total)} EMANETE ÖDE`}
+              </button>
+            )}
+            {canRelease && (
+              <button
+                onClick={doRelease}
+                disabled={payBusy}
+                style={{ marginTop: 14, width: "100%", background: C.green, border: `2px solid ${C.ink}`, padding: "13px 0", fontFamily: MONO, fontSize: 13, fontWeight: 700, color: "#fff", cursor: payBusy ? "default" : "pointer", opacity: payBusy ? 0.6 : 1 }}
+              >
+                {payBusy ? "İŞLENİYOR…" : "TESLİM ALDIM — ÖDEMEYİ SERBEST BIRAK"}
+              </button>
+            )}
+            {payStatus === "bloke" && !canRelease && isOwner && phase !== "teslim" && (
+              <p style={{ fontSize: 11, color: C.muted, margin: "12px 0 0" }}>Serbest bırakma, iş “Teslim” aşamasına gelince açılır.</p>
+            )}
+            {isNakliyeci && payStatus === "bloke" && (
+              <p style={{ fontSize: 12, fontWeight: 700, color: C.yellowDeep, margin: "12px 0 0" }}>💰 İş bedeli emanette güvende. Teslimden sonra hesabına geçecek.</p>
+            )}
+            {isNakliyeci && payStatus === "serbest" && (
+              <p style={{ fontFamily: MONO, fontSize: 12, fontWeight: 700, color: C.green, margin: "12px 0 0", display: "inline-flex", alignItems: "center", gap: 6 }}>
+                <Check size={14} /> {fmtTL(split.payout)} hesabına aktarıldı.
+              </p>
+            )}
+
+            {payMsg && (
+              <div style={{ marginTop: 12, background: C.stone, border: `2px solid ${C.border}`, padding: "10px 14px", fontSize: 12, fontWeight: 600, color: C.ink }}>{payMsg}</div>
+            )}
+          </div>
+        )}
+
+        {/* ── KOYU DETAY / NAKLİYECİ PANELİ ── */}
+        <div style={{ background: C.ink, border: `2px solid ${C.ink}`, color: "#fff", padding: 18, display: "flex", flexDirection: "column", gap: 16 }}>
+          {/* Rota özeti */}
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, borderBottom: "2px solid #1F1F1F", paddingBottom: 14 }}>
+            <div style={{ minWidth: 0 }}>
+              <span style={{ fontFamily: MONO, fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", color: "#7C7870", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                <MapPin size={10} /> YÜKLEME
+              </span>
+              <div style={{ fontFamily: MONO, fontSize: 13, fontWeight: 700, color: "#fff", marginTop: 4 }}>{from}</div>
+              {fromSub && <div style={{ fontSize: 11, color: "#9A968D", marginTop: 2 }}>{fromSub}</div>}
+            </div>
+            <div style={{ textAlign: "right", minWidth: 0 }}>
+              <span style={{ fontFamily: MONO, fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", color: "#7C7870" }}>BOŞALTMA · {l.dateText || "—"}</span>
+              <div style={{ fontFamily: MONO, fontSize: 13, fontWeight: 700, color: "#fff", marginTop: 4 }}>{to}</div>
+            </div>
+          </div>
+
+          {/* Detay grid */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px 16px" }}>
+            {DETAIL.map(([k, v]) => (
+              <div key={k} style={{ minWidth: 0 }}>
+                <span style={{ fontFamily: MONO, fontSize: 9, fontWeight: 700, letterSpacing: "0.08em", color: "#7C7870" }}>{k}</span>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#fff", marginTop: 3, overflow: "hidden", textOverflow: "ellipsis" }}>{v}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Nakliyeci widget */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, background: "#161616", border: "2px solid #2A2A2A", padding: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 42, height: 42, borderRadius: "50%", border: `2px solid ${C.yellow}`, background: "#222", color: C.yellow, fontFamily: MONO, fontSize: 16, fontWeight: 700, flexShrink: 0 }}>
+                {(nakliyeci || "?").charAt(0).toUpperCase()}
+              </div>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{nakliyeci}</div>
+                <div style={{ fontFamily: MONO, fontSize: 9, color: "#9A968D", letterSpacing: "0.06em", marginTop: 2 }}>NAKLİYECİ</div>
+              </div>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+              {nakContact?.phone ? (
+                <a
+                  href={`tel:${nakContact.phone}`}
+                  aria-label="Ara"
+                  style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 38, height: 38, background: C.yellow, color: C.ink, border: `2px solid ${C.ink}` }}
+                >
+                  <Phone size={16} />
+                </a>
+              ) : (
+                <span
+                  aria-label="Telefon yok"
+                  style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 38, height: 38, background: "#222", color: "#5A5852", border: "2px solid #2A2A2A" }}
+                >
+                  <Phone size={16} />
+                </span>
+              )}
+              <button
+                onClick={() => navigate("/mesajlar")}
+                aria-label="Mesaj gönder"
+                style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 38, height: 38, background: "#fff", color: C.ink, border: `2px solid ${C.ink}`, cursor: "pointer" }}
+              >
+                <MessageSquare size={16} />
+              </button>
+            </div>
+          </div>
         </div>
-      )}
 
-      {!matched && (
-        <p className="px-2 text-center text-xs text-gray-400 dark:text-navy-muted">
-          Bu iş henüz eşleşmedi. {user ? "Teklifler geldikçe takip burada güncellenir." : "Takip detayları eşleşme sonrası canlanır."}
-        </p>
-      )}
+        {/* Sözleşme / irsaliye */}
+        {matched && accepted && (
+          <button
+            onClick={() => navigate(`/sozlesme/${accepted.id}`)}
+            style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, background: C.card, border: `2px solid ${C.ink}`, padding: "13px 0", fontFamily: MONO, fontSize: 12, fontWeight: 700, color: C.ink, cursor: "pointer" }}
+          >
+            📄 TAŞIMA SÖZLEŞMESİ / İRSALİYE
+          </button>
+        )}
 
-      <button onClick={() => setShowReport(true)} className="self-center text-xs font-semibold text-gray-400 transition hover:text-red-500 dark:text-slate-500">⚠ Sorun bildir / anlaşmazlık</button>
+        {/* Karşılıklı değerlendirme */}
+        {counterpart && (
+          <div style={{ ...sectionCard, ...(isDone && !myReview ? { borderColor: C.yellow, borderWidth: 3 } : {}) }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 8 }}>
+              <h2 style={sectionTitle}>{counterpart.role} Değerlendirmesi</h2>
+              {counterpartRating && <StarsDisplay value={counterpartRating.avg} count={counterpartRating.count} className="text-xs" />}
+            </div>
+            {myReview ? (
+              <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 700, color: C.green }}>
+                <StarsDisplay value={myReview.rating} className="text-sm" /> Değerlendirdin, teşekkürler ✓
+              </div>
+            ) : (
+              <>
+                <p style={{ fontSize: 12, color: C.sub, margin: "0 0 14px", lineHeight: 1.6 }}>
+                  <b style={{ color: C.ink }}>{counterpart.name}</b> ile çalışman nasıldı? Puan ver, topluluk güvenini büyüt.
+                </p>
+                <StarsInput value={rateVal} onChange={setRateVal} />
+                <textarea
+                  value={rateComment}
+                  onChange={(e) => setRateComment(e.target.value)}
+                  placeholder="Kısa yorum (opsiyonel)"
+                  style={{ marginTop: 14, minHeight: 64, width: "100%", boxSizing: "border-box", background: C.stone, border: `2px solid ${C.border}`, padding: "11px 14px", fontSize: 13, color: C.ink, outline: "none", resize: "vertical", fontFamily: "inherit" }}
+                />
+                <button
+                  onClick={submitReview}
+                  disabled={!rateVal}
+                  style={{ marginTop: 12, width: "100%", background: C.yellow, border: `2px solid ${C.ink}`, padding: "12px 0", fontFamily: MONO, fontSize: 13, fontWeight: 700, color: C.ink, cursor: rateVal ? "pointer" : "default", opacity: rateVal ? 1 : 0.5 }}
+                >
+                  DEĞERLENDİR
+                </button>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Henüz eşleşmedi bilgisi */}
+        {!matched && (
+          <div style={{ background: C.stone, border: `2px dashed ${C.border}`, padding: "16px 18px", textAlign: "center" }}>
+            <p style={{ fontFamily: MONO, fontSize: 12, fontWeight: 700, color: C.sub, margin: 0 }}>BU İŞ HENÜZ EŞLEŞMEDİ</p>
+            <p style={{ fontSize: 12, color: C.muted, margin: "8px 0 0", lineHeight: 1.6 }}>
+              {user ? "Teklifler geldikçe takip burada güncellenir." : "Takip detayları eşleşme sonrası canlanır."}
+            </p>
+          </div>
+        )}
+
+        {/* Şikayet / anlaşmazlık */}
+        <button
+          onClick={() => setShowReport(true)}
+          style={{ alignSelf: "center", background: "transparent", border: "none", fontFamily: MONO, fontSize: 11, fontWeight: 700, color: C.muted, cursor: "pointer", letterSpacing: "0.04em", padding: "4px 0" }}
+        >
+          ⚠ SORUN BİLDİR / ANLAŞMAZLIK
+        </button>
+      </div>
 
       {showReport && (
         <ReportModal

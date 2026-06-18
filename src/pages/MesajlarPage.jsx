@@ -1,13 +1,52 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { ChevronLeft, Search, BadgeCheck, Phone, Plus, Send, Truck } from "lucide-react";
 import { newId, nowIso } from "../utils/id";
 import SEO from "../components/SEO";
 
-// ── MoveIQ LIGHT mesajlar (Tailwind).
+// ── SAHA messages view (inline-style shell, C palette, Space Mono context).
+
+const C = {
+  ink: "#0A0A0A",
+  header: "#EAE3D6",
+  yellow: "#FACC15",
+  green: "#16803C",
+  bg: "#F1EDE5",
+  card: "#FFFFFF",
+  stone: "#F4F1EA",
+  border: "#E3DDD0",
+  line: "#F0ECE3",
+  sub: "#5A5852",
+  muted: "#9A968D",
+  faint: "#A8A39A",
+};
+const MONO = "'Space Mono','SFMono-Regular',Menlo,Consolas,monospace";
+const SANS = "'Plus Jakarta Sans',system-ui,sans-serif";
+
+const shell = {
+  margin: "0 auto",
+  width: "100%",
+  maxWidth: 460,
+  minHeight: "100vh",
+  background: C.bg,
+  color: C.ink,
+  fontFamily: SANS,
+  display: "flex",
+  flexDirection: "column",
+};
 
 function fmtTime(iso) {
   try { return new Date(iso).toLocaleString("tr-TR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }); }
   catch { return ""; }
+}
+
+// Build initials from a name (max 2 chars).
+function initials(name) {
+  if (!name) return "?";
+  const parts = String(name).trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
 export default function MesajlarPage({ user, listings = [], offers = [], messages = [], onSendMessage, onRequireAuth, onSeen, getContact }) {
@@ -17,18 +56,29 @@ export default function MesajlarPage({ user, listings = [], offers = [], message
 
   useEffect(() => { onSeen?.(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ── Not authenticated ──
   if (!user) {
     return (
-      <div className="mx-auto flex w-full max-w-[460px] flex-col items-center gap-3 px-4 pt-12 text-center text-slate-900 dark:text-slate-100">
+      <div style={{ ...shell, paddingBottom: 96 }}>
         <SEO title="Mesajlar" />
-        <div className="text-5xl">🔒</div>
-        <h1 className="text-xl font-bold text-slate-950 dark:text-slate-100">Mesajlar için giriş yapın</h1>
-        <p className="text-sm text-gray-500 dark:text-slate-400">Kabul edilen tekliflerde karşı tarafla buradan mesajlaşırsınız.</p>
-        <button onClick={() => onRequireAuth?.()} className="mt-2 rounded-full bg-slate-950 px-5 py-3 text-sm font-bold text-white dark:bg-navy-soft dark:text-slate-100">Giriş yap / Kayıt ol</button>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: "0 28px", gap: 14 }}>
+          <div style={{ width: 64, height: 64, borderRadius: 20, background: C.header, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Send size={26} color={C.ink} strokeWidth={2.2} />
+          </div>
+          <h1 style={{ fontSize: 21, fontWeight: 800, margin: 0, letterSpacing: "-0.02em" }}>Mesajlar için giriş yapın</h1>
+          <p style={{ fontSize: 13.5, color: C.sub, margin: 0, lineHeight: 1.5 }}>Kabul edilen tekliflerde karşı tarafla buradan mesajlaşırsınız.</p>
+          <button
+            onClick={() => onRequireAuth?.()}
+            style={{ marginTop: 6, border: "none", cursor: "pointer", background: C.ink, color: "#fff", fontFamily: SANS, fontSize: 14, fontWeight: 700, padding: "13px 22px", borderRadius: 999 }}
+          >
+            Giriş yap / Kayıt ol
+          </button>
+        </div>
       </div>
     );
   }
 
+  // ── Derive conversations from accepted offers ──
   const conversations = offers
     .filter((o) => o.status === "kabul")
     .map((o) => {
@@ -51,8 +101,18 @@ export default function MesajlarPage({ user, listings = [], offers = [], message
         .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
     : [];
 
-  const send = (e) => {
-    e.preventDefault();
+  // Last message preview for a conversation row.
+  const lastMessageOf = (c) => {
+    const ms = messages
+      .filter((m) => String(m.listingId) === String(c.listingId) && String(m.offerId) === String(c.offerId))
+      .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+    if (ms.length === 0) return { preview: "—", time: "" };
+    const last = ms[ms.length - 1];
+    const preview = last.image ? "📷 Görsel" : (last.text || "—");
+    return { preview, time: fmtTime(last.createdAt) };
+  };
+
+  const send = () => {
     if (!text.trim() || !active) return;
     onSendMessage?.({
       id: newId(), listingId: active.listingId, offerId: active.offerId,
@@ -65,7 +125,7 @@ export default function MesajlarPage({ user, listings = [], offers = [], message
   const sendImage = (e) => {
     const f = e.target.files?.[0];
     if (!f || !active) return;
-    if (f.size > 1_800_000) { e.target.value = ""; return; } // ~1.8MB sınır
+    if (f.size > 1_800_000) { e.target.value = ""; return; } // ~1.8MB limit
     const reader = new FileReader();
     reader.onload = () => onSendMessage?.({
       id: newId(), listingId: active.listingId, offerId: active.offerId,
@@ -76,78 +136,191 @@ export default function MesajlarPage({ user, listings = [], offers = [], message
     e.target.value = "";
   };
 
-  // ── Aktif sohbet ──
+  // ── Thread view (active conversation) ──
   if (active) {
     return (
-      <div className="mx-auto flex w-full max-w-[460px] flex-col px-4 pb-24 pt-2 text-slate-900 dark:text-slate-100">
+      <div style={{ ...shell, paddingBottom: 96 }}>
         <SEO title="Mesajlar" />
-        <div className="flex items-center gap-3 border-b border-gray-200 dark:border-navy-line pb-3">
-          <button onClick={() => setSelectedKey(null)} className="flex h-10 w-10 items-center justify-center rounded-full bg-white dark:bg-navy-card text-slate-700 dark:text-slate-100 shadow-sm">←</button>
-          <div className="min-w-0 flex-1">
-            <div className="text-sm font-bold text-slate-950 dark:text-slate-100">{active.other.name}</div>
-            <button onClick={() => navigate(`/ilan/${active.listingId}`)} className="truncate text-xs font-semibold text-amber-600">{active.listingTitle} ›</button>
+
+        {/* Header */}
+        <div style={{ background: C.header, padding: "14px 16px", display: "flex", alignItems: "center", gap: 12 }}>
+          <button
+            onClick={() => setSelectedKey(null)}
+            aria-label="Geri"
+            style={{ flexShrink: 0, width: 38, height: 38, borderRadius: 12, border: `1px solid ${C.border}`, background: C.card, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+          >
+            <ChevronLeft size={20} color={C.ink} strokeWidth={2.4} />
+          </button>
+
+          <div style={{ position: "relative", flexShrink: 0 }}>
+            <div style={{ width: 42, height: 42, borderRadius: 13, background: C.ink, color: C.yellow, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 800, fontFamily: MONO }}>
+              {initials(active.other.name)}
+            </div>
+            <span style={{ position: "absolute", right: -1, bottom: -1, width: 11, height: 11, borderRadius: 999, background: C.green, border: "2px solid " + C.header }} />
           </div>
-          {otherPhone && <a href={`tel:${otherPhone}`} className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">📞</a>}
+
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+              <span style={{ fontSize: 15, fontWeight: 800, letterSpacing: "-0.01em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{active.other.name}</span>
+              <BadgeCheck size={15} color={C.green} strokeWidth={2.4} style={{ flexShrink: 0 }} />
+            </div>
+            <div style={{ fontSize: 11.5, color: C.sub, fontWeight: 600 }}>çevrimiçi</div>
+          </div>
+
+          {otherPhone && (
+            <a
+              href={`tel:${otherPhone}`}
+              aria-label="Ara"
+              style={{ flexShrink: 0, width: 38, height: 38, borderRadius: 12, border: `1px solid ${C.border}`, background: C.card, display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none" }}
+            >
+              <Phone size={18} color={C.green} strokeWidth={2.2} />
+            </a>
+          )}
         </div>
 
-        <div className="flex min-h-[45vh] flex-col gap-2.5 py-4">
+        {/* Listing context bar */}
+        <button
+          onClick={() => navigate(`/ilan/${active.listingId}`)}
+          style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", border: "none", cursor: "pointer", textAlign: "left", background: C.ink, color: "#fff", padding: "11px 16px" }}
+        >
+          <div style={{ flexShrink: 0, width: 28, height: 28, borderRadius: 8, background: "rgba(250,204,21,0.18)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Truck size={15} color={C.yellow} strokeWidth={2.2} />
+          </div>
+          <span style={{ flex: 1, minWidth: 0, fontSize: 12.5, fontWeight: 600, fontFamily: MONO, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{active.listingTitle}</span>
+          <span style={{ flexShrink: 0, fontSize: 12, fontWeight: 700, color: C.yellow }}>İlanı gör ›</span>
+        </button>
+
+        {/* Messages */}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 10, padding: "16px 16px 20px", overflowY: "auto" }}>
           {threadMessages.length === 0 ? (
-            <div className="m-auto text-sm text-gray-400 dark:text-navy-muted">İlk mesajı yazın.</div>
+            <div style={{ margin: "auto", fontSize: 13, color: C.muted }}>İlk mesajı yazın.</div>
           ) : (
             threadMessages.map((m) => {
               const mine = m.fromId === user.id;
               return (
-                <div key={m.id} className={`max-w-[78%] ${mine ? "self-end" : "self-start"}`}>
-                  <div className={`px-3.5 py-2.5 text-sm leading-snug ${mine ? "rounded-2xl rounded-br-sm bg-slate-950 text-white dark:bg-navy-soft dark:text-slate-100" : "rounded-2xl rounded-bl-sm bg-white dark:bg-navy-card text-slate-900 dark:text-slate-100 shadow-sm"}`}>
-                    {m.image && <img src={m.image} alt="Görsel" className={`max-h-52 rounded-xl object-cover ${m.text ? "mb-1.5" : ""}`} />}
+                <div key={m.id} style={{ maxWidth: "80%", alignSelf: mine ? "flex-end" : "flex-start", display: "flex", flexDirection: "column", alignItems: mine ? "flex-end" : "flex-start" }}>
+                  <div
+                    style={{
+                      padding: m.image && !m.text ? 4 : "10px 13px",
+                      fontSize: 14,
+                      lineHeight: 1.4,
+                      borderRadius: 16,
+                      borderBottomRightRadius: mine ? 5 : 16,
+                      borderBottomLeftRadius: mine ? 16 : 5,
+                      background: mine ? C.yellow : C.card,
+                      color: C.ink,
+                      border: mine ? "none" : `1px solid ${C.border}`,
+                      fontWeight: 500,
+                    }}
+                  >
+                    {m.image && (
+                      <img src={m.image} alt="Görsel" style={{ display: "block", maxHeight: 220, maxWidth: "100%", borderRadius: 12, objectFit: "cover", marginBottom: m.text ? 6 : 0 }} />
+                    )}
                     {m.text}
                   </div>
-                  <div className={`mt-1 text-[10.5px] text-gray-400 dark:text-navy-muted ${mine ? "text-right" : "text-left"}`}>{fmtTime(m.createdAt)}</div>
+                  <div style={{ marginTop: 4, fontSize: 10.5, color: C.faint }}>{fmtTime(m.createdAt)}</div>
                 </div>
               );
             })
           )}
         </div>
 
-        <form onSubmit={send} className="sticky bottom-2 flex items-center gap-2 rounded-2xl bg-white dark:bg-navy-card p-1.5 pl-2 shadow-md">
-          <label className="flex h-9 w-9 flex-shrink-0 cursor-pointer items-center justify-center rounded-full text-lg text-slate-500 transition hover:bg-slate-100 dark:hover:bg-navy-soft" aria-label="Fotoğraf ekle">
-            🖼️
-            <input type="file" accept="image/*" onChange={sendImage} className="hidden" />
-          </label>
-          <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Mesaj yazın…" aria-label="Mesaj" className="min-w-0 flex-1 bg-transparent text-sm text-slate-900 dark:text-slate-100 outline-none placeholder:text-gray-400 dark:placeholder:text-navy-muted" />
-          <button type="submit" className="rounded-full bg-slate-950 px-5 py-2.5 text-sm font-bold text-white dark:bg-navy-soft dark:text-slate-100">Gönder</button>
-        </form>
+        {/* Input bar */}
+        <div style={{ position: "sticky", bottom: 0, background: C.bg, padding: "10px 16px 14px", borderTop: `1px solid ${C.line}` }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, padding: 5 }}>
+            <label
+              aria-label="Fotoğraf ekle"
+              style={{ flexShrink: 0, width: 38, height: 38, borderRadius: 11, background: C.stone, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+            >
+              <Plus size={20} color={C.sub} strokeWidth={2.4} />
+              <input type="file" accept="image/*" onChange={sendImage} style={{ display: "none" }} />
+            </label>
+            <input
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); send(); } }}
+              placeholder="Mesaj yaz…"
+              aria-label="Mesaj"
+              style={{ flex: 1, minWidth: 0, border: "none", outline: "none", background: "transparent", fontFamily: SANS, fontSize: 14, color: C.ink }}
+            />
+            <button
+              onClick={send}
+              aria-label="Gönder"
+              style={{ flexShrink: 0, width: 40, height: 40, borderRadius: 12, border: "none", cursor: "pointer", background: C.yellow, display: "flex", alignItems: "center", justifyContent: "center" }}
+            >
+              <Send size={18} color={C.ink} strokeWidth={2.4} />
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
 
-  // ── Konusma listesi ──
-  return (
-    <div className="mx-auto flex w-full max-w-[460px] flex-col gap-4 px-4 pb-24 pt-2 text-slate-900 dark:text-slate-100">
-      <SEO title="Mesajlar" description="Eşleşen ilanlar üzerinden karşı tarafla mesajlaşın." />
-      <h1 className="pt-2 text-2xl font-black tracking-tight text-slate-950 dark:text-slate-100">Mesajlar</h1>
+  // ── List view (conversations) ──
+  const newCount = conversations.length;
 
+  return (
+    <div style={{ ...shell, paddingBottom: 96 }}>
+      <SEO title="Mesajlar" description="Eşleşen ilanlar üzerinden karşı tarafla mesajlaşın." />
+
+      {/* Header */}
+      <div style={{ background: C.header, padding: "18px 16px 16px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+          <h1 style={{ fontSize: 24, fontWeight: 800, margin: 0, letterSpacing: "-0.03em" }}>Mesajlar</h1>
+          {newCount > 0 && (
+            <span style={{ fontSize: 11.5, fontWeight: 800, color: C.ink, background: C.yellow, padding: "5px 11px", borderRadius: 999 }}>
+              {newCount} yeni
+            </span>
+          )}
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 9, background: C.card, border: `1px solid ${C.border}`, borderRadius: 13, padding: "11px 13px" }}>
+          <Search size={17} color={C.muted} strokeWidth={2.2} />
+          <span style={{ fontSize: 13.5, color: C.muted, fontWeight: 500 }}>Konuşmalarda ara</span>
+        </div>
+      </div>
+
+      {/* Body */}
       {conversations.length === 0 ? (
-        <div className="flex flex-col items-center gap-2 rounded-3xl bg-white dark:bg-navy-card py-14 text-center shadow-sm">
-          <div className="text-4xl">💬</div>
-          <div className="text-base font-bold text-slate-950 dark:text-slate-100">Henüz mesajlaşma yok</div>
-          <div className="text-sm text-gray-500 dark:text-slate-400">Bir teklif kabul edildiğinde konuşma burada açılır.</div>
-          <button onClick={() => navigate("/ilanlar")} className="mt-3 rounded-full bg-yellow-400 px-5 py-2.5 text-xs font-extrabold text-slate-950">İlanlara göz at</button>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: "0 28px", gap: 12 }}>
+          <div style={{ width: 64, height: 64, borderRadius: 20, background: C.header, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Send size={26} color={C.ink} strokeWidth={2.2} />
+          </div>
+          <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: "-0.02em" }}>Henüz mesajlaşma yok</div>
+          <div style={{ fontSize: 13.5, color: C.sub, lineHeight: 1.5 }}>Bir teklif kabul edildiğinde konuşma burada açılır.</div>
+          <button
+            onClick={() => navigate("/ilanlar")}
+            style={{ marginTop: 6, border: "none", cursor: "pointer", background: C.yellow, color: C.ink, fontFamily: SANS, fontSize: 13, fontWeight: 800, padding: "11px 20px", borderRadius: 999 }}
+          >
+            İlanlara göz at
+          </button>
         </div>
       ) : (
-        <div className="flex flex-col gap-2.5">
-          {conversations.map((c) => (
-            <button key={c.key} onClick={() => setSelectedKey(c.key)} className="flex w-full items-center gap-3.5 rounded-3xl bg-white dark:bg-navy-card p-4 text-left shadow-sm transition hover:-translate-y-0.5">
-              <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-lg font-extrabold text-amber-700">
-                {c.other.name?.[0]?.toUpperCase() || "?"}
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block text-sm font-bold text-slate-950 dark:text-slate-100">{c.other.name}</span>
-                <span className="block truncate text-xs text-gray-500 dark:text-slate-400">{c.listingTitle}</span>
-              </span>
-              <span className="text-2xl text-gray-300 dark:text-slate-600">›</span>
-            </button>
-          ))}
+        <div style={{ padding: "12px 12px 4px", display: "flex", flexDirection: "column", gap: 9 }}>
+          {conversations.map((c) => {
+            const { preview, time } = lastMessageOf(c);
+            return (
+              <button
+                key={c.key}
+                onClick={() => setSelectedKey(c.key)}
+                style={{ display: "flex", alignItems: "center", gap: 12, width: "100%", textAlign: "left", border: `1px solid ${C.border}`, cursor: "pointer", background: C.card, borderRadius: 16, padding: 13 }}
+              >
+                <div style={{ position: "relative", flexShrink: 0 }}>
+                  <div style={{ width: 46, height: 46, borderRadius: 14, background: C.ink, color: C.yellow, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 800, fontFamily: MONO }}>
+                    {initials(c.other.name)}
+                  </div>
+                </div>
+
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
+                    <span style={{ fontSize: 14.5, fontWeight: 800, letterSpacing: "-0.01em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.other.name}</span>
+                    {time && <span style={{ flexShrink: 0, fontSize: 10.5, color: C.faint, fontWeight: 600 }}>{time}</span>}
+                  </div>
+                  <div style={{ fontSize: 11, color: C.muted, fontWeight: 600, fontFamily: MONO, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: 1 }}>{c.listingTitle}</div>
+                  <div style={{ fontSize: 13, color: C.sub, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: 2 }}>{preview}</div>
+                </div>
+              </button>
+            );
+          })}
         </div>
       )}
     </div>
