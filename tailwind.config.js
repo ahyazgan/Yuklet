@@ -21,9 +21,18 @@ export default {
           DEFAULT: "#FACC15", // koyu tema sarisi (= yellow-400)
           600: "#F5B301", // acik tema sarisi
         },
+        // HamTed "SAHA" marka paleti (tek dogruluk kaynagi: DESIGN-palette.md)
+        // antrasit + hazard sarisi + manila — mavisiz, kurumsal/sahaya ait.
+        ham: {
+          ink: "#0A0A0A", header: "#1C1A17", yellow: "#FACC15", yellowDeep: "#E0B400",
+          green: "#16803C", red: "#DC2626", bg: "#E4DED2", card: "#FAF9F6",
+          stone: "#EFEBE2", border: "#D6CEBD", line: "#EAE5DB",
+          sub: "#5A5852", muted: "#9A968D", faint: "#A8A39A",
+        },
       },
       fontFamily: {
-        sans: ["Outfit", "Plus Jakarta Sans", "sans-serif"],
+        sans: ["Plus Jakarta Sans", "Outfit", "system-ui", "sans-serif"],
+        mono: ["Space Mono", "SFMono-Regular", "ui-monospace", "monospace"],
       },
       borderRadius: {
         "4xl": "2rem",
