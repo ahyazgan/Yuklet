@@ -1,6 +1,6 @@
 // HamTed — Ilan Detay (SAHA visual language).
 // Visual: SAHA palette + Space Mono + inline-style shell.
-// Functionality preserved 1:1 from the previous MoveIQ version:
+// Functionality preserved 1:1:
 // offer submit, owner/closed/guest states, price estimate, backhaul,
 // incoming offers list, report modal, share. Bottom tab bar is GLOBAL
 // (App.jsx <MobileTabBar>) — this page only leaves bottom padding.

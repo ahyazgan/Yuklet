@@ -17,21 +17,21 @@ export default function LocationPicker({ pickup, dropoff, onChange }) {
   };
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-gray-200 dark:border-navy-line" style={{ height: 300 }}>
+    <div className="overflow-hidden rounded-2xl border border-ham-border" style={{ height: 300 }}>
       <MapContainer center={[39.3, 35.2]} zoom={6} scrollWheelZoom={false} style={{ height: "100%", width: "100%" }}>
         <TileLayer attribution="&copy; OpenStreetMap" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
         <Clicker onClick={handleClick} />
         {pickup && (
-          <CircleMarker center={pickup} radius={9} pathOptions={{ color: "#16a34a", fillColor: "#22c55e", fillOpacity: 0.9, weight: 2 }}>
+          <CircleMarker center={pickup} radius={9} pathOptions={{ color: "#16803C", fillColor: "#16803C", fillOpacity: 0.9, weight: 2 }}>
             <Tooltip>Yükleme</Tooltip>
           </CircleMarker>
         )}
         {dropoff && (
-          <CircleMarker center={dropoff} radius={9} pathOptions={{ color: "#dc2626", fillColor: "#ef4444", fillOpacity: 0.9, weight: 2 }}>
+          <CircleMarker center={dropoff} radius={9} pathOptions={{ color: "#DC2626", fillColor: "#DC2626", fillOpacity: 0.9, weight: 2 }}>
             <Tooltip>Boşaltma</Tooltip>
           </CircleMarker>
         )}
-        {pickup && dropoff && <Polyline positions={[pickup, dropoff]} pathOptions={{ color: "#F5B301", weight: 3, dashArray: "6 6" }} />}
+        {pickup && dropoff && <Polyline positions={[pickup, dropoff]} pathOptions={{ color: "#FACC15", weight: 3, dashArray: "6 6" }} />}
       </MapContainer>
     </div>
   );

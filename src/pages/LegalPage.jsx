@@ -190,26 +190,26 @@ export default function LegalPage() {
 
   if (!page) {
     return (
-      <div className="mx-auto flex w-full max-w-3xl flex-col items-center gap-2 px-5 py-16 text-center text-slate-900 dark:text-slate-100">
+      <div className="mx-auto flex w-full max-w-3xl flex-col items-center gap-2 px-5 py-16 text-center text-ham-ink">
         <div className="text-4xl">📜</div>
-        <div className="text-base font-bold text-slate-950 dark:text-slate-100">Sayfa bulunamadı</div>
-        <Link to="/" className="text-sm font-bold text-amber-600">Ana sayfaya dön</Link>
+        <div className="text-base font-bold text-ham-ink">Sayfa bulunamadı</div>
+        <Link to="/" className="text-sm font-bold text-ham-ink">Ana sayfaya dön</Link>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-5 py-8 text-slate-900 dark:text-slate-100">
+    <div className="mx-auto w-full max-w-3xl px-5 py-8 text-ham-ink">
       <SEO title={page.title} description={page.title + " - HamTed Teknoloji A.Ş."} />
-      <div className="rounded-3xl bg-white dark:bg-navy-card p-7 shadow-sm">
-        <h1 className="mb-1 text-2xl font-black tracking-tight text-slate-950 dark:text-slate-100">{page.title}</h1>
-        <div className="mb-6 text-xs text-gray-400 dark:text-navy-muted">Son güncelleme: 1 Ocak 2026 · HamTed Teknoloji A.Ş.</div>
-        <div className="text-sm leading-relaxed text-gray-600 dark:text-slate-300">
+      <div className="rounded-3xl border border-ham-border bg-ham-card p-7 shadow-sm">
+        <h1 className="mb-1 text-2xl font-black tracking-tight text-ham-ink">{page.title}</h1>
+        <div className="mb-6 text-xs text-ham-muted">Son güncelleme: 1 Ocak 2026 · HamTed Teknoloji A.Ş.</div>
+        <div className="text-sm leading-relaxed text-ham-sub">
           {page.content.split("\n").map((line, i) => {
-            if (line.startsWith("## ")) return <h2 key={i} className="mb-2 mt-6 text-lg font-bold text-slate-950 dark:text-slate-100">{line.replace("## ", "")}</h2>;
+            if (line.startsWith("## ")) return <h2 key={i} className="mb-2 mt-6 text-lg font-bold text-ham-ink">{line.replace("## ", "")}</h2>;
             if (line.startsWith("- **")) {
               const parts = line.replace("- **", "").split(":**");
-              return <div key={i} className="mb-1.5 pl-1"><strong className="text-slate-900 dark:text-slate-100">{parts[0]}:</strong>{parts[1]}</div>;
+              return <div key={i} className="mb-1.5 pl-1"><strong className="text-ham-ink">{parts[0]}:</strong>{parts[1]}</div>;
             }
             if (line.startsWith("- ")) return <div key={i} className="mb-1.5 pl-1">{line.replace("- ", "• ")}</div>;
             if (line.trim() === "") return <br key={i} />;

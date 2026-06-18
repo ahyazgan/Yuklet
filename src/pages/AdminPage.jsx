@@ -17,22 +17,22 @@ export default function AdminPage({ user, reports = [], docs = [], users = [], l
 
   if (!user) {
     return (
-      <div className="mx-auto flex w-full max-w-[460px] flex-col items-center gap-3 px-4 pt-12 text-center text-slate-900 dark:text-slate-100">
+      <div className="mx-auto flex w-full max-w-[460px] flex-col items-center gap-3 px-4 pt-12 text-center text-ham-ink">
         <SEO title="Yönetim" />
         <div className="text-5xl">🔒</div>
         <h1 className="text-xl font-bold">Yönetim için giriş yapın</h1>
-        <button onClick={() => onRequireAuth?.()} className="mt-2 rounded-full bg-slate-950 px-5 py-3 text-sm font-bold text-white dark:bg-navy-soft">Giriş yap</button>
+        <button onClick={() => onRequireAuth?.()} className="mt-2 rounded-full bg-ham-ink px-5 py-3 text-sm font-bold text-[#FAF9F6]">Giriş yap</button>
       </div>
     );
   }
   if (!isAdmin(user)) {
     return (
-      <div className="mx-auto flex w-full max-w-[460px] flex-col items-center gap-3 px-4 pt-16 text-center text-slate-900 dark:text-slate-100">
+      <div className="mx-auto flex w-full max-w-[460px] flex-col items-center gap-3 px-4 pt-16 text-center text-ham-ink">
         <SEO title="Yönetim" />
         <div className="text-5xl">⛔</div>
         <h1 className="text-xl font-bold">Bu alana erişiminiz yok</h1>
-        <p className="text-sm text-gray-500 dark:text-slate-400">Yönetim paneli yalnızca platform yöneticilerine açıktır.</p>
-        <button onClick={() => navigate("/")} className="mt-2 rounded-full bg-yellow-400 px-5 py-2.5 text-xs font-extrabold text-slate-950">Ana sayfa</button>
+        <p className="text-sm text-ham-sub">Yönetim paneli yalnızca platform yöneticilerine açıktır.</p>
+        <button onClick={() => navigate("/")} className="mt-2 rounded-full bg-ham-yellow px-5 py-2.5 text-xs font-extrabold text-ham-ink">Ana sayfa</button>
       </div>
     );
   }
@@ -42,15 +42,15 @@ export default function AdminPage({ user, reports = [], docs = [], users = [], l
   const titleOf = (id) => listings.find((l) => String(l.id) === String(id))?.title || ("#" + id);
 
   return (
-    <div className="mx-auto flex w-full max-w-[640px] flex-col gap-4 px-4 pb-24 pt-2 text-slate-900 dark:text-slate-100">
+    <div className="mx-auto flex w-full max-w-[640px] flex-col gap-4 px-4 pb-24 pt-2 text-ham-ink">
       <SEO title="Yönetim Paneli" description="HamTed moderasyon paneli." />
       <div className="flex items-center justify-between pt-2">
         <h1 className="text-2xl font-black tracking-tight">Yönetim</h1>
-        <span className="rounded-full bg-slate-950 px-3 py-1 text-[11px] font-bold text-yellow-400 dark:bg-navy-soft">admin</span>
+        <span className="rounded-full bg-ham-ink px-3 py-1 text-[11px] font-bold text-ham-yellow">admin</span>
       </div>
 
       {isSupabaseConfigured && (
-        <div className="rounded-2xl bg-amber-50 px-4 py-3 text-[12px] font-semibold text-amber-800 dark:bg-navy-soft dark:text-yellow-300">
+        <div className="rounded-2xl bg-ham-stone px-4 py-3 text-[12px] font-semibold text-ham-sub">
           ⚠️ Supabase modunda moderasyon için servis-rolü (admin API) gerekir. Şu an yerel görünüm; tam yetki gerçek admin entegrasyonunda açılacak.
         </div>
       )}
@@ -58,18 +58,18 @@ export default function AdminPage({ user, reports = [], docs = [], users = [], l
       {/* Özet */}
       <div className="grid grid-cols-3 gap-2.5">
         {[["Açık şikayet", openReports], ["Bekleyen belge", pendingDocs], ["Kullanıcı", users.length || "—"]].map(([k, v]) => (
-          <div key={k} className="rounded-2xl bg-white p-3.5 text-center shadow-sm dark:bg-navy-card">
-            <div className="text-2xl font-extrabold">{v}</div>
-            <div className="text-[11px] text-gray-500 dark:text-slate-400">{k}</div>
+          <div key={k} className="rounded-2xl border border-ham-border bg-ham-card p-3.5 text-center shadow-sm">
+            <div className="text-2xl font-extrabold font-mono">{v}</div>
+            <div className="text-[11px] text-ham-sub">{k}</div>
           </div>
         ))}
       </div>
 
       {/* Sekmeler */}
-      <div className="flex gap-1.5 rounded-2xl bg-slate-100 p-1 dark:bg-navy-soft">
+      <div className="flex gap-1.5 rounded-2xl bg-ham-stone p-1">
         {TABS.map(([k, lbl]) => (
           <button key={k} onClick={() => setTab(k)}
-            className={`flex-1 rounded-xl py-2 text-sm font-bold transition ${tab === k ? "bg-white text-slate-950 shadow-sm dark:bg-navy-card dark:text-slate-100" : "text-gray-500 dark:text-slate-400"}`}>
+            className={`flex-1 rounded-xl py-2 text-sm font-bold transition ${tab === k ? "bg-ham-card text-ham-ink shadow-sm" : "text-ham-sub"}`}>
             {lbl}
           </button>
         ))}
@@ -79,19 +79,19 @@ export default function AdminPage({ user, reports = [], docs = [], users = [], l
       {tab === "reports" && (
         <div className="flex flex-col gap-2.5">
           {reports.length === 0 ? <Empty text="Şikayet yok." /> : reports.map((r) => (
-            <div key={r.id} className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm dark:border-navy-line dark:bg-navy-card">
+            <div key={r.id} className="rounded-2xl border border-ham-border bg-ham-card p-4 shadow-sm">
               <div className="mb-1 flex items-start justify-between gap-2">
                 <div className="font-bold">{r.reason}</div>
-                <StatusBadge status={r.status} map={{ acik: ["Açık", "bg-rose-100 text-rose-700"], inceleniyor: ["İnceleniyor", "bg-amber-100 text-amber-700"], kapali: ["Kapalı", "bg-emerald-100 text-emerald-700"] }} />
+                <StatusBadge status={r.status} map={{ acik: ["Açık", "bg-ham-stone text-ham-red"], inceleniyor: ["İnceleniyor", "bg-ham-yellow text-ham-ink"], kapali: ["Kapalı", "bg-ham-stone text-ham-green"] }} />
               </div>
-              <div className="text-[12px] text-gray-500 dark:text-slate-400">
-                {r.type === "user" ? "Kullanıcı" : "İlan"} hakkında · {r.fromName || "misafir"} · {fmt(r.createdAt)}
+              <div className="text-[12px] text-ham-sub">
+                {r.type === "user" ? "Kullanıcı" : "İlan"} hakkında · {r.fromName || "misafir"} · <span className="font-mono">{fmt(r.createdAt)}</span>
               </div>
-              {r.description && <p className="mt-2 rounded-xl bg-slate-50 p-2.5 text-[13px] dark:bg-navy-soft">{r.description}</p>}
-              {r.listingId && <div className="mt-1 text-[12px] text-gray-400">İlgili ilan: {titleOf(r.listingId)}</div>}
+              {r.description && <p className="mt-2 rounded-xl bg-ham-stone p-2.5 text-[13px]">{r.description}</p>}
+              {r.listingId && <div className="mt-1 text-[12px] text-ham-muted">İlgili ilan: {titleOf(r.listingId)}</div>}
               <div className="mt-3 flex gap-2">
-                <button onClick={() => onSetReportStatus?.(r.id, "inceleniyor")} className="rounded-lg bg-amber-100 px-3 py-1.5 text-[12px] font-bold text-amber-700">İncelemeye al</button>
-                <button onClick={() => onSetReportStatus?.(r.id, "kapali")} className="rounded-lg bg-emerald-100 px-3 py-1.5 text-[12px] font-bold text-emerald-700">Kapat</button>
+                <button onClick={() => onSetReportStatus?.(r.id, "inceleniyor")} className="rounded-lg bg-ham-yellow px-3 py-1.5 text-[12px] font-bold text-ham-ink">İncelemeye al</button>
+                <button onClick={() => onSetReportStatus?.(r.id, "kapali")} className="rounded-lg bg-ham-stone px-3 py-1.5 text-[12px] font-bold text-ham-green">Kapat</button>
               </div>
             </div>
           ))}
@@ -102,22 +102,22 @@ export default function AdminPage({ user, reports = [], docs = [], users = [], l
       {tab === "docs" && (
         <div className="flex flex-col gap-2.5">
           {docs.length === 0 ? <Empty text="Yüklenmiş belge yok." /> : docs.map((d) => (
-            <div key={d.id} className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-white p-3.5 shadow-sm dark:border-navy-line dark:bg-navy-card">
+            <div key={d.id} className="flex items-center gap-3 rounded-2xl border border-ham-border bg-ham-card p-3.5 shadow-sm">
               {String(d.dataUrl || d.url).startsWith("data:image")
                 ? <img src={d.dataUrl || d.url} alt="" className="h-12 w-12 shrink-0 rounded-lg object-cover" />
-                : <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-xl dark:bg-navy-soft">📄</span>}
+                : <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-ham-stone text-xl">📄</span>}
               <div className="min-w-0 flex-1">
                 <div className="text-sm font-bold">{d.type}</div>
-                <div className="truncate text-[12px] text-gray-400">{d.name}</div>
+                <div className="truncate text-[12px] text-ham-muted">{d.name}</div>
               </div>
               {(d.status || "beklemede") === "dogrulandi" ? (
-                <span className="rounded-lg bg-emerald-100 px-2.5 py-1 text-[11px] font-bold text-emerald-700">✓ Onaylı</span>
+                <span className="rounded-lg bg-ham-stone px-2.5 py-1 text-[11px] font-bold text-ham-green">✓ Onaylı</span>
               ) : (d.status === "red") ? (
-                <span className="rounded-lg bg-rose-100 px-2.5 py-1 text-[11px] font-bold text-rose-700">Reddedildi</span>
+                <span className="rounded-lg bg-ham-stone px-2.5 py-1 text-[11px] font-bold text-ham-red">Reddedildi</span>
               ) : (
                 <div className="flex shrink-0 gap-1.5">
-                  <button onClick={() => onReviewDoc?.(d.id, "dogrulandi")} className="rounded-lg bg-emerald-500 px-3 py-1.5 text-[12px] font-bold text-white">Onayla</button>
-                  <button onClick={() => onReviewDoc?.(d.id, "red")} className="rounded-lg bg-rose-100 px-3 py-1.5 text-[12px] font-bold text-rose-700">Reddet</button>
+                  <button onClick={() => onReviewDoc?.(d.id, "dogrulandi")} className="rounded-lg px-3 py-1.5 text-[12px] font-bold text-[#FAF9F6]" style={{ background: "#16803C" }}>Onayla</button>
+                  <button onClick={() => onReviewDoc?.(d.id, "red")} className="rounded-lg bg-ham-stone px-3 py-1.5 text-[12px] font-bold text-ham-red">Reddet</button>
                 </div>
               )}
             </div>
@@ -129,15 +129,15 @@ export default function AdminPage({ user, reports = [], docs = [], users = [], l
       {tab === "users" && (
         <div className="flex flex-col gap-2.5">
           {users.length === 0 ? <Empty text="Kullanıcı listesi bu modda görünmüyor." /> : users.map((u) => (
-            <div key={u.id} className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-white p-3.5 shadow-sm dark:border-navy-line dark:bg-navy-card">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100 font-extrabold text-amber-700">{(u.name || "?").charAt(0).toUpperCase()}</div>
+            <div key={u.id} className="flex items-center gap-3 rounded-2xl border border-ham-border bg-ham-card p-3.5 shadow-sm">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-ham-yellow font-extrabold text-ham-ink">{(u.name || "?").charAt(0).toUpperCase()}</div>
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm font-bold">{u.name}</div>
-                <div className="truncate text-[12px] text-gray-400">{u.email} · {u.role}</div>
+                <div className="truncate text-[12px] text-ham-muted">{u.email} · {u.role}</div>
               </div>
               <div className="flex shrink-0 gap-1">
-                {u.verified && <span className="rounded-lg bg-emerald-100 px-2 py-1 text-[10px] font-bold text-emerald-700">✓ Onaylı</span>}
-                {u.phoneVerified && <span className="rounded-lg bg-sky-100 px-2 py-1 text-[10px] font-bold text-sky-700">📱</span>}
+                {u.verified && <span className="rounded-lg bg-ham-stone px-2 py-1 text-[10px] font-bold text-ham-green">✓ Onaylı</span>}
+                {u.phoneVerified && <span className="rounded-lg bg-ham-stone px-2 py-1 text-[10px] font-bold text-ham-sub">📱</span>}
               </div>
             </div>
           ))}
@@ -152,5 +152,5 @@ function StatusBadge({ status, map }) {
   return <span className={`rounded-lg px-2 py-0.5 text-[11px] font-bold ${cls}`}>{label}</span>;
 }
 function Empty({ text }) {
-  return <div className="rounded-2xl bg-white py-12 text-center text-sm text-gray-400 shadow-sm dark:bg-navy-card dark:text-slate-500">{text}</div>;
+  return <div className="rounded-2xl border border-ham-border bg-ham-card py-12 text-center text-sm text-ham-muted shadow-sm">{text}</div>;
 }
