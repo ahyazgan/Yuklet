@@ -27,7 +27,6 @@ import { LISTINGS } from "./data/listings";
 
 // Lazy loaded pages
 const NakliyeHome = lazy(() => import("./pages/NakliyeHome"));
-const SahaHome = lazy(() => import("./pages/SahaHome"));
 const ListingsPage = lazy(() => import("./pages/ListingsPage"));
 const IlanDetayPage = lazy(() => import("./pages/IlanDetayPage"));
 const TakipPage = lazy(() => import("./pages/TakipPage"));
@@ -313,7 +312,6 @@ function AppShell() {
             <AnimatePresence mode="wait">
               <Routes location={location} key={location.pathname}>
                 <Route path="/" element={<PageTransition><NakliyeHome listings={listings} user={user} offers={offers} pendingOffersCount={pendingOffersCount} unreadCount={unreadCount} onLoginClick={requireAuth} /></PageTransition>} />
-                <Route path="/saha" element={<PageTransition><SahaHome listings={listings} user={user} pendingOffersCount={pendingOffersCount} /></PageTransition>} />
                 <Route path="/ilanlar" element={<PageTransition><ListingsPage listings={listings} /></PageTransition>} />
                 <Route path="/ilan/:id" element={<PageTransition><IlanDetayPage listings={listings} user={user} onRequireAuth={requireAuth} offers={offers} onAddOffer={addOffer} onReport={addReport} /></PageTransition>} />
                 <Route path="/takip/:id" element={<PageTransition><TakipPage listings={listings} user={user} offers={offers} getContact={getContact} reviews={reviews} onAddReview={addReview} getUserRating={getUserRating} onUpdateListing={updateListing} onReport={addReport} onPayToEscrow={payToEscrow} onReleasePayment={releasePayment} /></PageTransition>} />
