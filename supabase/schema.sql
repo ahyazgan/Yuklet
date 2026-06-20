@@ -115,8 +115,14 @@ begin
   values (
     new.id,
     new.email,
-    coalesce(new.raw_user_meta_data->>'name', split_part(new.email, '@', 1)),
-    coalesce(new.raw_user_meta_data->>'role', 'isveren'),
+    -- OAuth (Google/Apple) ad alani: full_name > name > e-posta yerel kismi
+    coalesce(
+      new.raw_user_meta_data->>'full_name',
+      new.raw_user_meta_data->>'name',
+      split_part(coalesce(new.email, ''), '@', 1)
+    ),
+    -- Rol OAuth'tan gelmez: bos birak -> uygulama RoleSelectModal ile sordurur.
+    coalesce(new.raw_user_meta_data->>'role', ''),
     coalesce(new.raw_user_meta_data->>'phone', '')
   )
   on conflict (id) do nothing;

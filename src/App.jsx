@@ -20,6 +20,7 @@ import PageTransition from "./components/PageTransition";
 
 import MobileTabBar from "./components/MobileTabBar";
 import AuthModal from "./components/AuthModal";
+import RoleSelectModal from "./components/RoleSelectModal";
 import OnboardingModal from "./components/OnboardingModal";
 import InstallPrompt from "./components/InstallPrompt";
 
@@ -67,21 +68,6 @@ function AppShell() {
 
   // ── VERI KATMANI: Supabase yapilandirilmissa async DB, yoksa localStorage ──
   const SB = isSupabaseConfigured;
-
-  // TEMP (inceleme): login ekrani gecici olarak devre disi. Sahte test kullanicisi
-  // ile tum sayfalar giris yapmadan gezilebilir. Rol ?rol=muteahhit|nakliyeci|tedarikci
-  // ile degisir; alt sag kosede gecici rol secici buton vardir. Geri almak icin
-  // bu blogu, user/authReady baslangicini, SB hydrate override'ini ve <PreviewRoleSwitcher>'i sil.
-  const _previewRole = (() => {
-    const r = new URLSearchParams(location.search).get("rol");
-    return ["muteahhit", "nakliyeci", "tedarikci"].includes(r) ? r : "muteahhit";
-  })();
-  const PREVIEW_NAMES = { muteahhit: "Yildizlar Insaat", nakliyeci: "Demir Nakliyat", tedarikci: "Aliaga Micir Ocagi" };
-  const PREVIEW_USER = {
-    id: "preview-user", name: PREVIEW_NAMES[_previewRole],
-    email: "preview@hamted.local", role: _previewRole,
-    phone: "", verified: true, rating: 5.0,
-  };
 
   // Ilanlar
   // SB modunda demo ilanlar veritabaninda (seed) oldugu icin LISTINGS eklenmez.
@@ -193,25 +179,43 @@ function AppShell() {
   // ── Kullanici / kimlik dogrulama ──
   const [users, setUsers] = useState(() => loadUsers());            // sadece localStorage modunda kullanilir
   useEffect(() => { if (!SB) saveUsers(users); }, [users, SB]);
-  const [user, setUser] = useState(PREVIEW_USER);                   // TEMP: inceleme — sahte kullanici
+  const [user, setUser] = useState(() => (SB ? null : loadUser()));  // localStorage'da kayitli kullanici
   const [profile, setProfile] = useState(null);                     // SB modunda profiles satiri
   useEffect(() => { if (!SB) saveUser(user); }, [user, SB]);
-  const [authReady] = useState(true);                               // TEMP: inceleme — auth beklemeden hazir
+  const [authReady, setAuthReady] = useState(!SB);                  // SB modunda oturum yuklenince hazir
   const [showAuth, setShowAuth] = useState(false);
+  const [showRole, setShowRole] = useState(false);
   const [showOnboard, setShowOnboard] = useState(() => !loadOnboarded());
   const finishOnboard = () => { saveOnboarded(); setShowOnboard(false); };
 
-  // SB: oturum degisimini dinle, profil + verileri yukle
+  // Giris yapilmis ama rolu yok (OAuth ilk giris) -> rol secim modali ac.
+  useEffect(() => {
+    if (!authReady) return;
+    const u = profile || user;
+    setShowRole(Boolean(u && !u.role));
+  }, [authReady, user, profile]);
+
+  // SB: oturum degisimini dinle, profil + ortak verileri yukle
   useEffect(() => {
     if (!SB) return;
-    // TEMP (inceleme): oturum dinleme/hydrate kapali — sahte kullanici korunur.
-    // Veri yuklemesi (listings/offers/messages/reviews) yine de calisir.
+    // Ortak veri (herkese acik ilanlar vb.) oturumdan bagimsiz yuklenir.
     (async () => {
       await Promise.all([reloadListings(), reloadOffers(),
         api.fetchMessages().then(setMessages).catch(() => {}),
         api.fetchReviews().then(setReviews).catch(() => {})]);
     })();
-    return () => {};
+    // Oturum: mevcut kullaniciyi al, sonra degisimleri dinle.
+    const hydrate = async (sbUser) => {
+      if (sbUser) {
+        const prof = await api.getProfile(sbUser.id).catch(() => null);
+        // Rol bos ise needsRole akisi RoleSelectModal'i acar (role: "" birakilir).
+        setProfile(prof); setUser(prof || { id: sbUser.id, name: sbUser.email || "", role: "", phone: "" });
+      } else { setProfile(null); setUser(null); }
+      setAuthReady(true);
+    };
+    api.getSessionUser().then(hydrate).catch(() => setAuthReady(true));
+    const unsub = api.onAuthChange(hydrate);
+    return () => { try { unsub?.(); } catch { /* noop */ } };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -221,24 +225,23 @@ function AppShell() {
     api.fetchDocs(user.id).then(setDocs).catch(() => {});
   }, [SB, user?.id]);
 
-  const registerUser = async ({ name, email, password, role, phone }) => {
-    if (SB) return api.signUp({ name, email, password, role, phone });
-    if (users.some(u => u.email.toLowerCase() === email.toLowerCase()))
-      return { ok: false, error: "Bu e-posta zaten kayitli. Giris yapin." };
-    const newUser = { id: Date.now(), name, email, password, role, phone: phone || "", verified: false, rating: 5.0 };
-    setUsers(prev => [...prev, newUser]);
-    const { password: _pw, ...safe } = newUser;
-    setUser(safe);
+  // ── Giris: GOOGLE / APPLE (OAuth, sifresiz) ──────────────────
+  // SB modunda Supabase saglayiciya yonlendirir; donuste onAuthChange oturumu
+  // kurar. localStorage modunda (anahtar yoksa) sahte bir OAuth kullanicisi acar
+  // — gelistirme/onizleme icin. Rol Google/Apple'dan gelmez -> needsRole akisi.
+  const startOAuth = async (provider) => {
+    if (SB) return api.signInWithProvider(provider); // tarayici yonlendirilir
+    // localStorage modu: sahte hesap (rol henuz yok -> rol secim modali acilir)
+    const fake = { id: Date.now(), name: provider === "apple" ? "Apple Kullanici" : "Google Kullanici", email: "", role: "", provider, verified: false, rating: 5.0 };
+    setUsers(prev => prev.some(u => u.id === fake.id) ? prev : [...prev, fake]);
+    setUser(fake);
+    setShowAuth(false);
     return { ok: true };
   };
-  const loginUser = async ({ email, password }) => {
-    if (SB) return api.signIn({ email, password });
-    const found = users.find(u => u.email.toLowerCase() === email.toLowerCase());
-    if (!found) return { ok: false, error: "Kullanici bulunamadi. Once kayit olun." };
-    if (found.password && found.password !== password) return { ok: false, error: "Sifre hatali." };
-    const { password: _pw, ...safe } = found;
-    setUser(safe);
-    return { ok: true };
+  // Ilk giriste rol secimi -> profile yaz
+  const chooseRole = async (role) => {
+    await updateProfile({ role });
+    setShowRole(false);
   };
   const logout = async () => { if (SB) { await api.signOut().catch(() => {}); } setUser(null); setProfile(null); };
   const requireAuth = () => setShowAuth(true);
@@ -342,37 +345,9 @@ function AppShell() {
       <InstallPrompt />
       <MobileTabBar unreadCount={unreadCount} />
 
-      {showAuth && <AuthModal onClose={() => setShowAuth(false)} onLogin={loginUser} onRegister={registerUser} />}
-      {showOnboard && !showAuth && <OnboardingModal onClose={finishOnboard} />}
-
-      {/* TEMP (inceleme): rol secici — login kapaliyken 3 rolu gormek icin. Geri alirken sil. */}
-      <PreviewRoleSwitcher current={_previewRole} />
-    </div>
-  );
-}
-
-/* TEMP (inceleme): gecici rol secici. Login geri acilinca bu bileseni ve cagirisini sil. */
-function PreviewRoleSwitcher({ current }) {
-  const roles = [
-    { k: "muteahhit", t: "Muteahhit" },
-    { k: "nakliyeci", t: "Nakliyeci" },
-    { k: "tedarikci", t: "Tedarikci" },
-  ];
-  const go = (k) => { window.location.assign(`/?rol=${k}`); };
-  return (
-    <div style={{
-      position: "fixed", bottom: 88, left: "50%", transform: "translateX(-50%)",
-      zIndex: 9999, display: "flex", gap: 4, padding: 4, borderRadius: 999,
-      background: "#0A0A0A", boxShadow: "0 10px 30px -8px rgba(0,0,0,.5)",
-    }}>
-      {roles.map((r) => (
-        <button key={r.k} onClick={() => go(r.k)} style={{
-          padding: "6px 12px", borderRadius: 999, border: "none", cursor: "pointer",
-          fontSize: 11, fontWeight: 700,
-          background: current === r.k ? "#FACC15" : "transparent",
-          color: current === r.k ? "#0A0A0A" : "#C9C7C0",
-        }}>{r.t}</button>
-      ))}
+      {showAuth && !showRole && <AuthModal onClose={() => setShowAuth(false)} onProvider={startOAuth} />}
+      {showRole && <RoleSelectModal onSelect={chooseRole} />}
+      {showOnboard && !showAuth && !showRole && <OnboardingModal onClose={finishOnboard} />}
     </div>
   );
 }

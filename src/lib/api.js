@@ -85,6 +85,20 @@ export async function signIn({ email, password }) {
 
 export async function signOut() { await supabase.auth.signOut(); }
 
+// ── OAuth giris (Google / Apple) ─────────────────────────────
+// Supabase saglayiciya yonlendirir; donuste detectSessionInUrl oturumu kurar.
+// Provider'lar Supabase panelinden (Authentication > Providers) acik olmalidir.
+// Rol Google/Apple'dan gelmez -> ilk giriste RoleSelectModal ile secilir, profile
+// yazilir. Trigger handle_new_user profili olusturur (role bos baslar).
+export async function signInWithProvider(provider) {
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider, // "google" | "apple"
+    options: { redirectTo: window.location.origin },
+  });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true }; // tarayici yonlendirilir; sonuc donuste isAuthChange ile gelir
+}
+
 export async function getSessionUser() {
   const { data } = await supabase.auth.getUser();
   return data?.user || null;
