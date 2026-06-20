@@ -64,7 +64,7 @@ export default function IletisimPage() {
 
   return (
     <div style={shell}>
-      <SEO title="İletişim" description="HamTed ile iletişime geçin. İlan, teklif ve nakliye süreci hakkındaki sorularınız için bize ulaşın." />
+      <SEO title="İletişim" description="DAYIM ile iletişime geçin. İlan, teklif ve nakliye süreci hakkındaki sorularınız için bize ulaşın." />
 
       {/* App bar */}
       <div

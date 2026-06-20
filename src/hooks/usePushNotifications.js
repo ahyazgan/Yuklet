@@ -24,7 +24,7 @@ export default function usePushNotifications(items, enabled) {
     for (const n of fresh) {
       seenIds.current.add(n.id);
       showPush({
-        title: "HamTed",
+        title: "DAYIM",
         body: `${n.icon ? n.icon + " " : ""}${n.text}`,
         tag: n.id,
         link: n.link,

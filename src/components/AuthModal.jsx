@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Logo from "./Logo";
 
 // ── SAHA Giriş modal — GOOGLE / APPLE ile giriş (OAuth, şifresiz). 2px ink çerçeve
 // · hazard şeridi · Archivo uppercase · Space Mono. Sağlayıcıya yönlendirir; rol
@@ -76,12 +77,11 @@ export default function AuthModal({ onClose, onProvider }) {
 
           {/* logo + başlık */}
           <div className="mb-6 text-center">
-            <div
-              className="mx-auto mb-3.5 flex h-12 w-12 items-center justify-center"
-              style={{ background: C.ink, borderRadius: 6, color: C.yellow, fontFamily: ARCH, fontWeight: 900, fontSize: 26 }}
-            >H</div>
+            <div className="mb-3.5 flex justify-center">
+              <Logo size="lg" />
+            </div>
             <h3 className="text-[20px] font-extrabold uppercase" style={{ color: C.ink, fontFamily: ARCH, letterSpacing: "-0.02em" }}>
-              HamTed'e Giriş
+              Giriş Yap
             </h3>
             <p className="mt-1.5 text-[12px]" style={{ color: C.sub, fontFamily: MONO }}>
               Hesabınla devam et — kayıt ayrı değil

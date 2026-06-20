@@ -1,4 +1,4 @@
-// HamTed — İlanlar Haritası (SAHA marka dili)
+// DAYIM — İlanlar Haritası (SAHA marka dili)
 // Açık (light) Leaflet haritası + SAHA stilinde marker/zoom/önizleme kartı.
 // Marker'lar divIcon ile mono rozet (İL · adet) — 2px ink çerçeve, küçük ok ucu.
 // Leaflet tile/davranışına dokunulmaz; props (listings, onPickIl) korunur.

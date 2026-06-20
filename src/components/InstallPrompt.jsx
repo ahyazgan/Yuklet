@@ -89,7 +89,7 @@ export default function InstallPrompt() {
               color: "#0A0A0A",
             }}
           >
-            HamTed'i Yükle
+            DAYIM'i Yükle
           </div>
           <div
             style={{

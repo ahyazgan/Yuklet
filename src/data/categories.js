@@ -1,4 +1,4 @@
-// HamTed - 3 tarafli platform: Alici/Muteahhit | Tedarikci | Nakliyeci
+// DAYIM - 3 tarafli platform: Alici/Muteahhit | Tedarikci | Nakliyeci
 // Tasima kategorileri (hafriyat + silobas) + genisletilmis yuk/arac tipleri
 
 export const CATS = [

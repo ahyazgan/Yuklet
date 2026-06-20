@@ -1,6 +1,6 @@
 // ╔══════════════════════════════════════════════════════════════════╗
 // ║  e-İrsaliye (e-Sevk) & e-Fatura belge üreticisi                     ║
-// ║  Resmi alanları (ETTN, GTİP, GİB senaryo, KDV) HamTed iş verisinden ║
+// ║  Resmi alanları (ETTN, GTİP, GİB senaryo, KDV) DAYIM iş verisinden ║
 // ║  türetir. Gerçek GİB gönderimi lib/eInvoiceProvider.js'de.          ║
 // ╚══════════════════════════════════════════════════════════════════╝
 

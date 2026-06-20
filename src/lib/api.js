@@ -1,7 +1,7 @@
 import { supabase } from "./supabase";
 
 // ╔══════════════════════════════════════════════════════════════════╗
-// ║  HamTed — Supabase veri katmani (asenkron).                        ║
+// ║  DAYIM — Supabase veri katmani (asenkron).                        ║
 // ║  DB snake_case <-> app camelCase donusumu burada yapilir; boylece  ║
 // ║  sayfalarin kullandigi veri sekli (l.dateText, o.fromUser...) ayni ║
 // ║  kalir. App.jsx bu fonksiyonlari kullanacak (cutover sonraki adim).║

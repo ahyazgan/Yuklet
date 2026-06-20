@@ -29,7 +29,7 @@ export function showPush({ title, body, icon, tag, link } = {}) {
   // Kullanıcı zaten uygulamaya bakıyorsa (sekme önde) bildirim gösterme — gürültü olmasın.
   if (typeof document !== "undefined" && document.visibilityState === "visible") return null;
   try {
-    const n = new Notification(title || "HamTed", {
+    const n = new Notification(title || "DAYIM", {
       body: body || "",
       icon: icon || "/favicon.ico",
       badge: "/favicon.ico",

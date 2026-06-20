@@ -1,4 +1,4 @@
-// HamTed — İlanlar (SAHA marka dili)
+// DAYIM — İlanlar (SAHA marka dili)
 // Endüstriyel/şantiye · manila zemin · 2px siyah çerçeve · Archivo başlık · Space Mono rakamlar.
 // TÜM filtreleme/işlevsellik korunur: URL params, kaydedilmiş aramalar,
 // gelişmiş filtreler (malzeme/fiyat/sıralama), dönüş yükü (backhaul), harita.

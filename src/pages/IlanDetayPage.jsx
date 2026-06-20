@@ -1,4 +1,4 @@
-// HamTed — Ilan Detay (SAHA visual language).
+// DAYIM — Ilan Detay (SAHA visual language).
 // Visual: SAHA signature — 2px ink borders, hard offset shadows (no blur),
 // Archivo uppercase headings, Space Mono data, stroke icons. Vehicle variant
 // gets the dark spec band + "yakın işler" card.

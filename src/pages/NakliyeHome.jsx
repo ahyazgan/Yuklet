@@ -1,4 +1,4 @@
-// HamTed — Ana Sayfa (SAHA tasarım sistemi)
+// DAYIM — Ana Sayfa (SAHA tasarım sistemi)
 // Keskin endüstriyel dil: 2px ink çerçeve · hazard şeritleri · sert offset gölge ·
 // Archivo uppercase başlıklar · Space Mono veriler · koyu header blokları · lucide stroke ikonlar.
 // 3 rol gövdesi tek bileşende (muteahhit / nakliyeci / tedarikci).
@@ -117,7 +117,7 @@ function StatBox({ value, label, money, dot }) {
 /* ── ÜST: koyu header bloğu yok — açık üst (hazard şerit App'te değil burada) ─ */
 function Header({ name, role, unread, onBell, onProfile, onSearch }) {
   const r = ROLE[role] || ROLE.muteahhit;
-  const initial = (name || "H").trim().charAt(0).toUpperCase();
+  const initial = (name || "D").trim().charAt(0).toUpperCase();
   return (
     <div className="px-[18px] pt-3">
       {/* logo + isim + aksiyonlar */}

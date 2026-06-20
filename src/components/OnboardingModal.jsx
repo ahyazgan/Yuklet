@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import Logo from "./Logo";
 
 // ── SAHA Onboarding — ilk ziyaret rol seçimi (bir kez gösterilir).
 // 2px ink çerçeve · hazard şeridi · Archivo uppercase · Space Mono · renkli kare baş harf.
@@ -37,13 +38,10 @@ export default function OnboardingModal({ onClose }) {
 
         <div className="p-7">
           <div className="mb-3.5 flex justify-center">
-            <div
-              className="flex h-12 w-12 items-center justify-center"
-              style={{ background: C.ink, borderRadius: 6, color: C.yellow, fontFamily: ARCH, fontWeight: 900, fontSize: 26 }}
-            >H</div>
+            <Logo size="lg" />
           </div>
           <h2 className="text-center text-[20px] font-extrabold uppercase" style={{ color: C.ink, fontFamily: ARCH, letterSpacing: "-0.02em" }}>
-            HamTed'e Hoş Geldin
+            Hoş Geldin
           </h2>
           <p className="mb-5 mt-1.5 text-center text-[12px]" style={{ color: C.sub, fontFamily: MONO }}>
             Hafriyat ve dökme yükü doğru araçla, komisyonsuz buluşturuyoruz. Sen hangisisin?

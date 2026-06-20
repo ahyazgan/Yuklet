@@ -63,7 +63,7 @@ export default function NasilCalisirPage() {
 
   return (
     <div style={shell}>
-      <SEO title="Nasıl Çalışır" description="HamTed nasıl çalışır? 4 adımda hafriyat ve silobas yüklerinizi doğru araçla buluşturun." />
+      <SEO title="Nasıl Çalışır" description="DAYIM nasıl çalışır? 4 adımda hafriyat ve silobas yüklerinizi doğru araçla buluşturun." />
 
       {/* App bar */}
       <div

@@ -24,7 +24,7 @@ const HAZARD = "repeating-linear-gradient(45deg,#0A0A0A 0 9px,#FACC15 9px 18px)"
 const LEGAL_PAGES = {
   "gizlilik": {
     title: "Gizlilik Politikasi",
-    content: `HamTed Teknoloji A.S. ("HamTed") olarak, kullanicilarimizin gizliligine onem veriyoruz. Bu politika, kisisel verilerinizin nasil toplandigi, kullanildigi ve korundugu hakkinda bilgi vermektedir. HamTed, yuk sahibi ile nakliyeciyi bulusturan bir eslestirme platformudur.
+    content: `DAYIM Teknoloji A.S. ("DAYIM") olarak, kullanicilarimizin gizliligine onem veriyoruz. Bu politika, kisisel verilerinizin nasil toplandigi, kullanildigi ve korundugu hakkinda bilgi vermektedir. DAYIM, yuk sahibi ile nakliyeciyi bulusturan bir eslestirme platformudur.
 
 ## 1. Toplanan Veriler
 
@@ -84,14 +84,14 @@ Basvurulariniz icin: kvkk@hamted.com.tr
 
 ## 7. Iletisim
 
-HamTed Teknoloji A.S.
+DAYIM Teknoloji A.S.
 Buyukdere Cad. No:123 Kat:5, Levent, Istanbul
 E-posta: info@hamted.com.tr
 Telefon: +90 (212) 555 00 00`
   },
   "kullanim-kosullari": {
     title: "Kullanim Kosullari",
-    content: `Bu kullanim kosullari, HamTed platformunu kullanan tum kullanicilar icin gecerlidir. Platformu kullanarak bu kosullari kabul etmis sayilirsiniz.
+    content: `Bu kullanim kosullari, DAYIM platformunu kullanan tum kullanicilar icin gecerlidir. Platformu kullanarak bu kosullari kabul etmis sayilirsiniz.
 
 ## 1. Tanimlar
 
@@ -102,7 +102,7 @@ Telefon: +90 (212) 555 00 00`
 
 ## 2. Platformun Niteligi
 
-- HamTed, is sahibi ile nakliyeciyi bulusturan bir eslestirme/ilan platformudur
+- DAYIM, is sahibi ile nakliyeciyi bulusturan bir eslestirme/ilan platformudur
 - Platform, tasima hizmetinin tarafi degildir; tasima sozlesmesi dogrudan kullanicilar arasinda kurulur
 - Platform, ilan ve tekliflerin dogrulugunu garanti etmez
 
@@ -129,7 +129,7 @@ Telefon: +90 (212) 555 00 00`
 
 ## 6. Fikri Mulkiyet
 
-- Platform uzerindeki tum icerik, tasarim ve yazilim HamTed'e aittir
+- Platform uzerindeki tum icerik, tasarim ve yazilim DAYIM'e aittir
 - Izinsiz kopyalama, dagitma veya degistirme yasaktir
 
 ## 7. Uyusmazlik Cozumu
@@ -139,11 +139,11 @@ Telefon: +90 (212) 555 00 00`
   },
   "kvkk": {
     title: "KVKK Aydinlatma Metni",
-    content: `6698 Sayili Kisisel Verilerin Korunmasi Kanunu ("KVKK") uyarinca, HamTed Teknoloji A.S. olarak veri sorumlusu sifatiyla sizleri bilgilendirmek isteriz.
+    content: `6698 Sayili Kisisel Verilerin Korunmasi Kanunu ("KVKK") uyarinca, DAYIM Teknoloji A.S. olarak veri sorumlusu sifatiyla sizleri bilgilendirmek isteriz.
 
 ## 1. Veri Sorumlusu
 
-HamTed Teknoloji A.S.
+DAYIM Teknoloji A.S.
 Mersis No: 0123456789012345
 Adres: Buyukdere Cad. No:123 Kat:5, Levent, Istanbul
 
@@ -232,7 +232,7 @@ export default function LegalPage() {
 
   return (
     <div style={shell}>
-      <SEO title={page.title} description={page.title + " - HamTed Teknoloji A.Ş."} />
+      <SEO title={page.title} description={page.title + " - DAYIM Teknoloji A.Ş."} />
 
       {/* App bar */}
       <div
@@ -278,7 +278,7 @@ export default function LegalPage() {
           <div style={{ padding: 18 }}>
             <h2 style={{ margin: 0, fontFamily: ARCHIVO, fontSize: 20, fontWeight: 900, textTransform: "uppercase", letterSpacing: "-0.02em", color: C.ink }}>{page.title}</h2>
             <div style={{ marginTop: 6, fontFamily: MONO, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em", color: C.muted }}>
-              Son güncelleme: 1 Ocak 2026 · HamTed Teknoloji A.Ş.
+              Son güncelleme: 1 Ocak 2026 · DAYIM Teknoloji A.Ş.
             </div>
 
             <div style={{ marginTop: 16, fontFamily: BODY, fontSize: 13, lineHeight: 1.6, color: C.sub }}>

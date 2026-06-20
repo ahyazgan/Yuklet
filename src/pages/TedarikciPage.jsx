@@ -1,4 +1,4 @@
-// HamTed — Tedarikçi / Ocak Sahibi Landing (SAHA tasarım sistemi)
+// DAYIM — Tedarikçi / Ocak Sahibi Landing (SAHA tasarım sistemi)
 // Keskin endüstriyel dil: hazard şeritleri · koyu hero + CTA · Archivo 900 uppercase ·
 // Space Mono veriler · 2px ink çerçeve · sert offset gölge · dev opak stroke ikon.
 // Prop sözleşmesi DEĞİŞMEDİ: TedarikciPage() — sadece navigate kullanır.
@@ -99,7 +99,7 @@ export default function TedarikciPage() {
             H
           </div>
           <span className="text-[16px] font-extrabold uppercase" style={{ color: "#FFFFFF", fontFamily: ARCH, letterSpacing: "-0.01em" }}>
-            HamTed
+            DAYIM
           </span>
         </div>
 
@@ -177,9 +177,9 @@ export default function TedarikciPage() {
         </div>
       </section>
 
-      {/* NEDEN HAMTED? */}
+      {/* NEDEN DAYIM? */}
       <section className="px-[18px] pt-7">
-        <SectionTitle>Neden HamTed?</SectionTitle>
+        <SectionTitle>Neden DAYIM?</SectionTitle>
         <div className="flex flex-col gap-2.5">
           {BENEFITS.map((b) => (
             <div

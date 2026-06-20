@@ -1,4 +1,4 @@
-// HamTed — "İlan Ver" — SAHA marka dili (çok adımlı akış).
+// DAYIM — "İlan Ver" — SAHA marka dili (çok adımlı akış).
 // Visual: industrial/site, manila/concrete palette, Space Mono numerics,
 // 2px black-framed cards, hazard accent, Archivo uppercase headings.
 // Flow: Adım 1/2 (kategori + tür + yük) → Adım 2/2 (güzergah + detay) → Yayınlandı.

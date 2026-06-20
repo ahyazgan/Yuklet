@@ -4,6 +4,7 @@ import { ChevronLeft, Printer } from "lucide-react";
 import { LISTINGS } from "../data/listings";
 import { CATS } from "../data/categories";
 import SEO from "../components/SEO";
+import Logo from "../components/Logo";
 import { buildEIrsaliye, buildEFatura, KDV_RATE } from "../utils/eDocs";
 import { sendToGib, isEInvoiceConfigured } from "../lib/eInvoiceProvider";
 import { fmtTL } from "../utils/payments";
@@ -186,9 +187,7 @@ export default function SozlesmePage({ listings = LISTINGS, offers = [], getCont
                 </div>
               </div>
               <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
-                <div style={{ width: 40, height: 40, background: C.ink, borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <span style={{ fontFamily: ARCH, fontSize: 22, fontWeight: 900, color: C.yellow, lineHeight: 1 }}>H</span>
-                </div>
+                <Logo size="sm" />
                 <div style={{ fontFamily: MONO, fontSize: 10, fontWeight: 700, color: C.ink }}>{belgeNo(offer.id)}</div>
                 <div style={{ fontFamily: MONO, fontSize: 9.5, color: C.muted }}>{today()}</div>
               </div>
@@ -239,7 +238,7 @@ export default function SozlesmePage({ listings = LISTINGS, offers = [], getCont
               1. Taşıma; yukarıda belirtilen güzergah, malzeme ve miktar için yapılır.
               2. Araç yetki belgeleri (K belgesi vb.) ve sigorta yükümlülükleri taşıyana aittir.
               3. Yükleme/boşaltma koşulları ve teslim süresi taraflarca teyit edilir.
-              4. Ödeme taraflar arasında belirlenen şekilde yapılır; HamTed yalnızca eşleştirme
+              4. Ödeme taraflar arasında belirlenen şekilde yapılır; DAYIM yalnızca eşleştirme
               platformudur, taşıma sözleşmesinin tarafı değildir.
               5. Hafriyat taşımalarında döküm sahası ve ilgili belediye/çevre mevzuatına uyum
               taraflarca sağlanır.
@@ -279,7 +278,7 @@ export default function SozlesmePage({ listings = LISTINGS, offers = [], getCont
             )}
           </div>
           <p style={{ fontFamily: "system-ui, sans-serif", fontSize: 12, color: C.sub, marginTop: 8, lineHeight: 1.55 }}>
-            HamTed, yük yola çıkınca <b>e-İrsaliye</b>, iş bitince <b>e-Fatura</b> belgesini otomatik
+            DAYIM, yük yola çıkınca <b>e-İrsaliye</b>, iş bitince <b>e-Fatura</b> belgesini otomatik
             üretir ve (entegratör bağlanınca) GİB'e gönderir.
           </p>
 
