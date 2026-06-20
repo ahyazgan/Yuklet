@@ -178,7 +178,7 @@ export default function SahaHome({ listings = LISTINGS, user, pendingOffersCount
             return (
               <Card key={l.id} onClick={() => navigate(`/ilan/${l.id}`)} style={{ display: "flex", alignItems: "stretch", overflow: "hidden" }}>
                 {/* sol renk şeridi */}
-                <div style={{ width: 6, background: isH ? C.yellow : "#0EA5E9", borderRight: `2px solid ${C.ink}` }} />
+                <div style={{ width: 6, background: isH ? C.yellow : C.ink, borderRight: `2px solid ${C.ink}` }} />
                 <div style={{ flex: 1, padding: 12, minWidth: 0 }}>
                   <div className="flex items-center justify-between gap-2">
                     <span style={{ ...mono, fontSize: 9, color: C.sub }}>{ilanNo(l.id)}</span>
@@ -189,7 +189,7 @@ export default function SahaHome({ listings = LISTINGS, user, pendingOffersCount
                     📍 {l.il}{l.ilce ? ` / ${l.ilce}` : ""}{l.amount ? ` · ${l.amount} ${(l.unit || "").toUpperCase()}` : ""}
                   </div>
                   <div className="mt-2 flex items-center justify-between">
-                    <span style={{ ...mono, fontSize: 9, fontWeight: 700, background: isH ? "#FEF3C7" : "#DBEAFE", border: `1.5px solid ${C.ink}`, padding: "1px 6px" }}>
+                    <span style={{ ...mono, fontSize: 9, fontWeight: 700, color: isH ? C.ink : C.card, background: isH ? "#FEF3C7" : C.ink, border: `1.5px solid ${C.ink}`, padding: "1px 6px" }}>
                       {isH ? "HAFRİYAT" : "SİLOBAS"}
                     </span>
                     <span style={{ ...mono, fontSize: 13, fontWeight: 700 }}>{fmtPrice(l)}</span>

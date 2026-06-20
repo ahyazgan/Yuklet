@@ -69,6 +69,21 @@ function AppShell() {
   // ── VERI KATMANI: Supabase yapilandirilmissa async DB, yoksa localStorage ──
   const SB = isSupabaseConfigured;
 
+  // TEMP (inceleme): login ekrani gecici olarak devre disi. Sahte test kullanicisi
+  // ile tum sayfalar giris yapmadan gezilebilir. Rol ?rol=muteahhit|nakliyeci|tedarikci
+  // ile degisir; alt sag kosede gecici rol secici buton vardir. Geri almak icin
+  // bu blogu, user/authReady baslangicini, SB hydrate override'ini ve <PreviewRoleSwitcher>'i sil.
+  const _previewRole = (() => {
+    const r = new URLSearchParams(location.search).get("rol");
+    return ["muteahhit", "nakliyeci", "tedarikci"].includes(r) ? r : "muteahhit";
+  })();
+  const PREVIEW_NAMES = { muteahhit: "Yildizlar Insaat", nakliyeci: "Demir Nakliyat", tedarikci: "Aliaga Micir Ocagi" };
+  const PREVIEW_USER = {
+    id: "preview-user", name: PREVIEW_NAMES[_previewRole],
+    email: "preview@hamted.local", role: _previewRole,
+    phone: "", verified: true, rating: 5.0,
+  };
+
   // Ilanlar
   // SB modunda demo ilanlar veritabaninda (seed) oldugu icin LISTINGS eklenmez.
   const [userListings, setUserListings] = useState(() => (SB ? [] : loadListings()));
@@ -179,10 +194,10 @@ function AppShell() {
   // ── Kullanici / kimlik dogrulama ──
   const [users, setUsers] = useState(() => loadUsers());            // sadece localStorage modunda kullanilir
   useEffect(() => { if (!SB) saveUsers(users); }, [users, SB]);
-  const [user, setUser] = useState(() => (SB ? null : loadUser())); // SB: profil; local: kullanici
+  const [user, setUser] = useState(PREVIEW_USER);                   // TEMP: inceleme — sahte kullanici
   const [profile, setProfile] = useState(null);                     // SB modunda profiles satiri
   useEffect(() => { if (!SB) saveUser(user); }, [user, SB]);
-  const [authReady, setAuthReady] = useState(!SB);                  // SB: oturum cozulene kadar bekle
+  const [authReady] = useState(true);                               // TEMP: inceleme — auth beklemeden hazir
   const [showAuth, setShowAuth] = useState(false);
   const [showOnboard, setShowOnboard] = useState(() => !loadOnboarded());
   const finishOnboard = () => { saveOnboarded(); setShowOnboard(false); };
@@ -190,23 +205,14 @@ function AppShell() {
   // SB: oturum degisimini dinle, profil + verileri yukle
   useEffect(() => {
     if (!SB) return;
-    let unsub = () => {};
-    const hydrate = async (authUser) => {
-      if (authUser) {
-        const prof = await api.getProfile(authUser.id).catch(() => null);
-        setProfile(prof); setUser(prof || { id: authUser.id, email: authUser.email });
-      } else { setProfile(null); setUser(null); }
-      setAuthReady(true);
-    };
+    // TEMP (inceleme): oturum dinleme/hydrate kapali — sahte kullanici korunur.
+    // Veri yuklemesi (listings/offers/messages/reviews) yine de calisir.
     (async () => {
-      const u = await api.getSessionUser().catch(() => null);
-      await hydrate(u);
       await Promise.all([reloadListings(), reloadOffers(),
         api.fetchMessages().then(setMessages).catch(() => {}),
         api.fetchReviews().then(setReviews).catch(() => {})]);
-      unsub = api.onAuthChange((au) => hydrate(au));
     })();
-    return () => unsub();
+    return () => {};
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -340,6 +346,35 @@ function AppShell() {
 
       {showAuth && <AuthModal onClose={() => setShowAuth(false)} onLogin={loginUser} onRegister={registerUser} />}
       {showOnboard && !showAuth && <OnboardingModal onClose={finishOnboard} />}
+
+      {/* TEMP (inceleme): rol secici — login kapaliyken 3 rolu gormek icin. Geri alirken sil. */}
+      <PreviewRoleSwitcher current={_previewRole} />
+    </div>
+  );
+}
+
+/* TEMP (inceleme): gecici rol secici. Login geri acilinca bu bileseni ve cagirisini sil. */
+function PreviewRoleSwitcher({ current }) {
+  const roles = [
+    { k: "muteahhit", t: "Muteahhit" },
+    { k: "nakliyeci", t: "Nakliyeci" },
+    { k: "tedarikci", t: "Tedarikci" },
+  ];
+  const go = (k) => { window.location.assign(`/?rol=${k}`); };
+  return (
+    <div style={{
+      position: "fixed", bottom: 88, left: "50%", transform: "translateX(-50%)",
+      zIndex: 9999, display: "flex", gap: 4, padding: 4, borderRadius: 999,
+      background: "#0A0A0A", boxShadow: "0 10px 30px -8px rgba(0,0,0,.5)",
+    }}>
+      {roles.map((r) => (
+        <button key={r.k} onClick={() => go(r.k)} style={{
+          padding: "6px 12px", borderRadius: 999, border: "none", cursor: "pointer",
+          fontSize: 11, fontWeight: 700,
+          background: current === r.k ? "#FACC15" : "transparent",
+          color: current === r.k ? "#0A0A0A" : "#C9C7C0",
+        }}>{r.t}</button>
+      ))}
     </div>
   );
 }
