@@ -17,16 +17,17 @@ import SEO from "../components/SEO";
 /* ── HamTed marka paleti (tek doğruluk kaynağı: DESIGN.md) ───────────── */
 const C = {
   ink: "#0A0A0A",        // siyah / başlık / birincil
-  header: "#1C1A17",     // antrasit header alanı
+  header: "#EAE3D6",     // açık manila header alanı (mockup)
   yellow: "#FACC15",     // hazard sarısı — yalnızca aksiyon/aksan
   yellowDeep: "#E0B400",
   green: "#16803C",      // aktif / onay / para
   red: "#DC2626",        // acil / bildirim
-  bg: "#E4DED2",         // manila gövde zemini
-  card: "#FAF9F6",       // kırık beyaz kart
-  stone: "#EFEBE2",      // nötr dolgu
-  border: "#D6CEBD",     // kart kenarlığı
-  line: "#EAE5DB",       // ince ayraç
+  bg: "#F1EDE5",         // manila gövde zemini (mockup kart zemini)
+  card: "#FFFFFF",       // beyaz kart (mockup)
+  stone: "#F4F1EA",      // nötr dolgu
+  border: "#E3DDD0",     // kart kenarlığı
+  line: "#F0ECE3",       // ince ayraç
+  dash: "#CFC9BD",       // dashed güzergah çizgisi
   sub: "#5A5852",        // ikincil metin
   muted: "#9A968D",      // header üstü soluk metin
   faint: "#A8A39A",      // pasif ikon
@@ -86,9 +87,9 @@ function Header({ name, role, unread, onBell, onSearch }) {
     <div className="relative overflow-hidden px-5 pb-[70px] pt-1" style={{ background: C.header }}>
       {/* topo doku */}
       <svg viewBox="0 0 400 200" preserveAspectRatio="none" className="absolute inset-0 h-full w-full" style={{ opacity: 0.1 }}>
-        <path d="M-20 60 Q 100 30 200 70 T 420 60" stroke={C.yellow} strokeWidth="1.5" fill="none" />
-        <path d="M-20 95 Q 110 60 220 100 T 420 95" stroke={C.yellow} strokeWidth="1.5" fill="none" />
-        <path d="M-20 130 Q 90 100 210 140 T 420 130" stroke={C.yellow} strokeWidth="1.5" fill="none" />
+        <path d="M-20 60 Q 100 30 200 70 T 420 60" stroke={C.ink} strokeWidth="1.5" fill="none" />
+        <path d="M-20 95 Q 110 60 220 100 T 420 95" stroke={C.ink} strokeWidth="1.5" fill="none" />
+        <path d="M-20 130 Q 90 100 210 140 T 420 130" stroke={C.ink} strokeWidth="1.5" fill="none" />
       </svg>
 
       <div className="relative">
@@ -98,19 +99,19 @@ function Header({ name, role, unread, onBell, onSearch }) {
               style={{ background: C.yellow, color: C.ink }}>H</div>
             <div>
               <div className="flex items-center gap-1.5">
-                <span className="text-[16px] font-extrabold tracking-tight" style={{ color: "#FAF9F6" }}>{name}</span>
-                <BadgeCheck size={15} style={{ color: C.green }} fill={C.green} stroke="#FAF9F6" />
+                <span className="text-[16px] font-extrabold tracking-tight" style={{ color: C.ink }}>{name}</span>
+                <BadgeCheck size={15} style={{ color: C.green }} fill={C.green} stroke={C.header} />
               </div>
               <div className="mt-[3px] flex items-center gap-1.5">
                 <span className="rounded px-1.5 py-0.5 text-[10px] font-bold tracking-wider" style={{ background: C.yellow, color: C.ink }}>{r.badge}</span>
-                <span className="text-[11px] font-medium" style={{ color: C.muted }}>{r.place}</span>
+                <span className="text-[11px] font-medium" style={{ color: C.sub }}>{r.place}</span>
               </div>
             </div>
           </div>
           <button onClick={onBell} aria-label="Bildirimler"
             className="relative flex h-[42px] w-[42px] items-center justify-center rounded-xl"
-            style={{ background: "rgba(255,255,255,.10)" }}>
-            <Bell size={20} style={{ color: "#C9C7C0" }} />
+            style={{ background: "rgba(0,0,0,.06)" }}>
+            <Bell size={20} style={{ color: C.sub }} />
             {unread > 0 && (
               <span className="absolute right-2 top-2 flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[9px] font-extrabold text-white"
                 style={{ background: C.red, border: `2px solid ${C.header}` }}>{unread}</span>
@@ -140,6 +141,13 @@ function MuteahhitBody({ nav }) {
 
       <div className="mb-6 overflow-hidden rounded-[20px]" style={{ boxShadow: "0 14px 34px -16px rgba(16,42,67,.35)" }}>
         <div className="relative h-[120px] overflow-hidden" style={{ background: "linear-gradient(135deg,#2A2722 0%,#1A1815 100%)" }}>
+          {/* layered dirt silhouette (decorative, behind truck mark) */}
+          <svg viewBox="0 0 392 124" preserveAspectRatio="xMidYMid slice" className="absolute inset-0 h-full w-full">
+            <defs><linearGradient id="dirt" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#000" stopOpacity="0" /><stop offset="1" stopColor="#000" stopOpacity=".28" /></linearGradient></defs>
+            <rect width="392" height="124" fill="url(#dirt)" />
+            <path d="M0 104 L70 78 L140 96 L220 64 L300 88 L392 60 L392 124 L0 124 Z" fill="#000" opacity=".18" />
+            <path d="M0 116 L90 96 L180 110 L270 86 L360 104 L392 92 L392 124 L0 124 Z" fill="#000" opacity=".22" />
+          </svg>
           <Truck size={54} className="absolute right-4 top-3.5" style={{ color: "#FAF9F6", opacity: 0.34 }} />
           <div className="absolute left-4 top-3.5 flex gap-1.5">
             <span className="rounded-md px-2.5 py-1 text-[9.5px] font-extrabold tracking-wide" style={{ background: C.ink, color: C.yellow }}>HAFRİYAT</span>
@@ -152,9 +160,9 @@ function MuteahhitBody({ nav }) {
         <div className="px-4 pb-4 pt-3.5" style={{ background: C.card }}>
           <div className="mb-3.5 flex items-center gap-2.5 text-[12.5px] font-semibold" style={{ color: C.sub }}>
             <span className="h-2 w-2 rounded-full" style={{ background: C.yellow }} />Dudullu OSB
-            <span className="h-0 flex-1" style={{ borderTop: `1.5px dashed ${C.border}` }} />
+            <span className="h-0 flex-1" style={{ borderTop: `1.5px dashed ${C.dash}` }} />
             <ArrowRight size={16} style={{ color: C.faint }} />
-            <span className="h-0 flex-1" style={{ borderTop: `1.5px dashed ${C.border}` }} />
+            <span className="h-0 flex-1" style={{ borderTop: `1.5px dashed ${C.dash}` }} />
             Samandıra<span className="h-2 w-2 rounded-full" style={{ border: `2px solid ${C.faint}` }} />
           </div>
           <div className="mb-1.5 flex items-center justify-between">
@@ -285,7 +293,7 @@ function NakliyeciBody({ nav, available, setAvailable }) {
           <div className="mb-2.5 text-[14.5px] font-bold" style={{ color: C.ink }}>Fabrikadan şantiyeye dökme çimento</div>
           <div className="mb-3 flex items-center gap-1.5 text-[12px] font-semibold" style={{ color: C.sub }}>
             <span className="h-2 w-2 rounded-full" style={{ background: C.ink }} />Gebze
-            <span className="h-0 flex-1" style={{ borderTop: `1.5px dashed ${C.border}` }} />Çayırova
+            <span className="h-0 flex-1" style={{ borderTop: `1.5px dashed ${C.dash}` }} />Çayırova
             <span className="h-2 w-2 rounded-full" style={{ border: `2px solid ${C.faint}` }} />
           </div>
           <div className="flex items-center justify-between pt-2.5" style={{ borderTop: `1px solid ${C.line}` }}>
@@ -321,6 +329,11 @@ function TedarikciBody({ nav }) {
       </SectionTitle>
       <div className="mb-6 overflow-hidden rounded-[20px]" style={{ background: C.ink, boxShadow: "0 14px 34px -16px rgba(12,58,46,.5)" }}>
         <div className="relative h-[120px] overflow-hidden" style={{ background: "linear-gradient(135deg,#16803C 0%,#0f5f2c 100%)" }}>
+          {/* layered dirt silhouette (decorative, behind package mark) */}
+          <svg viewBox="0 0 392 108" preserveAspectRatio="xMidYMid slice" className="absolute inset-0 h-full w-full">
+            <path d="M0 88 L70 64 L140 80 L220 52 L300 74 L392 50 L392 108 L0 108 Z" fill="#000" opacity=".16" />
+            <path d="M0 98 L90 82 L180 94 L270 72 L360 88 L392 78 L392 108 L0 108 Z" fill="#000" opacity=".2" />
+          </svg>
           <Package size={50} className="absolute right-4 top-3.5" style={{ color: "#FAF9F6", opacity: 0.9 }} />
           <div className="absolute left-4 top-3.5">
             <span className="rounded-md px-2.5 py-1 text-[9.5px] font-extrabold tracking-wide" style={{ background: "rgba(255,255,255,.92)", color: "#0f5f2c" }}>BÜYÜK SİPARİŞ</span>
