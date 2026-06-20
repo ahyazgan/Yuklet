@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, Plus } from "lucide-react";
 import SEO from "../components/SEO";
+import Logo from "../components/Logo";
 
 // ── SAHA "Panel" (dashboard). Visual: SAHA design language — 2px ink border,
 // Archivo uppercase, Space Mono values, hard offset shadow, 2px-framed bar chart.
@@ -193,13 +194,7 @@ export default function DashboardPage({ user, listings = [], offers = [], messag
       <div style={shell}>
         <SEO title="Panelim" />
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14, padding: 32, textAlign: "center" }}>
-          <div
-            style={{
-              width: 64, height: 64, border: `2px solid ${C.ink}`, borderRadius: 8, background: C.yellow,
-              display: "flex", alignItems: "center", justifyContent: "center", fontFamily: MONO, fontSize: 28, fontWeight: 700,
-              boxShadow: "3px 3px 0 #0A0A0A",
-            }}
-          >🔒</div>
+          <Logo size="lg" />
           <h1 style={{ margin: 0, fontFamily: ARCHIVO, fontSize: 20, fontWeight: 900, textTransform: "uppercase", letterSpacing: "-0.02em", color: C.ink }}>
             Paneli görmek için giriş yapın
           </h1>

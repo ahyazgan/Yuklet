@@ -13,6 +13,7 @@ import CategoryIcon from "../components/CategoryIcon";
 import { estimatePrice, fmtTL, haversineKm } from "../utils/priceEstimate";
 import { newId } from "../utils/id";
 import SEO from "../components/SEO";
+import Logo from "../components/Logo";
 import {
   ChevronLeft, ArrowRight, Truck, Package, Boxes, Check, CheckCircle2,
   MapPin, Plus, Share2, Pencil, ChevronDown,
@@ -267,9 +268,7 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], user, 
       <div style={{ ...shell, paddingBottom: 96 }}>
         <SEO title="İlan ver" description="Taşınacak yükünüzü veya boş aracınızı yayınlayın." />
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16, padding: "64px 24px 0", textAlign: "center" }}>
-          <div style={{ width: 60, height: 60, display: "flex", alignItems: "center", justifyContent: "center", background: C.yellow, border: `2px solid ${C.ink}`, borderRadius: 8, boxShadow: "3px 3px 0 #0A0A0A" }}>
-            <Package size={28} color={C.ink} strokeWidth={2} />
-          </div>
+          <Logo size="lg" />
           <h1 style={{ margin: 0, fontFamily: ARCH, fontSize: 22, fontWeight: 900, letterSpacing: "-0.02em", textTransform: "uppercase" }}>İlan vermek için giriş yapın</h1>
           <p style={{ margin: 0, fontSize: 14, lineHeight: 1.6, color: C.sub }}>İlan yayınlamak ücretsizdir. Devam etmek için hesabınıza giriş yapın veya hızlıca kayıt olun.</p>
           <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 10, marginTop: 6 }}>

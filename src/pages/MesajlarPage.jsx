@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { ChevronLeft, BadgeCheck, Phone, Plus, Send, CheckCircle2 } from "lucide-react";
 import { newId, nowIso } from "../utils/id";
 import SEO from "../components/SEO";
+import Logo from "../components/Logo";
 
 // ── SAHA messages view — sharp industrial language: 2px ink borders, Archivo
 //    uppercase headings, Space Mono codes/times, hard (no-blur) shadows.
@@ -125,9 +126,7 @@ export default function MesajlarPage({ user, listings = [], offers = [], message
       <div style={{ ...shell, paddingBottom: 96 }}>
         <SEO title="Mesajlar" />
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: "0 28px", gap: 16 }}>
-          <div style={{ width: 64, height: 64, borderRadius: 6, background: C.card, border: `2px solid ${C.ink}`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "3px 3px 0 #0A0A0A" }}>
-            <Send size={26} color={C.ink} strokeWidth={2.2} />
-          </div>
+          <Logo size="lg" />
           <h1 style={{ fontFamily: ARCHIVO, fontSize: 22, fontWeight: 900, textTransform: "uppercase", letterSpacing: "-0.02em", margin: 0 }}>Mesajlar için giriş yapın</h1>
           <p style={{ fontSize: 13.5, color: C.sub, margin: 0, lineHeight: 1.5 }}>Kabul edilen tekliflerde karşı tarafla buradan mesajlaşırsınız.</p>
           <button

@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, ArrowUp, ArrowDown, Check, Building2, ChevronRight, ShieldCheck, X, Lock } from "lucide-react";
 import SEO from "../components/SEO";
+import Logo from "../components/Logo";
 import { splitAmount, DEFAULT_FEE_RATE } from "../utils/payments";
 
 // ── Cüzdan / hakediş — kabul edilen tekliflerden kazanç & harcama özeti + escrow durumu.
@@ -444,21 +445,7 @@ export default function CuzdanPage({ user, listings = [], offers = [], onRequire
             textAlign: "center",
           }}
         >
-          <div
-            style={{
-              width: 56,
-              height: 56,
-              border: `2px solid ${C.ink}`,
-              borderRadius: 6,
-              background: C.yellow,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              boxShadow: `3px 3px 0 ${C.ink}`,
-            }}
-          >
-            <Lock size={26} strokeWidth={2.2} color={C.ink} />
-          </div>
+          <Logo size="lg" />
           <h1 style={{ margin: 0, fontFamily: ARCHIVO, fontSize: 19, fontWeight: 900, textTransform: "uppercase", letterSpacing: "-0.02em", color: C.ink }}>Cüzdan İçin Giriş Yapın</h1>
           <button
             onClick={() => onRequireAuth?.()}

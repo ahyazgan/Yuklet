@@ -5,6 +5,7 @@ import { Settings, BadgeCheck, Truck, Package, Lock, Building2, HelpCircle, LogO
 import { useToast } from "../components/Toast";
 import { StarsDisplay } from "../components/Stars";
 import SEO from "../components/SEO";
+import Logo from "../components/Logo";
 import { sendSmsCode, verifySmsCode, isValidPhone } from "../lib/smsProvider";
 import { isAdmin } from "../utils/admin";
 
@@ -115,9 +116,7 @@ export default function ProfilPage({ user, onUpdateProfile, onVerifyPhone, onReq
       <div style={shell}>
         <SEO title="Profil" />
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, padding: "0 24px", textAlign: "center" }}>
-          <div style={{ width: 64, height: 64, borderRadius: 6, background: C.ink, border: `2px solid ${C.ink}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <Lock size={28} color={C.yellow} strokeWidth={2.2} />
-          </div>
+          <Logo size="lg" />
           <h1 style={{ fontFamily: ARCHIVO, fontSize: 20, fontWeight: 800, color: C.ink, textTransform: "uppercase", letterSpacing: "-0.02em", margin: 0 }}>Profil için giriş yapın</h1>
           <p style={{ fontSize: 13, color: C.sub, margin: 0, maxWidth: 280 }}>Hesabını görüntülemek, belge yüklemek ve değerlendirmelerini görmek için giriş yap.</p>
           <button onClick={() => onRequireAuth?.()}

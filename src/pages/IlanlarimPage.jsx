@@ -5,6 +5,7 @@ import { CATS } from "../data/categories";
 import CategoryIcon from "../components/CategoryIcon";
 import { useToast } from "../components/Toast";
 import SEO from "../components/SEO";
+import Logo from "../components/Logo";
 
 // ── SAHA İlanlarım — sharp industrial: 2px ink frame, Archivo uppercase, Space Mono data.
 
@@ -63,9 +64,7 @@ export default function IlanlarimPage({ listings = [], user, offers = [], onUpda
     return (
       <div style={{ ...shell, alignItems: "center", justifyContent: "center", padding: "48px 20px", gap: 16, textAlign: "center" }}>
         <SEO title="İlanlarım" description="Açtığınız ilanlar ve gelen teklifler." />
-        <div style={{ width: 66, height: 66, borderRadius: 6, background: C.ink, border: `2px solid ${C.ink}`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "3px 3px 0 #0A0A0A" }}>
-          <Lock size={28} color={C.yellow} strokeWidth={2.4} />
-        </div>
+        <Logo size="lg" />
         <h1 style={{ fontFamily: HEAD, fontSize: 21, fontWeight: 900, textTransform: "uppercase", letterSpacing: "-0.02em", color: C.ink, lineHeight: 1.15, margin: 0 }}>İlanlarınızı görmek için giriş yapın</h1>
         <p style={{ fontFamily: BODY, fontSize: 13.5, color: C.sub, margin: 0, maxWidth: 300 }}>Açtığınız ilanları ve gelen teklifleri burada yönetebilirsiniz.</p>
         <button onClick={() => onRequireAuth?.()} style={{ marginTop: 4, cursor: "pointer", background: C.ink, color: C.yellow, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "13px 22px", fontFamily: HEAD, fontSize: 14, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.02em", boxShadow: "3px 3px 0 #0A0A0A" }}>

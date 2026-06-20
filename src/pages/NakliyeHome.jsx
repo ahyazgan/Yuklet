@@ -13,6 +13,7 @@ import {
   ArrowRight, MessageCircle, ChevronRight,
 } from "lucide-react";
 import SEO from "../components/SEO";
+import Logo from "../components/Logo";
 
 /* ── SAHA paleti (kesin değerler — _DESIGN_SYSTEM.md) ────────────────── */
 const C = {
@@ -123,12 +124,7 @@ function Header({ name, role, unread, onBell, onProfile, onSearch }) {
       {/* logo + isim + aksiyonlar */}
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
-          <div
-            className="flex h-11 w-11 items-center justify-center text-[22px] font-black"
-            style={{ background: C.ink, color: C.yellow, fontFamily: ARCH, borderRadius: 6 }}
-          >
-            H
-          </div>
+          <Logo size="sm" />
           <div>
             <div className="text-[16px] font-extrabold uppercase leading-none" style={{ color: C.ink, fontFamily: ARCH, letterSpacing: "-0.01em" }}>
               Merhaba, {name}
