@@ -64,7 +64,7 @@ function Stat({ value, label, money, dot }) {
       </div>
       <div className="mt-[5px] text-[10px] font-semibold" style={{ color: C.sub }}>{label}</div>
       {dot && (
-        <span className="absolute right-3.5 top-2.5 h-[7px] w-[7px] rounded-full"
+        <span className="absolute right-2 top-1.5 h-[7px] w-[7px] rounded-full"
           style={{ background: C.yellow, boxShadow: "0 0 0 3px rgba(250,204,21,.30)" }} />
       )}
     </div>
@@ -483,11 +483,12 @@ export default function NakliyeHome({
       />
 
       {/* yüzen istatistik bandı (header'a biner) */}
-      <div className="-mt-[52px] px-[18px]">
-        <div className="flex rounded-[18px] p-1" style={{ background: C.card, boxShadow: "0 12px 30px -12px rgba(16,42,67,.28)" }}>
+      <div className="relative z-10 -mt-[52px] px-[18px]">
+        <div className="flex rounded-[18px] p-1"
+          style={{ background: C.card, border: `1px solid ${C.border}`, boxShadow: "0 18px 40px -16px rgba(0,0,0,.30)" }}>
           {STAT.map((s, i) => (
             <div key={s.label} className="flex flex-1">
-              {i > 0 && <span className="my-3 w-px" style={{ background: C.line }} />}
+              {i > 0 && <span className="my-3 w-px" style={{ background: C.border }} />}
               <Stat {...s} />
             </div>
           ))}
