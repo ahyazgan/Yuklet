@@ -17,6 +17,14 @@ export const ROLES_EXTENDED = [
 export const LISTING_TYPES = [
   { id: "is", name: "İş ilanı", desc: "Taşınacak yük / iş var" },
   { id: "arac", name: "Araç ilanı", desc: "Boş araç, iş arıyor" },
+  { id: "urun", name: "Ürün ilanı", desc: "Malzeme satıyorum (ocak/santral)" },
+];
+
+// Urun ilani stok seviyeleri (tedarikci malzeme satisi)
+export const STOCK_LEVELS = [
+  { id: "bol", label: "Bol stok" },
+  { id: "orta", label: "Orta stok" },
+  { id: "az", label: "Az stok" },
 ];
 
 // --- HAFRİYAT ---

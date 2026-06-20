@@ -106,6 +106,16 @@ main { flex: 1; }
 .skeleton-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border-light); }
 @keyframes shimmer { 0%,100% { opacity: .4; } 50% { opacity: .8; } }
 
+/* SAHA shimmer — sliding light sweep over manila fill */
+.saha-shimmer { position: relative; overflow: hidden; }
+.saha-shimmer::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,.55) 50%, transparent 100%);
+  transform: translateX(-100%);
+  animation: sahaShimmer 1.4s infinite;
+}
+@keyframes sahaShimmer { 100% { transform: translateX(100%); } }
+
 /* ═══ TOAST (Toast.jsx) ═══ */
 .toast-container { position: fixed; bottom: 90px; right: 24px; z-index: 300; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
 .toast { pointer-events: auto; display: flex; align-items: center; gap: 10px; padding: 12px 20px; border-radius: 10px; font-size: 13px; font-weight: 600; color: #fff; box-shadow: 0 8px 24px rgba(0,0,0,.2); animation: toastIn .3s ease; min-width: 240px; }

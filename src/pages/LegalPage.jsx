@@ -1,5 +1,25 @@
-import { useParams, Link } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
+import { ChevronLeft, FileText } from "lucide-react";
 import SEO from "../components/SEO";
+
+// ── Yasal — SAHA design language (tab chips, hazard top strip, Archivo uppercase
+// section titles, mono meta, 2px ink border). Slug routing + content preserved 1:1.
+
+const C = {
+  ink: "#0A0A0A",
+  header: "#EAE3D6",
+  yellow: "#FACC15",
+  bg: "#F1EDE5",
+  card: "#FFFFFF",
+  stone: "#F4F1EA",
+  border: "#E3DDD0",
+  sub: "#5A5852",
+  muted: "#9A968D",
+};
+const ARCHIVO = "'Archivo', system-ui, sans-serif";
+const MONO = "'Space Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
+const BODY = "'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif";
+const HAZARD = "repeating-linear-gradient(45deg,#0A0A0A 0 9px,#FACC15 9px 18px)";
 
 const LEGAL_PAGES = {
   "gizlilik": {
@@ -184,37 +204,106 @@ Basvurular en gec 30 gun icinde sonuclandirilir.`
   }
 };
 
+// Tab chips — slug-based navigation (routing preserved)
+const TABS = [
+  { slug: "kvkk", label: "KVKK" },
+  { slug: "kullanim-kosullari", label: "Kullanım" },
+  { slug: "gizlilik", label: "Çerez" },
+];
+
+const shell = { display: "flex", flexDirection: "column", minHeight: "100%", background: C.bg, fontFamily: BODY };
+
 export default function LegalPage() {
   const { slug } = useParams();
+  const navigate = useNavigate();
   const page = LEGAL_PAGES[slug];
 
   if (!page) {
     return (
-      <div className="mx-auto flex w-full max-w-3xl flex-col items-center gap-2 px-5 py-16 text-center text-ham-ink">
-        <div className="text-4xl">📜</div>
-        <div className="text-base font-bold text-ham-ink">Sayfa bulunamadı</div>
-        <Link to="/" className="text-sm font-bold text-ham-ink">Ana sayfaya dön</Link>
+      <div style={{ ...shell, alignItems: "center", justifyContent: "center", padding: "64px 20px", textAlign: "center" }}>
+        <div style={{ width: 56, height: 56, borderRadius: 6, border: `2px solid ${C.ink}`, background: C.card, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "3px 3px 0 #0A0A0A" }}>
+          <FileText size={26} strokeWidth={2.2} color={C.ink} />
+        </div>
+        <div style={{ marginTop: 14, fontFamily: ARCHIVO, fontSize: 15, fontWeight: 900, textTransform: "uppercase", color: C.ink }}>Sayfa Bulunamadı</div>
+        <Link to="/" style={{ marginTop: 10, fontFamily: MONO, fontSize: 12, fontWeight: 700, textTransform: "uppercase", color: C.ink }}>Ana sayfaya dön →</Link>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-5 py-8 text-ham-ink">
+    <div style={shell}>
       <SEO title={page.title} description={page.title + " - HamTed Teknoloji A.Ş."} />
-      <div className="rounded-3xl border border-ham-border bg-ham-card p-7 shadow-sm">
-        <h1 className="mb-1 text-2xl font-black tracking-tight text-ham-ink">{page.title}</h1>
-        <div className="mb-6 text-xs text-ham-muted">Son güncelleme: 1 Ocak 2026 · HamTed Teknoloji A.Ş.</div>
-        <div className="text-sm leading-relaxed text-ham-sub">
-          {page.content.split("\n").map((line, i) => {
-            if (line.startsWith("## ")) return <h2 key={i} className="mb-2 mt-6 text-lg font-bold text-ham-ink">{line.replace("## ", "")}</h2>;
-            if (line.startsWith("- **")) {
-              const parts = line.replace("- **", "").split(":**");
-              return <div key={i} className="mb-1.5 pl-1"><strong className="text-ham-ink">{parts[0]}:</strong>{parts[1]}</div>;
-            }
-            if (line.startsWith("- ")) return <div key={i} className="mb-1.5 pl-1">{line.replace("- ", "• ")}</div>;
-            if (line.trim() === "") return <br key={i} />;
-            return <p key={i} className="mb-2">{line}</p>;
+
+      {/* App bar */}
+      <div
+        style={{
+          position: "sticky", top: 0, zIndex: 20, background: C.header,
+          borderBottom: `2px solid ${C.ink}`, display: "flex", alignItems: "center", gap: 10, padding: "11px 12px",
+        }}
+      >
+        <button
+          onClick={() => navigate(-1)} aria-label="Geri"
+          style={{ border: `2px solid ${C.ink}`, background: C.card, borderRadius: 6, width: 38, height: 38, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: C.ink }}
+        >
+          <ChevronLeft size={22} strokeWidth={2.4} />
+        </button>
+        <h1 style={{ margin: 0, fontFamily: ARCHIVO, fontSize: 17, fontWeight: 900, textTransform: "uppercase", letterSpacing: "-0.02em", color: C.ink }}>Yasal</h1>
+      </div>
+
+      {/* Scroll body */}
+      <div style={{ flex: 1, padding: "16px 16px 96px", display: "flex", flexDirection: "column", gap: 16 }}>
+        {/* Tab chips */}
+        <div style={{ display: "flex", gap: 8 }}>
+          {TABS.map((t) => {
+            const active = t.slug === slug;
+            return (
+              <button
+                key={t.slug}
+                onClick={() => navigate(`/yasal/${t.slug}`)}
+                style={{
+                  flex: 1, border: `2px solid ${C.ink}`, borderRadius: 5, padding: "9px 6px",
+                  background: active ? C.ink : C.card, color: active ? C.yellow : C.ink,
+                  fontFamily: MONO, fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.02em", cursor: "pointer",
+                }}
+              >
+                {t.label}
+              </button>
+            );
           })}
+        </div>
+
+        {/* Content card — hazard top strip */}
+        <div style={{ position: "relative", overflow: "hidden", background: C.card, border: `2px solid ${C.ink}`, borderRadius: 6, boxShadow: "3px 3px 0 #0A0A0A" }}>
+          <div style={{ height: 7, backgroundImage: HAZARD }} />
+          <div style={{ padding: 18 }}>
+            <h2 style={{ margin: 0, fontFamily: ARCHIVO, fontSize: 20, fontWeight: 900, textTransform: "uppercase", letterSpacing: "-0.02em", color: C.ink }}>{page.title}</h2>
+            <div style={{ marginTop: 6, fontFamily: MONO, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em", color: C.muted }}>
+              Son güncelleme: 1 Ocak 2026 · HamTed Teknoloji A.Ş.
+            </div>
+
+            <div style={{ marginTop: 16, fontFamily: BODY, fontSize: 13, lineHeight: 1.6, color: C.sub }}>
+              {page.content.split("\n").map((line, i) => {
+                if (line.startsWith("## ")) {
+                  return (
+                    <h3 key={i} style={{ margin: "22px 0 8px", fontFamily: ARCHIVO, fontSize: 14, fontWeight: 800, textTransform: "uppercase", letterSpacing: "-0.01em", color: C.ink }}>
+                      {line.replace("## ", "")}
+                    </h3>
+                  );
+                }
+                if (line.startsWith("- **")) {
+                  const parts = line.replace("- **", "").split(":**");
+                  return (
+                    <div key={i} style={{ marginBottom: 6, paddingLeft: 4 }}>
+                      <strong style={{ color: C.ink }}>{parts[0]}:</strong>{parts[1]}
+                    </div>
+                  );
+                }
+                if (line.startsWith("- ")) return <div key={i} style={{ marginBottom: 6, paddingLeft: 4 }}>{line.replace("- ", "• ")}</div>;
+                if (line.trim() === "") return <br key={i} />;
+                return <p key={i} style={{ margin: "0 0 8px" }}>{line}</p>;
+              })}
+            </div>
+          </div>
         </div>
       </div>
     </div>

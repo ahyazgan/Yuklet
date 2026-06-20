@@ -1,11 +1,23 @@
 // HamTed — İlanlar (SAHA marka dili)
-// Endüstriyel/şantiye · manila zemin · siyah çerçeve · Space Mono rakamlar.
+// Endüstriyel/şantiye · manila zemin · 2px siyah çerçeve · Archivo başlık · Space Mono rakamlar.
 // TÜM filtreleme/işlevsellik korunur: URL params, kaydedilmiş aramalar,
 // gelişmiş filtreler (malzeme/fiyat/sıralama), dönüş yükü (backhaul), harita.
 
 import { useState, useMemo, lazy, Suspense } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Search, SlidersHorizontal, X } from "lucide-react";
+import {
+  Search,
+  SlidersHorizontal,
+  X,
+  RotateCw,
+  MapPin,
+  Bookmark,
+  Star,
+  Plus,
+  Minus,
+  Compass,
+  Inbox,
+} from "lucide-react";
 import { LISTINGS, IL_LIST } from "../data/listings";
 import { CATS, MATERIALS } from "../data/categories";
 import { loadsNearCity } from "../utils/backhaul";
@@ -20,9 +32,11 @@ const C = {
   header: "#EAE3D6",
   yellow: "#FACC15",
   green: "#16803C",
+  red: "#DC2626",
   bg: "#F1EDE5",
   card: "#FFFFFF",
   stone: "#F4F1EA",
+  sheet: "#F1EDE5",
   border: "#E3DDD0",
   line: "#F0ECE3",
   sub: "#5A5852",
@@ -30,6 +44,7 @@ const C = {
   faint: "#A8A39A",
 };
 const MONO = { fontFamily: "'Space Mono', ui-monospace, monospace" };
+const HEAD = { fontFamily: "'Archivo', sans-serif", textTransform: "uppercase", letterSpacing: "-0.02em" };
 
 const shell = {
   maxWidth: 460,
@@ -45,22 +60,35 @@ const shell = {
 const fmtPrice = (l) =>
   l.priceType === "sabit" && l.price ? `₺${l.price.toLocaleString("tr-TR")}` : null;
 
+// Dönüş yükü güzergah uyumu (ilDistance: 0 aynı · 1 komşu · 2 bölge) → gösterimsel sapma km.
+// loadsNearCity dist döndürür; backhaul.js'i bozmadan kullanıcıya "X km sapma" gösteririz.
+const DEVIATION_KM = { 0: 0, 1: 12, 2: 45 };
+const deviationOf = (dist) => DEVIATION_KM[dist] ?? 60;
+
 // ── İlan kartı ──
 function ListingCard({ l }) {
   const isH = l.cat === "hafriyat";
-  const fixed = fmtPrice(l);
+  const isProduct = l.type === "urun";
+  const fixed = isProduct
+    ? (l.price ? `₺${l.price.toLocaleString("tr-TR")}${l.priceUnit || "/ton"}` : null)
+    : fmtPrice(l);
   const fromTxt = l.il || "—";
-  const toTxt = l.bosaltma || l.ilce || "Belirtilmemiş";
+  const toTxt = isProduct ? (l.ilce || "Ocak/Santral") : (l.bosaltma || l.ilce || "Belirtilmemiş");
   const chips = [];
-  if (l.amount) chips.push(`${l.amount} ${(l.unit || "").toUpperCase()}`);
-  if (l.vehicle) chips.push(l.vehicle);
+  if (isProduct) {
+    if (l.material) chips.push(l.material);
+    if (l.deliveryIncluded) chips.push("NAKLİYE DAHİL");
+  } else {
+    if (l.amount) chips.push(`${l.amount} ${(l.unit || "").toUpperCase()}`);
+    if (l.vehicle) chips.push(l.vehicle);
+  }
 
   return (
     <div
       style={{
         background: C.card,
         border: `2px solid ${C.ink}`,
-        borderRadius: 8,
+        borderRadius: 6,
         overflow: "hidden",
       }}
     >
@@ -101,8 +129,25 @@ function ListingCard({ l }) {
               ● EŞLEŞTİ
             </span>
           )}
+          {isProduct && (
+            <span
+              style={{
+                ...MONO,
+                fontSize: 8.5,
+                fontWeight: 700,
+                padding: "2px 6px",
+                borderRadius: 4,
+                background: l.stock === "az" ? C.red : C.green,
+                color: "#fff",
+                border: `1.5px solid ${C.ink}`,
+                textTransform: "uppercase",
+              }}
+            >
+              ● {l.stockText || l.stock || "STOK"}
+            </span>
+          )}
           <span style={{ ...MONO, fontSize: 9.5, color: C.muted }}>
-            {l.type === "arac" ? "ARAÇ" : "İŞ"} · {l.createdText}
+            {isProduct ? "ÜRÜN" : l.type === "arac" ? "ARAÇ" : "İŞ"} · {l.createdText}
           </span>
         </div>
       </div>
@@ -110,10 +155,10 @@ function ListingCard({ l }) {
       {/* başlık */}
       <div
         style={{
+          ...HEAD,
           fontSize: 15,
           fontWeight: 800,
-          letterSpacing: "-0.01em",
-          lineHeight: 1.2,
+          lineHeight: 1.18,
           padding: "8px 12px 0 12px",
         }}
       >
@@ -156,8 +201,16 @@ function ListingCard({ l }) {
         <span style={{ fontWeight: 700, color: C.ink }} className="truncate">
           {l.owner}
         </span>
-        {l.ownerVerified && <span style={{ color: C.green, fontWeight: 700 }}>✓ ONAYLI</span>}
-        {l.ownerRating && <span>★ {l.ownerRating}</span>}
+        {l.ownerVerified && (
+          <span className="flex items-center gap-0.5" style={{ color: C.green, fontWeight: 700, flexShrink: 0 }}>
+            ● ONAYLI
+          </span>
+        )}
+        {l.ownerRating && (
+          <span className="flex items-center gap-0.5" style={{ flexShrink: 0 }}>
+            <Star size={9} color={C.ink} fill={C.yellow} strokeWidth={2} /> {l.ownerRating}
+          </span>
+        )}
       </div>
 
       {/* alt: etiket chip'leri + fiyat + aksiyon */}
@@ -187,7 +240,7 @@ function ListingCard({ l }) {
         </div>
         <div className="flex flex-shrink-0 items-center gap-2.5">
           {fixed ? (
-            <span style={{ ...MONO, fontSize: 14, fontWeight: 700, color: C.green }}>
+            <span style={{ ...MONO, fontSize: isProduct ? 12.5 : 14, fontWeight: 700, color: C.green }}>
               {fixed}
             </span>
           ) : (
@@ -204,7 +257,7 @@ function ListingCard({ l }) {
               whiteSpace: "nowrap",
             }}
           >
-            {l.offers > 0 ? `${l.offers} TEKLİF →` : "TEKLİF VER →"}
+            {isProduct ? "İLETİŞİME GEÇ →" : l.offers > 0 ? `${l.offers} TEKLİF →` : "TEKLİF VER →"}
           </span>
         </div>
       </div>
@@ -212,21 +265,52 @@ function ListingCard({ l }) {
   );
 }
 
-// ── Boş durum kutusu ──
-function EmptyBox({ emoji, title, sub }) {
+// ── Boş durum kutusu (2px DASHED çerçeve + ikon kutusu) ──
+function EmptyBox({ icon, title, sub, action }) {
+  const Icon = icon;
   return (
     <div
-      className="flex flex-col items-center gap-2 text-center"
+      className="flex flex-col items-center gap-3 text-center"
       style={{
         background: C.card,
-        border: `2px dashed ${C.border}`,
-        borderRadius: 8,
+        border: `2px dashed ${C.ink}`,
+        borderRadius: 6,
         padding: "44px 24px",
       }}
     >
-      <div style={{ fontSize: 32 }}>{emoji}</div>
-      <div style={{ fontSize: 14, fontWeight: 800 }}>{title}</div>
-      <div style={{ ...MONO, fontSize: 10.5, color: C.sub }}>{sub}</div>
+      <div
+        className="flex items-center justify-center"
+        style={{
+          width: 52,
+          height: 52,
+          background: C.stone,
+          border: `2px solid ${C.ink}`,
+          borderRadius: 6,
+        }}
+      >
+        <Icon size={24} color={C.ink} strokeWidth={2.25} />
+      </div>
+      <div style={{ ...HEAD, fontSize: 16, fontWeight: 900 }}>{title}</div>
+      <div style={{ ...MONO, fontSize: 10.5, color: C.sub, lineHeight: 1.5, maxWidth: 240 }}>{sub}</div>
+      {action && (
+        <button
+          onClick={action.onClick}
+          style={{
+            ...HEAD,
+            ...MONO,
+            fontSize: 11,
+            fontWeight: 700,
+            marginTop: 4,
+            padding: "10px 16px",
+            background: C.ink,
+            color: C.yellow,
+            border: `2px solid ${C.ink}`,
+            borderRadius: 6,
+          }}
+        >
+          {action.label}
+        </button>
+      )}
     </div>
   );
 }
@@ -234,7 +318,7 @@ function EmptyBox({ emoji, title, sub }) {
 export default function ListingsPage({ listings = LISTINGS }) {
   const navigate = useNavigate();
   const [sp] = useSearchParams();
-  const [type, setType] = useState(sp.get("type") === "arac" ? "arac" : "all");
+  const [type, setType] = useState(["arac", "is", "urun"].includes(sp.get("type")) ? sp.get("type") : "all");
   const [cat, setCat] = useState(
     ["hafriyat", "silobas"].includes(sp.get("cat")) ? sp.get("cat") : "all"
   );
@@ -267,7 +351,7 @@ export default function ListingsPage({ listings = LISTINGS }) {
   const labelFor = (s) => {
     const parts = [];
     if (s.cat !== "all") parts.push(s.cat === "hafriyat" ? "Hafriyat" : "Silobas");
-    if (s.type !== "all") parts.push(s.type === "arac" ? "Araç" : "İş");
+    if (s.type !== "all") parts.push(s.type === "arac" ? "Araç" : s.type === "urun" ? "Ürün" : "İş");
     if (s.il !== "all") parts.push(s.il);
     if (s.material !== "all") parts.push(s.material);
     if (s.q) parts.push(`"${s.q}"`);
@@ -305,6 +389,17 @@ export default function ListingsPage({ listings = LISTINGS }) {
     setMode("normal");
   };
   const removeSearch = (id) => persistSaved(saved.filter((s) => s.id !== id));
+
+  const clearAll = () => {
+    setType("all");
+    setCat("all");
+    setIl("all");
+    setQ("");
+    setMaterial("all");
+    setPriceMin("");
+    setPriceMax("");
+    setSort("yeni");
+  };
 
   const materialOpts =
     cat === "all"
@@ -363,8 +458,9 @@ export default function ListingsPage({ listings = LISTINGS }) {
 
   const chip = (active) => ({
     ...MONO,
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: 700,
+    letterSpacing: "0.02em",
     padding: "6px 11px",
     borderRadius: 5,
     border: `2px solid ${active ? C.ink : C.border}`,
@@ -372,6 +468,7 @@ export default function ListingsPage({ listings = LISTINGS }) {
     color: active ? C.yellow : C.sub,
     whiteSpace: "nowrap",
     flexShrink: 0,
+    textTransform: "uppercase",
   });
 
   return (
@@ -387,13 +484,16 @@ export default function ListingsPage({ listings = LISTINGS }) {
           {/* başlık + sayaç */}
           <div className="flex items-end justify-between">
             <div className="flex items-baseline gap-2.5">
-              <h1
-                style={{ fontSize: 26, fontWeight: 900, letterSpacing: "-0.02em", lineHeight: 1 }}
-              >
-                İlanlar
-              </h1>
+              {mode === "backhaul" ? (
+                <h1 className="flex items-center gap-2" style={{ ...HEAD, fontSize: 24, fontWeight: 900, lineHeight: 1 }}>
+                  <RotateCw size={22} strokeWidth={2.75} color={C.ink} />
+                  Dönüş Yükü
+                </h1>
+              ) : (
+                <h1 style={{ ...HEAD, fontSize: 26, fontWeight: 900, lineHeight: 1 }}>İlanlar</h1>
+              )}
               <span style={{ ...MONO, fontSize: 11, fontWeight: 700, color: C.sub }}>
-                {openCount} AÇIK İŞ
+                {openCount} {mode === "backhaul" ? "YAKIN YÜK" : "AÇIK İŞ"}
               </span>
             </div>
             {/* Liste / Harita toggle — sadece normal modda */}
@@ -471,7 +571,7 @@ export default function ListingsPage({ listings = LISTINGS }) {
                   height: 42,
                   borderRadius: 6,
                   border: `2px solid ${C.ink}`,
-                  background: activeFilters > 0 ? C.yellow : C.card,
+                  background: C.yellow,
                   flexShrink: 0,
                 }}
                 className="flex items-center justify-center"
@@ -484,8 +584,8 @@ export default function ListingsPage({ listings = LISTINGS }) {
                       position: "absolute",
                       top: -6,
                       right: -6,
-                      background: C.ink,
-                      color: C.yellow,
+                      background: C.red,
+                      color: "#fff",
                       fontSize: 9,
                       fontWeight: 700,
                       border: `1.5px solid ${C.ink}`,
@@ -513,34 +613,35 @@ export default function ListingsPage({ listings = LISTINGS }) {
             >
               TÜMÜ
             </button>
-            {CATS.map((c) => (
-              <button
-                key={c.id}
-                style={tabStyle(mode === "normal" && cat === c.id)}
-                onClick={() => {
-                  setMode("normal");
-                  setCat(c.id);
-                }}
-              >
-                {c.id === "hafriyat" && (
-                  <span
-                    style={{
-                      width: 9,
-                      height: 9,
-                      background: C.yellow,
-                      border: `1.5px solid ${mode === "normal" && cat === "hafriyat" ? C.yellow : C.ink}`,
-                      borderRadius: 2,
-                    }}
-                  />
-                )}
-                {c.id === "hafriyat" ? "HAFRİYAT" : "SİLOBAS"}
-              </button>
-            ))}
-            <button
-              style={tabStyle(mode === "backhaul")}
-              onClick={() => setMode("backhaul")}
-            >
-              🔄 DÖNÜŞ
+            {CATS.map((c) => {
+              const active = mode === "normal" && cat === c.id;
+              return (
+                <button
+                  key={c.id}
+                  style={tabStyle(active)}
+                  onClick={() => {
+                    setMode("normal");
+                    setCat(c.id);
+                  }}
+                >
+                  {c.id === "hafriyat" && (
+                    <span
+                      style={{
+                        width: 9,
+                        height: 9,
+                        background: C.yellow,
+                        border: `1.5px solid ${active ? C.yellow : C.ink}`,
+                        borderRadius: 2,
+                      }}
+                    />
+                  )}
+                  {c.id === "hafriyat" ? "HAFRİYAT" : "SİLOBAS"}
+                </button>
+              );
+            })}
+            <button style={tabStyle(mode === "backhaul")} onClick={() => setMode("backhaul")}>
+              <RotateCw size={13} strokeWidth={2.5} color={mode === "backhaul" ? C.yellow : C.ink} />
+              DÖNÜŞ
             </button>
           </div>
         </div>
@@ -567,8 +668,9 @@ export default function ListingsPage({ listings = LISTINGS }) {
           <div className="flex gap-1.5">
             {[
               ["all", "TÜMÜ"],
-              ["is", "İŞ İLANLARI"],
-              ["arac", "ARAÇ İLANLARI"],
+              ["is", "İŞ"],
+              ["arac", "ARAÇ"],
+              ["urun", "ÜRÜN"],
             ].map(([k, lbl]) => (
               <button key={k} style={chip(type === k)} onClick={() => setType(k)}>
                 {lbl}
@@ -583,6 +685,7 @@ export default function ListingsPage({ listings = LISTINGS }) {
             {!isDefaultSearch && (
               <button
                 onClick={saveCurrent}
+                className="flex items-center gap-1"
                 style={{
                   ...MONO,
                   fontSize: 10,
@@ -596,7 +699,7 @@ export default function ListingsPage({ listings = LISTINGS }) {
                   flexShrink: 0,
                 }}
               >
-                ☆ ARAMAYI KAYDET
+                <Bookmark size={12} strokeWidth={2.5} /> ARAMAYI KAYDET
               </button>
             )}
             {saved.map((s) => (
@@ -609,14 +712,16 @@ export default function ListingsPage({ listings = LISTINGS }) {
                   fontWeight: 700,
                   padding: "6px 9px",
                   borderRadius: 5,
-                  border: `2px solid ${C.border}`,
+                  border: `2px solid ${C.ink}`,
                   background: C.card,
                   color: C.ink,
                   whiteSpace: "nowrap",
                   flexShrink: 0,
                 }}
               >
-                <button onClick={() => applySearch(s)}>🔖 {s.label}</button>
+                <button onClick={() => applySearch(s)} className="flex items-center gap-1">
+                  <Bookmark size={12} strokeWidth={2.5} fill={C.yellow} /> {s.label}
+                </button>
                 <button
                   onClick={() => removeSearch(s.id)}
                   aria-label="Kaldır"
@@ -629,34 +734,105 @@ export default function ListingsPage({ listings = LISTINGS }) {
           </div>
         )}
 
-        {/* Dönüş yükü açıklaması */}
+        {/* Dönüş yükü: "Aracın nerede?" konum seçici + açıklama */}
         {mode === "backhaul" && (
-          <p style={{ ...MONO, fontSize: 10.5, color: C.sub, lineHeight: 1.5 }}>
-            Aracın <b style={{ color: C.ink }}>hangi ildeyse</b> yukarıdan seç — o ile yakın açık
-            yükleri (boş dönmeyesin) sıralayalım.
-          </p>
+          <div className="flex flex-col gap-2.5">
+            <div
+              style={{
+                background: C.card,
+                border: `2px solid ${C.ink}`,
+                borderRadius: 6,
+                padding: "12px 13px",
+              }}
+            >
+              <div className="flex items-center gap-1.5" style={{ marginBottom: 8 }}>
+                <Compass size={13} strokeWidth={2.5} color={C.ink} />
+                <span style={{ ...MONO, fontSize: 10, fontWeight: 700, letterSpacing: "0.06em", color: C.sub }}>
+                  ARACIN NEREDE?
+                </span>
+              </div>
+              <div className="relative">
+                <MapPin
+                  size={15}
+                  strokeWidth={2.5}
+                  color={C.ink}
+                  style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}
+                />
+                <select
+                  value={il}
+                  onChange={(e) => setIl(e.target.value)}
+                  aria-label="Aracın bulunduğu il"
+                  style={{
+                    ...MONO,
+                    fontSize: 12,
+                    fontWeight: 700,
+                    letterSpacing: "0.02em",
+                    width: "100%",
+                    padding: "12px 12px 12px 34px",
+                    borderRadius: 6,
+                    border: `2px solid ${C.ink}`,
+                    background: il === "all" ? C.stone : C.yellow,
+                    color: C.ink,
+                    outline: "none",
+                    appearance: "none",
+                    cursor: "pointer",
+                  }}
+                >
+                  <option value="all">İL SEÇ…</option>
+                  {IL_LIST.map((i) => (
+                    <option key={i} value={i}>
+                      {i.toLocaleUpperCase("tr-TR")}
+                    </option>
+                  ))}
+                </select>
+                <span
+                  style={{
+                    ...MONO,
+                    position: "absolute",
+                    right: 13,
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: C.ink,
+                    pointerEvents: "none",
+                  }}
+                >
+                  ▾
+                </span>
+              </div>
+            </div>
+            <p style={{ ...MONO, fontSize: 10.5, color: C.sub, lineHeight: 1.5 }}>
+              Aracın <b style={{ color: C.ink }}>hangi ildeyse</b> seç — o güzergaha az sapan açık
+              yükleri (boş dönmeyesin) sapma km'sine göre sıralayalım.
+            </p>
+          </div>
         )}
 
         {/* ── İÇERİK ── */}
         {mode === "backhaul" ? (
           il === "all" ? (
             <EmptyBox
-              emoji="🧭"
+              icon={Compass}
               title="Bir referans il seç"
               sub="Aracının bulunduğu ili seç; yakın açık yükleri gösterelim."
             />
           ) : backhaul.length === 0 ? (
             <EmptyBox
-              emoji="📭"
+              icon={Inbox}
               title={`${il} çevresinde açık yük yok`}
               sub="Komşu illeri de deneyebilirsin."
             />
           ) : (
             <div className="flex flex-col gap-3">
-              {backhaul.map((m) => (
+              {backhaul.map((m) => {
+                const km = deviationOf(m.dist);
+                return (
                 <div key={m.listing.id} className="flex flex-col gap-1.5">
+                  {/* sapma rozeti satırı: güzergah + sarı "X km sapma" */}
                   <div className="flex items-center gap-1.5">
                     <span
+                      className="flex items-center gap-1"
                       style={{
                         ...MONO,
                         fontSize: 9.5,
@@ -668,7 +844,8 @@ export default function ListingsPage({ listings = LISTINGS }) {
                         color: C.sub,
                       }}
                     >
-                      📍 {m.fromIl || "—"} → {m.toIl || "—"}
+                      <MapPin size={10} strokeWidth={2.5} color={C.ink} />
+                      {(il && il !== "all" ? il : m.fromIl) || "—"} → {m.fromIl || "—"}
                     </span>
                     <span
                       style={{
@@ -677,12 +854,12 @@ export default function ListingsPage({ listings = LISTINGS }) {
                         fontWeight: 700,
                         padding: "2px 7px",
                         borderRadius: 4,
-                        background: C.yellow,
+                        background: km === 0 ? C.green : C.yellow,
                         border: `1.5px solid ${C.ink}`,
-                        color: C.ink,
+                        color: km === 0 ? "#fff" : C.ink,
                       }}
                     >
-                      {m.fit}
+                      {km === 0 ? "GÜZERGAH ÜZERİ" : `${km} KM SAPMA`}
                     </span>
                   </div>
                   <button
@@ -692,7 +869,8 @@ export default function ListingsPage({ listings = LISTINGS }) {
                     <ListingCard l={m.listing} />
                   </button>
                 </div>
-              ))}
+                );
+              })}
             </div>
           )
         ) : view === "map" ? (
@@ -702,7 +880,7 @@ export default function ListingsPage({ listings = LISTINGS }) {
                 className="flex items-center justify-center"
                 style={{
                   height: 460,
-                  borderRadius: 8,
+                  borderRadius: 6,
                   background: C.card,
                   border: `2px solid ${C.ink}`,
                   ...MONO,
@@ -725,9 +903,10 @@ export default function ListingsPage({ listings = LISTINGS }) {
           </Suspense>
         ) : filtered.length === 0 ? (
           <EmptyBox
-            emoji="🔍"
+            icon={Search}
             title="İlan bulunamadı"
-            sub="Filtreleri değiştirip tekrar dene."
+            sub="Arama veya filtreleri değiştirip tekrar dene."
+            action={!isDefaultSearch ? { label: "FİLTRELERİ TEMİZLE", onClick: clearAll } : null}
           />
         ) : (
           <div className="flex flex-col gap-3">
@@ -763,8 +942,8 @@ export default function ListingsPage({ listings = LISTINGS }) {
               maxWidth: 460,
               width: "100%",
               margin: "0 auto",
-              background: C.bg,
-              borderTop: `3px solid ${C.ink}`,
+              background: C.sheet,
+              borderTop: `2px solid ${C.ink}`,
               borderTopLeftRadius: 12,
               borderTopRightRadius: 12,
               maxHeight: "85vh",
@@ -776,9 +955,20 @@ export default function ListingsPage({ listings = LISTINGS }) {
               className="flex items-center justify-between"
               style={{ padding: "16px 16px 12px 16px", borderBottom: `2px solid ${C.line}` }}
             >
-              <h2 style={{ fontSize: 18, fontWeight: 900, letterSpacing: "-0.01em" }}>FİLTRELER</h2>
-              <button onClick={() => setShowFilters(false)} aria-label="Kapat" style={{ display: "flex" }}>
-                <X size={22} strokeWidth={2.5} color={C.ink} />
+              <h2 style={{ ...HEAD, fontSize: 18, fontWeight: 900 }}>FİLTRELER</h2>
+              <button
+                onClick={() => setShowFilters(false)}
+                aria-label="Kapat"
+                className="flex items-center justify-center"
+                style={{
+                  width: 34,
+                  height: 34,
+                  background: C.card,
+                  border: `2px solid ${C.ink}`,
+                  borderRadius: 6,
+                }}
+              >
+                <X size={18} strokeWidth={2.5} color={C.ink} />
               </button>
             </div>
 
@@ -810,6 +1000,7 @@ export default function ListingsPage({ listings = LISTINGS }) {
                     ["all", "TÜMÜ"],
                     ["is", "İŞ İLANI"],
                     ["arac", "ARAÇ İLANI"],
+                    ["urun", "ÜRÜN İLANI"],
                   ].map(([k, lbl]) => (
                     <button key={k} style={chip(type === k)} onClick={() => setType(k)}>
                       {lbl}
@@ -914,38 +1105,49 @@ export default function ListingsPage({ listings = LISTINGS }) {
                   ))}
                 </div>
               </div>
-
-              {/* Filtreleri temizle */}
-              {activeFilters > 0 && (
-                <button
-                  onClick={() => {
-                    setMaterial("all");
-                    setPriceMin("");
-                    setPriceMax("");
-                    setSort("yeni");
-                  }}
-                  style={{ ...MONO, fontSize: 11, fontWeight: 700, color: C.sub, textDecoration: "underline", alignSelf: "flex-start" }}
-                >
-                  FİLTRELERİ TEMİZLE
-                </button>
-              )}
             </div>
 
-            {/* Sonuç butonu */}
-            <div style={{ padding: 16, borderTop: `2px solid ${C.line}`, background: C.bg, position: "sticky", bottom: 0 }}>
+            {/* Alt: Temizle + Göster */}
+            <div
+              className="flex items-center gap-2"
+              style={{ padding: 16, borderTop: `2px solid ${C.line}`, background: C.sheet, position: "sticky", bottom: 0 }}
+            >
+              <button
+                onClick={() => {
+                  setMaterial("all");
+                  setPriceMin("");
+                  setPriceMax("");
+                  setSort("yeni");
+                }}
+                style={{
+                  ...HEAD,
+                  ...MONO,
+                  fontSize: 12,
+                  fontWeight: 700,
+                  flexShrink: 0,
+                  background: C.card,
+                  color: C.ink,
+                  border: `2px solid ${C.ink}`,
+                  borderRadius: 6,
+                  padding: "14px 16px",
+                }}
+              >
+                TEMİZLE
+              </button>
               <button
                 onClick={() => setShowFilters(false)}
                 style={{
-                  width: "100%",
+                  ...HEAD,
+                  ...MONO,
+                  flex: 1,
                   background: C.ink,
                   color: C.yellow,
-                  fontSize: 14,
-                  fontWeight: 900,
+                  fontSize: 13,
+                  fontWeight: 700,
                   letterSpacing: "0.02em",
                   border: `2px solid ${C.ink}`,
-                  borderRadius: 8,
+                  borderRadius: 6,
                   padding: "14px 0",
-                  textTransform: "uppercase",
                 }}
               >
                 {filtered.length} İLANI GÖSTER

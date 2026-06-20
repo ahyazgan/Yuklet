@@ -1,16 +1,17 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ChevronLeft, Check, MapPin, Phone, MessageSquare } from "lucide-react";
+import { ChevronLeft, Check, MapPin, Phone, MessageSquare, FileCheck, Star, ShieldCheck, AlertTriangle, X } from "lucide-react";
 import { LISTINGS } from "../data/listings";
 import { CATS } from "../data/categories";
-import { StarsDisplay, StarsInput } from "../components/Stars";
+import { StarsDisplay } from "../components/Stars";
 import ReportModal from "../components/ReportModal";
 import SEO from "../components/SEO";
 import { splitAmount, payableAmount, fmtTL, PAYMENT_LABEL } from "../utils/payments";
 import { newId, nowIso } from "../utils/id";
 
-// ── "SAHA" sevkiyat takibi — open kunye card + job timeline + live trip counter
-//    + dark detail/nakliyeci panel. Brutalist C palette + Space Mono, inline styled.
+// ── "SAHA" sevkiyat takibi — dark tracking kunye card with embedded timeline +
+//    live trip counter, white driver card, digital irsaliye card, green release CTA,
+//    and a bottom-sheet review modal. 2px ink frames, hazard stripe, Archivo + Space Mono.
 //    Tum eski islevsellik (faz akisi, escrow, degerlendirme, sikayet) korundu.
 
 const C = {
@@ -23,17 +24,23 @@ const C = {
   card: "#FFFFFF",
   stone: "#F4F1EA",
   border: "#E3DDD0",
-  line: "#F0ECE3",
   sub: "#5A5852",
   muted: "#9A968D",
   faint: "#A8A39A",
-  rose: "#B91C1C",
+  rose: "#DC2626",
+  sheet: "#F1EDE5",
 };
 const MONO = "'Space Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace";
+const ARCH = "'Archivo', system-ui, sans-serif";
+
+const HAZARD = "repeating-linear-gradient(45deg,#0A0A0A 0 9px,#FACC15 9px 18px)";
 
 const idText = (l) => "HMT-" + String(l.id).padStart(4, "0");
 
 const PHASES = [["eslesti", "Eşleşti"], ["yuklendi", "Yüklendi"], ["yolda", "Yolda"], ["teslim", "Teslim"]];
+
+const RATE_TAGS = ["Dakikti", "Belgeli", "İletişimi iyi", "Temiz araç", "Profesyonel"];
+const RATE_WORD = ["", "Kötü", "İdare eder", "Orta", "İyi", "Mükemmel"];
 
 const shell = {
   width: "100%",
@@ -44,7 +51,7 @@ const shell = {
   flexDirection: "column",
   background: C.bg,
   color: C.ink,
-  fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
+  fontFamily: "'Plus Jakarta Sans', system-ui, -apple-system, sans-serif",
 };
 
 export default function TakipPage({ listings = LISTINGS, user, offers = [], getContact, reviews = [], onAddReview, getUserRating, onUpdateListing, onReport, onPayToEscrow, onReleasePayment }) {
@@ -52,6 +59,8 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
   const navigate = useNavigate();
   const [rateVal, setRateVal] = useState(0);
   const [rateComment, setRateComment] = useState("");
+  const [rateTags, setRateTags] = useState([]);
+  const [showRate, setShowRate] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [payBusy, setPayBusy] = useState(false);
   const [payMsg, setPayMsg] = useState("");
@@ -61,11 +70,13 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
     return (
       <div style={shell}>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14, padding: "72px 20px", textAlign: "center" }}>
-          <div style={{ fontSize: 40 }}>📦</div>
-          <h1 style={{ fontFamily: MONO, fontSize: 20, fontWeight: 700, margin: 0 }}>Takip kaydı bulunamadı</h1>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 56, height: 56, border: `2px solid ${C.ink}`, background: C.card, boxShadow: `3px 3px 0 ${C.ink}` }}>
+            <MapPin size={26} />
+          </div>
+          <h1 style={{ fontFamily: ARCH, fontSize: 20, fontWeight: 900, textTransform: "uppercase", letterSpacing: "-0.02em", margin: 0 }}>Takip kaydı bulunamadı</h1>
           <button
             onClick={() => navigate("/ilanlar")}
-            style={{ background: C.yellow, border: `2px solid ${C.ink}`, padding: "11px 22px", fontFamily: MONO, fontSize: 12, fontWeight: 700, cursor: "pointer", color: C.ink }}
+            style={{ background: C.yellow, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "11px 22px", fontFamily: MONO, fontSize: 12, fontWeight: 700, cursor: "pointer", color: C.ink }}
           >
             İLANLARA DÖN
           </button>
@@ -82,9 +93,7 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
   const hasOffers = (l.offers || 0) > 0 || offers.some((o) => String(o.listingId) === String(l.id));
 
   const from = l.il;
-  const fromSub = l.yukleme || l.ilce || "";
   const to = l.bosaltma ? l.bosaltma.split(",")[0] : (l.ilce || "Saha");
-  const fiyat = accepted?.price ? `₺${accepted.price.toLocaleString("tr-TR")}` : (l.priceType === "sabit" && l.price ? `₺${l.price.toLocaleString("tr-TR")}` : "Teklife açık");
   const statusLabel = matched ? "Yolda" : hasOffers ? "Teklif aşaması" : "İlan yayında";
 
   // ── Karşılıklı değerlendirme (eşleşince) ──
@@ -133,135 +142,185 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
     setPayBusy(true); setPayMsg("");
     const res = await onReleasePayment?.(l);
     setPayBusy(false);
-    setPayMsg(res?.ok ? "Ödeme nakliyeciye serbest bırakıldı 🎉" : (res?.error || "İşlem başarısız."));
+    setPayMsg(res?.ok ? "Ödeme nakliyeciye serbest bırakıldı." : (res?.error || "İşlem başarısız."));
   };
+
+  const toggleTag = (t) => setRateTags((prev) => prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]);
 
   const submitReview = () => {
     if (!counterpart || !rateVal) return;
+    const tagSuffix = rateTags.length ? ` [${rateTags.join(", ")}]` : "";
     onAddReview?.({
       id: newId(), listingId: l.id, offerId: accepted?.id,
       fromId: user.id, fromName: user.name, toId: counterpart.id, toName: counterpart.name,
-      rating: rateVal, comment: rateComment.trim(), createdAt: nowIso(),
+      rating: rateVal, comment: (rateComment.trim() + tagSuffix).trim(), createdAt: nowIso(),
     });
-    setRateVal(0); setRateComment("");
+    setRateVal(0); setRateComment(""); setRateTags([]); setShowRate(false);
   };
 
-  // ── Kunye kartindaki ozellik grid ──
+  // ── Künye spec grid ──
   const SPECS = [
-    ["YÜKLEME", from],
-    ["BOŞALTMA", to],
     ["MİKTAR", l.amount ? `${l.amount} ${l.unit || ""}` : "—"],
     ["MALZEME", l.material || cat?.name || "—"],
     ["TARİH", l.dateText || "—"],
-    ["DURUM", statusLabel],
-  ];
-
-  // ── Koyu detay grid ──
-  const DETAIL = [
-    ["İŞ SAHİBİ", l.owner || "—"],
-    ["NAKLİYECİ", nakliyeci],
-    ["TUTAR", fiyat],
     ["KATEGORİ", cat?.name || "—"],
   ];
 
   // ── Shared inline-style helpers ──
-  const sectionCard = {
+  const whiteCard = {
     background: C.card,
     border: `2px solid ${C.ink}`,
-    padding: 18,
-    display: "flex",
-    flexDirection: "column",
+    borderRadius: 6,
+    padding: 16,
+    boxShadow: `3px 3px 0 rgba(10,10,10,0.10)`,
   };
-  const labelTiny = { fontFamily: MONO, fontSize: 9, fontWeight: 700, letterSpacing: "0.08em", color: C.muted, textTransform: "uppercase" };
-  const sectionTitle = { fontFamily: MONO, fontSize: 13, fontWeight: 700, letterSpacing: "0.04em", margin: 0, color: C.ink, textTransform: "uppercase" };
+  const labelTiny = { fontFamily: MONO, fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", color: C.muted, textTransform: "uppercase" };
+  const archTitle = { fontFamily: ARCH, fontSize: 14, fontWeight: 900, letterSpacing: "-0.01em", margin: 0, color: C.ink, textTransform: "uppercase" };
+
+  // ── Tracking status (mockup: ● Yolda) ──
+  const trackBadge = isDone
+    ? { label: "TESLİM", bg: C.green, color: "#fff", dot: "#7BE3A0" }
+    : matched
+      ? { label: statusLabel.toUpperCase(), bg: C.yellow, color: C.ink, dot: C.ink }
+      : { label: "BEKLEMEDE", bg: "#2A2A2A", color: "#9A968D", dot: "#5A5852" };
 
   return (
     <div style={shell}>
       <SEO title={`Takip · ${l.title}`} description="Eşleşen işin sevkiyat takibi." />
 
-      {/* ── DARK HEADER BLOCK (ink): nav + HMT no + title + status + trip counter + payout + bar ── */}
-      <div style={{ background: C.ink, color: "#fff", padding: "14px 18px 22px" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <button
-            onClick={() => navigate(-1)}
-            aria-label="Geri"
-            style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, background: "transparent", border: `2px solid ${C.yellow}`, color: C.yellow, cursor: "pointer" }}
-          >
-            <ChevronLeft size={18} />
-          </button>
-          <span style={{ fontFamily: MONO, fontSize: 11, fontWeight: 700, letterSpacing: "0.16em", color: C.yellow }}>SAHA · TAKİP</span>
-          <button
-            onClick={() => navigate(`/ilan/${l.id}`)}
-            aria-label="İlana git"
-            style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, background: "transparent", border: `2px solid #2A2A2A`, color: "#9A968D", cursor: "pointer", fontFamily: MONO, fontSize: 16, fontWeight: 700 }}
-          >
-            ⋯
-          </button>
-        </div>
-
-        {/* HMT no + title + status badge */}
-        <div style={{ marginTop: 18, display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
-          <div style={{ minWidth: 0 }}>
-            <span style={{ fontFamily: MONO, fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", color: "#7C7870" }}>TAKİP NO</span>
-            <div style={{ fontFamily: MONO, fontSize: 18, fontWeight: 700, color: C.yellow, marginTop: 2 }}>{idText(l)}</div>
-            <div style={{ fontSize: 12, fontWeight: 600, color: "#C9C4BA", marginTop: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 230 }}>{l.title}</div>
-          </div>
-          <span
-            style={{
-              flexShrink: 0,
-              fontFamily: MONO, fontSize: 10, fontWeight: 700, letterSpacing: "0.06em",
-              padding: "6px 10px",
-              border: `2px solid ${isDone ? C.green : matched ? C.yellow : "#3A3A3A"}`,
-              color: isDone ? "#7BE3A0" : matched ? C.yellow : "#9A968D",
-              background: isDone ? "rgba(22,128,60,0.15)" : "transparent",
-              display: "inline-flex", alignItems: "center", gap: 6, whiteSpace: "nowrap",
-            }}
-          >
-            <span style={{ width: 7, height: 7, borderRadius: "50%", background: isDone ? C.green : matched ? C.yellow : "#5A5852" }} />
-            {isDone ? "TAMAMLANDI" : matched ? "DEVAM" : "BEKLEMEDE"}
-          </span>
-        </div>
-
-        {/* Live trip counter + payout */}
-        <div style={{ marginTop: 20, display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 12 }}>
-          <div>
-            <span style={{ fontFamily: MONO, fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", color: "#7C7870" }}>
-              {estTrips ? "SEFER" : "AŞAMA"}
-            </span>
-            <div style={{ fontFamily: MONO, fontSize: 40, fontWeight: 700, lineHeight: 1, color: C.yellow, marginTop: 4 }}>
-              {tripsCurrent}
-              <span style={{ fontSize: 22, color: "#5A5852" }}>/{tripsTotal}</span>
-            </div>
-          </div>
-          <div style={{ textAlign: "right" }}>
-            <span style={{ fontFamily: MONO, fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", color: "#7C7870" }}>HAKEDİŞ</span>
-            <div style={{ fontFamily: MONO, fontSize: 20, fontWeight: 700, color: "#fff", marginTop: 4 }}>{fiyat}</div>
-          </div>
-        </div>
-
-        {/* Progress bar */}
-        <div style={{ marginTop: 14, height: 8, background: "#1F1F1F", border: `1px solid #2A2A2A` }}>
-          <div style={{ height: "100%", width: `${tripsPct}%`, background: C.yellow, transition: "width 0.4s ease" }} />
-        </div>
+      {/* ── HEADER (manila, 2px alt çizgi) ── */}
+      <div style={{ background: C.header, borderBottom: `2px solid ${C.ink}`, padding: "12px 16px", display: "flex", alignItems: "center", gap: 12 }}>
+        <button
+          onClick={() => navigate(-1)}
+          aria-label="Geri"
+          style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 38, height: 38, background: C.card, border: `2px solid ${C.ink}`, borderRadius: 6, color: C.ink, cursor: "pointer", flexShrink: 0 }}
+        >
+          <ChevronLeft size={20} />
+        </button>
+        <span style={{ fontFamily: MONO, fontSize: 12, fontWeight: 700, letterSpacing: "0.08em", color: C.ink, textTransform: "uppercase", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {idText(l)} · İŞ TAKİBİ
+        </span>
       </div>
 
       {/* ── BODY ── */}
-      <div style={{ flex: 1, padding: "16px 14px 96px", display: "flex", flexDirection: "column", gap: 14 }}>
+      <div style={{ flex: 1, padding: "16px 14px 110px", display: "flex", flexDirection: "column", gap: 14 }}>
 
-        {/* Tamamlandi vurgusu */}
-        {isDone && (
-          <div style={{ background: C.green, border: `2px solid ${C.ink}`, padding: "12px 16px", display: "flex", alignItems: "center", gap: 10, color: "#fff" }}>
-            <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, border: "2px solid #fff", flexShrink: 0 }}>
-              <Check size={16} />
-            </span>
-            <span style={{ fontFamily: MONO, fontSize: 12, fontWeight: 700, letterSpacing: "0.04em" }}>İŞ TAMAMLANDI — TESLİM EDİLDİ</span>
+        {/* ── KOYU TAKİP KARTI (rota + timeline + sefer ilerlemesi gömülü) ── */}
+        <div style={{ position: "relative", background: C.ink, border: `2px solid ${C.ink}`, borderRadius: 6, color: "#fff", overflow: "hidden", boxShadow: `5px 5px 0 rgba(10,10,10,0.18)` }}>
+          {/* Üst kısım */}
+          <div style={{ position: "relative", padding: "16px 18px 18px" }}>
+            <div style={{ position: "absolute", top: 0, right: 0, width: 20, height: "100%", backgroundImage: HAZARD, opacity: 0.9 }} />
+            <div style={{ paddingRight: 28 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+                <span style={{ fontFamily: MONO, fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", color: C.yellow }}>{idText(l)}</span>
+                <span
+                  style={{
+                    fontFamily: MONO, fontSize: 10, fontWeight: 700, letterSpacing: "0.04em",
+                    padding: "5px 9px", borderRadius: 5, border: `2px solid ${C.ink}`,
+                    background: trackBadge.bg, color: trackBadge.color,
+                    display: "inline-flex", alignItems: "center", gap: 6, whiteSpace: "nowrap",
+                  }}
+                >
+                  <span style={{ width: 7, height: 7, borderRadius: "50%", background: trackBadge.dot }} />
+                  {trackBadge.label}
+                </span>
+              </div>
+
+              <h1 style={{ fontFamily: ARCH, fontSize: 19, fontWeight: 900, letterSpacing: "-0.02em", textTransform: "uppercase", color: "#fff", margin: "12px 0 0", lineHeight: 1.15 }}>
+                {l.title}
+              </h1>
+
+              {/* Güzergah */}
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 14 }}>
+                <span style={{ width: 9, height: 9, borderRadius: "50%", background: C.yellow, flexShrink: 0 }} />
+                <span style={{ fontFamily: MONO, fontSize: 12, fontWeight: 700, color: C.yellow, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{from}</span>
+                <span style={{ flex: 1, height: 0, borderTop: `2px dashed ${C.yellow}`, minWidth: 16 }} />
+                <span style={{ width: 9, height: 9, borderRadius: "50%", border: `2px solid #9A968D`, flexShrink: 0 }} />
+                <span style={{ fontFamily: MONO, fontSize: 12, fontWeight: 700, color: "#9A968D", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{to}</span>
+              </div>
+            </div>
           </div>
-        )}
 
-        {/* AÇIK KÜNYE KARTI */}
-        <div style={sectionCard}>
+          {/* Timeline */}
+          {phase && (
+            <div style={{ background: "#161616", borderTop: `1.5px solid #2A2824`, padding: "16px 18px 14px" }}>
+              <div style={{ display: "flex", alignItems: "flex-start" }}>
+                {PHASES.slice(1).map(([k, lbl], idx, arr) => {
+                  // mockup: 3 adim (Yuklendi / Yolda / Teslim). i = index in full PHASES
+                  const i = idx + 1;
+                  const done = i < phaseIdx;
+                  const active = i === phaseIdx;
+                  const stepBg = done ? C.green : active ? C.yellow : "#0A0A0A";
+                  const stepBorder = done ? C.green : active ? C.yellow : "#2A2824";
+                  const stepColor = done ? "#fff" : active ? C.ink : "#5A5852";
+                  const isLast = idx === arr.length - 1;
+                  const lineDone = i < phaseIdx;
+                  return (
+                    <div key={k} style={{ display: "flex", alignItems: "center", flex: isLast ? "0 0 auto" : 1 }}>
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+                        <span
+                          style={{
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                            width: 26, height: 26, borderRadius: 5,
+                            background: stepBg, border: `2px solid ${stepBorder}`, color: stepColor, flexShrink: 0,
+                          }}
+                        >
+                          {done ? <Check size={14} /> : active ? <span style={{ width: 7, height: 7, borderRadius: "50%", background: C.ink }} /> : <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#5A5852" }} />}
+                        </span>
+                        <span style={{ fontFamily: MONO, fontSize: 8, fontWeight: 700, letterSpacing: "0.06em", color: done || active ? "#fff" : "#5A5852", textTransform: "uppercase" }}>{lbl}</span>
+                      </div>
+                      {!isLast && (
+                        <span style={{ flex: 1, height: 2, margin: "0 4px", marginBottom: 18, background: lineDone ? C.yellow : "#2A2824", minWidth: 14 }} />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Sefer ilerlemesi */}
+              <div style={{ marginTop: 16 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                  <span style={{ fontFamily: MONO, fontSize: 9, fontWeight: 700, letterSpacing: "0.08em", color: "#9A968D" }}>
+                    {estTrips ? "SEFER İLERLEMESİ" : "AŞAMA İLERLEMESİ"}
+                  </span>
+                  <span style={{ fontFamily: MONO, fontSize: 12, fontWeight: 700, color: C.yellow }}>
+                    {tripsCurrent}/{tripsTotal}
+                  </span>
+                </div>
+                <div style={{ height: 12, border: `2px solid ${C.yellow}`, borderRadius: 4, padding: 2, background: "#0A0A0A" }}>
+                  <div style={{ height: "100%", width: `${tripsPct}%`, background: C.yellow, borderRadius: 1, transition: "width 0.4s ease" }} />
+                </div>
+              </div>
+
+              {/* Faz ilerletme (sadece taraflar) */}
+              {canManage && (nextPhase || (estTrips && phaseIdx >= 1 && tripsDone < estTrips)) && (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 14 }}>
+                  {nextPhase && (
+                    <button
+                      onClick={advancePhase}
+                      style={{ flex: 1, minWidth: 140, background: C.yellow, color: C.ink, border: `2px solid ${C.yellow}`, borderRadius: 5, padding: "10px 12px", fontFamily: MONO, fontSize: 11, fontWeight: 700, cursor: "pointer" }}
+                    >
+                      {nextPhase[1].toUpperCase()} İŞARETLE →
+                    </button>
+                  )}
+                  {estTrips && phaseIdx >= 1 && tripsDone < estTrips && (
+                    <button
+                      onClick={() => onUpdateListing?.(l.id, { tripsDone: tripsDone + 1 })}
+                      style={{ background: "transparent", color: C.yellow, border: `2px solid #2A2824`, borderRadius: 5, padding: "10px 14px", fontFamily: MONO, fontSize: 11, fontWeight: 700, cursor: "pointer" }}
+                    >
+                      +1 SEFER
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* AÇIK KÜNYE KARTI (spec grid) */}
+        <div style={whiteCard}>
           <span style={labelTiny}>İŞ KÜNYESİ</span>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px 16px", marginTop: 14 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px 16px", marginTop: 12 }}>
             {SPECS.map(([k, v]) => (
               <div key={k} style={{ minWidth: 0 }}>
                 <span style={labelTiny}>{k}</span>
@@ -271,95 +330,60 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
           </div>
         </div>
 
-        {/* İŞ DURUMU ZAMAN ÇİZELGESİ */}
-        {phase && (
-          <div style={sectionCard}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-              <h2 style={sectionTitle}>Durum</h2>
-              {estTrips && (
-                <span style={{ fontFamily: MONO, fontSize: 11, fontWeight: 700, color: C.sub }}>{tripsDone}/{estTrips} SEFER</span>
-              )}
-            </div>
-
-            {/* Timeline: done / active / todo */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-              {PHASES.map(([k, lbl], i) => {
-                const done = i < phaseIdx;
-                const active = i === phaseIdx;
-                const isLast = i === PHASES.length - 1;
-                const dotBg = done ? C.green : active ? C.yellow : C.card;
-                const dotBorder = done ? C.green : active ? C.ink : C.border;
-                return (
-                  <div key={k} style={{ display: "flex", gap: 12 }}>
-                    {/* dot + connector */}
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                      <span
-                        style={{
-                          display: "flex", alignItems: "center", justifyContent: "center",
-                          width: 22, height: 22, borderRadius: "50%",
-                          background: dotBg, border: `2px solid ${dotBorder}`, flexShrink: 0,
-                          color: done ? "#fff" : C.ink,
-                        }}
-                      >
-                        {done ? <Check size={12} /> : active ? <span style={{ width: 7, height: 7, borderRadius: "50%", background: C.ink }} /> : null}
-                      </span>
-                      {!isLast && <span style={{ width: 2, flex: 1, minHeight: 22, background: done ? C.green : C.border }} />}
-                    </div>
-                    {/* label */}
-                    <div style={{ paddingBottom: isLast ? 0 : 14, paddingTop: 1 }}>
-                      <div style={{ fontFamily: MONO, fontSize: 12, fontWeight: 700, color: done || active ? C.ink : C.faint }}>{lbl}</div>
-                      <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>
-                        {done ? "Tamamlandı" : active ? "Şu an bu aşamada" : "Bekliyor"}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Faz ilerletme + sefer */}
-            {canManage && (
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 16 }}>
-                {nextPhase && (
-                  <button
-                    onClick={advancePhase}
-                    style={{ background: C.ink, color: "#fff", border: `2px solid ${C.ink}`, padding: "11px 16px", fontFamily: MONO, fontSize: 12, fontWeight: 700, cursor: "pointer" }}
-                  >
-                    {nextPhase[1].toUpperCase()} OLARAK İŞARETLE →
-                  </button>
-                )}
-                {estTrips && phaseIdx >= 1 && tripsDone < estTrips && (
-                  <button
-                    onClick={() => onUpdateListing?.(l.id, { tripsDone: tripsDone + 1 })}
-                    style={{ background: C.card, color: C.ink, border: `2px solid ${C.ink}`, padding: "11px 16px", fontFamily: MONO, fontSize: 12, fontWeight: 700, cursor: "pointer" }}
-                  >
-                    +1 SEFER
-                  </button>
-                )}
-                {phase === "teslim" && (
-                  <span style={{ fontFamily: MONO, fontSize: 12, fontWeight: 700, color: C.green, display: "inline-flex", alignItems: "center", gap: 6 }}>
-                    <Check size={14} /> Teslim edildi — iş tamamlandı
-                  </span>
-                )}
+        {/* SÜRÜCÜ KARTI */}
+        {matched && (
+          <div style={{ ...whiteCard, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 42, height: 42, borderRadius: 6, background: C.ink, color: C.yellow, fontFamily: ARCH, fontSize: 18, fontWeight: 900, flexShrink: 0 }}>
+                {(nakliyeci || "?").charAt(0).toUpperCase()}
               </div>
-            )}
-            {!canManage && phase === "teslim" && (
-              <p style={{ fontFamily: MONO, fontSize: 12, fontWeight: 700, color: C.green, margin: "14px 0 0", display: "inline-flex", alignItems: "center", gap: 6 }}>
-                <Check size={14} /> Bu iş tamamlandı.
-              </p>
-            )}
+              <div style={{ minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                  <span style={{ fontFamily: ARCH, fontSize: 14, fontWeight: 800, color: C.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{nakliyeci}</span>
+                  {accepted?.fromUserVerified || l.ownerVerified ? <ShieldCheck size={14} color={C.green} style={{ flexShrink: 0 }} /> : null}
+                </div>
+                <div style={{ fontFamily: MONO, fontSize: 10, color: C.sub, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {(l.vehicle || "Araç")}{l.capacity ? ` · ${l.capacity}` : ""}
+                </div>
+              </div>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+              {nakContact?.phone ? (
+                <a
+                  href={`tel:${nakContact.phone}`}
+                  aria-label="Ara"
+                  style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 40, height: 40, background: C.yellow, color: C.ink, border: `2px solid ${C.ink}`, borderRadius: 6 }}
+                >
+                  <Phone size={16} />
+                </a>
+              ) : (
+                <span
+                  aria-label="Telefon yok"
+                  style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 40, height: 40, background: C.stone, color: C.muted, border: `2px solid ${C.border}`, borderRadius: 6 }}
+                >
+                  <Phone size={16} />
+                </span>
+              )}
+              <button
+                onClick={() => navigate("/mesajlar")}
+                aria-label="Mesaj gönder"
+                style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 40, height: 40, background: C.card, color: C.ink, border: `2px solid ${C.ink}`, borderRadius: 6, cursor: "pointer" }}
+              >
+                <MessageSquare size={16} />
+              </button>
+            </div>
           </div>
         )}
 
         {/* ÖDEME / ESCROW (emanet) */}
         {matched && amountToPay > 0 && (
-          <div style={sectionCard}>
+          <div style={whiteCard}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-              <h2 style={sectionTitle}>Güvenli Ödeme</h2>
+              <h2 style={archTitle}>Güvenli Ödeme</h2>
               <span
                 style={{
                   fontFamily: MONO, fontSize: 10, fontWeight: 700, letterSpacing: "0.04em",
-                  padding: "5px 9px", border: `2px solid ${C.ink}`,
+                  padding: "5px 9px", border: `2px solid ${C.ink}`, borderRadius: 5,
                   background: payStatus === "serbest" ? C.green : payStatus === "bloke" ? C.yellow : payStatus === "iade" ? C.rose : C.stone,
                   color: payStatus === "serbest" || payStatus === "iade" ? "#fff" : C.ink,
                 }}
@@ -369,7 +393,7 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
             </div>
 
             {/* Tutar dökümü */}
-            <div style={{ background: C.stone, border: `2px solid ${C.border}`, padding: 14, display: "flex", flexDirection: "column", gap: 9 }}>
+            <div style={{ background: C.stone, border: `2px solid ${C.border}`, borderRadius: 6, padding: 14, display: "flex", flexDirection: "column", gap: 9 }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 13 }}>
                 <span style={{ color: C.sub }}>İş bedeli</span>
                 <span style={{ fontFamily: MONO, fontWeight: 700, color: C.ink }}>{fmtTL(split.total)}</span>
@@ -392,7 +416,7 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
             )}
             {payStatus === "bloke" && (
               <p style={{ fontSize: 12, lineHeight: 1.6, color: C.yellowDeep, margin: "12px 0 0" }}>
-                💰 Para emanette güvende. Yük <b>teslim edildiğinde</b> “Ödemeyi serbest bırak” ile nakliyeciye aktarılır.
+                Para emanette güvende. Yük <b>teslim edildiğinde</b> “Ödemeyi serbest bırak” ile nakliyeciye aktarılır.
               </p>
             )}
             {payStatus === "serbest" && (
@@ -405,25 +429,16 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
               <button
                 onClick={doPay}
                 disabled={payBusy}
-                style={{ marginTop: 14, width: "100%", background: C.yellow, border: `2px solid ${C.ink}`, padding: "13px 0", fontFamily: MONO, fontSize: 13, fontWeight: 700, color: C.ink, cursor: payBusy ? "default" : "pointer", opacity: payBusy ? 0.6 : 1 }}
+                style={{ marginTop: 14, width: "100%", background: C.yellow, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "13px 0", fontFamily: MONO, fontSize: 13, fontWeight: 700, color: C.ink, cursor: payBusy ? "default" : "pointer", opacity: payBusy ? 0.6 : 1 }}
               >
                 {payBusy ? "İŞLENİYOR…" : `${fmtTL(split.total)} EMANETE ÖDE`}
-              </button>
-            )}
-            {canRelease && (
-              <button
-                onClick={doRelease}
-                disabled={payBusy}
-                style={{ marginTop: 14, width: "100%", background: C.green, border: `2px solid ${C.ink}`, padding: "13px 0", fontFamily: MONO, fontSize: 13, fontWeight: 700, color: "#fff", cursor: payBusy ? "default" : "pointer", opacity: payBusy ? 0.6 : 1 }}
-              >
-                {payBusy ? "İŞLENİYOR…" : "TESLİM ALDIM — ÖDEMEYİ SERBEST BIRAK"}
               </button>
             )}
             {payStatus === "bloke" && !canRelease && isOwner && phase !== "teslim" && (
               <p style={{ fontSize: 11, color: C.muted, margin: "12px 0 0" }}>Serbest bırakma, iş “Teslim” aşamasına gelince açılır.</p>
             )}
             {isNakliyeci && payStatus === "bloke" && (
-              <p style={{ fontSize: 12, fontWeight: 700, color: C.yellowDeep, margin: "12px 0 0" }}>💰 İş bedeli emanette güvende. Teslimden sonra hesabına geçecek.</p>
+              <p style={{ fontSize: 12, fontWeight: 700, color: C.yellowDeep, margin: "12px 0 0" }}>İş bedeli emanette güvende. Teslimden sonra hesabına geçecek.</p>
             )}
             {isNakliyeci && payStatus === "serbest" && (
               <p style={{ fontFamily: MONO, fontSize: 12, fontWeight: 700, color: C.green, margin: "12px 0 0", display: "inline-flex", alignItems: "center", gap: 6 }}>
@@ -432,125 +447,64 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
             )}
 
             {payMsg && (
-              <div style={{ marginTop: 12, background: C.stone, border: `2px solid ${C.border}`, padding: "10px 14px", fontSize: 12, fontWeight: 600, color: C.ink }}>{payMsg}</div>
+              <div style={{ marginTop: 12, background: C.stone, border: `2px solid ${C.border}`, borderRadius: 6, padding: "10px 14px", fontSize: 12, fontWeight: 600, color: C.ink }}>{payMsg}</div>
             )}
           </div>
         )}
 
-        {/* ── KOYU DETAY / NAKLİYECİ PANELİ ── */}
-        <div style={{ background: C.ink, border: `2px solid ${C.ink}`, color: "#fff", padding: 18, display: "flex", flexDirection: "column", gap: 16 }}>
-          {/* Rota özeti */}
-          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, borderBottom: "2px solid #1F1F1F", paddingBottom: 14 }}>
-            <div style={{ minWidth: 0 }}>
-              <span style={{ fontFamily: MONO, fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", color: "#7C7870", display: "inline-flex", alignItems: "center", gap: 4 }}>
-                <MapPin size={10} /> YÜKLEME
-              </span>
-              <div style={{ fontFamily: MONO, fontSize: 13, fontWeight: 700, color: "#fff", marginTop: 4 }}>{from}</div>
-              {fromSub && <div style={{ fontSize: 11, color: "#9A968D", marginTop: 2 }}>{fromSub}</div>}
-            </div>
-            <div style={{ textAlign: "right", minWidth: 0 }}>
-              <span style={{ fontFamily: MONO, fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", color: "#7C7870" }}>BOŞALTMA · {l.dateText || "—"}</span>
-              <div style={{ fontFamily: MONO, fontSize: 13, fontWeight: 700, color: "#fff", marginTop: 4 }}>{to}</div>
-            </div>
-          </div>
-
-          {/* Detay grid */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px 16px" }}>
-            {DETAIL.map(([k, v]) => (
-              <div key={k} style={{ minWidth: 0 }}>
-                <span style={{ fontFamily: MONO, fontSize: 9, fontWeight: 700, letterSpacing: "0.08em", color: "#7C7870" }}>{k}</span>
-                <div style={{ fontSize: 13, fontWeight: 700, color: "#fff", marginTop: 3, overflow: "hidden", textOverflow: "ellipsis" }}>{v}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* Nakliyeci widget */}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, background: "#161616", border: "2px solid #2A2A2A", padding: 12 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 42, height: 42, borderRadius: "50%", border: `2px solid ${C.yellow}`, background: "#222", color: C.yellow, fontFamily: MONO, fontSize: 16, fontWeight: 700, flexShrink: 0 }}>
-                {(nakliyeci || "?").charAt(0).toUpperCase()}
-              </div>
-              <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{nakliyeci}</div>
-                <div style={{ fontFamily: MONO, fontSize: 9, color: "#9A968D", letterSpacing: "0.06em", marginTop: 2 }}>NAKLİYECİ</div>
-              </div>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-              {nakContact?.phone ? (
-                <a
-                  href={`tel:${nakContact.phone}`}
-                  aria-label="Ara"
-                  style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 38, height: 38, background: C.yellow, color: C.ink, border: `2px solid ${C.ink}` }}
-                >
-                  <Phone size={16} />
-                </a>
-              ) : (
-                <span
-                  aria-label="Telefon yok"
-                  style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 38, height: 38, background: "#222", color: "#5A5852", border: "2px solid #2A2A2A" }}
-                >
-                  <Phone size={16} />
-                </span>
-              )}
-              <button
-                onClick={() => navigate("/mesajlar")}
-                aria-label="Mesaj gönder"
-                style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 38, height: 38, background: "#fff", color: C.ink, border: `2px solid ${C.ink}`, cursor: "pointer" }}
-              >
-                <MessageSquare size={16} />
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Sözleşme / irsaliye */}
+        {/* DİJİTAL İRSALİYE KARTI */}
         {matched && accepted && (
           <button
             onClick={() => navigate(`/sozlesme/${accepted.id}`)}
-            style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, background: C.card, border: `2px solid ${C.ink}`, padding: "13px 0", fontFamily: MONO, fontSize: 12, fontWeight: 700, color: C.ink, cursor: "pointer" }}
+            style={{ ...whiteCard, display: "flex", alignItems: "center", gap: 12, cursor: "pointer", textAlign: "left", width: "100%" }}
           >
-            📄 TAŞIMA SÖZLEŞMESİ / İRSALİYE
+            <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 42, height: 42, border: `2px solid ${C.green}`, borderRadius: 6, color: C.green, flexShrink: 0 }}>
+              <FileCheck size={20} />
+            </span>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <div style={{ fontFamily: ARCH, fontSize: 14, fontWeight: 900, textTransform: "uppercase", letterSpacing: "-0.01em", color: C.ink }}>Dijital İrsaliye</div>
+              <div style={{ fontFamily: MONO, fontSize: 10, fontWeight: 700, color: C.green, marginTop: 3, display: "inline-flex", alignItems: "center", gap: 4 }}>
+                <Check size={11} /> {estTrips ? `${tripsDone} sefer kayıtlı` : "Sözleşme hazır"}
+              </div>
+            </div>
+            <ChevronLeft size={18} color={C.muted} style={{ transform: "rotate(180deg)", flexShrink: 0 }} />
           </button>
         )}
 
-        {/* Karşılıklı değerlendirme */}
+        {/* DEĞERLENDİRME açma kartı (eşleşince) */}
         {counterpart && (
-          <div style={{ ...sectionCard, ...(isDone && !myReview ? { borderColor: C.yellow, borderWidth: 3 } : {}) }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 8 }}>
-              <h2 style={sectionTitle}>{counterpart.role} Değerlendirmesi</h2>
-              {counterpartRating && <StarsDisplay value={counterpartRating.avg} count={counterpartRating.count} className="text-xs" />}
-            </div>
-            {myReview ? (
-              <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 700, color: C.green }}>
-                <StarsDisplay value={myReview.rating} className="text-sm" /> Değerlendirdin, teşekkürler ✓
+          myReview ? (
+            <div style={{ ...whiteCard, display: "flex", alignItems: "center", gap: 10 }}>
+              <Star size={20} color={C.yellow} fill={C.yellow} strokeWidth={2} style={{ flexShrink: 0 }} />
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontFamily: ARCH, fontSize: 13, fontWeight: 900, textTransform: "uppercase", color: C.green }}>Değerlendirdin</div>
+                <div style={{ fontSize: 12, color: C.sub, marginTop: 2 }}>
+                  <StarsDisplay value={myReview.rating} className="text-xs" /> · teşekkürler
+                </div>
               </div>
-            ) : (
-              <>
-                <p style={{ fontSize: 12, color: C.sub, margin: "0 0 14px", lineHeight: 1.6 }}>
-                  <b style={{ color: C.ink }}>{counterpart.name}</b> ile çalışman nasıldı? Puan ver, topluluk güvenini büyüt.
-                </p>
-                <StarsInput value={rateVal} onChange={setRateVal} />
-                <textarea
-                  value={rateComment}
-                  onChange={(e) => setRateComment(e.target.value)}
-                  placeholder="Kısa yorum (opsiyonel)"
-                  style={{ marginTop: 14, minHeight: 64, width: "100%", boxSizing: "border-box", background: C.stone, border: `2px solid ${C.border}`, padding: "11px 14px", fontSize: 13, color: C.ink, outline: "none", resize: "vertical", fontFamily: "inherit" }}
-                />
-                <button
-                  onClick={submitReview}
-                  disabled={!rateVal}
-                  style={{ marginTop: 12, width: "100%", background: C.yellow, border: `2px solid ${C.ink}`, padding: "12px 0", fontFamily: MONO, fontSize: 13, fontWeight: 700, color: C.ink, cursor: rateVal ? "pointer" : "default", opacity: rateVal ? 1 : 0.5 }}
-                >
-                  DEĞERLENDİR
-                </button>
-              </>
-            )}
-          </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowRate(true)}
+              style={{ ...whiteCard, ...(isDone ? { borderColor: C.yellow, boxShadow: `3px 3px 0 ${C.yellow}` } : {}), display: "flex", alignItems: "center", gap: 12, cursor: "pointer", textAlign: "left", width: "100%" }}
+            >
+              <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 42, height: 42, border: `2px solid ${C.ink}`, borderRadius: 6, color: C.ink, flexShrink: 0 }}>
+                <Star size={20} strokeWidth={2} />
+              </span>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ fontFamily: ARCH, fontSize: 14, fontWeight: 900, textTransform: "uppercase", letterSpacing: "-0.01em", color: C.ink }}>{counterpart.role}'yi Değerlendir</div>
+                <div style={{ fontFamily: MONO, fontSize: 10, color: C.sub, marginTop: 3 }}>
+                  {counterpartRating?.count ? `${Number(counterpartRating.avg).toFixed(1)} ★ · ${counterpartRating.count} değerlendirme` : "Henüz puanlanmadı"}
+                </div>
+              </div>
+              <ChevronLeft size={18} color={C.muted} style={{ transform: "rotate(180deg)", flexShrink: 0 }} />
+            </button>
+          )
         )}
 
         {/* Henüz eşleşmedi bilgisi */}
         {!matched && (
-          <div style={{ background: C.stone, border: `2px dashed ${C.border}`, padding: "16px 18px", textAlign: "center" }}>
+          <div style={{ background: C.stone, border: `2px dashed ${C.border}`, borderRadius: 6, padding: "16px 18px", textAlign: "center" }}>
             <p style={{ fontFamily: MONO, fontSize: 12, fontWeight: 700, color: C.sub, margin: 0 }}>BU İŞ HENÜZ EŞLEŞMEDİ</p>
             <p style={{ fontSize: 12, color: C.muted, margin: "8px 0 0", lineHeight: 1.6 }}>
               {user ? "Teklifler geldikçe takip burada güncellenir." : "Takip detayları eşleşme sonrası canlanır."}
@@ -561,11 +515,116 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
         {/* Şikayet / anlaşmazlık */}
         <button
           onClick={() => setShowReport(true)}
-          style={{ alignSelf: "center", background: "transparent", border: "none", fontFamily: MONO, fontSize: 11, fontWeight: 700, color: C.muted, cursor: "pointer", letterSpacing: "0.04em", padding: "4px 0" }}
+          style={{ alignSelf: "center", background: "transparent", border: "none", fontFamily: MONO, fontSize: 11, fontWeight: 700, color: C.muted, cursor: "pointer", letterSpacing: "0.04em", padding: "4px 0", display: "inline-flex", alignItems: "center", gap: 5 }}
         >
-          ⚠ SORUN BİLDİR / ANLAŞMAZLIK
+          <AlertTriangle size={12} /> SORUN BİLDİR / ANLAŞMAZLIK
         </button>
       </div>
+
+      {/* ── ALT SABİT: İŞİ TAMAMLA & ÖDEMEYİ SERBEST BIRAK ── */}
+      {canRelease && (
+        <div style={{ position: "sticky", bottom: 0, padding: "12px 14px 16px", background: `linear-gradient(to top, ${C.bg} 70%, transparent)`, maxWidth: 460, margin: "0 auto", width: "100%", boxSizing: "border-box" }}>
+          <button
+            onClick={doRelease}
+            disabled={payBusy}
+            style={{ width: "100%", background: C.green, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "15px 0", fontFamily: ARCH, fontSize: 14, fontWeight: 900, textTransform: "uppercase", letterSpacing: "-0.01em", color: "#fff", cursor: payBusy ? "default" : "pointer", opacity: payBusy ? 0.6 : 1, boxShadow: `4px 4px 0 ${C.ink}`, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8 }}
+          >
+            <Check size={18} /> {payBusy ? "İŞLENİYOR…" : "İşi Tamamla & Ödemeyi Serbest Bırak"}
+          </button>
+        </div>
+      )}
+
+      {/* ── DEĞERLENDİRME BOTTOM SHEET ── */}
+      {showRate && counterpart && (
+        <div
+          onClick={() => setShowRate(false)}
+          style={{ position: "fixed", inset: 0, zIndex: 60, background: "rgba(10,10,10,0.55)", display: "flex", alignItems: "flex-end", justifyContent: "center" }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{ width: "100%", maxWidth: 460, background: C.sheet, border: `2px solid ${C.ink}`, borderBottom: "none", borderTopLeftRadius: 12, borderTopRightRadius: 12, overflow: "hidden" }}
+          >
+            {/* Hazard şeridi */}
+            <div style={{ height: 8, backgroundImage: HAZARD }} />
+
+            <div style={{ padding: "18px 18px 22px" }}>
+              {/* Başlık satırı */}
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 44, height: 44, borderRadius: 6, background: C.ink, color: C.yellow, fontFamily: ARCH, fontSize: 18, fontWeight: 900, flexShrink: 0 }}>
+                  {(counterpart.name || "?").charAt(0).toUpperCase()}
+                </div>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ fontFamily: MONO, fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", color: C.green, textTransform: "uppercase" }}>● İŞ TAMAMLANDI</div>
+                  <h2 style={{ fontFamily: ARCH, fontSize: 17, fontWeight: 900, textTransform: "uppercase", letterSpacing: "-0.02em", color: C.ink, margin: "3px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {counterpart.name}'i Değerlendir
+                  </h2>
+                </div>
+                <button
+                  onClick={() => setShowRate(false)}
+                  aria-label="Kapat"
+                  style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, background: C.card, border: `2px solid ${C.ink}`, borderRadius: 6, color: C.ink, cursor: "pointer", flexShrink: 0 }}
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              {/* Yıldızlar */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 22 }}>
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <button
+                    key={n}
+                    onClick={() => setRateVal(n)}
+                    aria-label={`${n} yıldız`}
+                    style={{ background: "transparent", border: "none", padding: 0, cursor: "pointer", lineHeight: 0 }}
+                  >
+                    <Star size={38} strokeWidth={2} color={C.ink} fill={n <= rateVal ? C.yellow : C.card} />
+                  </button>
+                ))}
+              </div>
+              <div style={{ textAlign: "center", marginTop: 10, fontFamily: MONO, fontSize: 12, fontWeight: 700, color: rateVal ? C.ink : C.muted }}>
+                {rateVal ? `${rateVal}/5 · ${RATE_WORD[rateVal]}` : "Puanını seç"}
+              </div>
+
+              {/* Yorum */}
+              <textarea
+                value={rateComment}
+                onChange={(e) => setRateComment(e.target.value)}
+                placeholder="Kısa yorum (opsiyonel)"
+                style={{ marginTop: 16, minHeight: 70, width: "100%", boxSizing: "border-box", background: C.card, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "11px 14px", fontSize: 13, color: C.ink, outline: "none", resize: "vertical", fontFamily: "inherit" }}
+              />
+
+              {/* Etiket chip'leri */}
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 14 }}>
+                {RATE_TAGS.map((t) => {
+                  const on = rateTags.includes(t);
+                  return (
+                    <button
+                      key={t}
+                      onClick={() => toggleTag(t)}
+                      style={{
+                        background: on ? C.yellow : C.card, color: C.ink,
+                        border: `2px solid ${C.ink}`, borderRadius: 5,
+                        padding: "7px 12px", fontFamily: MONO, fontSize: 11, fontWeight: 700, cursor: "pointer",
+                      }}
+                    >
+                      {t}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Gönder */}
+              <button
+                onClick={submitReview}
+                disabled={!rateVal}
+                style={{ marginTop: 18, width: "100%", background: C.green, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "14px 0", fontFamily: ARCH, fontSize: 14, fontWeight: 900, textTransform: "uppercase", letterSpacing: "-0.01em", color: "#fff", cursor: rateVal ? "pointer" : "default", opacity: rateVal ? 1 : 0.5, boxShadow: rateVal ? `3px 3px 0 ${C.ink}` : "none" }}
+              >
+                Değerlendirmeyi Gönder
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showReport && (
         <ReportModal

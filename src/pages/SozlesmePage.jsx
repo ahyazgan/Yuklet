@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { ChevronLeft, Printer } from "lucide-react";
 import { LISTINGS } from "../data/listings";
 import { CATS } from "../data/categories";
 import SEO from "../components/SEO";
@@ -7,17 +8,74 @@ import { buildEIrsaliye, buildEFatura, KDV_RATE } from "../utils/eDocs";
 import { sendToGib, isEInvoiceConfigured } from "../lib/eInvoiceProvider";
 import { fmtTL } from "../utils/payments";
 
-// ── Dijital Taşıma Sözleşmesi / Sevk İrsaliyesi (yazdırılabilir).
-//    Eşleşen iş (kabul edilen teklif) için taraflar/güzergah/bedel belgesi.
+// ── "SAHA" dijital taşıma sözleşmesi / sevk irsaliyesi (yazdırılabilir).
+//    2px ink çerçeve, hazard şeridi, koyu tutar bloğu, Archivo uppercase + Space Mono.
+//    Tüm işlevsellik korundu: sözleşme türetme (offer/listing/getContact),
+//    e-İrsaliye + e-Fatura GİB gönderimi (mock), yazdır/PDF, navigate, SEO.
+
+const C = {
+  ink: "#0A0A0A",
+  header: "#EAE3D6",
+  yellow: "#FACC15",
+  green: "#16803C",
+  bg: "#F1EDE5",
+  card: "#FFFFFF",
+  stone: "#F4F1EA",
+  border: "#E3DDD0",
+  line: "#F0ECE3",
+  sub: "#5A5852",
+  muted: "#9A968D",
+  red: "#DC2626",
+};
+const MONO = "'Space Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace";
+const ARCH = "'Archivo', system-ui, sans-serif";
+const HAZARD = `repeating-linear-gradient(45deg, ${C.ink} 0 9px, ${C.yellow} 9px 18px)`;
 
 const belgeNo = (id) => "HMT-SZL-" + String(id).padStart(6, "0");
-const today = () => { try { return new Date().toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric" }); } catch { return ""; } };
+const ilanNo = (id) => "HMT-" + String(id).padStart(4, "0");
+const today = () => {
+  try {
+    return new Date().toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric" });
+  } catch {
+    return "";
+  }
+};
 
-function Field({ label, value }) {
+// ── Çerçeveli taraf kutusu (İş Veren / Taşıyan) ──
+function PartyBox({ label, name, lines = [] }) {
   return (
-    <div>
-      <div className="text-[10px] font-bold uppercase tracking-wide text-ham-muted">{label}</div>
-      <div className="text-sm font-bold text-ham-ink font-mono">{value || "—"}</div>
+    <div style={{ border: `2px solid ${C.ink}`, borderRadius: 6, padding: "12px 13px", background: C.card }}>
+      <div style={{ fontFamily: MONO, fontSize: 9.5, fontWeight: 700, letterSpacing: ".06em", color: C.sub, textTransform: "uppercase" }}>
+        {label}
+      </div>
+      <div style={{ fontFamily: ARCH, fontSize: 15, fontWeight: 800, color: C.ink, marginTop: 4, lineHeight: 1.15 }}>
+        {name || "—"}
+      </div>
+      {lines.filter(Boolean).map((t, i) => (
+        <div key={i} style={{ fontFamily: MONO, fontSize: 11, color: C.sub, marginTop: 3 }}>{t}</div>
+      ))}
+    </div>
+  );
+}
+
+// ── İş detayı tablo satırı ──
+function DetailRow({ label, value, last }) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "space-between",
+        gap: 12,
+        padding: "9px 13px",
+        borderBottom: last ? "none" : `1.5px solid ${C.line}`,
+      }}
+    >
+      <span style={{ fontFamily: MONO, fontSize: 10.5, fontWeight: 700, letterSpacing: ".04em", color: C.muted, textTransform: "uppercase", flexShrink: 0 }}>
+        {label}
+      </span>
+      <span style={{ fontFamily: MONO, fontSize: 11.5, fontWeight: 700, color: C.ink, textAlign: "right" }}>
+        {value || "—"}
+      </span>
     </div>
   );
 }
@@ -34,10 +92,20 @@ export default function SozlesmePage({ listings = LISTINGS, offers = [], getCont
 
   if (!offer || !l) {
     return (
-      <div className="mx-auto flex w-full max-w-[460px] flex-col items-center gap-3 px-4 pt-16 text-center text-ham-ink">
-        <div className="text-4xl">📄</div>
-        <h1 className="text-xl font-bold text-ham-ink">Sözleşme bulunamadı</h1>
-        <button onClick={() => navigate("/ilanlarim")} className="rounded-full bg-ham-yellow px-5 py-2.5 text-xs font-extrabold text-ham-ink">İlanlarım</button>
+      <div style={{ width: "100%", maxWidth: 460, margin: "0 auto", minHeight: "100vh", background: C.bg, fontFamily: "system-ui, sans-serif" }}>
+        <SEO title="Sözleşme bulunamadı" description="Dijital taşıma sözleşmesi." />
+        <div style={{ height: 8, backgroundImage: HAZARD }} />
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14, padding: "64px 24px", textAlign: "center", color: C.ink }}>
+          <div style={{ fontFamily: ARCH, fontSize: 22, fontWeight: 900, textTransform: "uppercase", letterSpacing: "-.02em" }}>
+            Sözleşme bulunamadı
+          </div>
+          <button
+            onClick={() => navigate("/ilanlarim")}
+            style={{ background: C.ink, color: C.yellow, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "11px 22px", fontFamily: ARCH, fontWeight: 800, fontSize: 13, textTransform: "uppercase", cursor: "pointer" }}
+          >
+            İlanlarım
+          </button>
+        </div>
       </div>
     );
   }
@@ -62,202 +130,283 @@ export default function SozlesmePage({ listings = LISTINGS, offers = [], getCont
     setGibBusy("");
   };
 
+  const gibOnayli = gib.irsaliye === "ONAYLI";
+
+  // güzergah & süre türetme
+  const guzergah = `${l.il}${l.ilce ? " / " + l.ilce : ""}${l.bosaltma ? "  →  " + l.bosaltma : ""}`;
+  const miktar = l.amount ? `${l.amount} ${l.unit || ""}`.trim() : "—";
+
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 py-6 text-ham-ink">
+    <div style={{ width: "100%", maxWidth: 460, margin: "0 auto", minHeight: "100vh", background: C.bg, color: C.ink, fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
       <SEO title={`Sözleşme ${belgeNo(offer.id)}`} description="Dijital taşıma sözleşmesi / sevk irsaliyesi." />
 
-      {/* Aksiyon barı (yazdırmada gizli) */}
-      <div className="mb-4 flex items-center justify-between gap-3 print:hidden">
-        <button onClick={() => navigate(-1)} className="flex h-10 w-10 items-center justify-center rounded-full bg-ham-card text-ham-sub shadow-sm">←</button>
-        <div className="flex gap-2">
-          <button onClick={() => window.print()} className="rounded-full bg-ham-ink px-5 py-2.5 text-sm font-bold text-[#FAF9F6]">🖨️ Yazdır / PDF</button>
+      {/* ── Header (yazdırmada gizli) ── */}
+      <header
+        className="print:hidden"
+        style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, background: C.header, borderBottom: `2px solid ${C.ink}`, padding: "12px 14px" }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <button
+            onClick={() => navigate(-1)}
+            aria-label="Geri"
+            style={{ width: 38, height: 38, display: "flex", alignItems: "center", justifyContent: "center", background: C.card, border: `2px solid ${C.ink}`, borderRadius: 6, cursor: "pointer", color: C.ink }}
+          >
+            <ChevronLeft size={20} strokeWidth={2.5} />
+          </button>
+          <div style={{ fontFamily: ARCH, fontSize: 15, fontWeight: 900, textTransform: "uppercase", letterSpacing: "-.02em", color: C.ink }}>
+            Sözleşme
+          </div>
         </div>
-      </div>
+        <button
+          onClick={() => window.print()}
+          style={{ display: "flex", alignItems: "center", gap: 7, background: C.ink, color: C.yellow, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "9px 14px", fontFamily: ARCH, fontWeight: 800, fontSize: 12, textTransform: "uppercase", cursor: "pointer" }}
+        >
+          <Printer size={15} strokeWidth={2.5} /> Yazdır / PDF
+        </button>
+      </header>
 
-      {/* BELGE */}
-      <div className="rounded-2xl border border-ham-border bg-ham-card p-7 shadow-sm print:rounded-none print:border-0 print:shadow-none">
-        {/* Başlık */}
-        <div className="flex items-start justify-between border-b border-ham-border pb-4">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-ham-yellow text-lg font-black text-ham-ink">H</div>
-            <div>
-              <div className="text-lg font-extrabold tracking-tight text-ham-ink">HamTed</div>
-              <div className="text-[9px] font-semibold tracking-[2px] text-ham-muted">YÜK & NAKLİYE</div>
+      <div style={{ padding: "16px 14px 32px" }}>
+        {/* ── SÖZLEŞME BELGESİ KARTI ── */}
+        <div
+          className="print:!border-2 print:!shadow-none"
+          style={{ border: `2px solid ${C.ink}`, borderRadius: 6, background: C.card, overflow: "hidden", boxShadow: "6px 6px 0 rgba(10,10,10,.12)" }}
+        >
+          {/* Hazard şeridi */}
+          <div style={{ height: 7, backgroundImage: HAZARD }} />
+
+          <div style={{ padding: "18px 16px" }}>
+            {/* Başlık satırı */}
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, borderBottom: `2px solid ${C.ink}`, paddingBottom: 14 }}>
+              <div>
+                <div style={{ fontFamily: ARCH, fontSize: 18, fontWeight: 900, textTransform: "uppercase", letterSpacing: "-.02em", color: C.ink, lineHeight: 1.05 }}>
+                  Taşıma<br />Sözleşmesi
+                </div>
+                <div style={{ fontFamily: MONO, fontSize: 9.5, color: C.sub, marginTop: 6 }}>
+                  e-İrsaliye uyumlu · GİB onaylı
+                </div>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
+                <div style={{ width: 40, height: 40, background: C.ink, borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <span style={{ fontFamily: ARCH, fontSize: 22, fontWeight: 900, color: C.yellow, lineHeight: 1 }}>H</span>
+                </div>
+                <div style={{ fontFamily: MONO, fontSize: 10, fontWeight: 700, color: C.ink }}>{belgeNo(offer.id)}</div>
+                <div style={{ fontFamily: MONO, fontSize: 9.5, color: C.muted }}>{today()}</div>
+              </div>
+            </div>
+
+            {/* İş Veren / Taşıyan 2x grid */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, paddingTop: 16 }}>
+              <PartyBox
+                label="İş Veren"
+                name={owner.name}
+                lines={[`VKN: ${ilanNo(l.id)}`, owner.phone && `Tel: ${owner.phone}`]}
+              />
+              <PartyBox
+                label="Taşıyan"
+                name={nak.name}
+                lines={[l.vehicle && `Araç: ${l.vehicle}`, nak.phone && `Tel: ${nak.phone}`]}
+              />
+            </div>
+
+            {/* İŞ DETAYI (sarı bar başlık + çerçeve tablo) */}
+            <div style={{ marginTop: 16 }}>
+              <div style={{ background: C.yellow, border: `2px solid ${C.ink}`, borderRadius: "6px 6px 0 0", padding: "7px 13px", fontFamily: ARCH, fontSize: 12.5, fontWeight: 900, textTransform: "uppercase", letterSpacing: ".02em", color: C.ink }}>
+                İş Detayı
+              </div>
+              <div style={{ border: `2px solid ${C.ink}`, borderTop: "none", borderRadius: "0 0 6px 6px" }}>
+                <DetailRow label="Malzeme" value={l.material || cat?.name} />
+                <DetailRow label="Güzergah" value={guzergah} />
+                <DetailRow label="Miktar" value={miktar} />
+                <DetailRow label="Süre / Tarih" value={l.dateText || l.recurringText} last />
+              </div>
+            </div>
+
+            {/* Anlaşılan tutar (koyu blok) */}
+            <div
+              style={{ marginTop: 16, background: C.ink, borderRadius: 6, padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, position: "relative", overflow: "hidden" }}
+            >
+              <div style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 22, backgroundImage: HAZARD }} />
+              <div style={{ fontFamily: MONO, fontSize: 10.5, fontWeight: 700, letterSpacing: ".06em", color: "#fff", textTransform: "uppercase" }}>
+                Anlaşılan<br />Tutar
+              </div>
+              <div style={{ fontFamily: MONO, fontSize: offer.price ? 22 : 13, fontWeight: 700, color: C.yellow, marginRight: 26, textAlign: "right" }}>
+                {bedel}
+              </div>
+            </div>
+
+            {/* Yasal metin */}
+            <div style={{ marginTop: 16, fontFamily: MONO, fontSize: 9, lineHeight: 1.7, color: C.muted }}>
+              1. Taşıma; yukarıda belirtilen güzergah, malzeme ve miktar için yapılır.
+              2. Araç yetki belgeleri (K belgesi vb.) ve sigorta yükümlülükleri taşıyana aittir.
+              3. Yükleme/boşaltma koşulları ve teslim süresi taraflarca teyit edilir.
+              4. Ödeme taraflar arasında belirlenen şekilde yapılır; HamTed yalnızca eşleştirme
+              platformudur, taşıma sözleşmesinin tarafı değildir.
+              5. Hafriyat taşımalarında döküm sahası ve ilgili belediye/çevre mevzuatına uyum
+              taraflarca sağlanır.
+            </div>
+
+            {/* İmza 2x grid */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, marginTop: 28, paddingTop: 4 }}>
+              {[["İş Veren", owner.name], ["Taşıyan", nak.name]].map(([role, who]) => (
+                <div key={role} style={{ textAlign: "center" }}>
+                  <div style={{ borderTop: `1.5px solid ${C.ink}`, paddingTop: 6 }}>
+                    <div style={{ fontFamily: MONO, fontSize: 10, fontWeight: 700, color: C.ink, textTransform: "uppercase" }}>İmza</div>
+                    <div style={{ fontFamily: MONO, fontSize: 9, color: C.muted, marginTop: 2 }}>{role} · {who}</div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
-          <div className="text-right">
-            <div className="text-sm font-extrabold text-ham-ink">TAŞIMA SÖZLEŞMESİ</div>
-            <div className="text-[11px] text-ham-sub">/ Sevk İrsaliyesi</div>
-            <div className="mt-1 text-[11px] font-bold text-ham-sub font-mono">{belgeNo(offer.id)}</div>
-            <div className="text-[11px] text-ham-sub font-mono">{today()}</div>
+
+          {/* Alt onay şeridi */}
+          <div style={{ borderTop: `2px solid ${C.ink}`, padding: "10px 16px", background: C.stone, textAlign: "center" }}>
+            <span style={{ fontFamily: MONO, fontSize: 10, fontWeight: 700, color: gibOnayli ? C.green : C.muted }}>
+              {gibOnayli ? "✓ e-İrsaliye GİB'e iletildi · ONAYLI" : "e-İrsaliye taslak — aşağıdan GİB'e gönderin"}
+            </span>
           </div>
         </div>
 
-        {/* Taraflar */}
-        <div className="grid grid-cols-2 gap-4 border-b border-ham-line py-5">
-          <div>
-            <div className="mb-2 text-xs font-extrabold uppercase tracking-wide text-ham-ink">İş Sahibi (Yük)</div>
-            <div className="text-base font-bold text-ham-ink">{owner.name}</div>
-            {owner.phone && <div className="text-sm text-ham-sub font-mono">📞 {owner.phone}</div>}
+        {/* ── RESMÎ e-BELGELER (e-İrsaliye + e-Fatura) ── */}
+        <div className="print:hidden" style={{ marginTop: 22 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <h2 style={{ fontFamily: ARCH, fontSize: 16, fontWeight: 900, textTransform: "uppercase", letterSpacing: "-.02em", color: C.ink }}>
+              Resmî e-Belgeler
+            </h2>
+            {!isEInvoiceConfigured && (
+              <span style={{ fontFamily: MONO, fontSize: 9.5, fontWeight: 700, color: C.sub, border: `2px solid ${C.ink}`, borderRadius: 5, padding: "1px 7px" }}>
+                DEMO
+              </span>
+            )}
           </div>
-          <div>
-            <div className="mb-2 text-xs font-extrabold uppercase tracking-wide text-ham-sub">Nakliyeci (Taşıyıcı)</div>
-            <div className="text-base font-bold text-ham-ink">{nak.name}</div>
-            {nak.phone && <div className="text-sm text-ham-sub font-mono">📞 {nak.phone}</div>}
-          </div>
-        </div>
+          <p style={{ fontFamily: "system-ui, sans-serif", fontSize: 12, color: C.sub, marginTop: 8, lineHeight: 1.55 }}>
+            HamTed, yük yola çıkınca <b>e-İrsaliye</b>, iş bitince <b>e-Fatura</b> belgesini otomatik
+            üretir ve (entegratör bağlanınca) GİB'e gönderir.
+          </p>
 
-        {/* İş bilgileri */}
-        <div className="grid grid-cols-2 gap-x-6 gap-y-4 border-b border-ham-line py-5 sm:grid-cols-3">
-          <Field label="İlan No" value={"HMT-" + String(l.id).padStart(4, "0")} />
-          <Field label="Kategori" value={cat?.name} />
-          <Field label="Malzeme" value={l.material || cat?.name} />
-          <Field label="Yükleme" value={`${l.il}${l.ilce ? " / " + l.ilce : ""}${l.yukleme ? " · " + l.yukleme : ""}`} />
-          <Field label="Boşaltma" value={l.bosaltma || "Belirtilen saha"} />
-          <Field label="Miktar" value={l.amount ? `${l.amount} ${l.unit || ""}` : "—"} />
-          {l.vehicle && <Field label="Araç" value={l.vehicle} />}
-          {l.capacity && <Field label="Kapasite" value={l.capacity} />}
-          <Field label="Tarih" value={l.dateText} />
-        </div>
-
-        {/* Bedel */}
-        <div className="flex items-center justify-between border-b border-ham-line py-5">
-          <div className="text-xs font-extrabold uppercase tracking-wide text-ham-muted">Anlaşılan Bedel</div>
-          <div className="text-2xl font-black tracking-tight text-ham-ink font-mono">{bedel}</div>
-        </div>
-
-        {/* Şartlar */}
-        <div className="py-5">
-          <div className="mb-2 text-xs font-extrabold uppercase tracking-wide text-ham-muted">Genel Şartlar</div>
-          <ol className="list-decimal space-y-1.5 pl-5 text-[12.5px] leading-relaxed text-ham-sub">
-            <li>Taşıma; yukarıda belirtilen güzergah, malzeme ve miktar için yapılır.</li>
-            <li>Araç, yetki belgeleri (ör. K belgesi) ve sigorta yükümlülükleri nakliyeciye aittir.</li>
-            <li>Yükleme/boşaltma koşulları ve teslim süresi taraflarca teyit edilir.</li>
-            <li>Ödeme, taraflar arasında belirlenen şekilde yapılır; HamTed yalnızca eşleştirme platformudur, taşıma sözleşmesinin tarafı değildir.</li>
-            <li>Hafriyat taşımalarında döküm sahası ve ilgili belediye/çevre mevzuatına uyum yük sahibi ve nakliyecinin sorumluluğundadır.</li>
-          </ol>
-        </div>
-
-        {/* İmza */}
-        <div className="grid grid-cols-2 gap-6 pt-6">
-          <div className="text-center">
-            <div className="mb-1 h-16 rounded-lg border border-dashed border-ham-border"></div>
-            <div className="text-xs font-bold text-ham-sub">İş Sahibi — {owner.name}</div>
-            <div className="text-[10px] text-ham-muted">Kaşe / İmza</div>
-          </div>
-          <div className="text-center">
-            <div className="mb-1 h-16 rounded-lg border border-dashed border-ham-border"></div>
-            <div className="text-xs font-bold text-ham-sub">Nakliyeci — {nak.name}</div>
-            <div className="text-[10px] text-ham-muted">Kaşe / İmza</div>
-          </div>
-        </div>
-
-        <div className="mt-6 border-t border-ham-line pt-3 text-center text-[10px] text-ham-muted">
-          Bu belge HamTed platformu üzerinden dijital olarak oluşturulmuştur · <span className="font-mono">{belgeNo(offer.id)}</span> · hamted.com.tr
-        </div>
-      </div>
-
-      {/* ── RESMİ e-BELGELER (e-İrsaliye + e-Fatura) ── */}
-      <div className="mt-6 space-y-4 print:hidden">
-        <div className="flex items-center gap-2">
-          <h2 className="text-lg font-extrabold tracking-tight text-ham-ink">Resmî e-Belgeler</h2>
-          {!isEInvoiceConfigured && <span className="rounded-full bg-ham-stone px-2 py-0.5 text-[10px] font-bold text-ham-sub">DEMO</span>}
-        </div>
-        <p className="-mt-2 text-[12px] text-ham-sub">
-          HamTed, yük yola çıkınca <b>e-İrsaliye</b>, iş bitince <b>e-Fatura</b> belgesini otomatik üretir ve (entegratör bağlanınca) GİB'e gönderir.
-        </p>
-
-        {/* e-İrsaliye */}
-        <EDocCard
-          doc={irs}
-          status={gib.irsaliye}
-          busy={gibBusy === "irsaliye"}
-          onSend={() => sendDoc("irsaliye", irs)}
-          rows={[
-            ["Senaryo", irs.senaryo + " / " + irs.tip],
-            ["ETTN", irs.ettn],
-            ["Gönderen (yük)", irs.gonderen],
-            ["Taşıyan", irs.tasiyan],
-            ["Malzeme / GTİP", `${irs.malzeme}${irs.gtip ? " · " + irs.gtip : ""}`],
-            ["Miktar", irs.miktar],
-            ["Çıkış", irs.cikis],
-            ["Varış", irs.varis],
-            ["Araç", irs.arac],
-          ]}
-        />
-
-        {/* e-Fatura */}
-        {hasAmount && (
+          {/* e-İrsaliye */}
           <EDocCard
-            doc={fat}
-            status={gib.fatura}
-            busy={gibBusy === "fatura"}
-            onSend={() => sendDoc("fatura", fat)}
+            doc={irs}
+            status={gib.irsaliye}
+            busy={gibBusy === "irsaliye"}
+            onSend={() => sendDoc("irsaliye", irs)}
             rows={[
-              ["Senaryo", fat.senaryo + " / " + fat.tip],
-              ["ETTN", fat.ettn],
-              ["Hizmeti veren", fat.saglayan],
-              ["Hizmeti alan", fat.alan],
-              ["Açıklama", fat.aciklama],
-            ]}
-            totals={[
-              ["Matrah (hizmet bedeli)", fmtTL(fat.matrah)],
-              [`KDV (%${Math.round(KDV_RATE * 100)})`, fmtTL(fat.kdv)],
-              ["Genel toplam", fmtTL(fat.toplam), true],
-              ["Platform komisyonu", "−" + fmtTL(fat.komisyon)],
-              ["Nakliyeci net hakediş", fmtTL(fat.netNakliyeci)],
+              ["Senaryo", irs.senaryo + " / " + irs.tip],
+              ["ETTN", irs.ettn],
+              ["Gönderen (yük)", irs.gonderen],
+              ["Taşıyan", irs.tasiyan],
+              ["Malzeme / GTİP", `${irs.malzeme}${irs.gtip ? " · " + irs.gtip : ""}`],
+              ["Miktar", irs.miktar],
+              ["Çıkış", irs.cikis],
+              ["Varış", irs.varis],
+              ["Araç", irs.arac],
             ]}
           />
-        )}
+
+          {/* e-Fatura */}
+          {hasAmount && (
+            <EDocCard
+              doc={fat}
+              status={gib.fatura}
+              busy={gibBusy === "fatura"}
+              onSend={() => sendDoc("fatura", fat)}
+              rows={[
+                ["Senaryo", fat.senaryo + " / " + fat.tip],
+                ["ETTN", fat.ettn],
+                ["Hizmeti veren", fat.saglayan],
+                ["Hizmeti alan", fat.alan],
+                ["Açıklama", fat.aciklama],
+              ]}
+              totals={[
+                ["Matrah (hizmet bedeli)", fmtTL(fat.matrah)],
+                [`KDV (%${Math.round(KDV_RATE * 100)})`, fmtTL(fat.kdv)],
+                ["Genel toplam", fmtTL(fat.toplam), true],
+                ["Platform komisyonu", "−" + fmtTL(fat.komisyon)],
+                ["Nakliyeci net hakediş", fmtTL(fat.netNakliyeci)],
+              ]}
+            />
+          )}
+        </div>
       </div>
     </div>
   );
 }
 
-// ── Tek e-belge kartı ──
+// ── Tek e-belge kartı (SAHA) ──
 function EDocCard({ doc, status, busy, onSend, rows = [], totals = [] }) {
   const onayli = status === "ONAYLI";
   const hata = typeof status === "string" && status.startsWith("HATA");
+  const badge = onayli
+    ? { bg: C.green, fg: "#fff", txt: "✓ GİB ONAYLI" }
+    : hata
+    ? { bg: C.red, fg: "#fff", txt: "HATA" }
+    : { bg: C.stone, fg: C.ink, txt: "TASLAK" };
+
   return (
-    <div className="rounded-2xl border border-ham-border bg-ham-card p-5 shadow-sm">
-      <div className="mb-3 flex items-start justify-between gap-3">
+    <div style={{ border: `2px solid ${C.ink}`, borderRadius: 6, background: C.card, marginTop: 14, overflow: "hidden", boxShadow: "3px 3px 0 rgba(10,10,10,.12)" }}>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, padding: "13px 14px", borderBottom: `2px solid ${C.ink}` }}>
         <div>
-          <div className="text-sm font-extrabold text-ham-ink">{doc.title}</div>
-          <div className="text-[11px] font-bold text-ham-sub font-mono">{doc.no}</div>
+          <div style={{ fontFamily: ARCH, fontSize: 14, fontWeight: 900, textTransform: "uppercase", letterSpacing: "-.01em", color: C.ink }}>{doc.title}</div>
+          <div style={{ fontFamily: MONO, fontSize: 10.5, fontWeight: 700, color: C.sub, marginTop: 2 }}>{doc.no}</div>
         </div>
-        <span className={`rounded-full px-2.5 py-1 text-[10px] font-extrabold ${onayli ? "bg-ham-stone text-ham-green" : hata ? "bg-ham-stone text-ham-red" : "bg-ham-stone text-ham-ink"}`}>
-          {onayli ? "✓ GİB onaylı" : hata ? "Hata" : "Taslak"}
+        <span style={{ background: badge.bg, color: badge.fg, border: `2px solid ${C.ink}`, borderRadius: 5, padding: "2px 8px", fontFamily: MONO, fontSize: 9.5, fontWeight: 700, whiteSpace: "nowrap" }}>
+          {badge.txt}
         </span>
       </div>
 
-      <div className="grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2">
+      <div style={{ padding: "4px 14px" }}>
         {rows.map(([k, v]) => (
-          <div key={k} className="flex justify-between gap-3 border-b border-ham-line py-1 text-[12px]">
-            <span className="shrink-0 font-semibold text-ham-muted">{k}</span>
-            <span className="text-right font-bold text-ham-ink font-mono">{v}</span>
+          <div key={k} style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "7px 0", borderBottom: `1.5px solid ${C.line}` }}>
+            <span style={{ fontFamily: MONO, fontSize: 10.5, fontWeight: 700, color: C.muted, textTransform: "uppercase", flexShrink: 0 }}>{k}</span>
+            <span style={{ fontFamily: MONO, fontSize: 11, fontWeight: 700, color: C.ink, textAlign: "right" }}>{v}</span>
           </div>
         ))}
       </div>
 
       {totals.length > 0 && (
-        <div className="mt-3 space-y-1 rounded-xl bg-ham-stone p-3">
+        <div style={{ margin: "10px 14px", border: `2px solid ${C.ink}`, borderRadius: 6, background: C.stone, padding: "10px 12px" }}>
           {totals.map(([k, v, strong]) => (
-            <div key={k} className={`flex justify-between text-[12px] ${strong ? "border-t border-ham-border pt-1.5 font-extrabold text-ham-ink" : "text-ham-sub"}`}>
-              <span>{k}</span><span className="font-mono">{v}</span>
+            <div
+              key={k}
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                gap: 12,
+                fontFamily: MONO,
+                fontSize: 11,
+                padding: strong ? "6px 0 2px" : "3px 0",
+                marginTop: strong ? 4 : 0,
+                borderTop: strong ? `1.5px solid ${C.ink}` : "none",
+                fontWeight: strong ? 700 : 400,
+                color: strong ? C.ink : C.sub,
+              }}
+            >
+              <span>{k}</span>
+              <span>{v}</span>
             </div>
           ))}
         </div>
       )}
 
-      <div className="mt-4 flex items-center gap-2">
+      <div style={{ padding: "0 14px 14px", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
         {!onayli && (
-          <button onClick={onSend} disabled={busy}
-            className="rounded-full bg-ham-ink px-5 py-2.5 text-xs font-extrabold text-[#FAF9F6] transition hover:opacity-90 disabled:opacity-60">
-            {busy ? "Gönderiliyor…" : "GİB'e gönder"}
+          <button
+            onClick={onSend}
+            disabled={busy}
+            style={{ background: C.ink, color: C.yellow, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "10px 18px", fontFamily: ARCH, fontWeight: 800, fontSize: 12, textTransform: "uppercase", cursor: busy ? "default" : "pointer", opacity: busy ? 0.6 : 1 }}
+          >
+            {busy ? "Gönderiliyor…" : "GİB'e Gönder"}
           </button>
         )}
-        {onayli && <span className="text-[12px] font-semibold text-ham-green">Belge GİB'e iletildi (demo). ETTN: <span className="font-mono">{doc.ettn}</span></span>}
-        {hata && <span className="text-[12px] font-semibold text-ham-red">{status.replace("HATA: ", "")}</span>}
+        {onayli && (
+          <span style={{ fontFamily: MONO, fontSize: 10.5, fontWeight: 700, color: C.green }}>
+            Belge GİB'e iletildi (demo). ETTN: {doc.ettn}
+          </span>
+        )}
+        {hata && (
+          <span style={{ fontFamily: MONO, fontSize: 10.5, fontWeight: 700, color: C.red }}>
+            {status.replace("HATA: ", "")}
+          </span>
+        )}
       </div>
     </div>
   );
