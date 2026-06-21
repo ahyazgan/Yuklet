@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Truck, ArrowRight, Check } from "lucide-react";
 import SEO from "../components/SEO";
+import Logo from "../components/Logo";
 
 /* ── SAHA paleti (kesin değerler — _DESIGN_SYSTEM.md) ──────────────── */
 const C = {
@@ -91,16 +92,8 @@ export default function MuteahhitPage() {
         />
 
         {/* logo satırı */}
-        <div className="mb-6 flex items-center gap-2.5">
-          <div
-            className="flex h-10 w-10 items-center justify-center text-[20px] font-black"
-            style={{ background: C.yellow, color: C.ink, fontFamily: ARCH, borderRadius: 6 }}
-          >
-            H
-          </div>
-          <span className="text-[16px] font-extrabold uppercase" style={{ color: "#FFFFFF", fontFamily: ARCH, letterSpacing: "-0.01em" }}>
-            DAYIM
-          </span>
+        <div className="mb-6 flex items-center">
+          <Logo size="md" onDark />
         </div>
 
         {/* mono rol etiketi */}

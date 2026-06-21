@@ -127,8 +127,8 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], user, 
   const [type, setType] = useState(editListing?.type || "is");
   const [cat, setCat] = useState(editListing?.cat || "hafriyat");
   const [form, setForm] = useState(() => editListing ? {
-    title: editListing.title || "", il: editListing.il || "Istanbul", ilce: editListing.ilce || "",
-    varisIl: editListing.varisIl || editListing.il || "Istanbul",
+    title: editListing.title || "", il: editListing.il || "İstanbul", ilce: editListing.ilce || "",
+    varisIl: editListing.varisIl || editListing.il || "İstanbul",
     yukleme: editListing.yukleme || "", bosaltma: editListing.bosaltma || "",
     material: editListing.material || "", amount: editListing.amount != null ? String(editListing.amount) : "", unit: editListing.unit || "ton",
     vehicle: editListing.vehicle || "", capacity: editListing.capacity || "",
@@ -143,7 +143,7 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], user, 
     stock: editListing.stock || "bol",
     deliveryIncluded: editListing.deliveryIncluded || false,
   } : {
-    title: "", il: "Istanbul", ilce: "", varisIl: "Istanbul", yukleme: "", bosaltma: "",
+    title: "", il: "İstanbul", ilce: "", varisIl: "İstanbul", yukleme: "", bosaltma: "",
     material: "", amount: "", unit: "ton", vehicle: "", capacity: "",
     dateText: "", priceType: "teklif", price: "", desc: "", owner: user?.name || "",
     recurring: false, recurringFreq: "haftalik", recurringDuration: "", dailyTrips: "",

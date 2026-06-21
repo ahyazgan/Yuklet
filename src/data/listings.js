@@ -5,7 +5,7 @@ export const LISTINGS = [
   {
     id: 1, type: "is", cat: "hafriyat",
     title: "Dudullu santiye hafriyat tasima",
-    il: "Istanbul", ilce: "Umraniye",
+    il: "İstanbul", ilce: "Umraniye",
     yukleme: "Dudullu OSB, blok C insaati",
     bosaltma: "Samandira dokum sahasi", varisIl: "İstanbul",
     material: "Hafriyat", amount: 1200, unit: "ton",
@@ -33,7 +33,7 @@ export const LISTINGS = [
   {
     id: 3, type: "arac", cat: "hafriyat",
     title: "Damperli kamyon bos - Anadolu yakasi",
-    il: "Istanbul", ilce: "Pendik",
+    il: "İstanbul", ilce: "Pendik",
     yukleme: "", bosaltma: "",
     material: "", amount: 18, unit: "ton",
     date: "2026-06-02", dateText: "Bugun-yarin musait",
@@ -75,7 +75,7 @@ export const LISTINGS = [
   {
     id: 6, type: "is", cat: "silobas",
     title: "Limandan fabrikaya dokme micir",
-    il: "Izmir", ilce: "Aliaga",
+    il: "İzmir", ilce: "Aliaga",
     yukleme: "Aliaga limani",
     bosaltma: "Kemalpasa sanayi", varisIl: "İzmir",
     material: "Micir", amount: 120, unit: "ton",

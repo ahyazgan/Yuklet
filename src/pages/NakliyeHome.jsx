@@ -610,7 +610,8 @@ export default function NakliyeHome({
     info: { bg: C.yellow, fg: C.ink, mark: "i" },
     warn: { bg: C.red, fg: "#fff", mark: "!" },
   }[ann.tone] || { bg: C.ink, fg: C.yellow, mark: "★" }) : null;
-  const role = user?.role || "muteahhit";
+  // Gerçek rol id'si "isveren" — bu sayfanın içsel anahtarı "muteahhit". Eşle.
+  const role = (user?.role === "isveren" ? "muteahhit" : user?.role) || "muteahhit";
 
   // istatistik şeridi (rol başına 3 kutu)
   const STAT = {
