@@ -73,7 +73,7 @@ const deviationOf = (dist) => DEVIATION_KM[dist] ?? 60;
 // teklife açık → önerilen fiyat ipucu · sabit fiyat → piyasa altı/üstü rozeti.
 function marketTagOf(l, history) {
   if (l.type !== "is" || !l.amount) return null;
-  const est = estimatePrice({ cat: l.cat, amount: l.amount, unit: l.unit, fromIl: l.il, toIl: l.varisIl, kmOverride: l.km, history });
+  const est = estimatePrice({ cat: l.cat, amount: l.amount, unit: l.unit, fromIl: l.il, toIl: l.varisIl, material: l.material, vehicle: l.vehicle, kmOverride: l.km, history });
   if (!est) return null;
   if (l.priceType === "sabit" && l.price) {
     const sig = priceSignal(l.price, est);
