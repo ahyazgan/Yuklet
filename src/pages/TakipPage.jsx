@@ -54,7 +54,7 @@ const shell = {
   fontFamily: "'Plus Jakarta Sans', system-ui, -apple-system, sans-serif",
 };
 
-export default function TakipPage({ listings = LISTINGS, user, offers = [], getContact, reviews = [], onAddReview, getUserRating, onUpdateListing, onReport, onPayToEscrow, onReleasePayment }) {
+export default function TakipPage({ listings = LISTINGS, user, offers = [], getContact, reviews = [], onAddReview, getUserRating, onUpdateListing, onReport, onPayToEscrow, onReleasePayment, onRefundPayment }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const [rateVal, setRateVal] = useState(0);
@@ -156,7 +156,22 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
     onUpdateListing?.(l.id, ok
       ? { deliveryProof: { ...proof, status: "onay", reviewedAt: nowIso() }, phase: "teslim", status: "kapali" }
       : { deliveryProof: { ...proof, status: "itiraz", reviewedAt: nowIso() } });
-    setPayMsg(ok ? "Teslim onaylandı. Ödemeyi serbest bırakabilirsin." : "Teslim kanıtına itiraz edildi.");
+    setPayMsg(ok ? "Teslim onaylandı. Ödemeyi serbest bırakabilirsin." : "Teslim kanıtına itiraz edildi. Anlaşmazlık çözümü açıldı.");
+  };
+  // ── Anlaşmazlık çözümü (teslim itirazı sonrası) ──
+  const acceptAfterDispute = () => {     // müteahhit yine de teslimi kabul eder
+    onUpdateListing?.(l.id, { deliveryProof: { ...proof, status: "onay", reviewedAt: nowIso() }, phase: "teslim", status: "kapali" });
+    setPayMsg("Teslim kabul edildi. Ödemeyi serbest bırakabilirsin.");
+  };
+  const resubmitProof = () => {          // nakliyeci düzeltilmiş kanıt için sıfırlar
+    onUpdateListing?.(l.id, { deliveryProof: null });
+    setPayMsg("Kanıt sıfırlandı. Düzeltilmiş kantar fişini tekrar gönderebilirsin.");
+  };
+  const doRefund = async () => {         // müteahhite iade
+    setPayBusy(true); setPayMsg("");
+    const res = await onRefundPayment?.(l);
+    setPayBusy(false);
+    setPayMsg(res?.ok ? "Ödeme müteahhite iade edildi." : (res?.error || "İade başarısız."));
   };
   const doPay = async () => {
     setPayBusy(true); setPayMsg("");
@@ -450,6 +465,11 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
                 <Check size={14} /> Ödeme tamamlandı, nakliyeciye {fmtTL(split.payout)} aktarıldı.
               </p>
             )}
+            {payStatus === "iade" && (
+              <p style={{ fontFamily: MONO, fontSize: 12, fontWeight: 700, color: C.rose, margin: "12px 0 0", display: "inline-flex", alignItems: "center", gap: 6 }}>
+                <AlertTriangle size={14} /> Anlaşmazlık sonucu {fmtTL(split.total)} müteahhite iade edildi.
+              </p>
+            )}
 
             {canPay && (
               <button
@@ -582,8 +602,40 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
                     <Check size={14} /> Teslim onaylandı.
                   </p>
                 )}
-                {proof.status === "itiraz" && (
-                  <p style={{ fontSize: 12, fontWeight: 700, color: C.rose, margin: 0 }}>Teslime itiraz edildi — taraflar mesajdan görüşmeli, gerekirse şikâyet açılmalı.</p>
+                {proof.status === "itiraz" && payStatus !== "iade" && (
+                  <div style={{ background: "#FEF2F2", border: `2px solid ${C.rose}`, borderRadius: 6, padding: 14 }}>
+                    <div style={{ display: "inline-flex", alignItems: "center", gap: 7, fontFamily: ARCH, fontSize: 13, fontWeight: 900, textTransform: "uppercase", color: C.rose }}>
+                      <AlertTriangle size={16} /> Anlaşmazlık açık
+                    </div>
+                    <p style={{ fontSize: 12, lineHeight: 1.6, color: C.sub, margin: "8px 0 12px" }}>
+                      Teslim kanıtına itiraz edildi. Para <b style={{ color: C.ink }}>emanette güvende</b>. Taraflar anlaşana kadar serbest bırakılmaz.
+                    </p>
+                    {isOwner && (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                        <div style={{ display: "flex", gap: 10 }}>
+                          <button onClick={doRefund} disabled={payBusy}
+                            style={{ flex: 1, background: C.card, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "12px 0", fontFamily: ARCH, fontSize: 12.5, fontWeight: 800, textTransform: "uppercase", color: C.ink, cursor: payBusy ? "default" : "pointer", opacity: payBusy ? 0.6 : 1 }}>
+                            {payBusy ? "İŞLENİYOR…" : "İadeyi Başlat"}
+                          </button>
+                          <button onClick={acceptAfterDispute}
+                            style={{ flex: 1, background: C.green, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "12px 0", fontFamily: ARCH, fontSize: 12.5, fontWeight: 800, textTransform: "uppercase", color: "#fff", cursor: "pointer", boxShadow: `3px 3px 0 ${C.ink}` }}>
+                            Yine de Onayla
+                          </button>
+                        </div>
+                        <p style={{ fontFamily: MONO, fontSize: 10, color: C.muted, margin: 0 }}>İade = para sana döner · Onayla = nakliyeciye ödenir.</p>
+                      </div>
+                    )}
+                    {isNakliyeci && (
+                      <button onClick={resubmitProof}
+                        style={{ width: "100%", background: C.yellow, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "12px 0", fontFamily: ARCH, fontSize: 12.5, fontWeight: 800, textTransform: "uppercase", color: C.ink, cursor: "pointer", boxShadow: `3px 3px 0 ${C.ink}`, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7 }}>
+                        <ClipboardCheck size={15} /> Düzeltilmiş Kanıt Gönder
+                      </button>
+                    )}
+                    <button onClick={() => setShowReport(true)}
+                      style={{ width: "100%", marginTop: 10, background: "none", border: "none", fontFamily: MONO, fontSize: 11, fontWeight: 700, color: C.rose, cursor: "pointer", textDecoration: "underline" }}>
+                      Çözülemedi mi? Platforma şikâyet aç
+                    </button>
+                  </div>
                 )}
               </div>
             )}

@@ -9,7 +9,7 @@ import {
 } from "./utils/storage";
 import { isSupabaseConfigured } from "./lib/supabase";
 import * as api from "./lib/api";
-import { chargeToEscrow, releaseFromEscrow } from "./lib/paymentProvider";
+import { chargeToEscrow, releaseFromEscrow, refundEscrow } from "./lib/paymentProvider";
 import { splitAmount } from "./utils/payments";
 import { buildNotifications } from "./utils/notifications";
 import usePushNotifications from "./hooks/usePushNotifications";
@@ -103,6 +103,13 @@ function AppShell() {
     const res = await releaseFromEscrow({ providerRef: listing.paymentRef, payoutTo: listing.ownerId });
     if (!res?.ok) return { ok: false, error: res?.error || "Serbest bırakma başarısız." };
     await updateListing(listing.id, { paymentStatus: "serbest" });
+    return { ok: true, mock: res.mock };
+  };
+  // Anlaşmazlık → emanetteki parayı müteahhite iade et.
+  const refundPayment = async (listing) => {
+    const res = await refundEscrow({ providerRef: listing.paymentRef });
+    if (!res?.ok) return { ok: false, error: res?.error || "İade başarısız." };
+    await updateListing(listing.id, { paymentStatus: "iade" });
     return { ok: true, mock: res.mock };
   };
 
@@ -318,7 +325,7 @@ function AppShell() {
                 <Route path="/" element={<PageTransition><NakliyeHome listings={listings} user={user} offers={offers} pendingOffersCount={pendingOffersCount} unreadCount={unreadCount} onLoginClick={requireAuth} /></PageTransition>} />
                 <Route path="/ilanlar" element={<PageTransition><ListingsPage listings={listings} /></PageTransition>} />
                 <Route path="/ilan/:id" element={<PageTransition><IlanDetayPage listings={listings} user={user} onRequireAuth={requireAuth} offers={offers} onAddOffer={addOffer} onReport={addReport} /></PageTransition>} />
-                <Route path="/takip/:id" element={<PageTransition><TakipPage listings={listings} user={user} offers={offers} getContact={getContact} reviews={reviews} onAddReview={addReview} getUserRating={getUserRating} onUpdateListing={updateListing} onReport={addReport} onPayToEscrow={payToEscrow} onReleasePayment={releasePayment} /></PageTransition>} />
+                <Route path="/takip/:id" element={<PageTransition><TakipPage listings={listings} user={user} offers={offers} getContact={getContact} reviews={reviews} onAddReview={addReview} getUserRating={getUserRating} onUpdateListing={updateListing} onReport={addReport} onPayToEscrow={payToEscrow} onReleasePayment={releasePayment} onRefundPayment={refundPayment} /></PageTransition>} />
                 <Route path="/sozlesme/:offerId" element={<PageTransition><SozlesmePage listings={listings} offers={offers} getContact={getContact} /></PageTransition>} />
                 <Route path="/cuzdan" element={<PageTransition><CuzdanPage user={user} listings={listings} offers={offers} onRequireAuth={requireAuth} /></PageTransition>} />
                 <Route path="/ilan-ver" element={<PageTransition><IlanVerPage onPublish={publishListing} onUpdate={updateListing} listings={listings} user={user} onRequireAuth={requireAuth} /></PageTransition>} />
