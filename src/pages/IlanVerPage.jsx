@@ -11,6 +11,7 @@ import { CATS, LISTING_TYPES, VEHICLE_TYPES, MATERIALS, UNITS, STOCK_LEVELS } fr
 import { IL_LIST } from "../data/listings";
 import CategoryIcon from "../components/CategoryIcon";
 import { estimatePrice, fmtTL, haversineKm } from "../utils/priceEstimate";
+import { loadOffers } from "../utils/storage";
 import { newId } from "../utils/id";
 import SEO from "../components/SEO";
 import Logo from "../components/Logo";
@@ -259,7 +260,7 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], user, 
   const materials = MATERIALS[cat] || [];
   const vehicles = VEHICLE_TYPES[cat] || [];
   const est = type === "is" && Number(form.amount) > 0
-    ? estimatePrice({ cat, amount: Number(form.amount), unit: form.unit, fromIl: form.il, toIl: form.varisIl, kmOverride: realKm })
+    ? estimatePrice({ cat, amount: Number(form.amount), unit: form.unit, fromIl: form.il, toIl: form.varisIl, kmOverride: realKm, history: { listings, offers: loadOffers() } })
     : null;
 
   // ── gate: not logged in ──
@@ -745,11 +746,12 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], user, 
             {est && (
               <div style={{ background: C.yellow, border: `2px solid ${C.ink}`, borderRadius: 6, padding: 14 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontFamily: MONO, fontSize: 10.5, fontWeight: 700, color: C.ink, letterSpacing: "0.04em" }}>TAHMİNİ PİYASA ARALIĞI</span>
+                  <span style={{ fontFamily: MONO, fontSize: 10.5, fontWeight: 700, color: C.ink, letterSpacing: "0.04em" }}>DAYIM AKILLI FİYAT · GÜVEN: {String(est.confidence).toUpperCase()}</span>
                   <span style={{ fontFamily: MONO, fontSize: 15, fontWeight: 700 }}>{fmtTL(est.min)} – {fmtTL(est.max)}</span>
                 </div>
                 <div style={{ marginTop: 5, fontFamily: MONO, fontSize: 10.5, color: "#3a3a2a" }}>
-                  {est.distLabel} · ~{est.km} km · {est.trips > 1 ? `~${est.trips} sefer (sefer başı ~${fmtTL(est.perTrip)})` : "tek sefer"} · sadece tahmindir
+                  Önerilen ~{fmtTL(est.mid)} · {est.distLabel} · ~{est.km} km · {est.trips > 1 ? `~${est.trips} sefer` : "tek sefer"}
+                  {est.dataDriven ? ` · ${est.sampleSize} benzer işten` : " · sezgisel tahmin"}
                 </div>
               </div>
             )}
