@@ -36,7 +36,7 @@ const fmt = (iso) => { try { return new Date(iso).toLocaleString("tr-TR", { day:
 
 const shortId = (id) => "HMT-" + String(id ?? "").slice(-4).toUpperCase().padStart(4, "0");
 
-const TABS = [["reports", "Şikayet"], ["disputes", "İtiraz"], ["users", "Üye"], ["docs", "Belge"], ["pricing", "Finans"], ["audit", "Kayıt"]];
+const TABS = [["reports", "Şikayet"], ["disputes", "İtiraz"], ["listings", "İlan"], ["users", "Üye"], ["docs", "Belge"], ["pricing", "Finans"], ["audit", "Kayıt"]];
 
 const PAY_BADGE = {
   bloke: { label: "EMANETTE", bg: "#FACC15", fg: "#0A0A0A" },
@@ -66,12 +66,13 @@ const btnBase = {
   letterSpacing: "-0.01em", lineHeight: 1, whiteSpace: "nowrap",
 };
 
-export default function AdminPage({ user, reports = [], docs = [], users = [], listings = [], offers = [], onRequireAuth, onSetReportStatus, onReviewDoc, onUpdateUser, onResolveDispute, audit = [], onLog }) {
+export default function AdminPage({ user, reports = [], docs = [], users = [], listings = [], offers = [], onRequireAuth, onSetReportStatus, onReviewDoc, onUpdateUser, onResolveDispute, audit = [], onLog, onUpdateListing }) {
   const navigate = useNavigate();
   const [tab, setTab] = useState("reports");
   const [fuelIndex, setFuelIndex] = useState(() => loadPricingConfig().fuelIndex || 1.0);
   const [feeRate, setFeeRate] = useState(() => loadPricingConfig().feeRate ?? 0.10);
   const [fuelSaved, setFuelSaved] = useState(false);
+  const [lq, setLq] = useState("");
   const saveFuel = (v, log) => { setFuelIndex(v); savePricingConfig({ ...loadPricingConfig(), fuelIndex: v }); setFuelSaved(true); setTimeout(() => setFuelSaved(false), 1500); if (log) onLog?.("config", `Yakıt endeksi → ×${v.toFixed(2)}`); };
   const saveFee = (v, log) => { setFeeRate(v); savePricingConfig({ ...loadPricingConfig(), feeRate: v }); setFuelSaved(true); setTimeout(() => setFuelSaved(false), 1500); if (log) onLog?.("config", `Komisyon → %${Math.round(v * 100)}`); };
 
@@ -330,6 +331,49 @@ export default function AdminPage({ user, reports = [], docs = [], users = [], l
                       <button onClick={() => onResolveDispute?.(l, true)}
                         style={{ flex: 1, ...btnBase, justifyContent: "center", background: C.green, color: "#fff", padding: "11px 0" }}>
                         Nakliyeci lehine · Öde
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
+
+        {/* ── İLAN MODERASYONU ── */}
+        {tab === "listings" && (() => {
+          const fq = lq.trim().toLowerCase();
+          const rows = listings.filter((l) => !fq || `${l.title || ""} ${l.il || ""} ${l.owner || ""}`.toLowerCase().includes(fq));
+          return (
+            <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 9, background: C.card, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "0 11px", height: 42 }}>
+                <Eye size={16} color={C.sub} strokeWidth={2.4} />
+                <input value={lq} onChange={(e) => setLq(e.target.value)} placeholder="Başlık · il · firma ara"
+                  style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontFamily: MONO, fontSize: 12, fontWeight: 700, color: C.ink }} />
+                <span style={{ fontFamily: MONO, fontSize: 10, color: C.muted }}>{rows.length}</span>
+              </div>
+              {rows.length === 0 ? <Empty icon={FileText} text="İlan bulunamadı." /> : rows.slice(0, 50).map((l) => {
+                const hidden = l.status === "kapali";
+                return (
+                  <div key={l.id} style={{ background: C.card, border: `2px solid ${l.featured ? C.yellow : C.ink}`, borderRadius: 6, padding: 12, boxShadow: l.featured ? "3px 3px 0 #FACC15" : "3px 3px 0 rgba(10,10,10,.10)", opacity: hidden ? 0.6 : 1 }}>
+                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
+                      <span style={{ fontFamily: HEAD, fontSize: 13.5, fontWeight: 800, textTransform: "uppercase", color: C.ink, lineHeight: 1.2, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{l.title || ("#" + l.id)}</span>
+                      <div style={{ display: "flex", gap: 5, flexShrink: 0 }}>
+                        {l.featured && <Badge bg={C.yellow} fg={C.ink} dot>SPONSORLU</Badge>}
+                        {hidden && <Badge bg={C.sub} fg="#fff">GİZLİ</Badge>}
+                      </div>
+                    </div>
+                    <div style={{ fontFamily: MONO, fontSize: 11, color: C.muted, marginTop: 6 }}>
+                      {l.cat === "hafriyat" ? "Hafriyat" : "Silobas"} · {l.type === "arac" ? "Araç" : l.type === "urun" ? "Ürün" : "İş"} · {l.il || "—"} · {l.owner || "—"} · {shortId(l.id)}
+                    </div>
+                    <div style={{ display: "flex", gap: 7, marginTop: 11, paddingTop: 10, borderTop: `1.5px solid ${C.border}` }}>
+                      <button onClick={() => { onUpdateListing?.(l.id, { featured: !l.featured }); onLog?.("listing", `${l.title || l.id}: ${l.featured ? "öne çıkarma kaldırıldı" : "ÖNE ÇIKARILDI"}`); }}
+                        style={{ ...btnBase, flex: 1, justifyContent: "center", background: l.featured ? C.yellow : C.card }}>
+                        <Flag size={12} strokeWidth={2.4} /> {l.featured ? "Kaldır" : "Öne çıkar"}
+                      </button>
+                      <button onClick={() => { onUpdateListing?.(l.id, { status: hidden ? "aktif" : "kapali" }); onLog?.("listing", `${l.title || l.id}: ${hidden ? "yayına alındı" : "gizlendi"}`); }}
+                        style={{ ...btnBase, flex: 1, justifyContent: "center", background: hidden ? C.green : C.card, color: hidden ? "#fff" : C.ink }}>
+                        {hidden ? <Eye size={12} strokeWidth={2.4} /> : <Trash2 size={12} strokeWidth={2.4} />} {hidden ? "Yayınla" : "Gizle"}
                       </button>
                     </div>
                   </div>

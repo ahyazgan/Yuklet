@@ -108,11 +108,17 @@ function ListingCard({ l, history, config }) {
     <div
       style={{
         background: C.card,
-        border: `2px solid ${C.ink}`,
+        border: `2px solid ${l.featured ? C.yellow : C.ink}`,
         borderRadius: 6,
         overflow: "hidden",
+        boxShadow: l.featured ? "3px 3px 0 #FACC15" : "none",
       }}
     >
+      {l.featured && (
+        <div style={{ ...MONO, fontSize: 8.5, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", background: C.yellow, color: C.ink, padding: "3px 12px", borderBottom: `1.5px solid ${C.ink}` }}>
+          ★ Sponsorlu / Öne çıkan
+        </div>
+      )}
       {/* üst satır: kategori rozeti + zaman */}
       <div
         className="flex items-center justify-between"
@@ -459,6 +465,8 @@ export default function ListingsPage({ listings = LISTINGS }) {
     if (sort === "teklif") out = [...out].sort((a, b) => (b.offers || 0) - (a.offers || 0));
     else if (sort === "ucuz") out = [...out].sort((a, b) => (a.price ?? Infinity) - (b.price ?? Infinity));
     else if (sort === "pahali") out = [...out].sort((a, b) => (b.price ?? -1) - (a.price ?? -1));
+    // Sponsorlu (öne çıkan) ilanlar her zaman üstte (mevcut sıra korunur)
+    out = [...out].sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
     return out;
   }, [listings, type, cat, il, q, material, priceMin, priceMax, sort]);
 
