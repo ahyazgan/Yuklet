@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Shield, Lock, Ban, Flag, FileText, FileCheck2, Trash2, Eye, CheckCircle2, X, Check, Smartphone, Fuel } from "lucide-react";
 import { loadPricingConfig, savePricingConfig } from "../utils/storage";
 import { seasonFactor } from "../utils/priceEstimate";
+import { fmtTL } from "../utils/payments";
 import SEO from "../components/SEO";
 import { isSupabaseConfigured } from "../lib/supabase";
 import { isAdmin } from "../utils/admin";
@@ -59,7 +60,7 @@ const btnBase = {
   letterSpacing: "-0.01em", lineHeight: 1, whiteSpace: "nowrap",
 };
 
-export default function AdminPage({ user, reports = [], docs = [], users = [], listings = [], onRequireAuth, onSetReportStatus, onReviewDoc }) {
+export default function AdminPage({ user, reports = [], docs = [], users = [], listings = [], offers = [], onRequireAuth, onSetReportStatus, onReviewDoc }) {
   const navigate = useNavigate();
   const [tab, setTab] = useState("reports");
   const [fuelIndex, setFuelIndex] = useState(() => loadPricingConfig().fuelIndex || 1.0);
@@ -99,6 +100,22 @@ export default function AdminPage({ user, reports = [], docs = [], users = [], l
   const pendingDocs = docs.filter((d) => (d.status || "beklemede") === "beklemede").length;
   const titleOf = (id) => listings.find((l) => String(l.id) === String(id))?.title || ("#" + id);
 
+  // ── Para akışı (emanet/komisyon/iade) — listing.paymentStatus üzerinden ──
+  const money = listings.reduce((a, l) => {
+    const amt = Number(l.paymentAmount) || 0, fee = Number(l.paymentFee) || 0;
+    if (l.paymentStatus === "bloke") { a.gmv += amt; a.escrow += amt; }
+    else if (l.paymentStatus === "serbest") { a.gmv += amt; a.fee += fee + (Number(l.earlyPayFee) || 0); }
+    else if (l.paymentStatus === "iade") { a.refund += amt; }
+    return a;
+  }, { gmv: 0, fee: 0, escrow: 0, refund: 0 });
+
+  // ── Funnel: ilan → teklif → eşleşme ──
+  const activeListings = listings.filter((l) => l.status === "aktif").length;
+  const matched = listings.filter((l) => l.status === "eslesti" || l.status === "kapali").length;
+  const acceptedOffers = offers.filter((o) => o.status === "kabul").length;
+  const acceptRate = offers.length ? Math.round((acceptedOffers / offers.length) * 100) : 0;
+  const disputes = listings.filter((l) => l.deliveryProof?.status === "itiraz").length;
+
   const STATS = [
     { label: "Açık Şikayet", value: openReports, red: true },
     { label: "Bekleyen Belge", value: pendingDocs },
@@ -126,9 +143,43 @@ export default function AdminPage({ user, reports = [], docs = [], users = [], l
           </div>
         )}
 
-        {/* ── Özet stat grid ── */}
+        {/* ── PARA AKIŞI — koyu blok: GMV + komisyon + emanet + iade ── */}
+        <div style={{ position: "relative", overflow: "hidden", background: C.ink, border: `2px solid ${C.ink}`, borderRadius: 6, padding: 16, boxShadow: "4px 4px 0 rgba(10,10,10,.18)" }}>
+          <span style={{ position: "absolute", top: 0, right: 0, bottom: 0, width: 8, backgroundImage: HAZARD }} />
+          <div style={{ fontFamily: MONO, fontSize: 9, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "#9A988E" }}>İŞLEM HACMİ (GMV)</div>
+          <div style={{ fontFamily: MONO, fontSize: 32, fontWeight: 700, color: "#fff", marginTop: 3, lineHeight: 1 }}>{fmtTL(money.gmv)}</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginTop: 14 }}>
+            {[
+              { label: "Komisyon geliri", value: fmtTL(money.fee), clr: "#4ADE80" },
+              { label: "Emanette", value: fmtTL(money.escrow), clr: C.yellow },
+              { label: "İade", value: fmtTL(money.refund), clr: money.refund ? "#F87171" : "#9A988E" },
+            ].map((m) => (
+              <div key={m.label} style={{ background: "rgba(255,255,255,0.05)", border: "1.5px solid #2A2A2A", borderRadius: 5, padding: "9px 8px" }}>
+                <div style={{ fontFamily: MONO, fontSize: 13, fontWeight: 700, color: m.clr }}>{m.value}</div>
+                <div style={{ fontFamily: MONO, fontSize: 7.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em", color: "#9A988E", marginTop: 4 }}>{m.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── FUNNEL: ilan → teklif → eşleşme ── */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
+          {[
+            { label: "Aktif İlan", value: activeListings },
+            { label: "Teklif", value: offers.length },
+            { label: "Kabul %", value: `${acceptRate}` },
+            { label: "Eşleşme", value: matched, green: true },
+          ].map((s) => (
+            <div key={s.label} style={{ background: C.card, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "11px 6px", textAlign: "center", boxShadow: "3px 3px 0 rgba(10,10,10,.10)" }}>
+              <div style={{ fontFamily: MONO, fontSize: 19, fontWeight: 700, lineHeight: 1, color: s.green ? C.green : C.ink }}>{s.value}</div>
+              <div style={{ fontFamily: MONO, fontSize: 7.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.03em", color: C.muted, marginTop: 5 }}>{s.label}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* ── Moderasyon stat grid ── */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 9 }}>
-          {STATS.map((s) => (
+          {[...STATS, ...(disputes ? [{ label: "Anlaşmazlık", value: disputes, red: true }] : [])].slice(0, 3).map((s) => (
             <div key={s.label} style={{ background: C.card, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "13px 8px", textAlign: "center", boxShadow: "3px 3px 0 rgba(10,10,10,.12)" }}>
               <div style={{ fontFamily: MONO, fontSize: 22, fontWeight: 700, lineHeight: 1, color: s.red ? C.red : C.ink }}>{s.value}</div>
               <div style={{ fontFamily: MONO, fontSize: 8, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em", color: C.muted, marginTop: 6 }}>{s.label}</div>
