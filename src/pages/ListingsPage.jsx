@@ -17,6 +17,8 @@ import {
   Minus,
   Compass,
   Inbox,
+  Activity,
+  TrendingUp,
 } from "lucide-react";
 import { LISTINGS, IL_LIST } from "../data/listings";
 import { CATS, MATERIALS } from "../data/categories";
@@ -560,6 +562,22 @@ export default function ListingsPage({ listings = LISTINGS }) {
               </div>
             )}
           </div>
+
+          {/* Piyasa Nabzı girişi — DAYIM Akıllı Fiyat referansı */}
+          {mode === "normal" && (
+            <button
+              onClick={() => navigate("/piyasa")}
+              className="flex items-center justify-between"
+              style={{ width: "100%", marginTop: 12, background: C.ink, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "9px 12px", cursor: "pointer", boxShadow: "3px 3px 0 rgba(10,10,10,0.12)" }}
+            >
+              <span className="flex items-center gap-2" style={{ minWidth: 0 }}>
+                <Activity size={16} color={C.yellow} strokeWidth={2.6} />
+                <span style={{ ...HEAD, fontSize: 12.5, fontWeight: 800, color: "#fff" }}>Piyasa Nabzı</span>
+                <span style={{ ...MONO, fontSize: 9.5, color: "#9A988E" }} className="truncate">₺/ton-km fiyat referansı</span>
+              </span>
+              <TrendingUp size={15} color={C.yellow} strokeWidth={2.6} style={{ flexShrink: 0 }} />
+            </button>
+          )}
 
           {/* arama + filtre */}
           <div className="flex items-center gap-2" style={{ marginTop: 12 }}>

@@ -46,6 +46,7 @@ const NasilCalisirPage = lazy(() => import("./pages/NasilCalisirPage"));
 const HakkimizdaPage = lazy(() => import("./pages/HakkimizdaPage"));
 const IletisimPage = lazy(() => import("./pages/IletisimPage"));
 const LegalPage = lazy(() => import("./pages/LegalPage"));
+const PiyasaNabziPage = lazy(() => import("./pages/PiyasaNabziPage"));
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -333,6 +334,7 @@ function AppShell() {
                 <Route path="/nasil-calisir" element={<PageTransition><NasilCalisirPage /></PageTransition>} />
                 <Route path="/hakkimizda" element={<PageTransition><HakkimizdaPage /></PageTransition>} />
                 <Route path="/iletisim" element={<PageTransition><IletisimPage /></PageTransition>} />
+                <Route path="/piyasa" element={<PageTransition><PiyasaNabziPage listings={listings} offers={offers} /></PageTransition>} />
                 <Route path="/yasal/:slug" element={<PageTransition><LegalPage /></PageTransition>} />
                 <Route path="*" element={<PageTransition><NotFoundPage /></PageTransition>} />
               </Routes>

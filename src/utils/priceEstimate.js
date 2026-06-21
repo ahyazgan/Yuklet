@@ -49,38 +49,95 @@ function tonsOf(l) {
 
 // ── Geçmişten ₺/ton-km örnekleri çıkar ──────────────────────────────
 // Kabul edilmiş teklifler (gerçek işlem) + sabit fiyatlı iş ilanları (talep fiyatı).
-// Aynı kategori + benzer mesafe bandındaki işlere bakar.
-function learnRates({ cat, km }, { listings = [], offers = [] }) {
+// Her iş ilanından bir ₺/ton-km örneği çıkar (kabul teklif > sabit fiyat).
+// Hem fiyat tahmini hem Piyasa Nabzı bu havuzu kullanır.
+export function collectSamples({ listings = [], offers = [] }) {
   const acceptedByListing = {};
   offers.forEach((o) => {
     if (o.status === "kabul" && Number(o.price) > 0) {
-      (acceptedByListing[o.listingId] ||= []).push(Number(o.price));
+      (acceptedByListing[o.listingId] ||= []).push({ price: Number(o.price), date: o.createdAt || null });
     }
   });
 
-  const rates = [];           // ₺/ton-km
-  let accepted = 0;
+  const samples = [];
   listings.forEach((l) => {
-    if (l.type !== "is" || l.cat !== cat) return;
+    if (l.type !== "is") return;
     const lkm = kmOf(l);
     if (!lkm) return;
-    // mesafe benzerliği: mevcut işin 0.4×–2.5× bandı (yerel ↔ şehirlerarası karışmasın)
-    if (km && (lkm < km * 0.4 || lkm > km * 2.5)) return;
     const tons = tonsOf(l);
     if (!tons) return;
     const tonkm = tons * lkm;
     if (tonkm <= 0) return;
-
+    const r = routeOf(l);
     const acc = acceptedByListing[l.id];
     if (acc && acc.length) {
       // kabul edilen teklif = işin toplam bedeli (gerçek işlem sinyali)
-      rates.push(median(acc) / tonkm);
-      accepted++;
+      const lastDate = acc.map((a) => a.date).filter(Boolean).sort().pop() || null;
+      samples.push({ rate: median(acc.map((a) => a.price)) / tonkm, cat: l.cat, material: l.material || "", fromIl: r.fromIl, toIl: r.toIl, km: lkm, accepted: true, date: lastDate });
     } else if (l.priceType === "sabit" && Number(l.price) > 0) {
-      rates.push(Number(l.price) / tonkm);
+      samples.push({ rate: Number(l.price) / tonkm, cat: l.cat, material: l.material || "", fromIl: r.fromIl, toIl: r.toIl, km: lkm, accepted: false, date: null });
     }
   });
+  return samples;
+}
+
+// Aynı kategori + benzer mesafe bandındaki işlerden ₺/ton-km örnekleri.
+function learnRates({ cat, km }, history) {
+  const rates = [];
+  let accepted = 0;
+  collectSamples(history).forEach((s) => {
+    if (s.cat !== cat) return;
+    // mesafe benzerliği: mevcut işin 0.4×–2.5× bandı (yerel ↔ şehirlerarası karışmasın)
+    if (km && (s.km < km * 0.4 || s.km > km * 2.5)) return;
+    rates.push(s.rate);
+    if (s.accepted) accepted++;
+  });
   return { rates, accepted, n: rates.length };
+}
+
+// ── Piyasa Nabzı: güzergah/malzeme/kategori bazlı ₺/ton-km referansı ──
+export function marketPulse(history) {
+  const all = collectSamples(history);
+  const accepted = all.filter((s) => s.accepted).length;
+
+  const byCat = {};
+  ["hafriyat", "silobas"].forEach((c) => {
+    const rs = all.filter((s) => s.cat === c);
+    const m = median(rs.map((s) => s.rate));
+    byCat[c] = m ? { rate: m, n: rs.length, accepted: rs.filter((s) => s.accepted).length, min: m * 0.85, max: m * 1.15 } : null;
+  });
+
+  // güzergah hatları (fromIl → toIl)
+  const laneMap = {};
+  all.forEach((s) => { if (s.fromIl && s.toIl) (laneMap[`${s.fromIl}→${s.toIl}`] ||= []).push(s); });
+  const lanes = Object.entries(laneMap).map(([k, arr]) => {
+    const rate = median(arr.map((a) => a.rate));
+    const km = Math.round(median(arr.map((a) => a.km)));
+    const [from, to] = k.split("→");
+    return { from, to, rate, km, n: arr.length, accepted: arr.filter((a) => a.accepted).length, sampleTrip: round50(rate * 20 * km) };
+  }).sort((a, b) => b.n - a.n || b.rate - a.rate).slice(0, 6);
+
+  // malzeme bazlı ortalama
+  const matMap = {};
+  all.forEach((s) => { if (s.material) (matMap[s.material] ||= []).push(s.rate); });
+  const materials = Object.entries(matMap)
+    .map(([material, rs]) => ({ material, rate: median(rs), n: rs.length }))
+    .sort((a, b) => b.n - a.n || b.rate - a.rate).slice(0, 6);
+
+  // trend: tarihli kabul örneklerini eski/yeni yarıya bölüp medyan ₺/ton-km kıyası
+  const dated = all.filter((s) => s.accepted && s.date).sort((a, b) => new Date(a.date) - new Date(b.date));
+  let trend = null;
+  if (dated.length >= 4) {
+    const mid = Math.floor(dated.length / 2);
+    const older = median(dated.slice(0, mid).map((s) => s.rate));
+    const recent = median(dated.slice(mid).map((s) => s.rate));
+    if (older && recent) {
+      const pct = Math.round(((recent - older) / older) * 100);
+      trend = { pct, dir: pct > 1 ? "up" : pct < -1 ? "down" : "flat" };
+    }
+  }
+
+  return { samples: all.length, accepted, byCat, lanes, materials, trend };
 }
 
 const CONF = (n) => (n >= 6 ? "yüksek" : n >= 3 ? "orta" : n >= 1 ? "düşük" : "tahmin");
