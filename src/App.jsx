@@ -5,7 +5,7 @@ import {
   saveTheme, loadListings, saveListings, loadUser, saveUser,
   loadUsers, saveUsers, loadOffers, saveOffers, loadMessages, saveMessages,
   loadMsgSeen, saveMsgSeen, loadNotifSeen, loadReviews, saveReviews, loadDocs, saveDocs,
-  loadOnboarded, saveOnboarded, loadReports, saveReports,
+  loadOnboarded, saveOnboarded, loadReports, saveReports, loadPricingConfig,
 } from "./utils/storage";
 import { isSupabaseConfigured } from "./lib/supabase";
 import * as api from "./lib/api";
@@ -92,7 +92,7 @@ function AppShell() {
 
   // ── Ödeme / Escrow (emanet) — sağlayıcı (mock veya gerçek) + listing durumu ──
   const payToEscrow = async (listingId, amount) => {
-    const split = splitAmount(amount);
+    const split = splitAmount(amount, loadPricingConfig().feeRate ?? undefined);
     const res = await chargeToEscrow({ amount: split.total, listingId, payerId: (profile || user)?.id });
     if (!res?.ok) return { ok: false, error: res?.error || "Ödeme başarısız." };
     await updateListing(listingId, {

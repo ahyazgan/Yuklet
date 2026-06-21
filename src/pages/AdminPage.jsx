@@ -36,7 +36,13 @@ const fmt = (iso) => { try { return new Date(iso).toLocaleString("tr-TR", { day:
 
 const shortId = (id) => "HMT-" + String(id ?? "").slice(-4).toUpperCase().padStart(4, "0");
 
-const TABS = [["reports", "Şikayetler"], ["docs", "Belgeler"], ["users", "Kullanıcılar"], ["pricing", "Fiyat"]];
+const TABS = [["reports", "Şikayetler"], ["docs", "Belgeler"], ["users", "Kullanıcılar"], ["pricing", "Finans"]];
+
+const PAY_BADGE = {
+  bloke: { label: "EMANETTE", bg: "#FACC15", fg: "#0A0A0A" },
+  serbest: { label: "ÖDENDİ", bg: "#16803C", fg: "#fff" },
+  iade: { label: "İADE", bg: "#DC2626", fg: "#fff" },
+};
 
 // Report status badge config: label, bg, fg.
 const REPORT_STATUS = {
@@ -64,8 +70,10 @@ export default function AdminPage({ user, reports = [], docs = [], users = [], l
   const navigate = useNavigate();
   const [tab, setTab] = useState("reports");
   const [fuelIndex, setFuelIndex] = useState(() => loadPricingConfig().fuelIndex || 1.0);
+  const [feeRate, setFeeRate] = useState(() => loadPricingConfig().feeRate ?? 0.10);
   const [fuelSaved, setFuelSaved] = useState(false);
   const saveFuel = (v) => { setFuelIndex(v); savePricingConfig({ ...loadPricingConfig(), fuelIndex: v }); setFuelSaved(true); setTimeout(() => setFuelSaved(false), 1500); };
+  const saveFee = (v) => { setFeeRate(v); savePricingConfig({ ...loadPricingConfig(), feeRate: v }); setFuelSaved(true); setTimeout(() => setFuelSaved(false), 1500); };
 
   // ── Gate: giriş yok ──
   if (!user) {
@@ -312,6 +320,30 @@ export default function AdminPage({ user, reports = [], docs = [], users = [], l
         {/* ── FİYAT: yakıt endeksi + mevsim ── */}
         {tab === "pricing" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+
+            {/* ── KOMİSYON ORANI ── */}
+            <div style={{ background: C.card, border: `2px solid ${C.ink}`, borderRadius: 6, padding: 16, boxShadow: "3px 3px 0 rgba(10,10,10,.12)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+                <span style={{ width: 36, height: 36, borderRadius: 6, background: C.green, border: `2px solid ${C.ink}`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: MONO, fontWeight: 700, color: "#fff", fontSize: 13 }}>%</span>
+                <div>
+                  <h2 style={{ fontFamily: HEAD, fontSize: 15, fontWeight: 900, textTransform: "uppercase", letterSpacing: "-0.01em", margin: 0, color: C.ink }}>Platform Komisyonu</h2>
+                  <div style={{ fontFamily: MONO, fontSize: 10.5, color: C.muted, marginTop: 2 }}>Nakliyeci hakedişinden kesilir. Yeni emanet ödemelerine uygulanır.</div>
+                </div>
+              </div>
+              <div style={{ textAlign: "center", margin: "14px 0 4px" }}>
+                <span style={{ fontFamily: MONO, fontSize: 34, fontWeight: 700, color: C.ink }}>%{Math.round(feeRate * 100)}</span>
+              </div>
+              <input type="range" min="0.05" max="0.20" step="0.01" value={feeRate}
+                onChange={(e) => saveFee(Number(e.target.value))}
+                style={{ width: "100%", accentColor: C.ink, margin: "8px 0" }} />
+              <div style={{ display: "flex", justifyContent: "space-between", fontFamily: MONO, fontSize: 9.5, color: C.muted }}>
+                <span>%5</span><span>%10</span><span>%15</span><span>%20</span>
+              </div>
+              <div style={{ marginTop: 12, background: C.stone, border: `2px solid ${C.border}`, borderRadius: 5, padding: "9px 11px", fontFamily: MONO, fontSize: 11, color: C.sub }}>
+                Örn: ₺10.000 iş → komisyon <b style={{ color: C.ink }}>{fmtTL(10000 * feeRate)}</b> · nakliyeci <b style={{ color: C.green }}>{fmtTL(10000 * (1 - feeRate))}</b>
+              </div>
+            </div>
+
             <div style={{ background: C.card, border: `2px solid ${C.ink}`, borderRadius: 6, padding: 16, boxShadow: "3px 3px 0 rgba(10,10,10,.12)" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 4 }}>
                 <span style={{ width: 36, height: 36, borderRadius: 6, background: C.yellow, border: `2px solid ${C.ink}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -368,6 +400,36 @@ export default function AdminPage({ user, reports = [], docs = [], users = [], l
                 );
               })}
               <div style={{ fontFamily: MONO, fontSize: 10, color: C.muted, marginTop: 8, lineHeight: 1.5 }}>Sezon ay bazlı otomatik hesaplanır (inşaat/hasat takvimi). Yakıt endeksi elle ayarlanır.</div>
+            </div>
+
+            {/* ── EMANET / HAREKET LİSTESİ ── */}
+            <div>
+              <div style={{ fontFamily: HEAD, fontSize: 13, fontWeight: 900, textTransform: "uppercase", letterSpacing: "-0.01em", color: C.ink, margin: "4px 0 10px" }}>Ödeme Hareketleri</div>
+              {(() => {
+                const ledger = listings.filter((l) => l.paymentStatus && l.paymentStatus !== "yok");
+                if (ledger.length === 0) return <Empty icon={FileText} text="Henüz emanet/ödeme hareketi yok." />;
+                return (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+                    {ledger.map((l) => {
+                      const b = PAY_BADGE[l.paymentStatus] || PAY_BADGE.bloke;
+                      const amt = Number(l.paymentAmount) || 0, fee = Number(l.paymentFee) || 0;
+                      return (
+                        <div key={l.id} style={{ background: C.card, border: `2px solid ${C.ink}`, borderRadius: 6, padding: 12, boxShadow: "3px 3px 0 rgba(10,10,10,.10)" }}>
+                          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
+                            <span style={{ fontFamily: HEAD, fontSize: 13, fontWeight: 800, textTransform: "uppercase", color: C.ink, lineHeight: 1.2, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{l.title || ("#" + l.id)}</span>
+                            <Badge bg={b.bg} fg={b.fg} dot>{b.label}</Badge>
+                          </div>
+                          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 9, fontFamily: MONO, fontSize: 11.5 }}>
+                            <span style={{ color: C.sub }}>Tutar <b style={{ color: C.ink }}>{fmtTL(amt)}</b></span>
+                            <span style={{ color: C.sub }}>Komisyon <b style={{ color: C.green }}>{fmtTL(fee)}</b></span>
+                            <span style={{ color: C.sub }}>{shortId(l.id)}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
             </div>
           </div>
         )}
