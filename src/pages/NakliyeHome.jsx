@@ -600,9 +600,16 @@ function PiyasaWidget({ nav }) {
 }
 
 export default function NakliyeHome({
-  user, pendingOffersCount = 0, unreadCount = 0, onLoginClick,
+  user, pendingOffersCount = 0, unreadCount = 0, onLoginClick, announcement,
 }) {
   const navigate = useNavigate();
+  const [annDismissed, setAnnDismissed] = useState(false);
+  const ann = announcement?.active && announcement?.text && !annDismissed ? announcement : null;
+  const annStyle = ann ? ({
+    promo: { bg: C.ink, fg: C.yellow, mark: "★" },
+    info: { bg: C.yellow, fg: C.ink, mark: "i" },
+    warn: { bg: C.red, fg: "#fff", mark: "!" },
+  }[ann.tone] || { bg: C.ink, fg: C.yellow, mark: "★" }) : null;
   const role = user?.role || "muteahhit";
 
   // istatistik şeridi (rol başına 3 kutu)
@@ -643,6 +650,17 @@ export default function NakliyeHome({
         onProfile={() => navigate("/profil")}
         onSearch={() => navigate("/ilanlar")}
       />
+
+      {/* duyuru / kampanya bandı (admin yönetir) */}
+      {ann && (
+        <div className="px-[18px] pt-3">
+          <div className="relative flex items-center gap-2.5 overflow-hidden" style={{ background: annStyle.bg, border: FRAME, borderRadius: 6, padding: "10px 12px", boxShadow: SHADOW_SM }}>
+            <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center text-[13px] font-black" style={{ background: annStyle.fg, color: annStyle.bg, borderRadius: 5, fontFamily: ARCH }}>{annStyle.mark}</span>
+            <span className="min-w-0 flex-1 text-[12px] font-bold leading-snug" style={{ color: annStyle.fg, fontFamily: MONO }}>{ann.text}</span>
+            <button onClick={() => setAnnDismissed(true)} aria-label="Kapat" className="flex-shrink-0 px-1 text-[16px] font-black leading-none" style={{ color: annStyle.fg, opacity: 0.7 }}>×</button>
+          </div>
+        </div>
+      )}
 
       {/* stat şeridi: 3 kutu grid */}
       <div className="px-[18px] pt-4">

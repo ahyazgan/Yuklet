@@ -36,7 +36,7 @@ const fmt = (iso) => { try { return new Date(iso).toLocaleString("tr-TR", { day:
 
 const shortId = (id) => "HMT-" + String(id ?? "").slice(-4).toUpperCase().padStart(4, "0");
 
-const TABS = [["reports", "Şikayet"], ["disputes", "İtiraz"], ["listings", "İlan"], ["users", "Üye"], ["docs", "Belge"], ["pricing", "Finans"], ["audit", "Kayıt"]];
+const TABS = [["reports", "Şikayet"], ["disputes", "İtiraz"], ["listings", "İlan"], ["announce", "Duyuru"], ["users", "Üye"], ["docs", "Belge"], ["pricing", "Finans"], ["audit", "Kayıt"]];
 
 const PAY_BADGE = {
   bloke: { label: "EMANETTE", bg: "#FACC15", fg: "#0A0A0A" },
@@ -66,13 +66,17 @@ const btnBase = {
   letterSpacing: "-0.01em", lineHeight: 1, whiteSpace: "nowrap",
 };
 
-export default function AdminPage({ user, reports = [], docs = [], users = [], listings = [], offers = [], onRequireAuth, onSetReportStatus, onReviewDoc, onUpdateUser, onResolveDispute, audit = [], onLog, onUpdateListing }) {
+export default function AdminPage({ user, reports = [], docs = [], users = [], listings = [], offers = [], onRequireAuth, onSetReportStatus, onReviewDoc, onUpdateUser, onResolveDispute, audit = [], onLog, onUpdateListing, announcement, onSaveAnnouncement }) {
   const navigate = useNavigate();
   const [tab, setTab] = useState("reports");
   const [fuelIndex, setFuelIndex] = useState(() => loadPricingConfig().fuelIndex || 1.0);
   const [feeRate, setFeeRate] = useState(() => loadPricingConfig().feeRate ?? 0.10);
   const [fuelSaved, setFuelSaved] = useState(false);
   const [lq, setLq] = useState("");
+  const [ann, setAnn] = useState(() => ({ active: false, text: "", tone: "promo", ...(announcement || {}) }));
+  const [annSaved, setAnnSaved] = useState(false);
+  const ANN_TONES = [["promo", "Promosyon", C.ink, C.yellow], ["info", "Bilgi", C.yellow, C.ink], ["warn", "Uyarı", C.red, "#fff"]];
+  const tone = ANN_TONES.find((t) => t[0] === ann.tone) || ANN_TONES[0];
   const saveFuel = (v, log) => { setFuelIndex(v); savePricingConfig({ ...loadPricingConfig(), fuelIndex: v }); setFuelSaved(true); setTimeout(() => setFuelSaved(false), 1500); if (log) onLog?.("config", `Yakıt endeksi → ×${v.toFixed(2)}`); };
   const saveFee = (v, log) => { setFeeRate(v); savePricingConfig({ ...loadPricingConfig(), feeRate: v }); setFuelSaved(true); setTimeout(() => setFuelSaved(false), 1500); if (log) onLog?.("config", `Komisyon → %${Math.round(v * 100)}`); };
 
@@ -382,6 +386,57 @@ export default function AdminPage({ user, reports = [], docs = [], users = [], l
             </div>
           );
         })()}
+
+        {/* ── DUYURU / KAMPANYA ── */}
+        {tab === "announce" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <div style={{ background: C.card, border: `2px solid ${C.ink}`, borderRadius: 6, padding: 16, boxShadow: "3px 3px 0 rgba(10,10,10,.12)", display: "flex", flexDirection: "column", gap: 14 }}>
+              {/* aktif toggle */}
+              <button type="button" onClick={() => setAnn((a) => ({ ...a, active: !a.active }))}
+                style={{ display: "flex", alignItems: "center", gap: 12, background: "none", border: "none", cursor: "pointer", textAlign: "left", padding: 0 }}>
+                <span style={{ flex: 1 }}>
+                  <span style={{ display: "block", fontFamily: HEAD, fontSize: 15, fontWeight: 900, textTransform: "uppercase", color: ann.active ? C.green : C.ink }}>Ana sayfa duyurusu</span>
+                  <span style={{ display: "block", fontFamily: MONO, fontSize: 10.5, color: C.muted, marginTop: 1 }}>Tüm ziyaretçilere ana sayfada gösterilir.</span>
+                </span>
+                <span style={{ width: 46, height: 26, flexShrink: 0, display: "flex", alignItems: "center", borderRadius: 999, border: `2px solid ${ann.active ? C.green : C.ink}`, background: ann.active ? C.green : C.card, padding: 2, justifyContent: ann.active ? "flex-end" : "flex-start" }}>
+                  <span style={{ width: 18, height: 18, borderRadius: 999, background: ann.active ? "#fff" : C.ink }} />
+                </span>
+              </button>
+
+              <div>
+                <label style={{ fontFamily: MONO, fontSize: 9.5, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: C.sub, display: "block", marginBottom: 6 }}>METİN</label>
+                <textarea value={ann.text} onChange={(e) => setAnn((a) => ({ ...a, text: e.target.value }))} maxLength={140}
+                  placeholder="Örn: Bu ay tüm işlerde komisyon %5! Hemen ilan ver."
+                  style={{ width: "100%", boxSizing: "border-box", minHeight: 64, resize: "vertical", background: C.card, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "10px 12px", fontFamily: BODY, fontSize: 13, fontWeight: 600, color: C.ink, outline: "none" }} />
+                <div style={{ textAlign: "right", fontFamily: MONO, fontSize: 9.5, color: C.muted, marginTop: 3 }}>{ann.text.length}/140</div>
+              </div>
+
+              <div>
+                <label style={{ fontFamily: MONO, fontSize: 9.5, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: C.sub, display: "block", marginBottom: 6 }}>TÜR</label>
+                <div style={{ display: "flex", gap: 8 }}>
+                  {ANN_TONES.map(([id, lbl, bg, fg]) => (
+                    <button key={id} onClick={() => setAnn((a) => ({ ...a, tone: id }))}
+                      style={{ flex: 1, cursor: "pointer", padding: "9px 0", borderRadius: 5, border: `2px solid ${C.ink}`, background: ann.tone === id ? bg : C.card, color: ann.tone === id ? fg : C.ink, fontFamily: MONO, fontSize: 11, fontWeight: 700 }}>{lbl}</button>
+                  ))}
+                </div>
+              </div>
+
+              {/* canlı önizleme */}
+              <div>
+                <div style={{ fontFamily: MONO, fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: C.muted, marginBottom: 6 }}>ÖNİZLEME</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, background: tone[2], border: `2px solid ${C.ink}`, borderRadius: 6, padding: "10px 12px" }}>
+                  <span style={{ width: 22, height: 22, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 4, background: tone[3], color: tone[2], fontFamily: HEAD, fontWeight: 900, fontSize: 12 }}>{ann.tone === "promo" ? "★" : ann.tone === "warn" ? "!" : "i"}</span>
+                  <span style={{ fontFamily: MONO, fontSize: 12, fontWeight: 700, color: tone[3] }}>{ann.text || "Duyuru metni burada görünür"}</span>
+                </div>
+              </div>
+
+              <button onClick={() => { onSaveAnnouncement?.(ann); setAnnSaved(true); setTimeout(() => setAnnSaved(false), 1500); }}
+                style={{ ...btnBase, justifyContent: "center", background: C.ink, color: C.yellow, padding: "13px 0", fontSize: 13 }}>
+                {annSaved ? "KAYDEDİLDİ ✓" : "DUYURUYU KAYDET"}
+              </button>
+            </div>
+          </div>
+        )}
 
         {tab === "users" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>

@@ -43,6 +43,9 @@ export const saveSavedSearches = (v) => save("hamted_saved_searches", v);
 // Akıllı Fiyat piyasa ayarları (admin): yakıt endeksi vb. — engine'e geçirilir.
 export const loadPricingConfig = () => load("hamted_pricing_config", { fuelIndex: 1.0, feeRate: 0.10 });
 export const savePricingConfig = (v) => save("hamted_pricing_config", v);
+// Ana sayfa duyuru / kampanya bandi (admin yonetir).
+export const loadAnnouncement = () => load("hamted_announcement", { active: false, text: "", tone: "promo" });
+export const saveAnnouncement = (v) => save("hamted_announcement", v);
 // Admin denetim kaydi (audit log) — kim, ne zaman, ne yapti.
 export const loadAuditLog = () => load("hamted_audit_log", []);
 export const appendAudit = (entry) => {
