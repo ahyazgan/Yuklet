@@ -21,6 +21,88 @@ const median = (arr) => {
   const m = Math.floor(s.length / 2);
   return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
 };
+// Ağırlıklı medyan — items: [{ rate, w }] (ağırlığı yüksek örnek merkezi daha çok çeker).
+const weightedMedian = (items) => {
+  if (!items.length) return null;
+  const s = [...items].sort((a, b) => a.rate - b.rate);
+  const total = s.reduce((t, i) => t + i.w, 0);
+  let acc = 0;
+  for (const it of s) { acc += it.w; if (acc >= total / 2) return it.rate; }
+  return s[s.length - 1].rate;
+};
+
+// Türkçe-duyarsız sadeleştirme ("Çimento" == "cimento").
+const TR = { "İ": "i", "I": "i", "ı": "i", "Ş": "s", "ş": "s", "Ğ": "g", "ğ": "g", "Ç": "c", "ç": "c", "Ö": "o", "ö": "o", "Ü": "u", "ü": "u" };
+const fold = (s = "") => String(s).split("").map((c) => TR[c] || c).join("").toLowerCase().trim();
+
+// Malzeme yoğunluk/zorluk çarpanı (kategori tabanına göre). Ağır/sert/özel = pahalı.
+export function materialFactor(material) {
+  const f = fold(material);
+  if (!f) return 1;
+  // hafriyat
+  if (/(kaya|granit|bazalt|kirma tas)/.test(f)) return 1.12;   // sert kaya — aşındırıcı, ağır
+  if (/(toprak|humus|kil|dolgu)/.test(f)) return 0.93;          // hafif, kolay
+  if (/(asfalt|frez)/.test(f)) return 1.05;
+  if (/(metal|hurda)/.test(f)) return 1.08;
+  // silobas
+  if (/(cimento|kirec|alci|ucucu|kul)/.test(f)) return 1.15;    // bağlayıcı — tozlu, kapalı silobas
+  if (/(kimyasal|plastik|granul|gubre|soda)/.test(f)) return 1.20; // özel/inox ekipman
+  if (/(bugday|arpa|misir|yulaf|celtik|pirinc|aycicek|kanola|yem|un|nisasta|seker|tuz)/.test(f)) return 1.10; // gıda — hijyenik
+  return 1; // moloz, kum, çakıl, mıcır, agrega vb. taban
+}
+
+// Araç tipi çarpanı — özel/paslanmaz ekipman ve büyük tonaj primi.
+export function vehicleFactor(vehicle) {
+  const f = fold(vehicle);
+  if (!f) return 1;
+  if (/(inox|kimyasal|hijyen|gida|tanker|sivi|paslanmaz)/.test(f)) return 1.10;
+  if (/(treyler|lowbed|kirk ayak|dingil)/.test(f)) return 1.05;
+  return 1;
+}
+
+const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
+
+// Hacim/ölçek çarpanı — büyük partilerde ₺/ton-km düşer (toplu nakliye).
+export function volumeFactor(tons) {
+  if (!tons) return 1;
+  if (tons < 30) return 1.05;     // küçük parti — primli
+  if (tons < 150) return 1.0;
+  if (tons < 600) return 0.96;
+  return 0.92;                     // çok büyük iş — toplu indirim
+}
+
+// Aciliyet/esneklik çarpanı — acil iş primli, düzenli/esnek iş indirimli.
+export function urgencyFactor({ dateText, recurring } = {}) {
+  const f = fold(dateText);
+  if (/(acil|bugun|yarin|ivedi)/.test(f)) return 1.06;
+  if (recurring) return 0.95;     // süreklilik taahhüdü → indirim
+  return 1;
+}
+
+// Mevsimsellik çarpanı — ay bazlı talep (0=Ocak … 11=Aralık).
+// Hafriyat: inşaat sezonu (ilkbahar–sonbahar) zirve. Silobas: hasat (yaz sonu–güz).
+const SEASON = {
+  hafriyat: [0.95, 0.95, 0.98, 1.02, 1.04, 1.05, 1.05, 1.04, 1.03, 1.01, 0.97, 0.94],
+  silobas: [0.97, 0.97, 0.98, 1.00, 1.01, 1.02, 1.03, 1.05, 1.05, 1.03, 1.00, 0.98],
+};
+export function seasonFactor(cat, month = new Date().getMonth()) {
+  const arr = SEASON[cat];
+  return arr ? arr[((month % 12) + 12) % 12] : 1;
+}
+
+// Backhaul (dönüş yükü) çarpanı — varış ilinde alınabilecek yük varsa
+// kamyon boş dönmez → maliyet düşer. Fiyatı boş-dönüş ağına bağlar.
+export function backhaulFactor({ cat, toIl }, { listings = [] } = {}) {
+  if (!toIl) return { factor: 1, returns: 0 };
+  let returns = 0;
+  listings.forEach((l) => {
+    if (l.status === "kapali" || l.type !== "is") return;
+    if (cat && l.cat !== cat) return;
+    if (ilDistance(toIl, routeOf(l).fromIl) <= 1) returns++;   // varış yakınında yük
+  });
+  const factor = returns >= 3 ? 0.92 : returns >= 1 ? 0.95 : 1;
+  return { factor, returns };
+}
 
 // İki [lat,lng] arası kuş uçuşu km (Haversine) — gerçek mesafe (anahtarsız).
 export function haversineKm(a, b) {
@@ -81,18 +163,64 @@ export function collectSamples({ listings = [], offers = [] }) {
   return samples;
 }
 
-// Aynı kategori + benzer mesafe bandındaki işlerden ₺/ton-km örnekleri.
-function learnRates({ cat, km }, history) {
-  const rates = [];
-  let accepted = 0;
+// Aynı kategori + benzer mesafe bandındaki örnekler — AĞIRLIKLI.
+// Ağırlık: kabul edilmiş (×2) · aynı malzeme (×1.6) · aynı güzergah (×1.6) ·
+// taze (<30g ×1.4, <90g ×1.15). Böylece "en alakalı" örnekler tahmini çeker.
+function learnRates({ cat, km, material, fromIl, toIl }, history) {
+  const matF = fold(material);
+  const now = Date.now();
+  const weighted = [];
+  const rawRates = [];
+  const laneRates = [];                 // tam bu güzergahın (fromIl→toIl) oranları
+  let accepted = 0, laneAccepted = 0;
   collectSamples(history).forEach((s) => {
     if (s.cat !== cat) return;
-    // mesafe benzerliği: mevcut işin 0.4×–2.5× bandı (yerel ↔ şehirlerarası karışmasın)
-    if (km && (s.km < km * 0.4 || s.km > km * 2.5)) return;
-    rates.push(s.rate);
-    if (s.accepted) accepted++;
+    if (km && (s.km < km * 0.4 || s.km > km * 2.5)) return;   // yerel ↔ şehirlerarası karışmasın
+    let w = 1;
+    if (s.accepted) { w *= 2; accepted++; }
+    if (matF && fold(s.material) === matF) w *= 1.6;
+    const sameLane = fromIl && toIl && s.fromIl === fromIl && s.toIl === toIl;
+    if (sameLane) { w *= 1.6; laneRates.push(s.rate); if (s.accepted) laneAccepted++; }
+    if (s.date) {
+      const days = (now - new Date(s.date)) / 86400000;
+      if (days < 30) w *= 1.4; else if (days < 90) w *= 1.15;
+    }
+    weighted.push({ rate: s.rate, w });
+    rawRates.push(s.rate);
   });
-  return { rates, accepted, n: rates.length };
+  return { weighted, rawRates, laneRates, accepted, laneAccepted, laneSamples: laneRates.length, n: weighted.length };
+}
+
+// Dizinin q-yüzdelik değeri (lineer interpolasyon).
+const percentile = (arr, q) => {
+  if (!arr.length) return null;
+  const s = [...arr].sort((a, b) => a - b);
+  const idx = (s.length - 1) * q, lo = Math.floor(idx), hi = Math.ceil(idx);
+  return s[lo] + (s[hi] - s[lo]) * (idx - lo);
+};
+
+// ── Arz/talep dengesi: güzergah başında boş araç (arz) vs iş (talep) ──────
+// Fiyat baskısı yönü + çarpan. Yakın il (komşuluk ≤1) referans alınır.
+export function supplyDemand({ cat, fromIl }, { listings = [] } = {}) {
+  if (!fromIl) return null;
+  let demand = 0, supply = 0;
+  listings.forEach((l) => {
+    if (l.status === "kapali") return;
+    if (cat && l.cat !== cat) return;
+    if (l.type !== "is" && l.type !== "arac") return;
+    const near = ilDistance(fromIl, routeOf(l).fromIl) <= 1;
+    if (!near) return;
+    if (l.type === "is") demand++; else supply++;
+  });
+  const ratio = demand / Math.max(1, supply);
+  let factor = 1, label = "Dengeli", tone = "ok";
+  if (supply + demand >= 2) {
+    if (ratio >= 1.6) { factor = 1.07; label = "Talep yüksek"; tone = "up"; }
+    else if (ratio <= 0.6) { factor = 0.94; label = "Araç bol"; tone = "down"; }
+  } else {
+    label = "Veri az";
+  }
+  return { supply, demand, ratio, factor, label, tone };
 }
 
 // ── Piyasa Nabzı: güzergah/malzeme/kategori bazlı ₺/ton-km referansı ──
@@ -140,9 +268,11 @@ export function marketPulse(history) {
   return { samples: all.length, accepted, byCat, lanes, materials, trend };
 }
 
+const CONF_LEVELS = ["tahmin", "düşük", "orta", "yüksek"];
 const CONF = (n) => (n >= 6 ? "yüksek" : n >= 3 ? "orta" : n >= 1 ? "düşük" : "tahmin");
+const bumpConf = (c) => CONF_LEVELS[Math.min(CONF_LEVELS.length - 1, CONF_LEVELS.indexOf(c) + 1)];
 
-export function estimatePrice({ cat, amount, unit, fromIl, toIl, capacity, vehicle, kmOverride, history }) {
+export function estimatePrice({ cat, amount, unit, fromIl, toIl, material, capacity, vehicle, dateText, recurring, kmOverride, history, config, month }) {
   if (!amount || (!fromIl && !kmOverride)) return null;
   const d = ilDistance(fromIl, toIl || fromIl);
   const km = kmOverride != null ? kmOverride : (KM_BAND[d] ?? 220);
@@ -153,36 +283,102 @@ export function estimatePrice({ cat, amount, unit, fromIl, toIl, capacity, vehic
   if (unit === "ton" || unit === "m³") trips = Math.max(1, Math.ceil(amount / cap));
   else if (["sefer", "kamyon", "yük", "TIR"].includes(unit)) trips = Math.max(1, amount);
 
-  const perTrip = round50(BASE + km * PER_KM * catRate);
-  const heuristic = perTrip * trips;
-
-  // ── geçmişten öğren + harmanla ──
   const tons = (unit === "ton" || unit === "m³") ? amount : trips * cap;
-  let mid = heuristic, sampleSize = 0, accepted = 0, dataMid = null;
+
+  // ── çarpanlar: malzeme · araç · hacim · aciliyet · backhaul ──
+  const matF = materialFactor(material);
+  const vehF = vehicleFactor(vehicle);
+  const volF = volumeFactor(tons);
+  const urgF = urgencyFactor({ dateText, recurring });
+  const bh = history ? backhaulFactor({ cat, toIl: toIl || fromIl }, history) : { factor: 1, returns: 0 };
+  const bhF = bh.factor;
+  const fuelIndex = (config && Number(config.fuelIndex)) || 1;
+  const seasonF = seasonFactor(cat, month);
+
+  const baseTrip = BASE;
+  const distBase = km * PER_KM * catRate;          // nötr yakıttaki mesafe maliyeti
+  const distTrip = distBase * fuelIndex;           // yakıt endeksli
+  const unit0 = baseTrip + distTrip;               // çarpansız (malzeme vb. öncesi) sefer maliyeti
+
+  // ── sıralı döküm: her çarpanın ₺ katkısı (toplam = heuristic) ──
+  const breakdown = [
+    { key: "taban", label: "Yükleme / operasyon", value: round50(baseTrip * trips) },
+    { key: "mesafe", label: `Mesafe (~${km} km${trips > 1 ? ` × ${trips} sefer` : ""})`, value: round50(distBase * trips) },
+  ];
+  if (fuelIndex !== 1) breakdown.push({ key: "yakit", label: `Yakıt endeksi (${fuelIndex > 1 ? "+" : ""}${Math.round((fuelIndex - 1) * 100)}%)`, value: round50(distBase * (fuelIndex - 1) * trips) });
+  let run = unit0;
+  const factorLine = (key, label, f) => {
+    if (f === 1) return;
+    const next = run * f;
+    breakdown.push({ key, label: `${label} (${f > 1 ? "+" : ""}${Math.round((f - 1) * 100)}%)`, value: round50((next - run) * trips) });
+    run = next;
+  };
+  factorLine("malzeme", "Malzeme", matF);
+  factorLine("arac", "Araç tipi", vehF);
+  factorLine("hacim", tons >= 150 ? "Hacim indirimi" : "Küçük parti", volF);
+  factorLine("aciliyet", urgF > 1 ? "Acil iş" : "Düzenli/esnek", urgF);
+  factorLine("backhaul", bhF !== 1 ? `Dönüş yükü (${bh.returns})` : "Dönüş yükü", bhF);
+  factorLine("sezon", seasonF >= 1 ? "Sezon (yoğun)" : "Sezon (sakin)", seasonF);
+
+  const perTripRaw = run;                           // unit0 × tüm çarpanlar
+  const perTrip = round50(perTripRaw);
+  const heuristic = perTripRaw * trips;
+
+  // ── geçmişten ağırlıklı öğren + harmanla ──
+  let blended = heuristic, sampleSize = 0, accepted = 0, rawRates = [], laneRates = [], laneSamples = 0, laneAccepted = 0;
   if (history) {
-    const { rates, accepted: acc, n } = learnRates({ cat, km }, history);
-    const r = median(rates);
+    const lr = learnRates({ cat, km, material, fromIl, toIl }, history);
+    const r = weightedMedian(lr.weighted);
     if (r && tons && km) {
-      dataMid = r * tons * km;
-      const w = Math.min(0.7, n / 10);            // veri arttıkça veriye güven artar
-      mid = round50(w * dataMid + (1 - w) * heuristic);
-      sampleSize = n;
-      accepted = acc;
+      const dataMid = r * tons * km;
+      const w = Math.min(0.7, lr.n / 10);          // veri arttıkça veriye güven artar
+      blended = w * dataMid + (1 - w) * heuristic;
+      sampleSize = lr.n; accepted = lr.accepted; rawRates = lr.rawRates;
+      laneRates = lr.laneRates; laneSamples = lr.laneSamples; laneAccepted = lr.laneAccepted;
     }
   }
+  if (sampleSize > 0) breakdown.push({ key: "veri", label: `Geçmiş işler (${sampleSize})`, value: round50(blended - heuristic) });
 
-  // veri varsa aralık daralır (daha güvenli), yoksa ±%15
-  const spread = sampleSize >= 6 ? 0.08 : sampleSize >= 3 ? 0.11 : 0.15;
+  // ── arz/talep çarpanı ──
+  const sd = history ? supplyDemand({ cat, fromIl }, history) : null;
+  const sdFactor = sd ? sd.factor : 1;
+  const mid = round50(blended * sdFactor);
+  if (sdFactor !== 1) breakdown.push({ key: "arztalep", label: sd.label + ` (${sdFactor > 1 ? "+" : ""}${Math.round((sdFactor - 1) * 100)}%)`, value: round50(mid - blended) });
+
+  // yuvarlama artığını mesafe satırına yedir → döküm tam olarak mid'e toplanır
+  const resid = mid - breakdown.reduce((t, b) => t + b.value, 0);
+  if (resid) breakdown[1].value += resid;
+
+  // ── güzergah kalibrasyonu: bu hat yeterince örneklendiyse güven artar ──
+  const laneCalibrated = laneSamples >= 3;
+  let confidence = CONF(sampleSize);
+  if (laneCalibrated) confidence = bumpConf(confidence);
+
+  // ── aralık: güzergahın kendi dağılımı (varsa) > genel dağılım > sabit ±% ──
+  const bandRates = laneRates.length >= 4 ? laneRates : rawRates;
+  let lowR, highR;
+  const spread = (laneCalibrated ? 0.06 : 0) + (sampleSize >= 6 ? 0.08 : sampleSize >= 3 ? 0.11 : 0.15) * (laneCalibrated ? 0.6 : 1);
+  if (bandRates.length >= 4) {
+    const p25 = percentile(bandRates, 0.25), p50 = percentile(bandRates, 0.5), p75 = percentile(bandRates, 0.75);
+    if (p50 > 0) { lowR = clamp(p25 / p50, 0.70, 0.98); highR = clamp(p75 / p50, 1.02, 1.35); }
+    else { lowR = 1 - spread; highR = 1 + spread; }
+  } else { lowR = 1 - spread; highR = 1 + spread; }
+
   return {
-    perTrip, trips, total: heuristic, km,
+    perTrip, trips, total: round50(heuristic), km,
     mid,
-    min: round50(mid * (1 - spread)),
-    max: round50(mid * (1 + spread)),
+    min: round50(mid * lowR),
+    max: round50(mid * highR),
     real: kmOverride != null,
     sampleSize, accepted,
     dataDriven: sampleSize > 0,
-    confidence: CONF(sampleSize),
+    bandFromData: bandRates.length >= 4,
+    laneSamples, laneAccepted, laneCalibrated,
+    confidence,
     distLabel: kmOverride != null ? "harita mesafesi" : ["aynı il", "yakın il", "bölge içi", "uzak"][Math.min(d, 3)],
+    materialFactor: matF, vehicleFactor: vehF, volumeFactor: volF, urgencyFactor: urgF, backhaul: bh,
+    seasonFactor: seasonF, fuelIndex,
+    supplyDemand: sd, breakdown,
   };
 }
 

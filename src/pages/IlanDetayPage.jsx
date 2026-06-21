@@ -9,11 +9,12 @@
 
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ChevronLeft, Share2, Star, BadgeCheck, ArrowRight, X, Send, AlertTriangle, Truck, TrendingUp, Boxes, Check } from "lucide-react";
+import { ChevronLeft, Share2, Star, BadgeCheck, ArrowRight, X, Send, AlertTriangle, Truck, TrendingUp, TrendingDown, Boxes, Check, Info, ChevronDown } from "lucide-react";
 import { LISTINGS } from "../data/listings";
 import { CATS } from "../data/categories";
 import { backhaulForJob, loadsForVehicle, vehicleClassOf } from "../utils/backhaul";
 import { estimatePrice, fmtTL, priceSignal } from "../utils/priceEstimate";
+import { loadPricingConfig } from "../utils/storage";
 import { newId, nowIso } from "../utils/id";
 import { useToast } from "../components/Toast";
 import ReportModal from "../components/ReportModal";
@@ -124,6 +125,7 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
   const [showReport, setShowReport] = useState(false);
   const [showSheet, setShowSheet] = useState(false);
   const [sent, setSent] = useState(false);
+  const [showWhy, setShowWhy] = useState(false);
 
   const l = listings.find((x) => String(x.id) === String(id));
 
@@ -160,7 +162,7 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
   const closed = l.status === "kapali" || l.status === "eslesti";
   const backhaul = isProduct ? [] : isVehicle ? loadsForVehicle(l, listings) : backhaulForJob(l, listings);
   const est = !isFixed && l.type === "is" && l.amount
-    ? estimatePrice({ cat: l.cat, amount: l.amount, unit: l.unit, fromIl: l.il, toIl: l.varisIl, kmOverride: l.km, history: { listings, offers } })
+    ? estimatePrice({ cat: l.cat, amount: l.amount, unit: l.unit, fromIl: l.il, toIl: l.varisIl, material: l.material, vehicle: l.vehicle, dateText: l.dateText, recurring: l.recurring, kmOverride: l.km, history: { listings, offers }, config: loadPricingConfig() })
     : null;
 
   // route endpoints (mono labels)
@@ -581,6 +583,51 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
                           ? ` · ${est.sampleSize} benzer işten${est.accepted ? ` (${est.accepted} gerçekleşen)` : ""}`
                           : " · henüz işlem verisi yok, sezgisel tahmin"}
                       </div>
+                      {est.laneCalibrated && (
+                        <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 8, background: "rgba(74,222,128,0.12)", border: "1.5px solid #4ADE80", borderRadius: 5, padding: "4px 9px" }}>
+                          <Check size={12} color="#4ADE80" strokeWidth={3} />
+                          <span style={{ fontFamily: MONO, fontSize: 9.5, fontWeight: 700, color: "#fff" }}>
+                            BU GÜZERGAH {est.laneSamples} İŞTEN KALİBRELİ{est.laneAccepted ? ` · ${est.laneAccepted} GERÇEK` : ""}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* arz/talep sinyali */}
+                      {est.supplyDemand && est.supplyDemand.tone !== "ok" && (
+                        <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 10, background: "rgba(255,255,255,0.06)", border: `1.5px solid ${est.supplyDemand.tone === "up" ? "#F59E0B" : "#4ADE80"}`, borderRadius: 5, padding: "5px 9px" }}>
+                          {est.supplyDemand.tone === "up" ? <TrendingUp size={13} color="#F59E0B" /> : <TrendingDown size={13} color="#4ADE80" />}
+                          <span style={{ fontFamily: MONO, fontSize: 10, fontWeight: 700, color: "#fff" }}>
+                            {est.supplyDemand.label} · {est.supplyDemand.demand} iş / {est.supplyDemand.supply} araç
+                          </span>
+                        </div>
+                      )}
+
+                      {/* "Fiyat neden bu?" döküm */}
+                      {est.breakdown?.length > 0 && (
+                        <div style={{ marginTop: 11, borderTop: "1.5px solid #2A2A2A", paddingTop: 10 }}>
+                          <button onClick={() => setShowWhy((s) => !s)}
+                            style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", padding: 0, cursor: "pointer", fontFamily: MONO, fontSize: 10.5, fontWeight: 700, color: C.yellow, letterSpacing: "0.03em" }}>
+                            <Info size={13} /> Fiyat neden bu?
+                            <ChevronDown size={13} style={{ transform: showWhy ? "rotate(180deg)" : "none", transition: "transform .2s" }} />
+                          </button>
+                          {showWhy && (
+                            <div style={{ marginTop: 9, display: "flex", flexDirection: "column", gap: 6 }}>
+                              {est.breakdown.map((b) => (
+                                <div key={b.key} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+                                  <span style={{ fontFamily: MONO, fontSize: 10.5, color: "#C9C6BD" }}>{b.label}</span>
+                                  <span style={{ fontFamily: MONO, fontSize: 11, fontWeight: 700, color: b.value < 0 ? "#4ADE80" : "#fff", whiteSpace: "nowrap" }}>
+                                    {b.value < 0 ? "−" : "+"}{fmtTL(Math.abs(b.value))}
+                                  </span>
+                                </div>
+                              ))}
+                              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, borderTop: "1.5px solid #2A2A2A", paddingTop: 7, marginTop: 1 }}>
+                                <span style={{ fontFamily: HEAD, fontSize: 11, fontWeight: 800, textTransform: "uppercase", color: C.yellow }}>Önerilen</span>
+                                <span style={{ fontFamily: MONO, fontSize: 13, fontWeight: 700, color: "#fff" }}>{fmtTL(est.mid)}</span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
