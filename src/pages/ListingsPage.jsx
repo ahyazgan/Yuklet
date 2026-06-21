@@ -17,11 +17,14 @@ import {
   Minus,
   Compass,
   Inbox,
+  Activity,
+  TrendingUp,
 } from "lucide-react";
 import { LISTINGS, IL_LIST } from "../data/listings";
 import { CATS, MATERIALS } from "../data/categories";
 import { loadsNearCity } from "../utils/backhaul";
-import { loadSavedSearches, saveSavedSearches } from "../utils/storage";
+import { estimatePrice, priceSignal, fmtTL } from "../utils/priceEstimate";
+import { loadSavedSearches, saveSavedSearches, loadOffers } from "../utils/storage";
 import SEO from "../components/SEO";
 
 const ListingsMap = lazy(() => import("../components/ListingsMap"));
@@ -31,6 +34,7 @@ const C = {
   ink: "#0A0A0A",
   header: "#EAE3D6",
   yellow: "#FACC15",
+  yellowDeep: "#8A6D00",
   green: "#16803C",
   red: "#DC2626",
   bg: "#F1EDE5",
@@ -65,10 +69,27 @@ const fmtPrice = (l) =>
 const DEVIATION_KM = { 0: 0, 1: 12, 2: 45 };
 const deviationOf = (dist) => DEVIATION_KM[dist] ?? 60;
 
+// İş ilanı için DAYIM Akıllı Fiyat etiketi:
+// teklife açık → önerilen fiyat ipucu · sabit fiyat → piyasa altı/üstü rozeti.
+function marketTagOf(l, history) {
+  if (l.type !== "is" || !l.amount) return null;
+  const est = estimatePrice({ cat: l.cat, amount: l.amount, unit: l.unit, fromIl: l.il, toIl: l.varisIl, kmOverride: l.km, history });
+  if (!est) return null;
+  if (l.priceType === "sabit" && l.price) {
+    const sig = priceSignal(l.price, est);
+    if (!sig) return null;
+    if (sig.tone === "win" || sig.tone === "low") return { text: "PİYASA ALTI", color: C.green };
+    if (sig.tone === "high") return { text: "PİYASA ÜSTÜ", color: C.yellowDeep };
+    return { text: "PİYASA SEVİYESİ", color: C.sub };
+  }
+  return { suggest: `~${fmtTL(est.mid)}` };
+}
+
 // ── İlan kartı ──
-function ListingCard({ l }) {
+function ListingCard({ l, history }) {
   const isH = l.cat === "hafriyat";
   const isProduct = l.type === "urun";
+  const market = marketTagOf(l, history);
   const fixed = isProduct
     ? (l.price ? `₺${l.price.toLocaleString("tr-TR")}${l.priceUnit || "/ton"}` : null)
     : fmtPrice(l);
@@ -239,9 +260,19 @@ function ListingCard({ l }) {
           ))}
         </div>
         <div className="flex flex-shrink-0 items-center gap-2.5">
+          {market?.text && (
+            <span style={{ ...MONO, fontSize: 8.5, fontWeight: 700, padding: "2px 6px", borderRadius: 4, color: market.color, border: `1.5px solid ${market.color}`, background: C.card, whiteSpace: "nowrap" }}>
+              {market.text}
+            </span>
+          )}
           {fixed ? (
             <span style={{ ...MONO, fontSize: isProduct ? 12.5 : 14, fontWeight: 700, color: C.green }}>
               {fixed}
+            </span>
+          ) : market?.suggest ? (
+            <span className="flex flex-col items-end" style={{ lineHeight: 1.05 }}>
+              <span style={{ ...MONO, fontSize: 8, fontWeight: 700, color: C.muted, letterSpacing: "0.04em" }}>DAYIM ÖNERİ</span>
+              <span style={{ ...MONO, fontSize: 13, fontWeight: 700, color: C.ink }}>{market.suggest}</span>
             </span>
           ) : (
             <span style={{ ...MONO, fontSize: 10, fontWeight: 700, color: C.sub }}>
@@ -318,6 +349,8 @@ function EmptyBox({ icon, title, sub, action }) {
 export default function ListingsPage({ listings = LISTINGS }) {
   const navigate = useNavigate();
   const [sp] = useSearchParams();
+  // DAYIM Akıllı Fiyat: kartlardaki piyasa etiketleri için geçmiş veri (bir kez).
+  const priceHistory = useMemo(() => ({ listings, offers: loadOffers() }), [listings]);
   const [type, setType] = useState(["arac", "is", "urun"].includes(sp.get("type")) ? sp.get("type") : "all");
   const [cat, setCat] = useState(
     ["hafriyat", "silobas"].includes(sp.get("cat")) ? sp.get("cat") : "all"
@@ -529,6 +562,22 @@ export default function ListingsPage({ listings = LISTINGS }) {
               </div>
             )}
           </div>
+
+          {/* Piyasa Nabzı girişi — DAYIM Akıllı Fiyat referansı */}
+          {mode === "normal" && (
+            <button
+              onClick={() => navigate("/piyasa")}
+              className="flex items-center justify-between"
+              style={{ width: "100%", marginTop: 12, background: C.ink, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "9px 12px", cursor: "pointer", boxShadow: "3px 3px 0 rgba(10,10,10,0.12)" }}
+            >
+              <span className="flex items-center gap-2" style={{ minWidth: 0 }}>
+                <Activity size={16} color={C.yellow} strokeWidth={2.6} />
+                <span style={{ ...HEAD, fontSize: 12.5, fontWeight: 800, color: "#fff" }}>Piyasa Nabzı</span>
+                <span style={{ ...MONO, fontSize: 9.5, color: "#9A988E" }} className="truncate">₺/ton-km fiyat referansı</span>
+              </span>
+              <TrendingUp size={15} color={C.yellow} strokeWidth={2.6} style={{ flexShrink: 0 }} />
+            </button>
+          )}
 
           {/* arama + filtre */}
           <div className="flex items-center gap-2" style={{ marginTop: 12 }}>
@@ -866,7 +915,7 @@ export default function ListingsPage({ listings = LISTINGS }) {
                     onClick={() => navigate(`/ilan/${m.listing.id}`)}
                     style={{ display: "block", width: "100%", textAlign: "left" }}
                   >
-                    <ListingCard l={m.listing} />
+                    <ListingCard l={m.listing} history={priceHistory} />
                   </button>
                 </div>
                 );
@@ -916,7 +965,7 @@ export default function ListingsPage({ listings = LISTINGS }) {
                 onClick={() => navigate(`/ilan/${l.id}`)}
                 style={{ display: "block", width: "100%", textAlign: "left" }}
               >
-                <ListingCard l={l} />
+                <ListingCard l={l} history={priceHistory} />
               </button>
             ))}
           </div>

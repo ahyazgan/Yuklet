@@ -9,8 +9,8 @@ import {
 } from "./utils/storage";
 import { isSupabaseConfigured } from "./lib/supabase";
 import * as api from "./lib/api";
-import { chargeToEscrow, releaseFromEscrow } from "./lib/paymentProvider";
-import { splitAmount } from "./utils/payments";
+import { chargeToEscrow, releaseFromEscrow, refundEscrow } from "./lib/paymentProvider";
+import { splitAmount, earlyPayout } from "./utils/payments";
 import { buildNotifications } from "./utils/notifications";
 import usePushNotifications from "./hooks/usePushNotifications";
 import { ToastProvider } from "./components/Toast";
@@ -46,6 +46,7 @@ const NasilCalisirPage = lazy(() => import("./pages/NasilCalisirPage"));
 const HakkimizdaPage = lazy(() => import("./pages/HakkimizdaPage"));
 const IletisimPage = lazy(() => import("./pages/IletisimPage"));
 const LegalPage = lazy(() => import("./pages/LegalPage"));
+const PiyasaNabziPage = lazy(() => import("./pages/PiyasaNabziPage"));
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -103,6 +104,22 @@ function AppShell() {
     if (!res?.ok) return { ok: false, error: res?.error || "Serbest bırakma başarısız." };
     await updateListing(listing.id, { paymentStatus: "serbest" });
     return { ok: true, mock: res.mock };
+  };
+  // Anlaşmazlık → emanetteki parayı müteahhite iade et.
+  const refundPayment = async (listing) => {
+    const res = await refundEscrow({ providerRef: listing.paymentRef });
+    if (!res?.ok) return { ok: false, error: res?.error || "İade başarısız." };
+    await updateListing(listing.id, { paymentStatus: "iade" });
+    return { ok: true, mock: res.mock };
+  };
+  // Hızlı Ödeme → teslim onaylı işte nakliyeci hakedişini anında alır (erken-ödeme ücreti kesilir).
+  const earlyPayoutNakliyeci = async (listing) => {
+    const split = splitAmount(listing.paymentAmount || 0);
+    const early = earlyPayout(split.payout);
+    const res = await releaseFromEscrow({ providerRef: listing.paymentRef, payoutTo: listing.acceptedById || listing.ownerId });
+    if (!res?.ok) return { ok: false, error: res?.error || "Hızlı ödeme başarısız." };
+    await updateListing(listing.id, { paymentStatus: "serbest", earlyPaid: true, earlyPayFee: early.fee });
+    return { ok: true, mock: res.mock, ...early };
   };
 
   // Teklifler
@@ -317,7 +334,7 @@ function AppShell() {
                 <Route path="/" element={<PageTransition><NakliyeHome listings={listings} user={user} offers={offers} pendingOffersCount={pendingOffersCount} unreadCount={unreadCount} onLoginClick={requireAuth} /></PageTransition>} />
                 <Route path="/ilanlar" element={<PageTransition><ListingsPage listings={listings} /></PageTransition>} />
                 <Route path="/ilan/:id" element={<PageTransition><IlanDetayPage listings={listings} user={user} onRequireAuth={requireAuth} offers={offers} onAddOffer={addOffer} onReport={addReport} /></PageTransition>} />
-                <Route path="/takip/:id" element={<PageTransition><TakipPage listings={listings} user={user} offers={offers} getContact={getContact} reviews={reviews} onAddReview={addReview} getUserRating={getUserRating} onUpdateListing={updateListing} onReport={addReport} onPayToEscrow={payToEscrow} onReleasePayment={releasePayment} /></PageTransition>} />
+                <Route path="/takip/:id" element={<PageTransition><TakipPage listings={listings} user={user} offers={offers} getContact={getContact} reviews={reviews} onAddReview={addReview} getUserRating={getUserRating} onUpdateListing={updateListing} onReport={addReport} onPayToEscrow={payToEscrow} onReleasePayment={releasePayment} onRefundPayment={refundPayment} onEarlyPayout={earlyPayoutNakliyeci} /></PageTransition>} />
                 <Route path="/sozlesme/:offerId" element={<PageTransition><SozlesmePage listings={listings} offers={offers} getContact={getContact} /></PageTransition>} />
                 <Route path="/cuzdan" element={<PageTransition><CuzdanPage user={user} listings={listings} offers={offers} onRequireAuth={requireAuth} /></PageTransition>} />
                 <Route path="/ilan-ver" element={<PageTransition><IlanVerPage onPublish={publishListing} onUpdate={updateListing} listings={listings} user={user} onRequireAuth={requireAuth} /></PageTransition>} />
@@ -333,6 +350,7 @@ function AppShell() {
                 <Route path="/nasil-calisir" element={<PageTransition><NasilCalisirPage /></PageTransition>} />
                 <Route path="/hakkimizda" element={<PageTransition><HakkimizdaPage /></PageTransition>} />
                 <Route path="/iletisim" element={<PageTransition><IletisimPage /></PageTransition>} />
+                <Route path="/piyasa" element={<PageTransition><PiyasaNabziPage listings={listings} offers={offers} /></PageTransition>} />
                 <Route path="/yasal/:slug" element={<PageTransition><LegalPage /></PageTransition>} />
                 <Route path="*" element={<PageTransition><NotFoundPage /></PageTransition>} />
               </Routes>

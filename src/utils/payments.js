@@ -40,3 +40,17 @@ export function payableAmount(listing, acceptedOffer) {
 
 export const fmtTL = (n) =>
   "₺" + (Math.round(Number(n) || 0)).toLocaleString("tr-TR");
+
+// ── Hızlı Ödeme (erken hakediş / faktoring) ──────────────────────────
+// Teslim onaylandıktan sonra nakliyeci, müteahhitin serbest bırakmasını
+// beklemeden hakedişini platformdan ANINDA alır. Platform küçük bir
+// erken-ödeme ücreti keser ve sonra emanetten tahsil eder (finansman geliri).
+export const EARLY_PAY_FEE_RATE = 0.02; // %2
+
+// payout = nakliyecinin normalde eline geçecek tutar (komisyon sonrası).
+// Döner: { fee, net } — net = hemen alacağı tutar.
+export function earlyPayout(payout, rate = EARLY_PAY_FEE_RATE) {
+  const base = Math.max(0, Math.round(Number(payout) || 0));
+  const fee = Math.round(base * rate);
+  return { fee, net: base - fee, rate };
+}

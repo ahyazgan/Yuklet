@@ -13,7 +13,7 @@ import { ChevronLeft, Share2, Star, BadgeCheck, ArrowRight, X, Send, AlertTriang
 import { LISTINGS } from "../data/listings";
 import { CATS } from "../data/categories";
 import { backhaulForJob, loadsForVehicle, vehicleClassOf } from "../utils/backhaul";
-import { estimatePrice, fmtTL } from "../utils/priceEstimate";
+import { estimatePrice, fmtTL, priceSignal } from "../utils/priceEstimate";
 import { newId, nowIso } from "../utils/id";
 import { useToast } from "../components/Toast";
 import ReportModal from "../components/ReportModal";
@@ -160,7 +160,7 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
   const closed = l.status === "kapali" || l.status === "eslesti";
   const backhaul = isProduct ? [] : isVehicle ? loadsForVehicle(l, listings) : backhaulForJob(l, listings);
   const est = !isFixed && l.type === "is" && l.amount
-    ? estimatePrice({ cat: l.cat, amount: l.amount, unit: l.unit, fromIl: l.il, toIl: l.varisIl, kmOverride: l.km })
+    ? estimatePrice({ cat: l.cat, amount: l.amount, unit: l.unit, fromIl: l.il, toIl: l.varisIl, kmOverride: l.km, history: { listings, offers } })
     : null;
 
   // route endpoints (mono labels)
@@ -553,15 +553,34 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
                 <h2 style={{ fontFamily: HEAD, fontSize: 18, fontWeight: 900, textTransform: "uppercase", letterSpacing: "-0.02em", margin: "8px 0 2px", lineHeight: 1.18 }}>{l.title}</h2>
                 <div style={{ fontFamily: MONO, fontSize: 11, color: C.sub }}>{l.il}{l.ilce ? `, ${l.ilce}` : ""}</div>
 
-                {/* Tahmini Piyasa info card — white, 2px ink frame, TrendingUp icon */}
+                {/* DAYIM Akıllı Fiyat — önerilen fiyat + tek-tık doldur + güven */}
                 {est && (
-                  <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 14, background: C.card, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "12px 14px" }}>
-                    <span style={{ width: 38, height: 38, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: C.stone, border: `2px solid ${C.ink}`, borderRadius: 6 }}>
-                      <TrendingUp size={19} strokeWidth={2.4} color={C.ink} />
-                    </span>
-                    <div style={{ minWidth: 0, flex: 1 }}>
-                      <div style={{ fontFamily: MONO, fontSize: 9.5, fontWeight: 700, color: C.muted, letterSpacing: "0.06em", textTransform: "uppercase" }}>TAHMİNİ PİYASA</div>
-                      <div style={{ fontFamily: MONO, fontSize: 14, fontWeight: 700, color: C.ink, marginTop: 3 }}>{fmtTL(est.min)} – {fmtTL(est.max)}</div>
+                  <div style={{ marginTop: 14, background: C.ink, border: `2px solid ${C.ink}`, borderRadius: 6, overflow: "hidden", boxShadow: "3px 3px 0 rgba(10,10,10,0.18)" }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "9px 13px", borderBottom: `2px solid ${C.yellow}` }}>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontFamily: HEAD, fontSize: 11.5, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.04em", color: C.yellow }}>
+                        <TrendingUp size={15} strokeWidth={2.6} /> DAYIM Akıllı Fiyat
+                      </span>
+                      <span style={{ fontFamily: MONO, fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: C.ink, background: C.yellow, borderRadius: 4, padding: "2px 7px" }}>
+                        GÜVEN: {est.confidence}
+                      </span>
+                    </div>
+                    <div style={{ padding: "12px 13px 13px" }}>
+                      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 10 }}>
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontFamily: MONO, fontSize: 9, fontWeight: 700, color: "#9A988E", letterSpacing: "0.06em", textTransform: "uppercase" }}>ÖNERİLEN FİYAT</div>
+                          <div style={{ fontFamily: MONO, fontSize: 24, fontWeight: 700, color: "#fff", marginTop: 2, lineHeight: 1 }}>{fmtTL(est.mid)}</div>
+                        </div>
+                        <button onClick={() => setPrice(String(est.mid))}
+                          style={{ flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 6, background: C.yellow, color: C.ink, border: `2px solid ${C.yellow}`, borderRadius: 6, padding: "8px 12px", fontFamily: HEAD, fontWeight: 800, fontSize: 12, textTransform: "uppercase", cursor: "pointer" }}>
+                          <Check size={14} strokeWidth={3} /> Bu fiyata ver
+                        </button>
+                      </div>
+                      <div style={{ fontFamily: MONO, fontSize: 10, color: "#9A988E", marginTop: 8 }}>
+                        Aralık {fmtTL(est.min)} – {fmtTL(est.max)} · ~{est.km} km
+                        {est.dataDriven
+                          ? ` · ${est.sampleSize} benzer işten${est.accepted ? ` (${est.accepted} gerçekleşen)` : ""}`
+                          : " · henüz işlem verisi yok, sezgisel tahmin"}
+                      </div>
                     </div>
                   </div>
                 )}
@@ -570,6 +589,27 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
                 <label style={{ display: "block", fontFamily: MONO, fontSize: 10, fontWeight: 700, color: C.muted, letterSpacing: "0.06em", textTransform: "uppercase", margin: "18px 0 7px" }}>TEKLİF FİYATINIZ (₺)</label>
                 <input type="number" min="0" value={price} onChange={(e) => setPrice(e.target.value)}
                   placeholder="0" style={{ ...sheetInput, fontFamily: MONO, fontWeight: 700, fontSize: 26, padding: "12px 14px" }} />
+
+                {/* canlı rekabet sinyali — sen yazarken fiyatın piyasaya göre konumu */}
+                {est && (() => {
+                  const sig = priceSignal(price, est);
+                  if (!sig) return null;
+                  const TONE = {
+                    win: { bg: "#F0FBF3", bd: C.green, fg: C.green, Icon: Check },
+                    ok: { bg: C.stone, bd: C.ink, fg: C.ink, Icon: TrendingUp },
+                    high: { bg: "#FEF7E6", bd: C.yellowDeep, fg: "#8A6D00", Icon: AlertTriangle },
+                    low: { bg: "#FEF2F2", bd: C.red, fg: C.red, Icon: AlertTriangle },
+                  }[sig.tone];
+                  return (
+                    <div style={{ display: "flex", alignItems: "center", gap: 9, marginTop: 9, background: TONE.bg, border: `2px solid ${TONE.bd}`, borderRadius: 6, padding: "9px 12px" }}>
+                      <TONE.Icon size={16} strokeWidth={2.6} color={TONE.fg} style={{ flexShrink: 0 }} />
+                      <span style={{ minWidth: 0 }}>
+                        <span style={{ fontFamily: HEAD, fontSize: 12.5, fontWeight: 800, textTransform: "uppercase", color: TONE.fg }}>{sig.label}</span>
+                        <span style={{ display: "block", fontFamily: MONO, fontSize: 10.5, color: C.sub, marginTop: 1 }}>{sig.hint}</span>
+                      </span>
+                    </div>
+                  );
+                })()}
 
                 {/* listing price type chip (informational, real l.priceType) */}
                 <div style={{ display: "flex", gap: 8, marginTop: 10, alignItems: "center", flexWrap: "wrap" }}>

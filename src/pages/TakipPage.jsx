@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ChevronLeft, Check, MapPin, Phone, MessageSquare, FileCheck, Star, ShieldCheck, AlertTriangle, X } from "lucide-react";
+import { ChevronLeft, Check, MapPin, Phone, MessageSquare, FileCheck, Star, ShieldCheck, AlertTriangle, X, Scale, Camera, ClipboardCheck, Zap } from "lucide-react";
 import { LISTINGS } from "../data/listings";
 import { CATS } from "../data/categories";
 import { StarsDisplay } from "../components/Stars";
 import ReportModal from "../components/ReportModal";
 import SEO from "../components/SEO";
-import { splitAmount, payableAmount, fmtTL, PAYMENT_LABEL } from "../utils/payments";
+import { splitAmount, payableAmount, fmtTL, PAYMENT_LABEL, earlyPayout, EARLY_PAY_FEE_RATE } from "../utils/payments";
 import { newId, nowIso } from "../utils/id";
 
 // ── "SAHA" sevkiyat takibi — dark tracking kunye card with embedded timeline +
@@ -54,7 +54,7 @@ const shell = {
   fontFamily: "'Plus Jakarta Sans', system-ui, -apple-system, sans-serif",
 };
 
-export default function TakipPage({ listings = LISTINGS, user, offers = [], getContact, reviews = [], onAddReview, getUserRating, onUpdateListing, onReport, onPayToEscrow, onReleasePayment }) {
+export default function TakipPage({ listings = LISTINGS, user, offers = [], getContact, reviews = [], onAddReview, getUserRating, onUpdateListing, onReport, onPayToEscrow, onReleasePayment, onRefundPayment, onEarlyPayout }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const [rateVal, setRateVal] = useState(0);
@@ -64,6 +64,7 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
   const [showReport, setShowReport] = useState(false);
   const [payBusy, setPayBusy] = useState(false);
   const [payMsg, setPayMsg] = useState("");
+  const [proofForm, setProofForm] = useState({ tonnage: "", ticketNo: "", note: "" });
   const l = listings.find((x) => String(x.id) === String(id));
 
   if (!l) {
@@ -131,7 +132,56 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
   const amountToPay = payableAmount(l, accepted);
   const split = splitAmount(l.paymentAmount || amountToPay);
   const canPay = matched && isOwner && payStatus === "yok" && amountToPay > 0;        // müteahhit emanete öder
-  const canRelease = isOwner && payStatus === "bloke" && phase === "teslim";          // teslim sonrası serbest bırakır
+
+  // ── Teslim Kanıtı (kantar fişi) — tonaj anlaşmazlığını çözen güven kilidi ──
+  const proof = l.deliveryProof || null;
+  const canSubmitProof = isNakliyeci && matched && !proof;                            // nakliyeci kanıt ekler
+  const canReviewProof = isOwner && proof && proof.status === "beklemede";            // müteahhit onaylar/itiraz eder
+  // Serbest bırakma artık teslim kanıtının ONAYINA bağlı (sadece faza değil):
+  const canRelease = isOwner && payStatus === "bloke" && proof?.status === "onay";
+  const submitProof = () => {
+    const tonnage = Number(proofForm.tonnage) || 0;
+    if (!tonnage) { setPayMsg("Teslim edilen miktarı girin."); return; }
+    onUpdateListing?.(l.id, {
+      deliveryProof: {
+        tonnage, unit: l.unit || "ton", ticketNo: proofForm.ticketNo.trim(),
+        note: proofForm.note.trim(), photoName: null,
+        byId: user.id, byName: user.name, submittedAt: nowIso(), status: "beklemede",
+      },
+    });
+    setProofForm({ tonnage: "", ticketNo: "", note: "" });
+    setPayMsg("Teslim kanıtı gönderildi, müteahhit onayında.");
+  };
+  const reviewProof = (ok) => {
+    onUpdateListing?.(l.id, ok
+      ? { deliveryProof: { ...proof, status: "onay", reviewedAt: nowIso() }, phase: "teslim", status: "kapali" }
+      : { deliveryProof: { ...proof, status: "itiraz", reviewedAt: nowIso() } });
+    setPayMsg(ok ? "Teslim onaylandı. Ödemeyi serbest bırakabilirsin." : "Teslim kanıtına itiraz edildi. Anlaşmazlık çözümü açıldı.");
+  };
+  // ── Anlaşmazlık çözümü (teslim itirazı sonrası) ──
+  const acceptAfterDispute = () => {     // müteahhit yine de teslimi kabul eder
+    onUpdateListing?.(l.id, { deliveryProof: { ...proof, status: "onay", reviewedAt: nowIso() }, phase: "teslim", status: "kapali" });
+    setPayMsg("Teslim kabul edildi. Ödemeyi serbest bırakabilirsin.");
+  };
+  const resubmitProof = () => {          // nakliyeci düzeltilmiş kanıt için sıfırlar
+    onUpdateListing?.(l.id, { deliveryProof: null });
+    setPayMsg("Kanıt sıfırlandı. Düzeltilmiş kantar fişini tekrar gönderebilirsin.");
+  };
+  const doRefund = async () => {         // müteahhite iade
+    setPayBusy(true); setPayMsg("");
+    const res = await onRefundPayment?.(l);
+    setPayBusy(false);
+    setPayMsg(res?.ok ? "Ödeme müteahhite iade edildi." : (res?.error || "İade başarısız."));
+  };
+  // ── Hızlı Ödeme (erken hakediş) — teslim onaylı işte nakliyeci anında alır ──
+  const early = earlyPayout(split.payout);
+  const canEarlyPay = isNakliyeci && payStatus === "bloke" && proof?.status === "onay";
+  const doEarlyPay = async () => {
+    setPayBusy(true); setPayMsg("");
+    const res = await onEarlyPayout?.(l);
+    setPayBusy(false);
+    setPayMsg(res?.ok ? `Hızlı ödeme yapıldı: ${fmtTL(res.net ?? early.net)} hesabına geçti.` : (res?.error || "Hızlı ödeme başarısız."));
+  };
   const doPay = async () => {
     setPayBusy(true); setPayMsg("");
     const res = await onPayToEscrow?.(l.id, amountToPay);
@@ -424,6 +474,11 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
                 <Check size={14} /> Ödeme tamamlandı, nakliyeciye {fmtTL(split.payout)} aktarıldı.
               </p>
             )}
+            {payStatus === "iade" && (
+              <p style={{ fontFamily: MONO, fontSize: 12, fontWeight: 700, color: C.rose, margin: "12px 0 0", display: "inline-flex", alignItems: "center", gap: 6 }}>
+                <AlertTriangle size={14} /> Anlaşmazlık sonucu {fmtTL(split.total)} müteahhite iade edildi.
+              </p>
+            )}
 
             {canPay && (
               <button
@@ -434,11 +489,40 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
                 {payBusy ? "İŞLENİYOR…" : `${fmtTL(split.total)} EMANETE ÖDE`}
               </button>
             )}
-            {payStatus === "bloke" && !canRelease && isOwner && phase !== "teslim" && (
-              <p style={{ fontSize: 11, color: C.muted, margin: "12px 0 0" }}>Serbest bırakma, iş “Teslim” aşamasına gelince açılır.</p>
+            {payStatus === "bloke" && !canRelease && isOwner && proof?.status !== "onay" && (
+              <p style={{ fontSize: 11, color: C.muted, margin: "12px 0 0" }}>Serbest bırakma, <b>teslim kanıtı onaylandığında</b> açılır.</p>
             )}
-            {isNakliyeci && payStatus === "bloke" && (
-              <p style={{ fontSize: 12, fontWeight: 700, color: C.yellowDeep, margin: "12px 0 0" }}>İş bedeli emanette güvende. Teslimden sonra hesabına geçecek.</p>
+            {isNakliyeci && payStatus === "bloke" && !canEarlyPay && (
+              <p style={{ fontSize: 12, fontWeight: 700, color: C.yellowDeep, margin: "12px 0 0" }}>İş bedeli emanette güvende. Teslim onaylanınca hesabına geçecek.</p>
+            )}
+            {canEarlyPay && (
+              <div style={{ marginTop: 14, background: C.ink, border: `2px solid ${C.ink}`, borderRadius: 6, padding: 14, position: "relative", overflow: "hidden", boxShadow: `4px 4px 0 rgba(10,10,10,.18)` }}>
+                <div style={{ fontFamily: ARCH, fontSize: 13, fontWeight: 900, textTransform: "uppercase", color: C.yellow, display: "inline-flex", alignItems: "center", gap: 7 }}>
+                  <Zap size={16} strokeWidth={2.6} /> Hızlı Ödeme
+                </div>
+                <p style={{ fontSize: 12, lineHeight: 1.55, color: "#C9C6BD", margin: "8px 0 12px" }}>
+                  Teslim onaylandı. Müteahhitin serbest bırakmasını bekleme — hakedişini <b style={{ color: "#fff" }}>şimdi al</b>.
+                </p>
+                <div style={{ background: "rgba(255,255,255,0.06)", border: `2px solid #2A2A2A`, borderRadius: 6, padding: 12, display: "flex", flexDirection: "column", gap: 7 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5 }}>
+                    <span style={{ color: "#9A988E" }}>Hakediş</span>
+                    <span style={{ fontFamily: MONO, fontWeight: 700, color: "#fff" }}>{fmtTL(split.payout)}</span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5 }}>
+                    <span style={{ color: "#9A988E" }}>Erken ödeme ücreti (%{Math.round(EARLY_PAY_FEE_RATE * 100)})</span>
+                    <span style={{ fontFamily: MONO, fontWeight: 700, color: C.rose }}>−{fmtTL(early.fee)}</span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, borderTop: `2px solid #2A2A2A`, paddingTop: 7 }}>
+                    <span style={{ fontWeight: 700, color: "#fff" }}>Şimdi hesabına</span>
+                    <span style={{ fontFamily: MONO, fontWeight: 700, color: C.green2 || "#4ADE80" }}>{fmtTL(early.net)}</span>
+                  </div>
+                </div>
+                <button onClick={doEarlyPay} disabled={payBusy}
+                  style={{ width: "100%", marginTop: 12, background: C.yellow, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "13px 0", fontFamily: ARCH, fontSize: 13, fontWeight: 900, textTransform: "uppercase", color: C.ink, cursor: payBusy ? "default" : "pointer", opacity: payBusy ? 0.6 : 1, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7 }}>
+                  <Zap size={16} /> {payBusy ? "İŞLENİYOR…" : `${fmtTL(early.net)} Şimdi Al`}
+                </button>
+                <p style={{ fontFamily: MONO, fontSize: 9.5, color: "#7A786E", margin: "9px 0 0", textAlign: "center" }}>Beklersen müteahhit serbest bıraktığında {fmtTL(split.payout)} alırsın.</p>
+              </div>
             )}
             {isNakliyeci && payStatus === "serbest" && (
               <p style={{ fontFamily: MONO, fontSize: 12, fontWeight: 700, color: C.green, margin: "12px 0 0", display: "inline-flex", alignItems: "center", gap: 6 }}>
@@ -448,6 +532,150 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
 
             {payMsg && (
               <div style={{ marginTop: 12, background: C.stone, border: `2px solid ${C.border}`, borderRadius: 6, padding: "10px 14px", fontSize: 12, fontWeight: 600, color: C.ink }}>{payMsg}</div>
+            )}
+          </div>
+        )}
+
+        {/* TESLİM KANITI (kantar fişi) — güven kilidi */}
+        {matched && accepted && (
+          <div style={whiteCard}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+              <h2 style={{ ...archTitle, display: "inline-flex", alignItems: "center", gap: 8 }}>
+                <Scale size={17} strokeWidth={2.4} /> Teslim Kanıtı
+              </h2>
+              {proof && (
+                <span style={{ fontFamily: MONO, fontSize: 10, fontWeight: 700, letterSpacing: "0.04em", padding: "4px 9px", borderRadius: 5, border: `2px solid ${C.ink}`,
+                  background: proof.status === "onay" ? C.green : proof.status === "itiraz" ? C.rose : C.yellow,
+                  color: proof.status === "beklemede" ? C.ink : "#fff", textTransform: "uppercase" }}>
+                  {proof.status === "onay" ? "ONAYLANDI" : proof.status === "itiraz" ? "İTİRAZ" : "ONAY BEKLİYOR"}
+                </span>
+              )}
+            </div>
+
+            {/* Kanıt yok — nakliyeci ekler */}
+            {!proof && canSubmitProof && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                <p style={{ fontSize: 12, lineHeight: 1.6, color: C.sub, margin: 0 }}>
+                  Yükü teslim ettin mi? <b style={{ color: C.ink }}>Kantar fişini</b> gir. Müteahhit onaylayınca ödemen serbest kalır.
+                </p>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  <div>
+                    <label style={labelTiny}>TESLİM EDİLEN ({(l.unit || "ton").toUpperCase()})</label>
+                    <input type="number" min="0" inputMode="decimal" value={proofForm.tonnage} onChange={(e) => setProofForm((f) => ({ ...f, tonnage: e.target.value }))}
+                      placeholder="0" style={{ width: "100%", marginTop: 6, boxSizing: "border-box", background: C.card, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "10px 12px", fontFamily: MONO, fontSize: 18, fontWeight: 700, color: C.ink, outline: "none" }} />
+                  </div>
+                  <div>
+                    <label style={labelTiny}>KANTAR FİŞ NO</label>
+                    <input value={proofForm.ticketNo} onChange={(e) => setProofForm((f) => ({ ...f, ticketNo: e.target.value }))}
+                      placeholder="Örn: 2026-4471" style={{ width: "100%", marginTop: 6, boxSizing: "border-box", background: C.card, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "10px 12px", fontFamily: MONO, fontSize: 13, fontWeight: 700, color: C.ink, outline: "none" }} />
+                  </div>
+                </div>
+                <div>
+                  <label style={labelTiny}>NOT (opsiyonel)</label>
+                  <input value={proofForm.note} onChange={(e) => setProofForm((f) => ({ ...f, note: e.target.value }))}
+                    placeholder="Teslim koşulu, alıcı adı…" style={{ width: "100%", marginTop: 6, boxSizing: "border-box", background: C.card, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "10px 12px", fontFamily: "inherit", fontSize: 13, fontWeight: 600, color: C.ink, outline: "none" }} />
+                </div>
+                <button type="button" disabled style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7, background: C.stone, border: `2px dashed ${C.ink}`, borderRadius: 6, padding: "12px 0", cursor: "default", color: C.sub }}>
+                  <Camera size={16} color={C.ink} /> <span style={{ fontFamily: ARCH, fontSize: 12, fontWeight: 800, textTransform: "uppercase", color: C.ink }}>Fiş fotoğrafı ekle</span>
+                  <span style={{ fontFamily: MONO, fontSize: 10, color: C.muted }}>· Yakında</span>
+                </button>
+                <button onClick={submitProof}
+                  style={{ width: "100%", background: C.yellow, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "13px 0", fontFamily: ARCH, fontSize: 13, fontWeight: 900, textTransform: "uppercase", color: C.ink, cursor: "pointer", boxShadow: `3px 3px 0 ${C.ink}`, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7 }}>
+                  <ClipboardCheck size={16} /> Teslim Kanıtını Gönder
+                </button>
+              </div>
+            )}
+
+            {/* Kanıt yok — müteahhit bekliyor */}
+            {!proof && !canSubmitProof && (
+              <p style={{ fontSize: 12, lineHeight: 1.6, color: C.sub, margin: 0 }}>
+                Nakliyeci yükü teslim edip <b style={{ color: C.ink }}>kantar fişini</b> girince burada görünecek. Onayınla ödeme serbest kalır.
+              </p>
+            )}
+
+            {/* Kanıt var — özet */}
+            {proof && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                <div style={{ background: C.stone, border: `2px solid ${C.border}`, borderRadius: 6, padding: 14, display: "flex", flexDirection: "column", gap: 9 }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 13 }}>
+                    <span style={{ color: C.sub }}>Teslim edilen</span>
+                    <span style={{ fontFamily: MONO, fontWeight: 700, color: C.ink }}>{proof.tonnage} {(proof.unit || "ton").toUpperCase()}</span>
+                  </div>
+                  {l.amount > 0 && (
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 13 }}>
+                      <span style={{ color: C.sub }}>İlandaki miktar</span>
+                      <span style={{ fontFamily: MONO, fontWeight: 700, color: Math.abs(proof.tonnage - l.amount) > l.amount * 0.05 ? C.rose : C.ink }}>
+                        {l.amount} {(l.unit || "ton").toUpperCase()}
+                        {Math.abs(proof.tonnage - l.amount) > l.amount * 0.05 ? "  ⚠" : ""}
+                      </span>
+                    </div>
+                  )}
+                  {proof.ticketNo && (
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 13, borderTop: `2px solid ${C.border}`, paddingTop: 9 }}>
+                      <span style={{ color: C.sub }}>Kantar fiş no</span>
+                      <span style={{ fontFamily: MONO, fontWeight: 700, color: C.ink }}>{proof.ticketNo}</span>
+                    </div>
+                  )}
+                  {proof.note && <p style={{ margin: 0, fontSize: 12, color: C.sub, lineHeight: 1.5 }}>“{proof.note}”</p>}
+                  <p style={{ margin: 0, fontFamily: MONO, fontSize: 10, color: C.muted }}>Nakliyeci: {proof.byName}</p>
+                </div>
+
+                {canReviewProof && (
+                  <div style={{ display: "flex", gap: 10 }}>
+                    <button onClick={() => reviewProof(false)}
+                      style={{ flex: 1, background: C.card, border: `2px solid ${C.rose}`, borderRadius: 6, padding: "12px 0", fontFamily: ARCH, fontSize: 12.5, fontWeight: 800, textTransform: "uppercase", color: C.rose, cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                      <AlertTriangle size={15} /> İtiraz Et
+                    </button>
+                    <button onClick={() => reviewProof(true)}
+                      style={{ flex: 1, background: C.green, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "12px 0", fontFamily: ARCH, fontSize: 12.5, fontWeight: 800, textTransform: "uppercase", color: "#fff", cursor: "pointer", boxShadow: `3px 3px 0 ${C.ink}`, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                      <Check size={15} /> Teslimi Onayla
+                    </button>
+                  </div>
+                )}
+                {proof.status === "beklemede" && isNakliyeci && (
+                  <p style={{ fontSize: 12, fontWeight: 700, color: C.yellowDeep, margin: 0 }}>Kanıt gönderildi, müteahhit onayı bekleniyor.</p>
+                )}
+                {proof.status === "onay" && (
+                  <p style={{ fontFamily: MONO, fontSize: 12, fontWeight: 700, color: C.green, margin: 0, display: "inline-flex", alignItems: "center", gap: 6 }}>
+                    <Check size={14} /> Teslim onaylandı.
+                  </p>
+                )}
+                {proof.status === "itiraz" && payStatus !== "iade" && (
+                  <div style={{ background: "#FEF2F2", border: `2px solid ${C.rose}`, borderRadius: 6, padding: 14 }}>
+                    <div style={{ display: "inline-flex", alignItems: "center", gap: 7, fontFamily: ARCH, fontSize: 13, fontWeight: 900, textTransform: "uppercase", color: C.rose }}>
+                      <AlertTriangle size={16} /> Anlaşmazlık açık
+                    </div>
+                    <p style={{ fontSize: 12, lineHeight: 1.6, color: C.sub, margin: "8px 0 12px" }}>
+                      Teslim kanıtına itiraz edildi. Para <b style={{ color: C.ink }}>emanette güvende</b>. Taraflar anlaşana kadar serbest bırakılmaz.
+                    </p>
+                    {isOwner && (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                        <div style={{ display: "flex", gap: 10 }}>
+                          <button onClick={doRefund} disabled={payBusy}
+                            style={{ flex: 1, background: C.card, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "12px 0", fontFamily: ARCH, fontSize: 12.5, fontWeight: 800, textTransform: "uppercase", color: C.ink, cursor: payBusy ? "default" : "pointer", opacity: payBusy ? 0.6 : 1 }}>
+                            {payBusy ? "İŞLENİYOR…" : "İadeyi Başlat"}
+                          </button>
+                          <button onClick={acceptAfterDispute}
+                            style={{ flex: 1, background: C.green, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "12px 0", fontFamily: ARCH, fontSize: 12.5, fontWeight: 800, textTransform: "uppercase", color: "#fff", cursor: "pointer", boxShadow: `3px 3px 0 ${C.ink}` }}>
+                            Yine de Onayla
+                          </button>
+                        </div>
+                        <p style={{ fontFamily: MONO, fontSize: 10, color: C.muted, margin: 0 }}>İade = para sana döner · Onayla = nakliyeciye ödenir.</p>
+                      </div>
+                    )}
+                    {isNakliyeci && (
+                      <button onClick={resubmitProof}
+                        style={{ width: "100%", background: C.yellow, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "12px 0", fontFamily: ARCH, fontSize: 12.5, fontWeight: 800, textTransform: "uppercase", color: C.ink, cursor: "pointer", boxShadow: `3px 3px 0 ${C.ink}`, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7 }}>
+                        <ClipboardCheck size={15} /> Düzeltilmiş Kanıt Gönder
+                      </button>
+                    )}
+                    <button onClick={() => setShowReport(true)}
+                      style={{ width: "100%", marginTop: 10, background: "none", border: "none", fontFamily: MONO, fontSize: 11, fontWeight: 700, color: C.rose, cursor: "pointer", textDecoration: "underline" }}>
+                      Çözülemedi mi? Platforma şikâyet aç
+                    </button>
+                  </div>
+                )}
+              </div>
             )}
           </div>
         )}
