@@ -171,14 +171,16 @@ function learnRates({ cat, km, material, fromIl, toIl }, history) {
   const now = Date.now();
   const weighted = [];
   const rawRates = [];
-  let accepted = 0;
+  const laneRates = [];                 // tam bu güzergahın (fromIl→toIl) oranları
+  let accepted = 0, laneAccepted = 0;
   collectSamples(history).forEach((s) => {
     if (s.cat !== cat) return;
     if (km && (s.km < km * 0.4 || s.km > km * 2.5)) return;   // yerel ↔ şehirlerarası karışmasın
     let w = 1;
     if (s.accepted) { w *= 2; accepted++; }
     if (matF && fold(s.material) === matF) w *= 1.6;
-    if (fromIl && toIl && s.fromIl === fromIl && s.toIl === toIl) w *= 1.6;
+    const sameLane = fromIl && toIl && s.fromIl === fromIl && s.toIl === toIl;
+    if (sameLane) { w *= 1.6; laneRates.push(s.rate); if (s.accepted) laneAccepted++; }
     if (s.date) {
       const days = (now - new Date(s.date)) / 86400000;
       if (days < 30) w *= 1.4; else if (days < 90) w *= 1.15;
@@ -186,7 +188,7 @@ function learnRates({ cat, km, material, fromIl, toIl }, history) {
     weighted.push({ rate: s.rate, w });
     rawRates.push(s.rate);
   });
-  return { weighted, rawRates, accepted, n: weighted.length };
+  return { weighted, rawRates, laneRates, accepted, laneAccepted, laneSamples: laneRates.length, n: weighted.length };
 }
 
 // Dizinin q-yüzdelik değeri (lineer interpolasyon).
@@ -266,7 +268,9 @@ export function marketPulse(history) {
   return { samples: all.length, accepted, byCat, lanes, materials, trend };
 }
 
+const CONF_LEVELS = ["tahmin", "düşük", "orta", "yüksek"];
 const CONF = (n) => (n >= 6 ? "yüksek" : n >= 3 ? "orta" : n >= 1 ? "düşük" : "tahmin");
+const bumpConf = (c) => CONF_LEVELS[Math.min(CONF_LEVELS.length - 1, CONF_LEVELS.indexOf(c) + 1)];
 
 export function estimatePrice({ cat, amount, unit, fromIl, toIl, material, capacity, vehicle, dateText, recurring, kmOverride, history, config, month }) {
   if (!amount || (!fromIl && !kmOverride)) return null;
@@ -321,15 +325,16 @@ export function estimatePrice({ cat, amount, unit, fromIl, toIl, material, capac
   const heuristic = perTripRaw * trips;
 
   // ── geçmişten ağırlıklı öğren + harmanla ──
-  let blended = heuristic, sampleSize = 0, accepted = 0, rawRates = [];
+  let blended = heuristic, sampleSize = 0, accepted = 0, rawRates = [], laneRates = [], laneSamples = 0, laneAccepted = 0;
   if (history) {
-    const { weighted, rawRates: rr, accepted: acc, n } = learnRates({ cat, km, material, fromIl, toIl }, history);
-    const r = weightedMedian(weighted);
+    const lr = learnRates({ cat, km, material, fromIl, toIl }, history);
+    const r = weightedMedian(lr.weighted);
     if (r && tons && km) {
       const dataMid = r * tons * km;
-      const w = Math.min(0.7, n / 10);             // veri arttıkça veriye güven artar
+      const w = Math.min(0.7, lr.n / 10);          // veri arttıkça veriye güven artar
       blended = w * dataMid + (1 - w) * heuristic;
-      sampleSize = n; accepted = acc; rawRates = rr;
+      sampleSize = lr.n; accepted = lr.accepted; rawRates = lr.rawRates;
+      laneRates = lr.laneRates; laneSamples = lr.laneSamples; laneAccepted = lr.laneAccepted;
     }
   }
   if (sampleSize > 0) breakdown.push({ key: "veri", label: `Geçmiş işler (${sampleSize})`, value: round50(blended - heuristic) });
@@ -344,11 +349,17 @@ export function estimatePrice({ cat, amount, unit, fromIl, toIl, material, capac
   const resid = mid - breakdown.reduce((t, b) => t + b.value, 0);
   if (resid) breakdown[1].value += resid;
 
-  // ── aralık: yeterli veri varsa p25–p75 dağılımından, yoksa sabit ±% ──
-  let lowR = 1, highR = 1;
-  const spread = sampleSize >= 6 ? 0.08 : sampleSize >= 3 ? 0.11 : 0.15;
-  if (rawRates.length >= 4) {
-    const p25 = percentile(rawRates, 0.25), p50 = percentile(rawRates, 0.5), p75 = percentile(rawRates, 0.75);
+  // ── güzergah kalibrasyonu: bu hat yeterince örneklendiyse güven artar ──
+  const laneCalibrated = laneSamples >= 3;
+  let confidence = CONF(sampleSize);
+  if (laneCalibrated) confidence = bumpConf(confidence);
+
+  // ── aralık: güzergahın kendi dağılımı (varsa) > genel dağılım > sabit ±% ──
+  const bandRates = laneRates.length >= 4 ? laneRates : rawRates;
+  let lowR, highR;
+  const spread = (laneCalibrated ? 0.06 : 0) + (sampleSize >= 6 ? 0.08 : sampleSize >= 3 ? 0.11 : 0.15) * (laneCalibrated ? 0.6 : 1);
+  if (bandRates.length >= 4) {
+    const p25 = percentile(bandRates, 0.25), p50 = percentile(bandRates, 0.5), p75 = percentile(bandRates, 0.75);
     if (p50 > 0) { lowR = clamp(p25 / p50, 0.70, 0.98); highR = clamp(p75 / p50, 1.02, 1.35); }
     else { lowR = 1 - spread; highR = 1 + spread; }
   } else { lowR = 1 - spread; highR = 1 + spread; }
@@ -361,8 +372,9 @@ export function estimatePrice({ cat, amount, unit, fromIl, toIl, material, capac
     real: kmOverride != null,
     sampleSize, accepted,
     dataDriven: sampleSize > 0,
-    bandFromData: rawRates.length >= 4,
-    confidence: CONF(sampleSize),
+    bandFromData: bandRates.length >= 4,
+    laneSamples, laneAccepted, laneCalibrated,
+    confidence,
     distLabel: kmOverride != null ? "harita mesafesi" : ["aynı il", "yakın il", "bölge içi", "uzak"][Math.min(d, 3)],
     materialFactor: matF, vehicleFactor: vehF, volumeFactor: volF, urgencyFactor: urgF, backhaul: bh,
     seasonFactor: seasonF, fuelIndex,

@@ -583,6 +583,14 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
                           ? ` · ${est.sampleSize} benzer işten${est.accepted ? ` (${est.accepted} gerçekleşen)` : ""}`
                           : " · henüz işlem verisi yok, sezgisel tahmin"}
                       </div>
+                      {est.laneCalibrated && (
+                        <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 8, background: "rgba(74,222,128,0.12)", border: "1.5px solid #4ADE80", borderRadius: 5, padding: "4px 9px" }}>
+                          <Check size={12} color="#4ADE80" strokeWidth={3} />
+                          <span style={{ fontFamily: MONO, fontSize: 9.5, fontWeight: 700, color: "#fff" }}>
+                            BU GÜZERGAH {est.laneSamples} İŞTEN KALİBRELİ{est.laneAccepted ? ` · ${est.laneAccepted} GERÇEK` : ""}
+                          </span>
+                        </div>
+                      )}
 
                       {/* arz/talep sinyali */}
                       {est.supplyDemand && est.supplyDemand.tone !== "ok" && (
