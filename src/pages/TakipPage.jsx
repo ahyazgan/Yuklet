@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ChevronLeft, Check, MapPin, Phone, MessageSquare, FileCheck, Star, ShieldCheck, AlertTriangle, X, Scale, Camera, ClipboardCheck } from "lucide-react";
+import { ChevronLeft, Check, MapPin, Phone, MessageSquare, FileCheck, Star, ShieldCheck, AlertTriangle, X, Scale, Camera, ClipboardCheck, Zap } from "lucide-react";
 import { LISTINGS } from "../data/listings";
 import { CATS } from "../data/categories";
 import { StarsDisplay } from "../components/Stars";
 import ReportModal from "../components/ReportModal";
 import SEO from "../components/SEO";
-import { splitAmount, payableAmount, fmtTL, PAYMENT_LABEL } from "../utils/payments";
+import { splitAmount, payableAmount, fmtTL, PAYMENT_LABEL, earlyPayout, EARLY_PAY_FEE_RATE } from "../utils/payments";
 import { newId, nowIso } from "../utils/id";
 
 // ── "SAHA" sevkiyat takibi — dark tracking kunye card with embedded timeline +
@@ -54,7 +54,7 @@ const shell = {
   fontFamily: "'Plus Jakarta Sans', system-ui, -apple-system, sans-serif",
 };
 
-export default function TakipPage({ listings = LISTINGS, user, offers = [], getContact, reviews = [], onAddReview, getUserRating, onUpdateListing, onReport, onPayToEscrow, onReleasePayment, onRefundPayment }) {
+export default function TakipPage({ listings = LISTINGS, user, offers = [], getContact, reviews = [], onAddReview, getUserRating, onUpdateListing, onReport, onPayToEscrow, onReleasePayment, onRefundPayment, onEarlyPayout }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const [rateVal, setRateVal] = useState(0);
@@ -172,6 +172,15 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
     const res = await onRefundPayment?.(l);
     setPayBusy(false);
     setPayMsg(res?.ok ? "Ödeme müteahhite iade edildi." : (res?.error || "İade başarısız."));
+  };
+  // ── Hızlı Ödeme (erken hakediş) — teslim onaylı işte nakliyeci anında alır ──
+  const early = earlyPayout(split.payout);
+  const canEarlyPay = isNakliyeci && payStatus === "bloke" && proof?.status === "onay";
+  const doEarlyPay = async () => {
+    setPayBusy(true); setPayMsg("");
+    const res = await onEarlyPayout?.(l);
+    setPayBusy(false);
+    setPayMsg(res?.ok ? `Hızlı ödeme yapıldı: ${fmtTL(res.net ?? early.net)} hesabına geçti.` : (res?.error || "Hızlı ödeme başarısız."));
   };
   const doPay = async () => {
     setPayBusy(true); setPayMsg("");
@@ -483,8 +492,37 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
             {payStatus === "bloke" && !canRelease && isOwner && proof?.status !== "onay" && (
               <p style={{ fontSize: 11, color: C.muted, margin: "12px 0 0" }}>Serbest bırakma, <b>teslim kanıtı onaylandığında</b> açılır.</p>
             )}
-            {isNakliyeci && payStatus === "bloke" && (
-              <p style={{ fontSize: 12, fontWeight: 700, color: C.yellowDeep, margin: "12px 0 0" }}>İş bedeli emanette güvende. Teslimden sonra hesabına geçecek.</p>
+            {isNakliyeci && payStatus === "bloke" && !canEarlyPay && (
+              <p style={{ fontSize: 12, fontWeight: 700, color: C.yellowDeep, margin: "12px 0 0" }}>İş bedeli emanette güvende. Teslim onaylanınca hesabına geçecek.</p>
+            )}
+            {canEarlyPay && (
+              <div style={{ marginTop: 14, background: C.ink, border: `2px solid ${C.ink}`, borderRadius: 6, padding: 14, position: "relative", overflow: "hidden", boxShadow: `4px 4px 0 rgba(10,10,10,.18)` }}>
+                <div style={{ fontFamily: ARCH, fontSize: 13, fontWeight: 900, textTransform: "uppercase", color: C.yellow, display: "inline-flex", alignItems: "center", gap: 7 }}>
+                  <Zap size={16} strokeWidth={2.6} /> Hızlı Ödeme
+                </div>
+                <p style={{ fontSize: 12, lineHeight: 1.55, color: "#C9C6BD", margin: "8px 0 12px" }}>
+                  Teslim onaylandı. Müteahhitin serbest bırakmasını bekleme — hakedişini <b style={{ color: "#fff" }}>şimdi al</b>.
+                </p>
+                <div style={{ background: "rgba(255,255,255,0.06)", border: `2px solid #2A2A2A`, borderRadius: 6, padding: 12, display: "flex", flexDirection: "column", gap: 7 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5 }}>
+                    <span style={{ color: "#9A988E" }}>Hakediş</span>
+                    <span style={{ fontFamily: MONO, fontWeight: 700, color: "#fff" }}>{fmtTL(split.payout)}</span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5 }}>
+                    <span style={{ color: "#9A988E" }}>Erken ödeme ücreti (%{Math.round(EARLY_PAY_FEE_RATE * 100)})</span>
+                    <span style={{ fontFamily: MONO, fontWeight: 700, color: C.rose }}>−{fmtTL(early.fee)}</span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, borderTop: `2px solid #2A2A2A`, paddingTop: 7 }}>
+                    <span style={{ fontWeight: 700, color: "#fff" }}>Şimdi hesabına</span>
+                    <span style={{ fontFamily: MONO, fontWeight: 700, color: C.green2 || "#4ADE80" }}>{fmtTL(early.net)}</span>
+                  </div>
+                </div>
+                <button onClick={doEarlyPay} disabled={payBusy}
+                  style={{ width: "100%", marginTop: 12, background: C.yellow, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "13px 0", fontFamily: ARCH, fontSize: 13, fontWeight: 900, textTransform: "uppercase", color: C.ink, cursor: payBusy ? "default" : "pointer", opacity: payBusy ? 0.6 : 1, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7 }}>
+                  <Zap size={16} /> {payBusy ? "İŞLENİYOR…" : `${fmtTL(early.net)} Şimdi Al`}
+                </button>
+                <p style={{ fontFamily: MONO, fontSize: 9.5, color: "#7A786E", margin: "9px 0 0", textAlign: "center" }}>Beklersen müteahhit serbest bıraktığında {fmtTL(split.payout)} alırsın.</p>
+              </div>
             )}
             {isNakliyeci && payStatus === "serbest" && (
               <p style={{ fontFamily: MONO, fontSize: 12, fontWeight: 700, color: C.green, margin: "12px 0 0", display: "inline-flex", alignItems: "center", gap: 6 }}>
