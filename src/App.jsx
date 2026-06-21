@@ -197,6 +197,11 @@ function AppShell() {
   // ── Kullanici / kimlik dogrulama ──
   const [users, setUsers] = useState(() => loadUsers());            // sadece localStorage modunda kullanilir
   useEffect(() => { if (!SB) saveUsers(users); }, [users, SB]);
+  // Admin: herhangi bir kullaniciyi guncelle (ban/askiya al/rol/manuel onay).
+  const updateUserAdmin = (userId, patch) => {
+    setUsers((prev) => prev.map((u) => String(u.id) === String(userId) ? { ...u, ...patch } : u));
+    setUser((cur) => (cur && String(cur.id) === String(userId) ? { ...cur, ...patch } : cur));
+  };
   const [user, setUser] = useState(() => (SB ? null : loadUser()));  // localStorage'da kayitli kullanici
   const [profile, setProfile] = useState(null);                     // SB modunda profiles satiri
   useEffect(() => { if (!SB) saveUser(user); }, [user, SB]);
@@ -344,7 +349,7 @@ function AppShell() {
                 <Route path="/mesajlar" element={<PageTransition><MesajlarPage user={user} listings={listings} offers={offers} messages={messages} onSendMessage={addMessage} onRequireAuth={requireAuth} onSeen={markMessagesSeen} getContact={getContact} /></PageTransition>} />
                 <Route path="/profil" element={<PageTransition><ProfilPage user={user} onUpdateProfile={updateProfile} onVerifyPhone={verifyPhone} onRequireAuth={requireAuth} onLogout={logout} reviews={reviews} getUserRating={getUserRating} docs={docs.filter(d => user && String(d.ownerId) === String(user.id))} onAddDoc={addDoc} onRemoveDoc={removeDoc} /></PageTransition>} />
                 <Route path="/panel" element={<PageTransition><DashboardPage user={user} listings={listings} offers={offers} messages={messages} onRequireAuth={requireAuth} /></PageTransition>} />
-                <Route path="/admin" element={<PageTransition><AdminPage user={user} reports={reports} docs={docs} users={users} listings={listings} offers={offers} onRequireAuth={requireAuth} onSetReportStatus={setReportStatus} onReviewDoc={reviewDoc} /></PageTransition>} />
+                <Route path="/admin" element={<PageTransition><AdminPage user={user} reports={reports} docs={docs} users={users} listings={listings} offers={offers} onRequireAuth={requireAuth} onSetReportStatus={setReportStatus} onReviewDoc={reviewDoc} onUpdateUser={updateUserAdmin} /></PageTransition>} />
                 <Route path="/muteahhit" element={<PageTransition><MuteahhitPage /></PageTransition>} />
                 <Route path="/tedarikci" element={<PageTransition><TedarikciPage /></PageTransition>} />
                 <Route path="/nakliyeci" element={<PageTransition><NakliyeciPage /></PageTransition>} />

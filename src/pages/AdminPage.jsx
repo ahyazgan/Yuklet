@@ -66,7 +66,7 @@ const btnBase = {
   letterSpacing: "-0.01em", lineHeight: 1, whiteSpace: "nowrap",
 };
 
-export default function AdminPage({ user, reports = [], docs = [], users = [], listings = [], offers = [], onRequireAuth, onSetReportStatus, onReviewDoc }) {
+export default function AdminPage({ user, reports = [], docs = [], users = [], listings = [], offers = [], onRequireAuth, onSetReportStatus, onReviewDoc, onUpdateUser }) {
   const navigate = useNavigate();
   const [tab, setTab] = useState("reports");
   const [fuelIndex, setFuelIndex] = useState(() => loadPricingConfig().fuelIndex || 1.0);
@@ -295,25 +295,42 @@ export default function AdminPage({ user, reports = [], docs = [], users = [], l
         {/* ── KULLANICILAR ── */}
         {tab === "users" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
-            {users.length === 0 ? <Empty icon={Shield} text="Kullanıcı listesi bu modda görünmüyor." /> : users.map((u) => (
-              <div key={u.id} style={{ display: "flex", alignItems: "center", gap: 11, background: C.card, border: `2px solid ${C.ink}`, borderRadius: 6, padding: 12, boxShadow: "3px 3px 0 rgba(10,10,10,.12)" }}>
-                <div style={{ width: 40, height: 40, flexShrink: 0, borderRadius: 5, background: C.yellow, border: `2px solid ${C.ink}`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: HEAD, fontSize: 16, fontWeight: 900, color: C.ink }}>
-                  {(u.name || "?").charAt(0).toUpperCase()}
+            {users.length === 0 ? <Empty icon={Shield} text="Kullanıcı listesi bu modda görünmüyor." /> : users.map((u) => {
+              const banned = u.status === "banli";
+              const nListings = listings.filter((l) => String(l.ownerId) === String(u.id)).length;
+              const nOffers = offers.filter((o) => String(o.fromUserId) === String(u.id)).length;
+              const nextRole = { isveren: "tedarikci", tedarikci: "nakliyeci", nakliyeci: "isveren" };
+              return (
+                <div key={u.id} style={{ background: C.card, border: `2px solid ${banned ? C.red : C.ink}`, borderRadius: 6, padding: 12, boxShadow: "3px 3px 0 rgba(10,10,10,.12)", opacity: banned ? 0.85 : 1 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
+                    <div style={{ width: 40, height: 40, flexShrink: 0, borderRadius: 5, background: banned ? C.red : C.yellow, border: `2px solid ${C.ink}`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: HEAD, fontSize: 16, fontWeight: 900, color: banned ? "#fff" : C.ink }}>
+                      {(u.name || "?").charAt(0).toUpperCase()}
+                    </div>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{ fontFamily: HEAD, fontSize: 13, fontWeight: 800, textTransform: "uppercase", letterSpacing: "-0.01em", color: C.ink, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{u.name}</div>
+                      <div style={{ fontFamily: MONO, fontSize: 11, color: C.muted, marginTop: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{u.email} · {u.role} · {nListings} ilan / {nOffers} teklif</div>
+                    </div>
+                    <div style={{ display: "flex", flexShrink: 0, gap: 6 }}>
+                      {banned && <Badge bg={C.red} fg="#fff" dot>BANLI</Badge>}
+                      {u.verified && !banned && <Badge bg={C.green} fg="#fff"><Check size={11} strokeWidth={3} /> Onaylı</Badge>}
+                    </div>
+                  </div>
+                  {/* admin aksiyonları */}
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginTop: 12, paddingTop: 11, borderTop: `1.5px solid ${C.border}` }}>
+                    <button onClick={() => onUpdateUser?.(u.id, { verified: !u.verified })} style={{ ...btnBase, background: u.verified ? C.stone : C.card }}>
+                      <Check size={12} strokeWidth={2.6} /> {u.verified ? "Onayı kaldır" : "Onayla"}
+                    </button>
+                    <button onClick={() => onUpdateUser?.(u.id, { role: nextRole[u.role] || "isveren" })} style={{ ...btnBase }}>
+                      Rol: {u.role}
+                    </button>
+                    <button onClick={() => onUpdateUser?.(u.id, { status: banned ? "aktif" : "banli" })}
+                      style={{ ...btnBase, background: banned ? C.green : C.red, color: "#fff", border: `2px solid ${C.ink}` }}>
+                      <Ban size={12} strokeWidth={2.6} /> {banned ? "Banı kaldır" : "Banla"}
+                    </button>
+                  </div>
                 </div>
-                <div style={{ minWidth: 0, flex: 1 }}>
-                  <div style={{ fontFamily: HEAD, fontSize: 13, fontWeight: 800, textTransform: "uppercase", letterSpacing: "-0.01em", color: C.ink, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{u.name}</div>
-                  <div style={{ fontFamily: MONO, fontSize: 11, color: C.muted, marginTop: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{u.email} · {u.role}</div>
-                </div>
-                <div style={{ display: "flex", flexShrink: 0, gap: 6 }}>
-                  {u.verified && <Badge bg={C.green} fg="#fff"><Check size={11} strokeWidth={3} /> Onaylı</Badge>}
-                  {u.phoneVerified && (
-                    <span style={{ width: 26, height: 24, borderRadius: 5, background: C.stone, border: `2px solid ${C.ink}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <Smartphone size={13} color={C.ink} strokeWidth={2.2} />
-                    </span>
-                  )}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
