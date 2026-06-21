@@ -5,7 +5,7 @@
 // ║  Supabase/API çağrıları: ASLA cache'lenmez (taze veri).            ║
 // ╚══════════════════════════════════════════════════════════════════╝
 
-const VERSION = "hamted-v1";
+const VERSION = "hamted-v2";
 const SHELL = `${VERSION}-shell`;
 const ASSETS = `${VERSION}-assets`;
 const APP_SHELL = "/index.html";
@@ -13,7 +13,7 @@ const APP_SHELL = "/index.html";
 // Yeni SW hemen devralsın (kurulumda bekleme yok).
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(SHELL).then((c) => c.addAll(["/", APP_SHELL, "/manifest.json", "/favicon.svg"])).catch(() => {})
+    caches.open(SHELL).then((c) => c.addAll(["/", APP_SHELL, "/manifest.json", "/logo-icon.png"])).catch(() => {})
   );
   self.skipWaiting();
 });
