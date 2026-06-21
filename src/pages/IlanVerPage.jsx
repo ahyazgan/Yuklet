@@ -739,6 +739,12 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], user, 
             {form.priceType === "sabit" && (
               <Field label="Sabit fiyat (₺)">
                 <input style={{ ...fieldBox, fontFamily: MONO, fontWeight: 700 }} type="number" min="0" inputMode="numeric" value={form.price} onChange={(e) => set("price", e.target.value)} placeholder="₺" />
+                {est && (
+                  <button type="button" onClick={() => set("price", String(est.mid))}
+                    style={{ marginTop: 8, width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 7, background: C.ink, color: C.yellow, fontFamily: ARCH, fontSize: 12.5, fontWeight: 800, textTransform: "uppercase", border: `2px solid ${C.ink}`, borderRadius: 6, padding: "10px 0", cursor: "pointer" }}>
+                    <Check size={15} strokeWidth={3} /> Önerilen fiyatı uygula · {fmtTL(est.mid)}
+                  </button>
+                )}
               </Field>
             )}
 
