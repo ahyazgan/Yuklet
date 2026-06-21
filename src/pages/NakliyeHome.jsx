@@ -8,12 +8,16 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { useMemo } from "react";
 import {
   Bell, Search, MapPin, RefreshCw, Truck, Package,
-  ArrowRight, MessageCircle, ChevronRight,
+  ArrowRight, MessageCircle, ChevronRight, Activity, TrendingUp,
 } from "lucide-react";
 import SEO from "../components/SEO";
 import Logo from "../components/Logo";
+import { LISTINGS } from "../data/listings";
+import { loadListings, loadOffers } from "../utils/storage";
+import { marketPulse } from "../utils/priceEstimate";
 
 /* ── SAHA paleti (kesin değerler — _DESIGN_SYSTEM.md) ────────────────── */
 const C = {
@@ -558,6 +562,43 @@ function TumuLink({ nav }) {
 }
 
 /* ── Ana bileşen ────────────────────────────────────────────────────── */
+// ── Piyasa Nabzı mini widget: bu dönem öne çıkan güzergah + ₺/ton-km ──
+const fmtRate = (r) => "₺" + Number(r).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+function PiyasaWidget({ nav }) {
+  const pulse = useMemo(() => marketPulse({ listings: [...loadListings(), ...LISTINGS], offers: loadOffers() }), []);
+  const lane = pulse.lanes[0];
+  const cat = pulse.byCat.hafriyat || pulse.byCat.silobas;
+  if (!lane && !cat) return null;
+  return (
+    <button
+      onClick={() => nav("/piyasa")}
+      className="relative mb-6 flex w-full items-center gap-3 overflow-hidden p-3 text-left"
+      style={{ background: C.ink, border: FRAME, borderRadius: 6, boxShadow: SHADOW_SM }}
+    >
+      <div className="flex h-[42px] w-[42px] flex-shrink-0 items-center justify-center" style={{ border: `2px solid ${C.yellow}`, borderRadius: 6 }}>
+        <Activity size={20} color={C.yellow} strokeWidth={2.4} />
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-1.5 text-[9.5px] font-bold uppercase" style={{ color: C.muted, fontFamily: MONO, letterSpacing: "0.04em" }}>
+          <TrendingUp size={11} color={C.yellow} /> Piyasa Nabzı
+        </div>
+        {lane ? (
+          <div className="mt-1 truncate text-[13px] font-extrabold uppercase" style={{ color: "#FFFFFF", fontFamily: ARCH, letterSpacing: "-0.01em" }}>
+            {lane.from} → {lane.to} · {fmtRate(lane.rate)}<span style={{ color: C.muted }}>/tkm</span>
+          </div>
+        ) : (
+          <div className="mt-1 text-[13px] font-extrabold uppercase" style={{ color: "#FFFFFF", fontFamily: ARCH, letterSpacing: "-0.01em" }}>
+            Ortalama {fmtRate(cat.rate)}<span style={{ color: C.muted }}>/tkm</span>
+          </div>
+        )}
+      </div>
+      <ChevronRight size={18} color={C.yellow} className="flex-shrink-0" />
+      <Hazard vertical w={7} className="absolute right-0 top-0" />
+    </button>
+  );
+}
+
 export default function NakliyeHome({
   user, pendingOffersCount = 0, unreadCount = 0, onLoginClick,
 }) {
@@ -618,6 +659,9 @@ export default function NakliyeHome({
         transition={{ duration: 0.3 }}
         className="px-[18px] pt-6"
       >
+        {/* Piyasa Nabzı — günlük dönüş sebebi + fiyat referansı */}
+        <PiyasaWidget nav={navigate} />
+
         {role === "nakliyeci" ? (
           <NakliyeciStateful navigate={navigate} />
         ) : role === "tedarikci" ? (
