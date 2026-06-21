@@ -6,6 +6,7 @@ import {
   loadUsers, saveUsers, loadOffers, saveOffers, loadMessages, saveMessages,
   loadMsgSeen, saveMsgSeen, loadNotifSeen, loadReviews, saveReviews, loadDocs, saveDocs,
   loadOnboarded, saveOnboarded, loadReports, saveReports, loadPricingConfig,
+  loadAuditLog, appendAudit,
 } from "./utils/storage";
 import { isSupabaseConfigured } from "./lib/supabase";
 import * as api from "./lib/api";
@@ -75,9 +76,17 @@ function AppShell() {
   // SB modunda demo ilanlar veritabaninda (seed) oldugu icin LISTINGS eklenmez.
   const [userListings, setUserListings] = useState(() => (SB ? [] : loadListings()));
   useEffect(() => { if (!SB) saveListings(userListings); }, [userListings, SB]);
-  const listings = SB ? userListings : [...userListings, ...LISTINGS];
+  // Kullanicilar + denetim kaydi (banli filtreleme listings'ten once gerektigi icin burada)
+  const [users, setUsers] = useState(() => loadUsers());            // sadece localStorage modunda kullanilir
+  useEffect(() => { if (!SB) saveUsers(users); }, [users, SB]);
+  const [audit, setAudit] = useState(() => loadAuditLog());
+  const allListings = SB ? userListings : [...userListings, ...LISTINGS];
+  const bannedIds = new Set(users.filter((u) => u.status === "banli").map((u) => String(u.id)));
+  // Yaptirim: banli kullanicilarin ilanlari kamuya gizlenir (admin tum ilanlari gorur).
+  const listings = bannedIds.size ? allListings.filter((l) => !bannedIds.has(String(l.ownerId))) : allListings;
   const reloadListings = async () => { try { setUserListings(await api.fetchListings()); } catch (e) { console.error(e); } };
   const publishListing = async (listing) => {
+    if (user?.status === "banli") return;   // yaptirim: banli kullanici ilan veremez
     if (SB) { try { await api.createListing(listing, profile || user); await reloadListings(); } catch (e) { console.error(e); } }
     else setUserListings(prev => [listing, ...prev]);
   };
@@ -126,6 +135,7 @@ function AppShell() {
   // forNakliyeci=true → teslim onay + ödeme nakliyeciye serbest; false → müteahhite iade.
   const resolveDispute = async (listing, forNakliyeci) => {
     const proof = { ...(listing.deliveryProof || {}), status: forNakliyeci ? "onay" : "iade", adminResolved: true, resolvedAt: new Date().toISOString() };
+    logAdmin("dispute", `${listing.title || listing.id}: ${forNakliyeci ? "nakliyeci lehine (ödeme)" : "müteahhit lehine (iade)"}`);
     if (forNakliyeci) {
       await updateListing(listing.id, { deliveryProof: proof, phase: "teslim", status: "kapali" });
       return releasePayment(listing);
@@ -139,6 +149,7 @@ function AppShell() {
   useEffect(() => { if (!SB) saveOffers(offers); }, [offers, SB]);
   const reloadOffers = async () => { try { setOffers(await api.fetchOffers()); } catch (e) { console.error(e); } };
   const addOffer = async (offer) => {
+    if (user?.status === "banli") return;   // yaptirim: banli kullanici teklif veremez
     if (SB) { try { await api.createOffer(offer, profile || user); await Promise.all([reloadOffers(), reloadListings()]); } catch (e) { console.error(e); } }
     else setOffers(prev => [offer, ...prev]);
   };
@@ -205,13 +216,16 @@ function AppShell() {
     }
   };
 
-  // ── Kullanici / kimlik dogrulama ──
-  const [users, setUsers] = useState(() => loadUsers());            // sadece localStorage modunda kullanilir
-  useEffect(() => { if (!SB) saveUsers(users); }, [users, SB]);
+  // ── Kullanici / kimlik dogrulama ── (users state yukari tasindi: banli filtreleme listings'ten once gerekir)
+  // Admin denetim kaydi — kim, ne zaman, ne yapti.
+  const logAdmin = (action, detail) => setAudit(appendAudit({ adminId: user?.id, adminName: user?.name || "admin", action, detail }));
   // Admin: herhangi bir kullaniciyi guncelle (ban/askiya al/rol/manuel onay).
   const updateUserAdmin = (userId, patch) => {
     setUsers((prev) => prev.map((u) => String(u.id) === String(userId) ? { ...u, ...patch } : u));
     setUser((cur) => (cur && String(cur.id) === String(userId) ? { ...cur, ...patch } : cur));
+    const target = users.find((u) => String(u.id) === String(userId));
+    const label = "status" in patch ? (patch.status === "banli" ? "Banlandı" : "Ban kaldırıldı") : "role" in patch ? `Rol → ${patch.role}` : patch.verified ? "Onaylandı" : "Onay kaldırıldı";
+    logAdmin("user", `${target?.name || userId}: ${label}`);
   };
   const [user, setUser] = useState(() => (SB ? null : loadUser()));  // localStorage'da kayitli kullanici
   const [profile, setProfile] = useState(null);                     // SB modunda profiles satiri
@@ -360,7 +374,7 @@ function AppShell() {
                 <Route path="/mesajlar" element={<PageTransition><MesajlarPage user={user} listings={listings} offers={offers} messages={messages} onSendMessage={addMessage} onRequireAuth={requireAuth} onSeen={markMessagesSeen} getContact={getContact} /></PageTransition>} />
                 <Route path="/profil" element={<PageTransition><ProfilPage user={user} onUpdateProfile={updateProfile} onVerifyPhone={verifyPhone} onRequireAuth={requireAuth} onLogout={logout} reviews={reviews} getUserRating={getUserRating} docs={docs.filter(d => user && String(d.ownerId) === String(user.id))} onAddDoc={addDoc} onRemoveDoc={removeDoc} /></PageTransition>} />
                 <Route path="/panel" element={<PageTransition><DashboardPage user={user} listings={listings} offers={offers} messages={messages} onRequireAuth={requireAuth} /></PageTransition>} />
-                <Route path="/admin" element={<PageTransition><AdminPage user={user} reports={reports} docs={docs} users={users} listings={listings} offers={offers} onRequireAuth={requireAuth} onSetReportStatus={setReportStatus} onReviewDoc={reviewDoc} onUpdateUser={updateUserAdmin} onResolveDispute={resolveDispute} /></PageTransition>} />
+                <Route path="/admin" element={<PageTransition><AdminPage user={user} reports={reports} docs={docs} users={users} listings={allListings} offers={offers} audit={audit} onRequireAuth={requireAuth} onSetReportStatus={setReportStatus} onReviewDoc={reviewDoc} onUpdateUser={updateUserAdmin} onResolveDispute={resolveDispute} onLog={logAdmin} /></PageTransition>} />
                 <Route path="/muteahhit" element={<PageTransition><MuteahhitPage /></PageTransition>} />
                 <Route path="/tedarikci" element={<PageTransition><TedarikciPage /></PageTransition>} />
                 <Route path="/nakliyeci" element={<PageTransition><NakliyeciPage /></PageTransition>} />

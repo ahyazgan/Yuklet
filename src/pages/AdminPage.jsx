@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Shield, Lock, Ban, Flag, FileText, FileCheck2, Trash2, Eye, CheckCircle2, X, Check, Smartphone, Fuel, Scale, AlertTriangle } from "lucide-react";
+import { Shield, Lock, Ban, Flag, FileText, FileCheck2, Trash2, Eye, CheckCircle2, X, Check, Smartphone, Fuel, Scale, AlertTriangle, ScrollText } from "lucide-react";
 import { loadPricingConfig, savePricingConfig } from "../utils/storage";
 import { seasonFactor } from "../utils/priceEstimate";
 import { fmtTL } from "../utils/payments";
@@ -36,7 +36,7 @@ const fmt = (iso) => { try { return new Date(iso).toLocaleString("tr-TR", { day:
 
 const shortId = (id) => "HMT-" + String(id ?? "").slice(-4).toUpperCase().padStart(4, "0");
 
-const TABS = [["reports", "Şikayet"], ["disputes", "İtiraz"], ["users", "Kullanıcı"], ["docs", "Belge"], ["pricing", "Finans"]];
+const TABS = [["reports", "Şikayet"], ["disputes", "İtiraz"], ["users", "Üye"], ["docs", "Belge"], ["pricing", "Finans"], ["audit", "Kayıt"]];
 
 const PAY_BADGE = {
   bloke: { label: "EMANETTE", bg: "#FACC15", fg: "#0A0A0A" },
@@ -66,14 +66,14 @@ const btnBase = {
   letterSpacing: "-0.01em", lineHeight: 1, whiteSpace: "nowrap",
 };
 
-export default function AdminPage({ user, reports = [], docs = [], users = [], listings = [], offers = [], onRequireAuth, onSetReportStatus, onReviewDoc, onUpdateUser, onResolveDispute }) {
+export default function AdminPage({ user, reports = [], docs = [], users = [], listings = [], offers = [], onRequireAuth, onSetReportStatus, onReviewDoc, onUpdateUser, onResolveDispute, audit = [], onLog }) {
   const navigate = useNavigate();
   const [tab, setTab] = useState("reports");
   const [fuelIndex, setFuelIndex] = useState(() => loadPricingConfig().fuelIndex || 1.0);
   const [feeRate, setFeeRate] = useState(() => loadPricingConfig().feeRate ?? 0.10);
   const [fuelSaved, setFuelSaved] = useState(false);
-  const saveFuel = (v) => { setFuelIndex(v); savePricingConfig({ ...loadPricingConfig(), fuelIndex: v }); setFuelSaved(true); setTimeout(() => setFuelSaved(false), 1500); };
-  const saveFee = (v) => { setFeeRate(v); savePricingConfig({ ...loadPricingConfig(), feeRate: v }); setFuelSaved(true); setTimeout(() => setFuelSaved(false), 1500); };
+  const saveFuel = (v, log) => { setFuelIndex(v); savePricingConfig({ ...loadPricingConfig(), fuelIndex: v }); setFuelSaved(true); setTimeout(() => setFuelSaved(false), 1500); if (log) onLog?.("config", `Yakıt endeksi → ×${v.toFixed(2)}`); };
+  const saveFee = (v, log) => { setFeeRate(v); savePricingConfig({ ...loadPricingConfig(), feeRate: v }); setFuelSaved(true); setTimeout(() => setFuelSaved(false), 1500); if (log) onLog?.("config", `Komisyon → %${Math.round(v * 100)}`); };
 
   // ── Gate: giriş yok ──
   if (!user) {
@@ -195,14 +195,14 @@ export default function AdminPage({ user, reports = [], docs = [], users = [], l
           ))}
         </div>
 
-        {/* ── Sekmeler: 2px frame segment ── */}
-        <div style={{ display: "flex", border: `2px solid ${C.ink}`, borderRadius: 6, overflow: "hidden" }}>
+        {/* ── Sekmeler: 2px frame, yatay kaydırılabilir ── */}
+        <div style={{ display: "flex", border: `2px solid ${C.ink}`, borderRadius: 6, overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
           {TABS.map(([k, lbl], i) => {
             const active = tab === k;
             return (
               <button key={k} onClick={() => setTab(k)}
                 style={{
-                  flex: 1, cursor: "pointer", padding: "10px 4px",
+                  flex: "1 0 auto", cursor: "pointer", padding: "10px 12px", whiteSpace: "nowrap",
                   background: active ? C.ink : C.card,
                   color: active ? C.yellow : C.ink,
                   border: "none", borderLeft: i > 0 ? `2px solid ${C.ink}` : "none",
@@ -398,6 +398,7 @@ export default function AdminPage({ user, reports = [], docs = [], users = [], l
               </div>
               <input type="range" min="0.05" max="0.20" step="0.01" value={feeRate}
                 onChange={(e) => saveFee(Number(e.target.value))}
+                onPointerUp={(e) => saveFee(Number(e.target.value), true)}
                 style={{ width: "100%", accentColor: C.ink, margin: "8px 0" }} />
               <div style={{ display: "flex", justifyContent: "space-between", fontFamily: MONO, fontSize: 9.5, color: C.muted }}>
                 <span>%5</span><span>%10</span><span>%15</span><span>%20</span>
@@ -427,6 +428,7 @@ export default function AdminPage({ user, reports = [], docs = [], users = [], l
 
               <input type="range" min="0.8" max="1.4" step="0.01" value={fuelIndex}
                 onChange={(e) => saveFuel(Number(e.target.value))}
+                onPointerUp={(e) => saveFuel(Number(e.target.value), true)}
                 style={{ width: "100%", accentColor: C.ink, margin: "8px 0" }} />
               <div style={{ display: "flex", justifyContent: "space-between", fontFamily: MONO, fontSize: 9.5, color: C.muted }}>
                 <span>0.80 ucuz</span><span>1.00</span><span>1.40 pahalı</span>
@@ -434,7 +436,7 @@ export default function AdminPage({ user, reports = [], docs = [], users = [], l
 
               <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
                 {[["Ucuz", 0.9], ["Nötr", 1.0], ["Yüksek", 1.15], ["Zam", 1.3]].map(([lbl, v]) => (
-                  <button key={lbl} onClick={() => saveFuel(v)}
+                  <button key={lbl} onClick={() => saveFuel(v, true)}
                     style={{ flex: 1, cursor: "pointer", padding: "9px 0", borderRadius: 5, border: `2px solid ${C.ink}`,
                       background: Math.abs(fuelIndex - v) < 0.005 ? C.ink : C.card, color: Math.abs(fuelIndex - v) < 0.005 ? C.yellow : C.ink,
                       fontFamily: MONO, fontSize: 10.5, fontWeight: 700 }}>{lbl}</button>
@@ -495,6 +497,29 @@ export default function AdminPage({ user, reports = [], docs = [], users = [], l
               })()}
             </div>
           </div>
+        )}
+
+        {/* ── DENETİM KAYDI (AUDIT LOG) ── */}
+        {tab === "audit" && (
+          audit.length === 0 ? <Empty icon={ScrollText} text="Henüz admin işlemi kaydedilmedi." /> : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {audit.map((a) => {
+                const tone = a.action === "dispute" ? C.red : a.action === "config" ? C.green : a.action === "user" ? C.yellow : C.stone;
+                const fg = a.action === "config" || a.action === "dispute" ? "#fff" : C.ink;
+                return (
+                  <div key={a.id} style={{ display: "flex", alignItems: "flex-start", gap: 10, background: C.card, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "10px 12px", boxShadow: "3px 3px 0 rgba(10,10,10,.10)" }}>
+                    <span style={{ flexShrink: 0, marginTop: 1, fontFamily: MONO, fontSize: 8.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em", background: tone, color: fg, border: `2px solid ${C.ink}`, borderRadius: 4, padding: "3px 7px" }}>
+                      {a.action}
+                    </span>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{ fontFamily: BODY, fontSize: 13, fontWeight: 600, color: C.ink, lineHeight: 1.35 }}>{a.detail}</div>
+                      <div style={{ fontFamily: MONO, fontSize: 10, color: C.muted, marginTop: 3 }}>{a.adminName} · {fmt(a.at)}</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )
         )}
       </div>
     </div>
