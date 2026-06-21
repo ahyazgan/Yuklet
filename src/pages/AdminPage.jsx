@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Shield, Lock, Ban, Flag, FileText, FileCheck2, Trash2, Eye, CheckCircle2, X, Check, Smartphone } from "lucide-react";
+import { Shield, Lock, Ban, Flag, FileText, FileCheck2, Trash2, Eye, CheckCircle2, X, Check, Smartphone, Fuel } from "lucide-react";
+import { loadPricingConfig, savePricingConfig } from "../utils/storage";
+import { seasonFactor } from "../utils/priceEstimate";
 import SEO from "../components/SEO";
 import { isSupabaseConfigured } from "../lib/supabase";
 import { isAdmin } from "../utils/admin";
@@ -33,7 +35,7 @@ const fmt = (iso) => { try { return new Date(iso).toLocaleString("tr-TR", { day:
 
 const shortId = (id) => "HMT-" + String(id ?? "").slice(-4).toUpperCase().padStart(4, "0");
 
-const TABS = [["reports", "Şikayetler"], ["docs", "Belgeler"], ["users", "Kullanıcılar"]];
+const TABS = [["reports", "Şikayetler"], ["docs", "Belgeler"], ["users", "Kullanıcılar"], ["pricing", "Fiyat"]];
 
 // Report status badge config: label, bg, fg.
 const REPORT_STATUS = {
@@ -60,6 +62,9 @@ const btnBase = {
 export default function AdminPage({ user, reports = [], docs = [], users = [], listings = [], onRequireAuth, onSetReportStatus, onReviewDoc }) {
   const navigate = useNavigate();
   const [tab, setTab] = useState("reports");
+  const [fuelIndex, setFuelIndex] = useState(() => loadPricingConfig().fuelIndex || 1.0);
+  const [fuelSaved, setFuelSaved] = useState(false);
+  const saveFuel = (v) => { setFuelIndex(v); savePricingConfig({ ...loadPricingConfig(), fuelIndex: v }); setFuelSaved(true); setTimeout(() => setFuelSaved(false), 1500); };
 
   // ── Gate: giriş yok ──
   if (!user) {
@@ -250,6 +255,69 @@ export default function AdminPage({ user, reports = [], docs = [], users = [], l
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* ── FİYAT: yakıt endeksi + mevsim ── */}
+        {tab === "pricing" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <div style={{ background: C.card, border: `2px solid ${C.ink}`, borderRadius: 6, padding: 16, boxShadow: "3px 3px 0 rgba(10,10,10,.12)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 4 }}>
+                <span style={{ width: 36, height: 36, borderRadius: 6, background: C.yellow, border: `2px solid ${C.ink}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Fuel size={18} color={C.ink} strokeWidth={2.4} />
+                </span>
+                <div>
+                  <h2 style={{ fontFamily: HEAD, fontSize: 15, fontWeight: 900, textTransform: "uppercase", letterSpacing: "-0.01em", margin: 0, color: C.ink }}>Yakıt Endeksi</h2>
+                  <div style={{ fontFamily: MONO, fontSize: 10.5, color: C.muted, marginTop: 2 }}>Mazot pahalandıkça tüm mesafe maliyeti ölçeklenir.</div>
+                </div>
+              </div>
+
+              <div style={{ display: "flex", alignItems: "baseline", justifyContent: "center", gap: 6, margin: "14px 0 4px" }}>
+                <span style={{ fontFamily: MONO, fontSize: 34, fontWeight: 700, color: C.ink }}>×{fuelIndex.toFixed(2)}</span>
+                <span style={{ fontFamily: MONO, fontSize: 12, fontWeight: 700, color: fuelIndex > 1 ? C.red : fuelIndex < 1 ? C.green : C.muted }}>
+                  {fuelIndex === 1 ? "nötr" : `${fuelIndex > 1 ? "+" : ""}${Math.round((fuelIndex - 1) * 100)}%`}
+                </span>
+              </div>
+
+              <input type="range" min="0.8" max="1.4" step="0.01" value={fuelIndex}
+                onChange={(e) => saveFuel(Number(e.target.value))}
+                style={{ width: "100%", accentColor: C.ink, margin: "8px 0" }} />
+              <div style={{ display: "flex", justifyContent: "space-between", fontFamily: MONO, fontSize: 9.5, color: C.muted }}>
+                <span>0.80 ucuz</span><span>1.00</span><span>1.40 pahalı</span>
+              </div>
+
+              <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
+                {[["Ucuz", 0.9], ["Nötr", 1.0], ["Yüksek", 1.15], ["Zam", 1.3]].map(([lbl, v]) => (
+                  <button key={lbl} onClick={() => saveFuel(v)}
+                    style={{ flex: 1, cursor: "pointer", padding: "9px 0", borderRadius: 5, border: `2px solid ${C.ink}`,
+                      background: Math.abs(fuelIndex - v) < 0.005 ? C.ink : C.card, color: Math.abs(fuelIndex - v) < 0.005 ? C.yellow : C.ink,
+                      fontFamily: MONO, fontSize: 10.5, fontWeight: 700 }}>{lbl}</button>
+                ))}
+              </div>
+
+              {fuelSaved && (
+                <div style={{ marginTop: 12, display: "inline-flex", alignItems: "center", gap: 6, fontFamily: MONO, fontSize: 11, fontWeight: 700, color: C.green }}>
+                  <Check size={13} strokeWidth={3} /> Kaydedildi — tüm akıllı fiyatlar güncellendi.
+                </div>
+              )}
+            </div>
+
+            {/* mevcut sezon endeksi (bilgi) */}
+            <div style={{ background: C.stone, border: `2px solid ${C.border}`, borderRadius: 6, padding: 14 }}>
+              <div style={{ fontFamily: MONO, fontSize: 9.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: C.muted, marginBottom: 10 }}>BU AYIN SEZON ENDEKSİ (OTOMATİK)</div>
+              {["hafriyat", "silobas"].map((c) => {
+                const sf = seasonFactor(c);
+                return (
+                  <div key={c} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0" }}>
+                    <span style={{ fontFamily: HEAD, fontSize: 12.5, fontWeight: 800, textTransform: "uppercase", color: C.ink }}>{c === "hafriyat" ? "Hafriyat" : "Silobas"}</span>
+                    <span style={{ fontFamily: MONO, fontSize: 13, fontWeight: 700, color: sf > 1 ? C.red : sf < 1 ? C.green : C.muted }}>
+                      ×{sf.toFixed(2)} · {sf >= 1.02 ? "yoğun sezon" : sf <= 0.98 ? "sakin sezon" : "normal"}
+                    </span>
+                  </div>
+                );
+              })}
+              <div style={{ fontFamily: MONO, fontSize: 10, color: C.muted, marginTop: 8, lineHeight: 1.5 }}>Sezon ay bazlı otomatik hesaplanır (inşaat/hasat takvimi). Yakıt endeksi elle ayarlanır.</div>
+            </div>
           </div>
         )}
       </div>

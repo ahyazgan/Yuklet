@@ -24,7 +24,7 @@ import { LISTINGS, IL_LIST } from "../data/listings";
 import { CATS, MATERIALS } from "../data/categories";
 import { loadsNearCity } from "../utils/backhaul";
 import { estimatePrice, priceSignal, fmtTL } from "../utils/priceEstimate";
-import { loadSavedSearches, saveSavedSearches, loadOffers } from "../utils/storage";
+import { loadSavedSearches, saveSavedSearches, loadOffers, loadPricingConfig } from "../utils/storage";
 import SEO from "../components/SEO";
 
 const ListingsMap = lazy(() => import("../components/ListingsMap"));
@@ -71,9 +71,9 @@ const deviationOf = (dist) => DEVIATION_KM[dist] ?? 60;
 
 // İş ilanı için DAYIM Akıllı Fiyat etiketi:
 // teklife açık → önerilen fiyat ipucu · sabit fiyat → piyasa altı/üstü rozeti.
-function marketTagOf(l, history) {
+function marketTagOf(l, history, config) {
   if (l.type !== "is" || !l.amount) return null;
-  const est = estimatePrice({ cat: l.cat, amount: l.amount, unit: l.unit, fromIl: l.il, toIl: l.varisIl, material: l.material, vehicle: l.vehicle, kmOverride: l.km, history });
+  const est = estimatePrice({ cat: l.cat, amount: l.amount, unit: l.unit, fromIl: l.il, toIl: l.varisIl, material: l.material, vehicle: l.vehicle, kmOverride: l.km, history, config });
   if (!est) return null;
   if (l.priceType === "sabit" && l.price) {
     const sig = priceSignal(l.price, est);
@@ -86,10 +86,10 @@ function marketTagOf(l, history) {
 }
 
 // ── İlan kartı ──
-function ListingCard({ l, history }) {
+function ListingCard({ l, history, config }) {
   const isH = l.cat === "hafriyat";
   const isProduct = l.type === "urun";
-  const market = marketTagOf(l, history);
+  const market = marketTagOf(l, history, config);
   const fixed = isProduct
     ? (l.price ? `₺${l.price.toLocaleString("tr-TR")}${l.priceUnit || "/ton"}` : null)
     : fmtPrice(l);
@@ -351,6 +351,7 @@ export default function ListingsPage({ listings = LISTINGS }) {
   const [sp] = useSearchParams();
   // DAYIM Akıllı Fiyat: kartlardaki piyasa etiketleri için geçmiş veri (bir kez).
   const priceHistory = useMemo(() => ({ listings, offers: loadOffers() }), [listings]);
+  const pricingConfig = useMemo(() => loadPricingConfig(), []);
   const [type, setType] = useState(["arac", "is", "urun"].includes(sp.get("type")) ? sp.get("type") : "all");
   const [cat, setCat] = useState(
     ["hafriyat", "silobas"].includes(sp.get("cat")) ? sp.get("cat") : "all"
@@ -915,7 +916,7 @@ export default function ListingsPage({ listings = LISTINGS }) {
                     onClick={() => navigate(`/ilan/${m.listing.id}`)}
                     style={{ display: "block", width: "100%", textAlign: "left" }}
                   >
-                    <ListingCard l={m.listing} history={priceHistory} />
+                    <ListingCard l={m.listing} history={priceHistory} config={pricingConfig} />
                   </button>
                 </div>
                 );
@@ -965,7 +966,7 @@ export default function ListingsPage({ listings = LISTINGS }) {
                 onClick={() => navigate(`/ilan/${l.id}`)}
                 style={{ display: "block", width: "100%", textAlign: "left" }}
               >
-                <ListingCard l={l} history={priceHistory} />
+                <ListingCard l={l} history={priceHistory} config={pricingConfig} />
               </button>
             ))}
           </div>

@@ -11,7 +11,7 @@ import { CATS, LISTING_TYPES, VEHICLE_TYPES, MATERIALS, UNITS, STOCK_LEVELS } fr
 import { IL_LIST } from "../data/listings";
 import CategoryIcon from "../components/CategoryIcon";
 import { estimatePrice, fmtTL, haversineKm } from "../utils/priceEstimate";
-import { loadOffers } from "../utils/storage";
+import { loadOffers, loadPricingConfig } from "../utils/storage";
 import { newId } from "../utils/id";
 import SEO from "../components/SEO";
 import Logo from "../components/Logo";
@@ -260,7 +260,7 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], user, 
   const materials = MATERIALS[cat] || [];
   const vehicles = VEHICLE_TYPES[cat] || [];
   const est = type === "is" && Number(form.amount) > 0
-    ? estimatePrice({ cat, amount: Number(form.amount), unit: form.unit, fromIl: form.il, toIl: form.varisIl, material: form.material, vehicle: form.vehicle, dateText: form.dateText, recurring: form.recurring, kmOverride: realKm, history: { listings, offers: loadOffers() } })
+    ? estimatePrice({ cat, amount: Number(form.amount), unit: form.unit, fromIl: form.il, toIl: form.varisIl, material: form.material, vehicle: form.vehicle, dateText: form.dateText, recurring: form.recurring, kmOverride: realKm, history: { listings, offers: loadOffers() }, config: loadPricingConfig() })
     : null;
 
   // ── gate: not logged in ──

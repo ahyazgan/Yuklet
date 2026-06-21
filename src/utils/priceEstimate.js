@@ -79,6 +79,17 @@ export function urgencyFactor({ dateText, recurring } = {}) {
   return 1;
 }
 
+// Mevsimsellik çarpanı — ay bazlı talep (0=Ocak … 11=Aralık).
+// Hafriyat: inşaat sezonu (ilkbahar–sonbahar) zirve. Silobas: hasat (yaz sonu–güz).
+const SEASON = {
+  hafriyat: [0.95, 0.95, 0.98, 1.02, 1.04, 1.05, 1.05, 1.04, 1.03, 1.01, 0.97, 0.94],
+  silobas: [0.97, 0.97, 0.98, 1.00, 1.01, 1.02, 1.03, 1.05, 1.05, 1.03, 1.00, 0.98],
+};
+export function seasonFactor(cat, month = new Date().getMonth()) {
+  const arr = SEASON[cat];
+  return arr ? arr[((month % 12) + 12) % 12] : 1;
+}
+
 // Backhaul (dönüş yükü) çarpanı — varış ilinde alınabilecek yük varsa
 // kamyon boş dönmez → maliyet düşer. Fiyatı boş-dönüş ağına bağlar.
 export function backhaulFactor({ cat, toIl }, { listings = [] } = {}) {
@@ -257,7 +268,7 @@ export function marketPulse(history) {
 
 const CONF = (n) => (n >= 6 ? "yüksek" : n >= 3 ? "orta" : n >= 1 ? "düşük" : "tahmin");
 
-export function estimatePrice({ cat, amount, unit, fromIl, toIl, material, capacity, vehicle, dateText, recurring, kmOverride, history }) {
+export function estimatePrice({ cat, amount, unit, fromIl, toIl, material, capacity, vehicle, dateText, recurring, kmOverride, history, config, month }) {
   if (!amount || (!fromIl && !kmOverride)) return null;
   const d = ilDistance(fromIl, toIl || fromIl);
   const km = kmOverride != null ? kmOverride : (KM_BAND[d] ?? 220);
@@ -277,16 +288,20 @@ export function estimatePrice({ cat, amount, unit, fromIl, toIl, material, capac
   const urgF = urgencyFactor({ dateText, recurring });
   const bh = history ? backhaulFactor({ cat, toIl: toIl || fromIl }, history) : { factor: 1, returns: 0 };
   const bhF = bh.factor;
+  const fuelIndex = (config && Number(config.fuelIndex)) || 1;
+  const seasonF = seasonFactor(cat, month);
 
   const baseTrip = BASE;
-  const distTrip = km * PER_KM * catRate;
-  const unit0 = baseTrip + distTrip;               // çarpansız sefer maliyeti
+  const distBase = km * PER_KM * catRate;          // nötr yakıttaki mesafe maliyeti
+  const distTrip = distBase * fuelIndex;           // yakıt endeksli
+  const unit0 = baseTrip + distTrip;               // çarpansız (malzeme vb. öncesi) sefer maliyeti
 
   // ── sıralı döküm: her çarpanın ₺ katkısı (toplam = heuristic) ──
   const breakdown = [
     { key: "taban", label: "Yükleme / operasyon", value: round50(baseTrip * trips) },
-    { key: "mesafe", label: `Mesafe (~${km} km${trips > 1 ? ` × ${trips} sefer` : ""})`, value: round50(distTrip * trips) },
+    { key: "mesafe", label: `Mesafe (~${km} km${trips > 1 ? ` × ${trips} sefer` : ""})`, value: round50(distBase * trips) },
   ];
+  if (fuelIndex !== 1) breakdown.push({ key: "yakit", label: `Yakıt endeksi (${fuelIndex > 1 ? "+" : ""}${Math.round((fuelIndex - 1) * 100)}%)`, value: round50(distBase * (fuelIndex - 1) * trips) });
   let run = unit0;
   const factorLine = (key, label, f) => {
     if (f === 1) return;
@@ -299,6 +314,7 @@ export function estimatePrice({ cat, amount, unit, fromIl, toIl, material, capac
   factorLine("hacim", tons >= 150 ? "Hacim indirimi" : "Küçük parti", volF);
   factorLine("aciliyet", urgF > 1 ? "Acil iş" : "Düzenli/esnek", urgF);
   factorLine("backhaul", bhF !== 1 ? `Dönüş yükü (${bh.returns})` : "Dönüş yükü", bhF);
+  factorLine("sezon", seasonF >= 1 ? "Sezon (yoğun)" : "Sezon (sakin)", seasonF);
 
   const perTripRaw = run;                           // unit0 × tüm çarpanlar
   const perTrip = round50(perTripRaw);
@@ -349,6 +365,7 @@ export function estimatePrice({ cat, amount, unit, fromIl, toIl, material, capac
     confidence: CONF(sampleSize),
     distLabel: kmOverride != null ? "harita mesafesi" : ["aynı il", "yakın il", "bölge içi", "uzak"][Math.min(d, 3)],
     materialFactor: matF, vehicleFactor: vehF, volumeFactor: volF, urgencyFactor: urgF, backhaul: bh,
+    seasonFactor: seasonF, fuelIndex,
     supplyDemand: sd, breakdown,
   };
 }

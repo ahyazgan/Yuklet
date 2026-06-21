@@ -40,3 +40,6 @@ export const loadReports = () => load("hamted_reports", []);
 export const saveReports = (v) => save("hamted_reports", v);
 export const loadSavedSearches = () => load("hamted_saved_searches", []);
 export const saveSavedSearches = (v) => save("hamted_saved_searches", v);
+// Akıllı Fiyat piyasa ayarları (admin): yakıt endeksi vb. — engine'e geçirilir.
+export const loadPricingConfig = () => load("hamted_pricing_config", { fuelIndex: 1.0 });
+export const savePricingConfig = (v) => save("hamted_pricing_config", v);
