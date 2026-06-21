@@ -5,7 +5,7 @@
 
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, ArrowRight, TrendingUp, TrendingDown, Minus, MapPin, Activity, Boxes } from "lucide-react";
+import { ChevronLeft, ArrowRight, TrendingUp, TrendingDown, Minus, MapPin, Activity, Boxes, SlidersHorizontal } from "lucide-react";
 import { LISTINGS } from "../data/listings";
 import { loadOffers } from "../utils/storage";
 import { marketPulse, estimatePrice } from "../utils/priceEstimate";
@@ -184,6 +184,19 @@ export default function PiyasaNabziPage({ listings = LISTINGS, offers }) {
             Veri arttıkça referans keskinleşir. Bağlayıcı değildir, yol gösterir.
           </p>
         </div>
+
+        {/* Fiyat Simülatörü girişi */}
+        <button onClick={() => navigate("/fiyat-simulasyonu")}
+          style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, background: C.card, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "13px 15px", cursor: "pointer", boxShadow: "3px 3px 0 rgba(10,10,10,.10)" }}>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+            <SlidersHorizontal size={18} color={C.ink} strokeWidth={2.4} />
+            <span style={{ textAlign: "left", minWidth: 0 }}>
+              <span style={{ display: "block", fontFamily: ARCH, fontSize: 13.5, fontWeight: 900, textTransform: "uppercase", letterSpacing: "-0.01em" }}>Fiyat Simülatörü</span>
+              <span style={{ display: "block", fontFamily: MONO, fontSize: 10, color: C.sub }}>Kaydır, fiyatı canlı gör</span>
+            </span>
+          </span>
+          <ArrowRight size={18} strokeWidth={2.5} />
+        </button>
 
         {/* CTA */}
         <button onClick={() => navigate("/ilanlar")}
