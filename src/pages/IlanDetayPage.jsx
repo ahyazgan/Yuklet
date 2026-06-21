@@ -161,7 +161,7 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
   const closed = l.status === "kapali" || l.status === "eslesti";
   const backhaul = isProduct ? [] : isVehicle ? loadsForVehicle(l, listings) : backhaulForJob(l, listings);
   const est = !isFixed && l.type === "is" && l.amount
-    ? estimatePrice({ cat: l.cat, amount: l.amount, unit: l.unit, fromIl: l.il, toIl: l.varisIl, material: l.material, vehicle: l.vehicle, kmOverride: l.km, history: { listings, offers } })
+    ? estimatePrice({ cat: l.cat, amount: l.amount, unit: l.unit, fromIl: l.il, toIl: l.varisIl, material: l.material, vehicle: l.vehicle, dateText: l.dateText, recurring: l.recurring, kmOverride: l.km, history: { listings, offers } })
     : null;
 
   // route endpoints (mono labels)
