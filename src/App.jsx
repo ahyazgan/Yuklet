@@ -122,6 +122,17 @@ function AppShell() {
     await updateListing(listing.id, { paymentStatus: "serbest", earlyPaid: true, earlyPayFee: early.fee });
     return { ok: true, mock: res.mock, ...early };
   };
+  // Admin hakemi: itiraz edilen teslimi karara bağlar.
+  // forNakliyeci=true → teslim onay + ödeme nakliyeciye serbest; false → müteahhite iade.
+  const resolveDispute = async (listing, forNakliyeci) => {
+    const proof = { ...(listing.deliveryProof || {}), status: forNakliyeci ? "onay" : "iade", adminResolved: true, resolvedAt: new Date().toISOString() };
+    if (forNakliyeci) {
+      await updateListing(listing.id, { deliveryProof: proof, phase: "teslim", status: "kapali" });
+      return releasePayment(listing);
+    }
+    await updateListing(listing.id, { deliveryProof: proof });
+    return refundPayment(listing);
+  };
 
   // Teklifler
   const [offers, setOffers] = useState(() => (SB ? [] : loadOffers()));
@@ -349,7 +360,7 @@ function AppShell() {
                 <Route path="/mesajlar" element={<PageTransition><MesajlarPage user={user} listings={listings} offers={offers} messages={messages} onSendMessage={addMessage} onRequireAuth={requireAuth} onSeen={markMessagesSeen} getContact={getContact} /></PageTransition>} />
                 <Route path="/profil" element={<PageTransition><ProfilPage user={user} onUpdateProfile={updateProfile} onVerifyPhone={verifyPhone} onRequireAuth={requireAuth} onLogout={logout} reviews={reviews} getUserRating={getUserRating} docs={docs.filter(d => user && String(d.ownerId) === String(user.id))} onAddDoc={addDoc} onRemoveDoc={removeDoc} /></PageTransition>} />
                 <Route path="/panel" element={<PageTransition><DashboardPage user={user} listings={listings} offers={offers} messages={messages} onRequireAuth={requireAuth} /></PageTransition>} />
-                <Route path="/admin" element={<PageTransition><AdminPage user={user} reports={reports} docs={docs} users={users} listings={listings} offers={offers} onRequireAuth={requireAuth} onSetReportStatus={setReportStatus} onReviewDoc={reviewDoc} onUpdateUser={updateUserAdmin} /></PageTransition>} />
+                <Route path="/admin" element={<PageTransition><AdminPage user={user} reports={reports} docs={docs} users={users} listings={listings} offers={offers} onRequireAuth={requireAuth} onSetReportStatus={setReportStatus} onReviewDoc={reviewDoc} onUpdateUser={updateUserAdmin} onResolveDispute={resolveDispute} /></PageTransition>} />
                 <Route path="/muteahhit" element={<PageTransition><MuteahhitPage /></PageTransition>} />
                 <Route path="/tedarikci" element={<PageTransition><TedarikciPage /></PageTransition>} />
                 <Route path="/nakliyeci" element={<PageTransition><NakliyeciPage /></PageTransition>} />

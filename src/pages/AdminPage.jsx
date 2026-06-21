@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Shield, Lock, Ban, Flag, FileText, FileCheck2, Trash2, Eye, CheckCircle2, X, Check, Smartphone, Fuel } from "lucide-react";
+import { Shield, Lock, Ban, Flag, FileText, FileCheck2, Trash2, Eye, CheckCircle2, X, Check, Smartphone, Fuel, Scale, AlertTriangle } from "lucide-react";
 import { loadPricingConfig, savePricingConfig } from "../utils/storage";
 import { seasonFactor } from "../utils/priceEstimate";
 import { fmtTL } from "../utils/payments";
@@ -36,7 +36,7 @@ const fmt = (iso) => { try { return new Date(iso).toLocaleString("tr-TR", { day:
 
 const shortId = (id) => "HMT-" + String(id ?? "").slice(-4).toUpperCase().padStart(4, "0");
 
-const TABS = [["reports", "Şikayetler"], ["docs", "Belgeler"], ["users", "Kullanıcılar"], ["pricing", "Finans"]];
+const TABS = [["reports", "Şikayet"], ["disputes", "İtiraz"], ["users", "Kullanıcı"], ["docs", "Belge"], ["pricing", "Finans"]];
 
 const PAY_BADGE = {
   bloke: { label: "EMANETTE", bg: "#FACC15", fg: "#0A0A0A" },
@@ -66,7 +66,7 @@ const btnBase = {
   letterSpacing: "-0.01em", lineHeight: 1, whiteSpace: "nowrap",
 };
 
-export default function AdminPage({ user, reports = [], docs = [], users = [], listings = [], offers = [], onRequireAuth, onSetReportStatus, onReviewDoc, onUpdateUser }) {
+export default function AdminPage({ user, reports = [], docs = [], users = [], listings = [], offers = [], onRequireAuth, onSetReportStatus, onReviewDoc, onUpdateUser, onResolveDispute }) {
   const navigate = useNavigate();
   const [tab, setTab] = useState("reports");
   const [fuelIndex, setFuelIndex] = useState(() => loadPricingConfig().fuelIndex || 1.0);
@@ -293,6 +293,52 @@ export default function AdminPage({ user, reports = [], docs = [], users = [], l
         )}
 
         {/* ── KULLANICILAR ── */}
+        {/* ── İTİRAZ / ANLAŞMAZLIK KUYRUĞU ── */}
+        {tab === "disputes" && (() => {
+          const open = listings.filter((l) => l.deliveryProof?.status === "itiraz");
+          if (open.length === 0) return <Empty icon={Scale} text="Açık anlaşmazlık yok." />;
+          return (
+            <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
+              {open.map((l) => {
+                const p = l.deliveryProof || {};
+                const dev = l.amount && p.tonnage ? Math.round((p.tonnage - l.amount) / l.amount * 100) : null;
+                return (
+                  <div key={l.id} style={{ background: C.card, border: `2px solid ${C.red}`, borderRadius: 6, padding: 14, boxShadow: "3px 3px 0 rgba(10,10,10,.12)" }}>
+                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
+                      <span style={{ fontFamily: HEAD, fontSize: 14, fontWeight: 800, textTransform: "uppercase", color: C.ink, lineHeight: 1.2 }}>{l.title || ("#" + l.id)}</span>
+                      <Badge bg={C.red} fg="#fff" dot>İTİRAZ</Badge>
+                    </div>
+                    <div style={{ background: C.stone, border: `2px solid ${C.border}`, borderRadius: 5, padding: "10px 12px", marginTop: 10, display: "flex", flexDirection: "column", gap: 6 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontFamily: MONO, fontSize: 12 }}>
+                        <span style={{ color: C.sub }}>Teslim edilen</span>
+                        <span style={{ fontWeight: 700, color: C.ink }}>{p.tonnage} {(p.unit || "ton").toUpperCase()}</span>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontFamily: MONO, fontSize: 12 }}>
+                        <span style={{ color: C.sub }}>İlandaki miktar</span>
+                        <span style={{ fontWeight: 700, color: dev && Math.abs(dev) > 5 ? C.red : C.ink }}>{l.amount} {(l.unit || "ton").toUpperCase()}{dev ? ` (${dev > 0 ? "+" : ""}${dev}%)` : ""}</span>
+                      </div>
+                      {p.ticketNo && <div style={{ fontFamily: MONO, fontSize: 11, color: C.muted }}>Kantar fişi: {p.ticketNo} · Nakliyeci: {p.byName}</div>}
+                    </div>
+                    <div style={{ fontFamily: MONO, fontSize: 10.5, color: C.sub, margin: "11px 0 9px", display: "inline-flex", alignItems: "center", gap: 6 }}>
+                      <AlertTriangle size={13} color={C.red} /> Emanette {fmtTL(Number(l.paymentAmount) || 0)} · hakem kararı bekliyor
+                    </div>
+                    <div style={{ display: "flex", gap: 9 }}>
+                      <button onClick={() => onResolveDispute?.(l, false)}
+                        style={{ flex: 1, ...btnBase, justifyContent: "center", background: C.card, color: C.ink, padding: "11px 0" }}>
+                        Müteahhit lehine · İade
+                      </button>
+                      <button onClick={() => onResolveDispute?.(l, true)}
+                        style={{ flex: 1, ...btnBase, justifyContent: "center", background: C.green, color: "#fff", padding: "11px 0" }}>
+                        Nakliyeci lehine · Öde
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
+
         {tab === "users" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
             {users.length === 0 ? <Empty icon={Shield} text="Kullanıcı listesi bu modda görünmüyor." /> : users.map((u) => {
