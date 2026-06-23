@@ -8,7 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { ChevronLeft, ArrowRight, TrendingUp, TrendingDown, Minus, MapPin, Activity, Boxes, SlidersHorizontal } from "lucide-react";
 import { LISTINGS } from "../data/listings";
 import { loadOffers } from "../utils/storage";
-import { marketPulse, estimatePrice } from "../utils/priceEstimate";
+import { marketPulse, estimatePrice, densityByIl } from "../utils/priceEstimate";
 import SEO from "../components/SEO";
 import Logo from "../components/Logo";
 
@@ -60,6 +60,7 @@ export default function PiyasaNabziPage({ listings = LISTINGS, offers }) {
     () => marketPulse({ listings, offers: offers || loadOffers() }),
     [listings, offers]
   );
+  const density = useMemo(() => densityByIl({ listings }), [listings]);
 
   return (
     <div style={shell}>
@@ -157,6 +158,42 @@ export default function PiyasaNabziPage({ listings = LISTINGS, offers }) {
             </div>
           )}
         </div>
+
+        {/* yük & araç yoğunluğu (likidite) */}
+        {density.length > 0 && (
+          <div>
+            <h2 style={sectionTitle}>Yük & Araç Yoğunluğu</h2>
+            <p style={{ fontFamily: MONO, fontSize: 10, color: C.muted, margin: "4px 0 0" }}>İl bazında açık yük (talep) ve araç (arz) dengesi.</p>
+            <div style={{ ...card, marginTop: 12, overflow: "hidden" }}>
+              {density.map((d, i) => {
+                const dPct = d.total > 0 ? Math.round((d.demand / d.total) * 100) : 50;
+                const toneColor = d.tone === "up" ? C.green : d.tone === "down" ? C.red : C.muted;
+                return (
+                  <div key={d.il} style={{ padding: "11px 14px", borderTop: i ? `1.5px solid ${C.line}` : "none" }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 6 }}>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+                        <span style={{ fontFamily: ARCH, fontSize: 13, fontWeight: 800, textTransform: "uppercase", letterSpacing: "-0.01em" }} className="truncate">{d.il}</span>
+                        {d.label !== "Az veri" && (
+                          <span style={{ flexShrink: 0, fontFamily: MONO, fontSize: 8.5, fontWeight: 700, color: "#fff", background: toneColor, border: `1.5px solid ${C.ink}`, borderRadius: 4, padding: "1px 6px", textTransform: "uppercase" }}>{d.label}</span>
+                        )}
+                      </span>
+                      <span style={{ flexShrink: 0, fontFamily: MONO, fontSize: 10, fontWeight: 700, color: C.sub }}>{d.demand} yük · {d.supply} araç</span>
+                    </div>
+                    {/* talep(sarı) / arz(koyu) dengesi çubuğu */}
+                    <div style={{ display: "flex", height: 8, border: `1.5px solid ${C.ink}`, borderRadius: 3, overflow: "hidden" }}>
+                      <div style={{ width: `${dPct}%`, background: C.yellow }} />
+                      <div style={{ width: `${100 - dPct}%`, background: C.ink }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{ display: "flex", gap: 14, marginTop: 8, fontFamily: MONO, fontSize: 9, color: C.muted }}>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><span style={{ width: 10, height: 10, background: C.yellow, border: `1.5px solid ${C.ink}` }} /> YÜK (TALEP)</span>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><span style={{ width: 10, height: 10, background: C.ink }} /> ARAÇ (ARZ)</span>
+            </div>
+          </div>
+        )}
 
         {/* malzeme bazlı */}
         {pulse.materials.length > 0 && (
