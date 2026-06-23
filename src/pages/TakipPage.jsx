@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ChevronLeft, Check, MapPin, Phone, MessageSquare, FileCheck, Star, ShieldCheck, AlertTriangle, X, Scale, Camera, ClipboardCheck, Zap } from "lucide-react";
+import { ChevronLeft, Check, MapPin, Phone, MessageSquare, FileCheck, Star, ShieldCheck, AlertTriangle, X, Scale, Camera, ClipboardCheck, Zap, Navigation } from "lucide-react";
 import { LISTINGS } from "../data/listings";
 import { CATS } from "../data/categories";
 import { StarsDisplay } from "../components/Stars";
@@ -8,6 +8,12 @@ import ReportModal from "../components/ReportModal";
 import SEO from "../components/SEO";
 import { splitAmount, payableAmount, fmtTL, PAYMENT_LABEL, earlyPayout, EARLY_PAY_FEE_RATE } from "../utils/payments";
 import { newId, nowIso } from "../utils/id";
+import { haversineKm } from "../utils/priceEstimate";
+import { watchPosition } from "../native/geo";
+import { startTrip, publishLocation, endTrip, subscribeTrip } from "../utils/tripChannel";
+import { hapticTap } from "../native/haptics";
+
+const TripMap = lazy(() => import("../components/TripMap"));
 
 // ── "SAHA" sevkiyat takibi — dark tracking kunye card with embedded timeline +
 //    live trip counter, white driver card, digital irsaliye card, green release CTA,
@@ -65,6 +71,16 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
   const [payBusy, setPayBusy] = useState(false);
   const [payMsg, setPayMsg] = useState("");
   const [proofForm, setProofForm] = useState({ tonnage: "", ticketNo: "", note: "" });
+  const [trip, setTrip] = useState(null);          // canlı sefer (kanaldan)
+  const [tracking, setTracking] = useState(false); // sürücü konum paylaşıyor mu
+  const watchStopRef = useRef(null);
+
+  // Sefer kanalına abone ol (canlı konum yayını). Unmount'ta izleme durur.
+  useEffect(() => {
+    const unsub = subscribeTrip(id, setTrip);
+    return () => { unsub(); if (watchStopRef.current) { watchStopRef.current(); watchStopRef.current = null; } };
+  }, [id]);
+
   const l = listings.find((x) => String(x.id) === String(id));
 
   if (!l) {
@@ -120,6 +136,29 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
     if (!nextPhase) return;
     onUpdateListing?.(l.id, { phase: nextPhase[0], ...(nextPhase[0] === "teslim" ? { status: "kapali" } : {}) });
   };
+
+  // ── Canlı konum (sürücü = nakliyeci) ──
+  const startTracking = async () => {
+    hapticTap();
+    startTrip(l.id);
+    setTracking(true);
+    watchStopRef.current = await watchPosition(
+      (pt) => publishLocation(l.id, pt),
+      () => { setTracking(false); }
+    );
+  };
+  const stopTracking = () => {
+    if (watchStopRef.current) { watchStopRef.current(); watchStopRef.current = null; }
+    endTrip(l.id);
+    setTracking(false);
+  };
+  // Canlı araç + ETA (mesafe → tahmini süre).
+  const vehicle = trip?.last || null;
+  const liveDropoff = Array.isArray(l.dropoff) ? l.dropoff : null;
+  const remainKm = vehicle && liveDropoff ? haversineKm([vehicle.lat, vehicle.lng], liveDropoff) : null;
+  const speedKmh = vehicle?.speed && vehicle.speed > 1 ? vehicle.speed * 3.6 : 40;
+  const etaMin = remainKm != null ? Math.max(1, Math.round((remainKm / speedKmh) * 60)) : null;
+  const showTripMap = matched && !isDone && (vehicle || isNakliyeci || trip?.trail?.length);
 
   // Canli sefer sayaci — gercek l.tripsDone / estTrips (yoksa faz bazli)
   const tripsDone = l.tripsDone || 0;
@@ -366,6 +405,52 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
             </div>
           )}
         </div>
+
+        {/* CANLI SEFER HARİTASI + sürücü kontrolü */}
+        {showTripMap && (
+          <div style={whiteCard}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+              <span style={{ ...labelTiny, display: "flex", alignItems: "center", gap: 6 }}>
+                <Navigation size={13} strokeWidth={2.4} color={C.ink} /> CANLI KONUM
+              </span>
+              <span style={{ display: "flex", alignItems: "center", gap: 5, fontFamily: MONO, fontSize: 9.5, fontWeight: 700, color: trip?.live ? C.green : C.muted, textTransform: "uppercase" }}>
+                <span style={{ width: 7, height: 7, borderRadius: "50%", background: trip?.live ? C.green : C.muted }} />
+                {trip?.live ? "Canlı" : "Çevrimdışı"}
+              </span>
+            </div>
+
+            {etaMin != null && (
+              <div style={{ display: "flex", gap: 16, marginBottom: 10, fontFamily: MONO, fontSize: 12, fontWeight: 700, color: C.ink }}>
+                <span>~{remainKm} KM KALDI</span>
+                <span style={{ color: C.green }}>ETA ~{etaMin} DK</span>
+              </div>
+            )}
+
+            <Suspense fallback={<div style={{ height: 280, borderRadius: 6, border: `2px solid ${C.ink}`, background: C.stone, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: MONO, fontSize: 11, color: C.muted }}>Harita yükleniyor…</div>}>
+              <TripMap pickup={Array.isArray(l.pickup) ? l.pickup : null} dropoff={liveDropoff} vehicle={vehicle} trail={trip?.trail || []} />
+            </Suspense>
+
+            {isNakliyeci ? (
+              tracking ? (
+                <button onClick={stopTracking}
+                  style={{ width: "100%", marginTop: 12, background: C.red, color: "#fff", border: `2px solid ${C.ink}`, borderRadius: 6, padding: "12px", fontFamily: ARCH, fontSize: 13, fontWeight: 900, textTransform: "uppercase", letterSpacing: "-0.01em", cursor: "pointer", boxShadow: `3px 3px 0 ${C.ink}` }}>
+                  ● Konum paylaşımını durdur
+                </button>
+              ) : (
+                <button onClick={startTracking}
+                  style={{ width: "100%", marginTop: 12, background: C.green, color: "#fff", border: `2px solid ${C.ink}`, borderRadius: 6, padding: "12px", fontFamily: ARCH, fontSize: 13, fontWeight: 900, textTransform: "uppercase", letterSpacing: "-0.01em", cursor: "pointer", boxShadow: `3px 3px 0 ${C.ink}` }}>
+                  Seferi başlat — konumu paylaş
+                </button>
+              )
+            ) : (
+              !vehicle && (
+                <div style={{ marginTop: 10, fontFamily: MONO, fontSize: 10.5, color: C.muted, lineHeight: 1.5 }}>
+                  Sürücü seferi başlattığında canlı konum ve tahmini varış burada görünür.
+                </div>
+              )
+            )}
+          </div>
+        )}
 
         {/* AÇIK KÜNYE KARTI (spec grid) */}
         <div style={whiteCard}>
