@@ -12,6 +12,12 @@ Bu adımlar **bir kez** yapılır. Tahmini süre: ~10 dakika. Sadece senin yapab
 2. Bu repodaki [`supabase/schema.sql`](supabase/schema.sql) dosyasının **tamamını** yapıştır → **Run**
 3. "Success" görmelisin. (Tablolar, güvenlik kuralları, demo ilanlar oluştu.)
 
+> **Tekrar çalıştırmak güvenli (idempotent):** Projeyi önceden kurduysan da dosyayı
+> yeniden Run'layabilirsin — `add column if not exists` ile yeni alanlar (teslim kanıtı,
+> mekik dönüşü, varış, hızlı ödeme, canlı konum tablosu `trip_locations`) eklenir, mevcut
+> veriyi bozmaz. Bu oturumdaki lojistik özellikleri (POD, geofence, sefer takibi) için
+> şemayı **bir kez daha çalıştır**.
+
 ## 3) Anahtarları al
 1. Sol menü → **Project Settings** → **API**
 2. Şu ikisini kopyala:
