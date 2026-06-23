@@ -71,13 +71,17 @@ npm run cap:ios            # build + sync + Xcode
 - `[x]` `targetSdk = 36`, `minSdk = 24` (Play 2024+ gereği: targetSdk ≥ 35 ✓)
 
 ### İmzalı AAB üretimi
+> İmzalama `android/app/build.gradle`'a **hazır bağlandı**: `android/keystore.properties`
+> varsa release otomatik imzalanır, yoksa derleme bozulmadan imzasız kalır.
+
 ```bash
 # 1) Upload keystore oluştur (BİR KEZ — güvenli sakla, kaybetme!)
-keytool -genkey -v -keystore dayim-upload.keystore \
+keytool -genkey -v -keystore android/dayim-upload.keystore \
   -alias dayim -keyalg RSA -keysize 2048 -validity 10000
 
-# 2) android/keystore.properties (commit ETME):
-#   storeFile=../dayim-upload.keystore
+# 2) Şablondan keystore.properties oluştur ve doldur (commit ETME — .gitignore'da):
+cp android/keystore.properties.example android/keystore.properties
+#   storeFile=dayim-upload.keystore   (yol android/ klasörüne göre)
 #   storePassword=...
 #   keyAlias=dayim
 #   keyPassword=...
@@ -87,8 +91,9 @@ npm run build && npx cap sync android
 cd android && ./gradlew bundleRelease
 # çıktı: android/app/build/outputs/bundle/release/app-release.aab
 ```
+- `[x]` İmzalama yapılandırması `app/build.gradle`'da hazır (keystore.properties okur).
+- `[ ]` Keystore oluştur + `keystore.properties`'i doldur.
 - `[ ]` **Play App Signing**'i etkinleştirin (Google imzalama anahtarını yönetir).
-- `[ ]` İmzalama yapılandırmasını `app/build.gradle`'a ekleyin (keystore.properties okuyan blok).
 
 ### Play Console adımları
 - `[ ]` Uygulama oluştur → paket adı `com.dayim.app`
