@@ -19,6 +19,7 @@ import {
   Inbox,
   Activity,
   TrendingUp,
+  Heart,
 } from "lucide-react";
 import { LISTINGS, IL_LIST } from "../data/listings";
 import { CATS, MATERIALS } from "../data/categories";
@@ -26,6 +27,7 @@ import { loadsNearCity } from "../utils/backhaul";
 import { estimatePrice, priceSignal, fmtTL } from "../utils/priceEstimate";
 import { loadSavedSearches, saveSavedSearches, loadOffers, loadPricingConfig } from "../utils/storage";
 import usePullToRefresh from "../hooks/usePullToRefresh";
+import useFavorites from "../hooks/useFavorites";
 import SEO from "../components/SEO";
 
 const ListingsMap = lazy(() => import("../components/ListingsMap"));
@@ -87,7 +89,7 @@ function marketTagOf(l, history, config) {
 }
 
 // ── İlan kartı ──
-function ListingCard({ l, history, config }) {
+function ListingCard({ l, history, config, isFav = false, onToggleFav }) {
   const isH = l.cat === "hafriyat";
   const isProduct = l.type === "urun";
   const market = marketTagOf(l, history, config);
@@ -141,6 +143,19 @@ function ListingCard({ l, history, config }) {
           {isH ? "HAFRİYAT" : "SİLOBAS"}
         </span>
         <div className="flex items-center gap-1.5">
+          {onToggleFav && (
+            <span
+              role="button"
+              tabIndex={0}
+              aria-label={isFav ? "Favorilerden çıkar" : "Favorilere ekle"}
+              aria-pressed={isFav}
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); onToggleFav(l.id); }}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); onToggleFav(l.id); } }}
+              style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 26, height: 26, cursor: "pointer", marginRight: 2 }}
+            >
+              <Heart size={16} strokeWidth={2.4} color={isFav ? C.red : C.muted} fill={isFav ? C.red : "none"} />
+            </span>
+          )}
           {l.status === "eslesti" && (
             <span
               style={{
@@ -375,6 +390,9 @@ export default function ListingsPage({ listings = LISTINGS, onRefresh }) {
   const [sort, setSort] = useState("yeni"); // yeni | teklif | ucuz | pahali
   const [showFilters, setShowFilters] = useState(false);
   const [view, setView] = useState(sp.get("view") === "map" ? "map" : "list"); // list | map
+  // Favori (kaydedilen) ilanlar
+  const { isFav, toggle: toggleFav, count: favCount } = useFavorites();
+  const [favOnly, setFavOnly] = useState(sp.get("fav") === "1"); // sadece favorileri göster
 
   // ── Kaydedilmiş aramalar (mantık birebir korunur) ──
   const [saved, setSaved] = useState(() => loadSavedSearches());
@@ -456,6 +474,7 @@ export default function ListingsPage({ listings = LISTINGS, onRefresh }) {
     let out = listings.filter(
       (l) =>
         l.status !== "kapali" &&
+        (!favOnly || isFav(l.id)) &&
         (type === "all" || l.type === type) &&
         (cat === "all" || l.cat === cat) &&
         (il === "all" || l.il === il) &&
@@ -472,7 +491,7 @@ export default function ListingsPage({ listings = LISTINGS, onRefresh }) {
     // Sponsorlu (öne çıkan) ilanlar her zaman üstte (mevcut sıra korunur)
     out = [...out].sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
     return out;
-  }, [listings, type, cat, il, q, material, priceMin, priceMax, sort]);
+  }, [listings, type, cat, il, q, material, priceMin, priceMax, sort, favOnly, isFav]);
 
   const activeFilters =
     (material !== "all" ? 1 : 0) + (priceMin || priceMax ? 1 : 0) + (sort !== "yeni" ? 1 : 0);
@@ -582,6 +601,21 @@ export default function ListingsPage({ listings = LISTINGS, onRefresh }) {
               </div>
             )}
           </div>
+
+          {/* Favoriler filtresi — kaydedilen ilanları göster/gizle */}
+          {mode === "normal" && (
+            <button
+              onClick={() => setFavOnly((v) => !v)}
+              aria-pressed={favOnly}
+              className="flex items-center gap-1.5"
+              style={{ marginTop: 12, background: favOnly ? C.red : C.card, border: `2px solid ${favOnly ? C.red : C.ink}`, borderRadius: 6, padding: "6px 11px", cursor: "pointer" }}
+            >
+              <Heart size={14} strokeWidth={2.5} color={favOnly ? "#fff" : C.red} fill={favOnly ? "#fff" : "none"} />
+              <span style={{ ...MONO, fontSize: 10, fontWeight: 700, letterSpacing: "0.04em", color: favOnly ? "#fff" : C.ink }}>
+                FAVORİLER{favCount > 0 ? ` · ${favCount}` : ""}
+              </span>
+            </button>
+          )}
 
           {/* Piyasa Nabzı girişi — DAYIM Akıllı Fiyat referansı */}
           {mode === "normal" && (
@@ -935,7 +969,7 @@ export default function ListingsPage({ listings = LISTINGS, onRefresh }) {
                     onClick={() => navigate(`/ilan/${m.listing.id}`)}
                     style={{ display: "block", width: "100%", textAlign: "left" }}
                   >
-                    <ListingCard l={m.listing} history={priceHistory} config={pricingConfig} />
+                    <ListingCard l={m.listing} history={priceHistory} config={pricingConfig} isFav={isFav(m.listing.id)} onToggleFav={toggleFav} />
                   </button>
                 </div>
                 );
@@ -985,7 +1019,7 @@ export default function ListingsPage({ listings = LISTINGS, onRefresh }) {
                 onClick={() => navigate(`/ilan/${l.id}`)}
                 style={{ display: "block", width: "100%", textAlign: "left" }}
               >
-                <ListingCard l={l} history={priceHistory} config={pricingConfig} />
+                <ListingCard l={l} history={priceHistory} config={pricingConfig} isFav={isFav(l.id)} onToggleFav={toggleFav} />
               </button>
             ))}
           </div>
