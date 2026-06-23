@@ -165,6 +165,13 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
   const isFixed = l.priceType === "sabit" && l.price;
   const closed = l.status === "kapali" || l.status === "eslesti";
   const backhaul = isProduct ? [] : isVehicle ? loadsForVehicle(l, listings) : backhaulForJob(l, listings);
+  // Benzer ilanlar — aynı kategori + tür; aynı il/malzeme öne çıkar. En çok 4.
+  const similar = listings
+    .filter((x) => String(x.id) !== String(l.id) && x.status !== "kapali" && x.cat === l.cat && x.type === l.type)
+    .map((x) => ({ x, score: (x.il === l.il ? 2 : 0) + (x.material && x.material === l.material ? 1 : 0) }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 4)
+    .map((s) => s.x);
   const est = !isFixed && l.type === "is" && l.amount
     ? estimatePrice({ cat: l.cat, amount: l.amount, unit: l.unit, fromIl: l.il, toIl: l.varisIl, material: l.material, vehicle: l.vehicle, dateText: l.dateText, recurring: l.recurring, kmOverride: l.km, history: { listings, offers }, config: loadPricingConfig() })
     : null;
@@ -493,6 +500,31 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
         </div>
 
         {/* report button — full-width white 2px, red mono uppercase */}
+        {/* ── Benzer ilanlar ─────────────────────────────────────── */}
+        {similar.length > 0 && (
+          <div style={{ marginTop: 4 }}>
+            <div style={{ ...headLabel, marginBottom: 10 }}>BENZER İLANLAR</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {similar.map((s) => (
+                <button
+                  key={s.id}
+                  onClick={() => { navigate(`/ilan/${s.id}`); window.scrollTo(0, 0); }}
+                  style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", textAlign: "left", background: C.card, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "10px 12px", cursor: "pointer" }}
+                >
+                  <span style={{ flexShrink: 0, width: 30, height: 30, borderRadius: 6, border: `2px solid ${C.ink}`, background: s.cat === "hafriyat" ? C.ink : C.stone, color: s.cat === "hafriyat" ? C.yellow : C.ink, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: MONO, fontSize: 10, fontWeight: 700 }}>{s.cat === "hafriyat" ? "HF" : "SB"}</span>
+                  <span style={{ minWidth: 0, flex: 1 }}>
+                    <span style={{ display: "block", fontFamily: HEAD, fontSize: 12.5, fontWeight: 800, color: C.ink, textTransform: "uppercase", letterSpacing: "-0.01em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.title}</span>
+                    <span style={{ display: "block", marginTop: 2, fontFamily: MONO, fontSize: 10, color: C.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {s.il || "—"}{s.material ? ` · ${s.material}` : ""}{s.amount ? ` · ${s.amount} ${(s.unit || "").toUpperCase()}` : ""}
+                    </span>
+                  </span>
+                  <ArrowRight size={15} strokeWidth={2.6} color={C.muted} style={{ flexShrink: 0 }} />
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <button onClick={() => setShowReport(true)}
           style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", background: C.card, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "12px", fontFamily: MONO, fontSize: 11, fontWeight: 700, color: C.red, letterSpacing: "0.06em", textTransform: "uppercase", cursor: "pointer" }}>
           <AlertTriangle size={15} strokeWidth={2.4} color={C.red} /> Bu ilanı şikayet et
