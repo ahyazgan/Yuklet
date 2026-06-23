@@ -9,11 +9,13 @@ import SEO from "../components/SEO";
 import { splitAmount, payableAmount, fmtTL, PAYMENT_LABEL, earlyPayout, EARLY_PAY_FEE_RATE } from "../utils/payments";
 import { newId, nowIso } from "../utils/id";
 import { haversineKm } from "../utils/priceEstimate";
-import { watchPosition, distanceKm } from "../native/geo";
+import { watchPosition, distanceKm, getCurrentPosition } from "../native/geo";
 import { startTrip, publishLocation, endTrip, subscribeTrip } from "../utils/tripChannel";
 import { hapticTap, hapticSuccess } from "../native/haptics";
+import { pickPhotoDataUrl, cameraNative } from "../native/camera";
 
 const TripMap = lazy(() => import("../components/TripMap"));
+const SignaturePad = lazy(() => import("../components/SignaturePad"));
 
 // ── "SAHA" sevkiyat takibi — dark tracking kunye card with embedded timeline +
 //    live trip counter, white driver card, digital irsaliye card, green release CTA,
@@ -70,7 +72,8 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
   const [showReport, setShowReport] = useState(false);
   const [payBusy, setPayBusy] = useState(false);
   const [payMsg, setPayMsg] = useState("");
-  const [proofForm, setProofForm] = useState({ tonnage: "", ticketNo: "", note: "" });
+  const [proofForm, setProofForm] = useState({ tonnage: "", ticketNo: "", note: "", photo: null, signature: null });
+  const [proofBusy, setProofBusy] = useState(false);
   const [trip, setTrip] = useState(null);          // canlı sefer (kanaldan)
   const [tracking, setTracking] = useState(false); // sürücü konum paylaşıyor mu
   const watchStopRef = useRef(null);
@@ -198,18 +201,44 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
   const canReviewProof = isOwner && proof && proof.status === "beklemede";            // müteahhit onaylar/itiraz eder
   // Serbest bırakma artık teslim kanıtının ONAYINA bağlı (sadece faza değil):
   const canRelease = isOwner && payStatus === "bloke" && proof?.status === "onay";
-  const submitProof = () => {
+  // Kantar fişi / teslim fotoğrafı — native kamera (galeri) veya dosya seçici.
+  const pickProofPhoto = async (e) => {
+    if (cameraNative()) {
+      e?.preventDefault?.();
+      const dataUrl = await pickPhotoDataUrl();
+      if (dataUrl) setProofForm((f) => ({ ...f, photo: dataUrl }));
+    }
+  };
+  const onProofFile = (e) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    if (f.size > 2_500_000) { setPayMsg("Fotoğraf 2.5 MB'tan küçük olmalı."); e.target.value = ""; return; }
+    const reader = new FileReader();
+    reader.onload = () => setProofForm((ff) => ({ ...ff, photo: reader.result }));
+    reader.readAsDataURL(f);
+    e.target.value = "";
+  };
+
+  const submitProof = async () => {
     const tonnage = Number(proofForm.tonnage) || 0;
     if (!tonnage) { setPayMsg("Teslim edilen miktarı girin."); return; }
+    setProofBusy(true);
+    // Teslim konumunu yakala (kanıtı sağlamlaştırır; başarısızsa kanıt yine gönderilir).
+    const loc = await getCurrentPosition().catch(() => null);
     onUpdateListing?.(l.id, {
       deliveryProof: {
         tonnage, unit: l.unit || "ton", ticketNo: proofForm.ticketNo.trim(),
-        note: proofForm.note.trim(), photoName: null,
+        note: proofForm.note.trim(),
+        photo: proofForm.photo || null,
+        signature: proofForm.signature || null,
+        location: loc ? { lat: loc.lat, lng: loc.lng, accuracy: loc.accuracy } : null,
         byId: user.id, byName: user.name, submittedAt: nowIso(), status: "beklemede",
       },
     });
-    setProofForm({ tonnage: "", ticketNo: "", note: "" });
-    setPayMsg("Teslim kanıtı gönderildi, müteahhit onayında.");
+    hapticSuccess();
+    setProofForm({ tonnage: "", ticketNo: "", note: "", photo: null, signature: null });
+    setProofBusy(false);
+    setPayMsg(loc ? "Teslim kanıtı (konum doğrulandı) gönderildi, müteahhit onayında." : "Teslim kanıtı gönderildi, müteahhit onayında.");
   };
   const reviewProof = (ok) => {
     onUpdateListing?.(l.id, ok
@@ -692,13 +721,35 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
                   <input value={proofForm.note} onChange={(e) => setProofForm((f) => ({ ...f, note: e.target.value }))}
                     placeholder="Teslim koşulu, alıcı adı…" style={{ width: "100%", marginTop: 6, boxSizing: "border-box", background: C.card, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "10px 12px", fontFamily: "inherit", fontSize: 13, fontWeight: 600, color: C.ink, outline: "none" }} />
                 </div>
-                <button type="button" disabled style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7, background: C.stone, border: `2px dashed ${C.ink}`, borderRadius: 6, padding: "12px 0", cursor: "default", color: C.sub }}>
-                  <Camera size={16} color={C.ink} /> <span style={{ fontFamily: ARCH, fontSize: 12, fontWeight: 800, textTransform: "uppercase", color: C.ink }}>Fiş fotoğrafı ekle</span>
-                  <span style={{ fontFamily: MONO, fontSize: 10, color: C.muted }}>· Yakında</span>
-                </button>
-                <button onClick={submitProof}
-                  style={{ width: "100%", background: C.yellow, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "13px 0", fontFamily: ARCH, fontSize: 13, fontWeight: 900, textTransform: "uppercase", color: C.ink, cursor: "pointer", boxShadow: `3px 3px 0 ${C.ink}`, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7 }}>
-                  <ClipboardCheck size={16} /> Teslim Kanıtını Gönder
+                {/* Kantar fişi / teslim fotoğrafı */}
+                {proofForm.photo ? (
+                  <div style={{ position: "relative" }}>
+                    <img src={proofForm.photo} alt="Kantar fişi" style={{ width: "100%", maxHeight: 200, objectFit: "cover", borderRadius: 6, border: `2px solid ${C.ink}` }} />
+                    <button type="button" onClick={() => setProofForm((f) => ({ ...f, photo: null }))}
+                      style={{ position: "absolute", top: 8, right: 8, width: 30, height: 30, borderRadius: 6, background: C.card, border: `2px solid ${C.ink}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                      <X size={15} strokeWidth={2.6} color={C.ink} />
+                    </button>
+                  </div>
+                ) : (
+                  <label onClick={pickProofPhoto} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7, background: C.stone, border: `2px dashed ${C.ink}`, borderRadius: 6, padding: "12px 0", cursor: "pointer" }}>
+                    <Camera size={16} color={C.ink} /> <span style={{ fontFamily: ARCH, fontSize: 12, fontWeight: 800, textTransform: "uppercase", color: C.ink }}>Fiş / teslim fotoğrafı</span>
+                    <input type="file" accept="image/*" capture="environment" onChange={onProofFile} style={{ display: "none" }} />
+                  </label>
+                )}
+
+                {/* Parmakla imza (teslim alan) */}
+                <div>
+                  <label style={labelTiny}>TESLİM İMZASI (opsiyonel)</label>
+                  <div style={{ marginTop: 6 }}>
+                    <Suspense fallback={<div style={{ height: 150, border: `2px solid ${C.ink}`, borderRadius: 6, background: "#fff" }} />}>
+                      <SignaturePad onChange={(sig) => setProofForm((f) => ({ ...f, signature: sig }))} />
+                    </Suspense>
+                  </div>
+                </div>
+
+                <button onClick={submitProof} disabled={proofBusy}
+                  style={{ width: "100%", background: C.yellow, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "13px 0", fontFamily: ARCH, fontSize: 13, fontWeight: 900, textTransform: "uppercase", color: C.ink, cursor: proofBusy ? "default" : "pointer", opacity: proofBusy ? 0.6 : 1, boxShadow: `3px 3px 0 ${C.ink}`, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7 }}>
+                  <ClipboardCheck size={16} /> {proofBusy ? "Konum alınıyor…" : "Teslim Kanıtını Gönder"}
                 </button>
               </div>
             )}
@@ -734,7 +785,33 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
                     </div>
                   )}
                   {proof.note && <p style={{ margin: 0, fontSize: 12, color: C.sub, lineHeight: 1.5 }}>“{proof.note}”</p>}
-                  <p style={{ margin: 0, fontFamily: MONO, fontSize: 10, color: C.muted }}>Nakliyeci: {proof.byName}</p>
+
+                  {(proof.photo || proof.signature) && (
+                    <div style={{ display: "flex", gap: 10, borderTop: `2px solid ${C.border}`, paddingTop: 10 }}>
+                      {proof.photo && (
+                        <a href={proof.photo} target="_blank" rel="noopener noreferrer" style={{ flex: 1, minWidth: 0 }}>
+                          <span style={{ ...labelTiny, display: "block", marginBottom: 4 }}>FİŞ / FOTO</span>
+                          <img src={proof.photo} alt="Kantar fişi" style={{ width: "100%", height: 90, objectFit: "cover", borderRadius: 5, border: `2px solid ${C.ink}` }} />
+                        </a>
+                      )}
+                      {proof.signature && (
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <span style={{ ...labelTiny, display: "block", marginBottom: 4 }}>İMZA</span>
+                          <img src={proof.signature} alt="İmza" style={{ width: "100%", height: 90, objectFit: "contain", background: "#fff", borderRadius: 5, border: `2px solid ${C.ink}` }} />
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 6 }}>
+                    <p style={{ margin: 0, fontFamily: MONO, fontSize: 10, color: C.muted }}>Nakliyeci: {proof.byName}</p>
+                    {proof.location && (
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontFamily: MONO, fontSize: 9.5, fontWeight: 700, color: C.green, textTransform: "uppercase" }}>
+                        <MapPin size={11} strokeWidth={2.6} /> Konum doğrulandı
+                        <a href={`https://www.openstreetmap.org/?mlat=${proof.location.lat}&mlon=${proof.location.lng}#map=16/${proof.location.lat}/${proof.location.lng}`} target="_blank" rel="noopener noreferrer" style={{ color: C.green, textDecoration: "underline" }}>haritada</a>
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 {canReviewProof && (

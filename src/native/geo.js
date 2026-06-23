@@ -24,6 +24,29 @@ const toPoint = (pos) => ({
   at: Date.now(),
 });
 
+// Tek seferlik konum (teslim kanıtı için). Hata/izinsizde null.
+export async function getCurrentPosition() {
+  if (Capacitor.isNativePlatform()) {
+    try {
+      const { Geolocation } = await import("@capacitor/geolocation");
+      const perm = await Geolocation.requestPermissions().catch(() => null);
+      if (perm && perm.location === "denied") return null;
+      const pos = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 15000 });
+      return toPoint(pos);
+    } catch { return null; }
+  }
+  if (typeof navigator !== "undefined" && navigator.geolocation) {
+    return new Promise((resolve) => {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => resolve(toPoint(pos)),
+        () => resolve(null),
+        { enableHighAccuracy: true, timeout: 15000 }
+      );
+    });
+  }
+  return null;
+}
+
 export async function watchPosition(onPoint, onError) {
   // ── Native (iOS/Android) ──
   if (Capacitor.isNativePlatform()) {
