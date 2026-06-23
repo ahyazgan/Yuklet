@@ -25,6 +25,7 @@ import { CATS, MATERIALS } from "../data/categories";
 import { loadsNearCity } from "../utils/backhaul";
 import { estimatePrice, priceSignal, fmtTL } from "../utils/priceEstimate";
 import { loadSavedSearches, saveSavedSearches, loadOffers, loadPricingConfig } from "../utils/storage";
+import usePullToRefresh from "../hooks/usePullToRefresh";
 import SEO from "../components/SEO";
 
 const ListingsMap = lazy(() => import("../components/ListingsMap"));
@@ -352,9 +353,12 @@ function EmptyBox({ icon, title, sub, action }) {
   );
 }
 
-export default function ListingsPage({ listings = LISTINGS }) {
+export default function ListingsPage({ listings = LISTINGS, onRefresh }) {
   const navigate = useNavigate();
   const [sp] = useSearchParams();
+  // Aşağı-çekip-yenile (dokunmatik). onRefresh yoksa kısa görsel geri bildirim.
+  const ptrRefresh = onRefresh || (() => new Promise((r) => setTimeout(r, 500)));
+  const { distance, refreshing, pull } = usePullToRefresh(ptrRefresh);
   // DAYIM Akıllı Fiyat: kartlardaki piyasa etiketleri için geçmiş veri (bir kez).
   const priceHistory = useMemo(() => ({ listings, offers: loadOffers() }), [listings]);
   const pricingConfig = useMemo(() => loadPricingConfig(), []);
@@ -519,6 +523,13 @@ export default function ListingsPage({ listings = LISTINGS }) {
         title="İlanlar"
         description="Hafriyat ve silobas iş ve araç ilanları. Konuma, kategoriye ve türüne göre filtreleyin."
       />
+
+      {/* Aşağı-çekip-yenile göstergesi */}
+      {(distance > 0 || refreshing) && (
+        <div style={{ position: "fixed", top: 0, left: "50%", transform: `translateX(-50%) translateY(${Math.max(0, distance - 34)}px)`, zIndex: 55, width: 34, height: 34, borderRadius: "50%", background: "#0A0A0A", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "2px 2px 0 rgba(10,10,10,0.2)", pointerEvents: "none" }}>
+          <RotateCw size={18} strokeWidth={2.6} color="#FACC15" style={{ transform: `rotate(${refreshing ? 0 : pull * 270}deg)`, animation: refreshing ? "ptr-spin 0.7s linear infinite" : "none" }} />
+        </div>
+      )}
 
       {/* ── HEADER ── */}
       <div style={{ background: C.header, borderBottom: `2px solid ${C.ink}` }}>

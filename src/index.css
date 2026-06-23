@@ -144,6 +144,9 @@ main { flex: 1; }
   main { padding: 0 !important; }
 }
 
+/* Aşağı-çekip-yenile dönen ikon */
+@keyframes ptr-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
 /* ═══ NATIVE (Capacitor iOS/Android) — uygulama hissi ═══ */
 /* <html class="native-app"> yalnızca native kabukta eklenir (src/native/capacitor.js). */
 /* Güvenli alan (çentik/status bar/home indicator) Capacitor tarafından otomatik
