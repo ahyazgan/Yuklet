@@ -144,6 +144,34 @@ main { flex: 1; }
   main { padding: 0 !important; }
 }
 
+/* ═══ NATIVE (Capacitor iOS/Android) — güvenli alan & çentik ═══ */
+/* <html class="native-app"> yalnızca native kabukta eklenir (src/native/capacitor.js). */
+html.native-app body {
+  /* iOS çentik / Android status bar için üstten güvenli boşluk. */
+  padding-top: env(safe-area-inset-top);
+}
+html.native-app .site-header,
+html.native-app header.site-header {
+  /* Sabit header varsa status bar altına insin. */
+  padding-top: max(8px, env(safe-area-inset-top));
+}
+/* Native modda metin seçimi/uzun basma menüsü ve mavi tap highlight kapalı —
+   daha "uygulama gibi" his (input/textarea hariç). */
+html.native-app * {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+html.native-app input,
+html.native-app textarea,
+html.native-app [contenteditable="true"] {
+  -webkit-user-select: text;
+  user-select: text;
+}
+/* iOS'ta lastik-bant (overscroll) içeride kalsın. */
+html.native-app, html.native-app body {
+  overscroll-behavior-y: none;
+}
+
 /* ═══ RESPONSIVE — MOBILE ═══ */
 @media (max-width: 768px) {
   .app-root { padding-bottom: 70px; } /* alt tab bar için boşluk */

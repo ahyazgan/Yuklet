@@ -1,5 +1,5 @@
 import { useState, useEffect, lazy, Suspense } from "react";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import {
   saveTheme, loadListings, saveListings, loadUser, saveUser,
@@ -18,6 +18,7 @@ import { ToastProvider } from "./components/Toast";
 import { ErrorBoundary, NotFoundPage } from "./components/ErrorBoundary";
 import { SkeletonGrid } from "./components/Skeleton";
 import PageTransition from "./components/PageTransition";
+import { initBackButton } from "./native/capacitor";
 
 import MobileTabBar from "./components/MobileTabBar";
 import AuthModal from "./components/AuthModal";
@@ -62,6 +63,14 @@ function PageLoader() {
 
 function AppShell() {
   const location = useLocation();
+  const navigate = useNavigate();
+
+  // Android donanım geri tuşu: alt sayfalarda geri git, kökte uygulamadan çık.
+  useEffect(() => {
+    let cleanup = () => {};
+    initBackButton(navigate, () => window.location.pathname === "/").then((fn) => { cleanup = fn; });
+    return () => cleanup();
+  }, [navigate]);
 
   // Tema: SAHA mobil app tek tema (light/manila). Dark mode kaldırıldı.
   useEffect(() => {
@@ -295,6 +304,37 @@ function AppShell() {
     setShowRole(false);
   };
   const logout = async () => { if (SB) { await api.signOut().catch(() => {}); } setUser(null); setProfile(null); };
+
+  // ── Hesap silme (App Store & Google Play zorunlu) ──
+  // Kullanicinin tum verilerini (ilan/teklif/mesaj/belge/degerlendirme) temizler.
+  // localStorage modu: yereldeki kayitlar silinir. SB modu: kullanici verisi
+  // silinip oturum kapatilir (Auth kullanici kaydinin tam silinmesi sunucu tarafi
+  // servis rolu gerektirir — bkz. mobile/STORE_SUBMISSION.md).
+  const deleteAccount = async () => {
+    const cur = profile || user;
+    if (!cur) return;
+    const uid = String(cur.id);
+    if (SB) {
+      try {
+        await Promise.all(
+          userListings.filter((l) => String(l.ownerId) === uid).map((l) => api.deleteListing(l.id).catch(() => {}))
+        );
+        await Promise.all(
+          docs.filter((d) => String(d.ownerId) === uid).map((d) => api.removeDoc(d.id).catch(() => {}))
+        );
+      } catch (e) { console.error(e); }
+      await api.signOut().catch(() => {});
+    } else {
+      setUserListings((prev) => prev.filter((l) => String(l.ownerId) !== uid));
+      setOffers((prev) => prev.filter((o) => String(o.fromUserId) !== uid));
+      setMessages((prev) => prev.filter((m) => String(m.fromId) !== uid && String(m.toId) !== uid));
+      setDocs((prev) => prev.filter((d) => String(d.ownerId) !== uid));
+      setReviews((prev) => prev.filter((r) => String(r.fromId) !== uid));
+      setUsers((prev) => prev.filter((u) => String(u.id) !== uid));
+    }
+    setUser(null);
+    setProfile(null);
+  };
   const requireAuth = () => setShowAuth(true);
   const markMessagesSeen = () => { if (user) setMsgSeen(prev => ({ ...prev, [user.id]: new Date().toISOString() })); };
   const getContact = (id) => {
@@ -375,7 +415,7 @@ function AppShell() {
                 <Route path="/ilan-duzenle/:id" element={<PageTransition><IlanVerPage onPublish={publishListing} onUpdate={updateListing} listings={listings} user={user} onRequireAuth={requireAuth} /></PageTransition>} />
                 <Route path="/ilanlarim" element={<PageTransition><IlanlarimPage listings={listings} user={user} offers={offers} onUpdateOffer={updateOffer} onUpdateListing={updateListing} onDeleteListing={removeListing} onRequireAuth={requireAuth} getContact={getContact} /></PageTransition>} />
                 <Route path="/mesajlar" element={<PageTransition><MesajlarPage user={user} listings={listings} offers={offers} messages={messages} onSendMessage={addMessage} onRequireAuth={requireAuth} onSeen={markMessagesSeen} getContact={getContact} /></PageTransition>} />
-                <Route path="/profil" element={<PageTransition><ProfilPage user={user} onUpdateProfile={updateProfile} onVerifyPhone={verifyPhone} onRequireAuth={requireAuth} onLogout={logout} reviews={reviews} getUserRating={getUserRating} docs={docs.filter(d => user && String(d.ownerId) === String(user.id))} onAddDoc={addDoc} onRemoveDoc={removeDoc} /></PageTransition>} />
+                <Route path="/profil" element={<PageTransition><ProfilPage user={user} onUpdateProfile={updateProfile} onVerifyPhone={verifyPhone} onRequireAuth={requireAuth} onLogout={logout} onDeleteAccount={deleteAccount} reviews={reviews} getUserRating={getUserRating} docs={docs.filter(d => user && String(d.ownerId) === String(user.id))} onAddDoc={addDoc} onRemoveDoc={removeDoc} /></PageTransition>} />
                 <Route path="/panel" element={<PageTransition><DashboardPage user={user} listings={listings} offers={offers} messages={messages} onRequireAuth={requireAuth} /></PageTransition>} />
                 <Route path="/admin" element={<PageTransition><AdminPage user={user} reports={reports} docs={docs} users={users} listings={allListings} offers={offers} audit={audit} onRequireAuth={requireAuth} onSetReportStatus={setReportStatus} onReviewDoc={reviewDoc} onUpdateUser={updateUserAdmin} onResolveDispute={resolveDispute} onLog={logAdmin} onUpdateListing={updateListing} announcement={announcement} onSaveAnnouncement={saveAnnouncementAdmin} /></PageTransition>} />
                 <Route path="/muteahhit" element={<PageTransition><MuteahhitPage /></PageTransition>} />
