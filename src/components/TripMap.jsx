@@ -39,7 +39,7 @@ function FitBounds({ points }) {
   return null;
 }
 
-export default function TripMap({ pickup, dropoff, vehicle, trail = [] }) {
+export default function TripMap({ pickup, dropoff, vehicle, trail = [], routeCoords = null }) {
   const v = vehicle ? [vehicle.lat, vehicle.lng] : null;
   const trailPts = trail.map((p) => [p.lat, p.lng]);
   const center = v || pickup || dropoff || [39.3, 35.2];
@@ -48,7 +48,12 @@ export default function TripMap({ pickup, dropoff, vehicle, trail = [] }) {
     <div style={{ height: 280, borderRadius: 6, overflow: "hidden", border: `2px solid ${C.ink}` }}>
       <MapContainer center={center} zoom={11} scrollWheelZoom={false} zoomControl={false} style={{ height: "100%", width: "100%" }}>
         <TileLayer attribution="&copy; OpenStreetMap" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-        {pickup && dropoff && <Polyline positions={[pickup, dropoff]} pathOptions={{ color: C.ink, weight: 2, dashArray: "6 6", opacity: 0.5 }} />}
+        {/* Gerçek yol rotası (varsa) — yoksa düz çizgi yedeği */}
+        {routeCoords && routeCoords.length > 1 ? (
+          <Polyline positions={routeCoords} pathOptions={{ color: C.ink, weight: 3, opacity: 0.55 }} />
+        ) : (
+          pickup && dropoff && <Polyline positions={[pickup, dropoff]} pathOptions={{ color: C.ink, weight: 2, dashArray: "6 6", opacity: 0.5 }} />
+        )}
         {trailPts.length > 1 && <Polyline positions={trailPts} pathOptions={{ color: C.yellow, weight: 4 }} />}
         {pickup && <Marker position={pickup} icon={pinIcon("YÜKLEME", C.ink, C.yellow)} />}
         {dropoff && <Marker position={dropoff} icon={pinIcon("BOŞALTMA", C.card, C.ink)} />}
