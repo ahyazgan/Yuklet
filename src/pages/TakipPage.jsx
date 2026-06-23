@@ -9,9 +9,9 @@ import SEO from "../components/SEO";
 import { splitAmount, payableAmount, fmtTL, PAYMENT_LABEL, earlyPayout, EARLY_PAY_FEE_RATE } from "../utils/payments";
 import { newId, nowIso } from "../utils/id";
 import { haversineKm } from "../utils/priceEstimate";
-import { watchPosition } from "../native/geo";
+import { watchPosition, distanceKm } from "../native/geo";
 import { startTrip, publishLocation, endTrip, subscribeTrip } from "../utils/tripChannel";
-import { hapticTap } from "../native/haptics";
+import { hapticTap, hapticSuccess } from "../native/haptics";
 
 const TripMap = lazy(() => import("../components/TripMap"));
 
@@ -80,6 +80,26 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
     const unsub = subscribeTrip(id, setTrip);
     return () => { unsub(); if (watchStopRef.current) { watchStopRef.current(); watchStopRef.current = null; } };
   }, [id]);
+
+  // Geofence: sürücü konumu yükleme/boşaltma alanına girince fazı otomatik ilerlet.
+  // (Erken return'den önce; gerekli değerler içeride null-güvenli türetilir.)
+  useEffect(() => {
+    const lst = listings.find((x) => String(x.id) === String(id));
+    const v = trip?.last;
+    if (!lst || !v) return;
+    const acc = offers.find((o) => String(o.listingId) === String(lst.id) && o.status === "kabul");
+    const driver = acc && user && String(user.id) === String(acc.fromUserId);
+    const done = lst.phase === "teslim" || lst.status === "kapali";
+    if (!driver || done) return;
+    const ph = lst.phase || "eslesti";
+    const R = 0.2; // km (≈200 m) geofence yarıçapı
+    const dPick = Array.isArray(lst.pickup) ? distanceKm([v.lat, v.lng], lst.pickup) : null;
+    const dDrop = Array.isArray(lst.dropoff) ? distanceKm([v.lat, v.lng], lst.dropoff) : null;
+    if (ph === "eslesti" && dPick != null && dPick <= R) { hapticSuccess(); onUpdateListing?.(lst.id, { phase: "yuklendi" }); return; }
+    if (ph === "yuklendi" && dPick != null && dPick > R * 3) { onUpdateListing?.(lst.id, { phase: "yolda" }); return; }
+    if ((ph === "yolda" || ph === "yuklendi") && dDrop != null && dDrop <= R && !lst.arrivedAt) { hapticSuccess(); onUpdateListing?.(lst.id, { arrivedAt: nowIso() }); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trip?.last?.lat, trip?.last?.lng, id, listings, offers, user]);
 
   const l = listings.find((x) => String(x.id) === String(id));
 
@@ -426,9 +446,21 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
               </div>
             )}
 
+            {l.arrivedAt && !isDone && (
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10, background: "#E6F4EA", border: `2px solid ${C.green}`, borderRadius: 6, padding: "9px 11px", fontFamily: MONO, fontSize: 11, fontWeight: 700, color: C.green }}>
+                <MapPin size={14} strokeWidth={2.6} /> Boşaltma noktasına varıldı — teslim kanıtı ekle.
+              </div>
+            )}
+
             <Suspense fallback={<div style={{ height: 280, borderRadius: 6, border: `2px solid ${C.ink}`, background: C.stone, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: MONO, fontSize: 11, color: C.muted }}>Harita yükleniyor…</div>}>
               <TripMap pickup={Array.isArray(l.pickup) ? l.pickup : null} dropoff={liveDropoff} vehicle={vehicle} trail={trip?.trail || []} />
             </Suspense>
+
+            {isNakliyeci && (
+              <div style={{ marginTop: 8, fontFamily: MONO, fontSize: 9.5, color: C.muted, lineHeight: 1.5 }}>
+                Otomatik: yükleme alanına girince “yüklendi”, ayrılınca “yolda”, boşaltmaya varınca kanıt istenir.
+              </div>
+            )}
 
             {isNakliyeci ? (
               tracking ? (
