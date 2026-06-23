@@ -227,6 +227,31 @@ export function supplyDemand({ cat, fromIl }, { listings = [] } = {}) {
   return { supply, demand, ratio, factor, label, tone };
 }
 
+// ── İl bazlı arz/talep yoğunluğu (likidite ısı haritası) ──────────────
+// Açık iş (talep) vs açık araç (arz) sayısı. tone: "up"=yük bol (nakliyeci
+// fırsatı) · "down"=araç bol (rekabet) · "ok"=dengeli.
+export function densityByIl({ listings = [] } = {}, limit = 8) {
+  const map = {};
+  listings.forEach((l) => {
+    if (l.status === "kapali") return;
+    if (l.type !== "is" && l.type !== "arac") return;
+    if (!l.il) return;
+    const e = map[l.il] || { il: l.il, demand: 0, supply: 0 };
+    if (l.type === "is") e.demand++; else e.supply++;
+    map[l.il] = e;
+  });
+  return Object.values(map).map((e) => {
+    const total = e.demand + e.supply;
+    const ratio = e.demand / Math.max(1, e.supply);
+    let tone = "ok", label = "Dengeli";
+    if (total >= 2) {
+      if (ratio >= 1.6) { tone = "up"; label = "Yük bol"; }
+      else if (ratio <= 0.6) { tone = "down"; label = "Araç bol"; }
+    } else { label = "Az veri"; }
+    return { ...e, total, ratio, tone, label };
+  }).sort((a, b) => b.total - a.total).slice(0, limit);
+}
+
 // ── Piyasa Nabzı: güzergah/malzeme/kategori bazlı ₺/ton-km referansı ──
 export function marketPulse(history) {
   const all = collectSamples(history);
