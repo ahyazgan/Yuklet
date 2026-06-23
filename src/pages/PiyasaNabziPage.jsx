@@ -88,7 +88,7 @@ export default function PiyasaNabziPage({ listings = LISTINGS, offers }) {
           </div>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: 12 }}>
             <span style={{ fontFamily: MONO, fontSize: 11, color: "#9A988E" }}>
-              {pulse.samples} referans iş{pulse.accepted ? ` · ${pulse.accepted} gerçekleşen` : ""}
+              {pulse.samples} referans iş{pulse.settled ? ` · ${pulse.settled} tamamlanan sefer` : pulse.accepted ? ` · ${pulse.accepted} anlaşmalı` : ""}
             </span>
             <TrendPill trend={pulse.trend} />
           </div>
@@ -138,12 +138,15 @@ export default function PiyasaNabziPage({ listings = LISTINGS, offers }) {
                       <span style={{ fontFamily: ARCH, fontSize: 13.5, fontWeight: 800, textTransform: "uppercase", letterSpacing: "-0.01em" }} className="truncate">
                         {ln.from} → {ln.to}
                       </span>
+                      {ln.settled > 0 && (
+                        <span style={{ flexShrink: 0, fontFamily: MONO, fontSize: 8.5, fontWeight: 700, color: "#fff", background: C.green, border: `1.5px solid ${C.ink}`, borderRadius: 4, padding: "1px 5px", textTransform: "uppercase" }}>✓ {ln.settled} sefer</span>
+                      )}
                     </span>
                     <span style={{ fontFamily: MONO, fontSize: 14, fontWeight: 700, whiteSpace: "nowrap" }}>{fmtRate(ln.rate)}</span>
                   </div>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 7 }}>
                     <span style={{ fontFamily: MONO, fontSize: 10, color: C.muted }}>
-                      ~{ln.km} km · {ln.n} iş{ln.accepted ? ` · ${ln.accepted} gerçek` : ""}
+                      ~{ln.km} km · {ln.n} iş{ln.settled ? ` · ${ln.settled} tamamlanan` : ln.accepted ? ` · ${ln.accepted} anlaşmalı` : ""}
                     </span>
                     <span style={{ fontFamily: MONO, fontSize: 10.5, fontWeight: 700, color: C.sub }}>
                       20t sefer ≈ {fmtTL(ln.sampleTrip)}
