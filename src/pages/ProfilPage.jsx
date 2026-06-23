@@ -37,6 +37,13 @@ const ROLE_BADGE = {
 
 const DOC_TYPES = ["K Belgesi", "Araç Ruhsatı", "Vergi Levhası", "Sigorta Poliçesi", "Diğer"];
 
+// Belge başına gerçek durum (admin reviewDoc ile "dogrulandi"/"red" olur; yoksa beklemede).
+function docStatusInfo(d) {
+  if (d?.status === "dogrulandi") return { label: "✓ Doğrulandı", color: "#16803C" };
+  if (d?.status === "red") return { label: "✕ Reddedildi", color: "#DC2626" };
+  return { label: "⏳ İnceleniyor", color: "#92600A" };
+}
+
 function fmtRev(iso) {
   try { return new Date(iso).toLocaleDateString("tr-TR", { day: "numeric", month: "short", year: "numeric" }); }
   catch { return ""; }
@@ -305,6 +312,41 @@ export default function ProfilPage({ user, onUpdateProfile, onVerifyPhone, onReq
           </button>
         </motion.section>
 
+        {/* Doğrulama durumu — adım adım rozet yolu */}
+        <section style={cardSt}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+            <h2 style={{ ...sectionTitle, margin: 0, display: "flex", alignItems: "center", gap: 7 }}>
+              <ShieldCheck size={16} strokeWidth={2.4} color={user.verified ? C.green : C.ink} /> Doğrulama
+            </h2>
+            <span style={{
+              fontFamily: MONO, fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 5, border: "2px solid",
+              borderColor: user.verified ? C.green : C.border,
+              background: user.verified ? "#E6F4EA" : C.stone,
+              color: user.verified ? C.green : C.muted,
+            }}>
+              {user.verified ? "✓ Onaylı üye" : "Onaylanmadı"}
+            </span>
+          </div>
+          <p style={{ fontFamily: MONO, fontSize: 11, color: C.sub, margin: "0 0 12px", lineHeight: 1.5 }}>
+            Adımları tamamla → <b>onaylı rozeti</b> kazan. Onaylı üyeler daha çok güven ve teklif alır.
+          </p>
+          {[
+            { label: "Telefonunu doğrula", done: phoneVerified },
+            { label: "Belge yükle (K belgesi, ruhsat, vergi levhası)", done: docs.length > 0 },
+            { label: "Ekip incelemesi → onaylı rozet", done: Boolean(user.verified) },
+          ].map((s, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 0", borderTop: i === 0 ? "none" : `1px solid ${C.line}` }}>
+              <span style={{
+                flexShrink: 0, width: 22, height: 22, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
+                background: s.done ? C.green : "transparent", border: `2px solid ${s.done ? C.green : C.border}`,
+                color: "#fff", fontFamily: MONO, fontSize: 11, fontWeight: 700,
+              }}>{s.done ? "✓" : i + 1}</span>
+              <span style={{ flex: 1, fontFamily: MONO, fontSize: 11.5, fontWeight: 700, color: s.done ? C.ink : C.sub }}>{s.label}</span>
+              <span style={{ fontFamily: MONO, fontSize: 9, fontWeight: 700, color: s.done ? C.green : C.muted, whiteSpace: "nowrap" }}>{s.done ? "TAMAM" : "BEKLİYOR"}</span>
+            </div>
+          ))}
+        </section>
+
         {/* Belgelerim — belge yükleme */}
         <section style={cardSt}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
@@ -352,8 +394,8 @@ export default function ProfilPage({ user, onUpdateProfile, onVerifyPhone, onReq
                     <div style={{ fontFamily: ARCHIVO, fontSize: 12, fontWeight: 800, color: C.ink, textTransform: "uppercase", letterSpacing: "-0.02em" }}>{d.type}</div>
                     <div style={{ fontFamily: MONO, fontSize: 10, color: C.faint, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.name}</div>
                   </div>
-                  <span style={{ fontFamily: MONO, fontSize: 9, fontWeight: 700, color: user.verified ? C.green : "#92600A", whiteSpace: "nowrap" }}>
-                    {user.verified ? "✓ Doğrulandı" : "⏳ İnceleniyor"}
+                  <span style={{ fontFamily: MONO, fontSize: 9, fontWeight: 700, color: docStatusInfo(d).color, whiteSpace: "nowrap" }}>
+                    {docStatusInfo(d).label}
                   </span>
                   <button onClick={() => onRemoveDoc?.(d.id)}
                     style={{ background: "none", border: "none", fontFamily: MONO, fontSize: 11, fontWeight: 700, color: C.red, cursor: "pointer", textTransform: "uppercase" }}>Sil</button>
