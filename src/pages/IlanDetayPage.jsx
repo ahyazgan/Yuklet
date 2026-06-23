@@ -119,7 +119,7 @@ function DetailRow({ label, value }) {
   );
 }
 
-export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth, offers = [], onAddOffer, onReport }) {
+export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth, offers = [], onAddOffer, onReport, isBlocked, onToggleBlock }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
@@ -216,6 +216,8 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
     if (res === "copied") toast("Bağlantı kopyalandı", "success");
   };
 
+  // Engelleme durumu (ilan sahibi).
+  const blocked = isBlocked ? isBlocked(l.ownerId) : false;
   // Favori (kaydedilen ilan) — kalp ile ekle/çıkar.
   const fav = isFav(l.id);
   const onToggleFav = () => {
@@ -525,10 +527,19 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
           </div>
         )}
 
-        <button onClick={() => setShowReport(true)}
-          style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", background: C.card, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "12px", fontFamily: MONO, fontSize: 11, fontWeight: 700, color: C.red, letterSpacing: "0.06em", textTransform: "uppercase", cursor: "pointer" }}>
-          <AlertTriangle size={15} strokeWidth={2.4} color={C.red} /> Bu ilanı şikayet et
-        </button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button onClick={() => setShowReport(true)}
+            style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, flex: 1, background: C.card, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "12px", fontFamily: MONO, fontSize: 11, fontWeight: 700, color: C.red, letterSpacing: "0.06em", textTransform: "uppercase", cursor: "pointer" }}>
+            <AlertTriangle size={15} strokeWidth={2.4} color={C.red} /> Şikayet et
+          </button>
+          {!isOwner && onToggleBlock && l.ownerId && (
+            <button
+              onClick={() => { const willBlock = !blocked; onToggleBlock(l.ownerId); toast(willBlock ? "Kullanıcı engellendi" : "Engel kaldırıldı", willBlock ? "info" : "success"); if (willBlock) navigate("/ilanlar"); }}
+              style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, flex: 1, background: blocked ? C.ink : C.card, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "12px", fontFamily: MONO, fontSize: 11, fontWeight: 700, color: blocked ? C.yellow : C.ink, letterSpacing: "0.06em", textTransform: "uppercase", cursor: "pointer" }}>
+              <X size={15} strokeWidth={2.6} color={blocked ? C.yellow : C.ink} /> {blocked ? "Engeli kaldır" : "Engelle"}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* ── STICKY BOTTOM "Teklif ver" BAR (white, 2px top rule) ──── */}

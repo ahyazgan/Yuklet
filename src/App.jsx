@@ -6,7 +6,7 @@ import {
   loadUsers, saveUsers, loadOffers, saveOffers, loadMessages, saveMessages,
   loadMsgSeen, saveMsgSeen, loadNotifSeen, saveNotifSeen, loadReviews, saveReviews, loadDocs, saveDocs,
   loadOnboarded, saveOnboarded, loadReports, saveReports, loadPricingConfig, loadSavedSearches,
-  loadAuditLog, appendAudit, loadAnnouncement, saveAnnouncement,
+  loadAuditLog, appendAudit, loadAnnouncement, saveAnnouncement, loadBlocked, saveBlocked,
 } from "./utils/storage";
 import { isSupabaseConfigured } from "./lib/supabase";
 import * as api from "./lib/api";
@@ -92,6 +92,7 @@ function AppShell() {
   useEffect(() => { if (!SB) saveUsers(users); }, [users, SB]);
   const [audit, setAudit] = useState(() => loadAuditLog());
   const [announcement, setAnnouncement] = useState(() => loadAnnouncement());
+  const [blocked, setBlocked] = useState(() => loadBlocked()); // { [blockerId]: [engellenenId] }
   const allListings = SB ? userListings : [...userListings, ...LISTINGS];
   const bannedIds = new Set(users.filter((u) => u.status === "banli").map((u) => String(u.id)));
   // Yaptirim: banli kullanicilarin ilanlari kamuya gizlenir (admin tum ilanlari gorur).
@@ -356,6 +357,20 @@ function AppShell() {
     const u = users.find(x => String(x.id) === String(id));
     return u ? { name: u.name, phone: u.phone, email: u.email } : null;
   };
+
+  // ── Kullanıcı engelleme (yerel, kullanıcı başına) ──
+  const myBlocked = user ? (blocked[user.id] || []).map(String) : [];
+  const isBlocked = (id) => myBlocked.includes(String(id));
+  const toggleBlock = (id) => {
+    if (!user || !id) return;
+    const sid = String(id);
+    const cur = (blocked[user.id] || []).map(String);
+    const nextList = cur.includes(sid) ? cur.filter((x) => x !== sid) : [sid, ...cur];
+    const next = { ...blocked, [user.id]: nextList };
+    setBlocked(next);
+    saveBlocked(next);
+  };
+
   const updateProfile = async (patch) => {
     if (SB) {
       try { const res = await api.updateProfile(user.id, patch); if (res.ok) { setProfile(res.profile); setUser(res.profile); } }
@@ -415,15 +430,15 @@ function AppShell() {
               <Routes location={location} key={location.pathname}>
                 <Route path="/" element={<PageTransition><NakliyeHome listings={listings} user={user} offers={offers} pendingOffersCount={pendingOffersCount} unreadCount={unreadCount} notifUnread={notif.unread} onLoginClick={requireAuth} announcement={announcement} /></PageTransition>} />
                 <Route path="/bildirimler" element={<PageTransition><BildirimlerPage user={user} items={notif.items} onSeen={markNotifSeen} onRequireAuth={requireAuth} /></PageTransition>} />
-                <Route path="/ilanlar" element={<PageTransition><ListingsPage listings={listings} onRefresh={SB ? () => Promise.all([reloadListings(), reloadOffers()]) : undefined} /></PageTransition>} />
-                <Route path="/ilan/:id" element={<PageTransition><IlanDetayPage listings={listings} user={user} onRequireAuth={requireAuth} offers={offers} onAddOffer={addOffer} onReport={addReport} /></PageTransition>} />
+                <Route path="/ilanlar" element={<PageTransition><ListingsPage listings={listings} blockedIds={myBlocked} onRefresh={SB ? () => Promise.all([reloadListings(), reloadOffers()]) : undefined} /></PageTransition>} />
+                <Route path="/ilan/:id" element={<PageTransition><IlanDetayPage listings={listings} user={user} onRequireAuth={requireAuth} offers={offers} onAddOffer={addOffer} onReport={addReport} isBlocked={isBlocked} onToggleBlock={toggleBlock} /></PageTransition>} />
                 <Route path="/takip/:id" element={<PageTransition><TakipPage listings={listings} user={user} offers={offers} getContact={getContact} reviews={reviews} onAddReview={addReview} getUserRating={getUserRating} onUpdateListing={updateListing} onReport={addReport} onPayToEscrow={payToEscrow} onReleasePayment={releasePayment} onRefundPayment={refundPayment} onEarlyPayout={earlyPayoutNakliyeci} /></PageTransition>} />
                 <Route path="/sozlesme/:offerId" element={<PageTransition><SozlesmePage listings={listings} offers={offers} getContact={getContact} /></PageTransition>} />
                 <Route path="/cuzdan" element={<PageTransition><CuzdanPage user={user} listings={listings} offers={offers} onRequireAuth={requireAuth} /></PageTransition>} />
                 <Route path="/ilan-ver" element={<PageTransition><IlanVerPage onPublish={publishListing} onUpdate={updateListing} listings={listings} user={user} onRequireAuth={requireAuth} /></PageTransition>} />
                 <Route path="/ilan-duzenle/:id" element={<PageTransition><IlanVerPage onPublish={publishListing} onUpdate={updateListing} listings={listings} user={user} onRequireAuth={requireAuth} /></PageTransition>} />
                 <Route path="/ilanlarim" element={<PageTransition><IlanlarimPage listings={listings} user={user} offers={offers} onUpdateOffer={updateOffer} onUpdateListing={updateListing} onDeleteListing={removeListing} onRequireAuth={requireAuth} getContact={getContact} /></PageTransition>} />
-                <Route path="/mesajlar" element={<PageTransition><MesajlarPage user={user} listings={listings} offers={offers} messages={messages} onSendMessage={addMessage} onRequireAuth={requireAuth} onSeen={markMessagesSeen} getContact={getContact} msgSeen={msgSeen} /></PageTransition>} />
+                <Route path="/mesajlar" element={<PageTransition><MesajlarPage user={user} listings={listings} offers={offers} messages={messages} onSendMessage={addMessage} onRequireAuth={requireAuth} onSeen={markMessagesSeen} getContact={getContact} msgSeen={msgSeen} blockedIds={myBlocked} /></PageTransition>} />
                 <Route path="/profil" element={<PageTransition><ProfilPage user={user} onUpdateProfile={updateProfile} onVerifyPhone={verifyPhone} onRequireAuth={requireAuth} onLogout={logout} onDeleteAccount={deleteAccount} reviews={reviews} getUserRating={getUserRating} docs={docs.filter(d => user && String(d.ownerId) === String(user.id))} onAddDoc={addDoc} onRemoveDoc={removeDoc} /></PageTransition>} />
                 <Route path="/panel" element={<PageTransition><DashboardPage user={user} listings={listings} offers={offers} messages={messages} onRequireAuth={requireAuth} /></PageTransition>} />
                 <Route path="/admin" element={<PageTransition><AdminPage user={user} reports={reports} docs={docs} users={users} listings={allListings} offers={offers} audit={audit} onRequireAuth={requireAuth} onSetReportStatus={setReportStatus} onReviewDoc={reviewDoc} onUpdateUser={updateUserAdmin} onResolveDispute={resolveDispute} onLog={logAdmin} onUpdateListing={updateListing} announcement={announcement} onSaveAnnouncement={saveAnnouncementAdmin} /></PageTransition>} />
