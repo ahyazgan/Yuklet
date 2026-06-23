@@ -20,6 +20,7 @@ import {
   Activity,
   TrendingUp,
   Heart,
+  ShieldCheck,
 } from "lucide-react";
 import { LISTINGS, IL_LIST } from "../data/listings";
 import { CATS, MATERIALS } from "../data/categories";
@@ -28,6 +29,7 @@ import { estimatePrice, priceSignal, fmtTL } from "../utils/priceEstimate";
 import { loadSavedSearches, saveSavedSearches, loadOffers, loadPricingConfig, loadRecentSearches, saveRecentSearches } from "../utils/storage";
 import usePullToRefresh from "../hooks/usePullToRefresh";
 import useFavorites from "../hooks/useFavorites";
+import { computeReliability, reliabilityTier } from "../utils/reliability";
 import SEO from "../components/SEO";
 
 const ListingsMap = lazy(() => import("../components/ListingsMap"));
@@ -92,7 +94,7 @@ function marketTagOf(l, history, config) {
 const norm = (s) => String(s ?? "").toLocaleLowerCase("tr");
 
 // ── İlan kartı ──
-function ListingCard({ l, history, config, isFav = false, onToggleFav }) {
+function ListingCard({ l, history, config, isFav = false, onToggleFav, rel }) {
   const isH = l.cat === "hafriyat";
   const isProduct = l.type === "urun";
   const market = marketTagOf(l, history, config);
@@ -257,6 +259,11 @@ function ListingCard({ l, history, config, isFav = false, onToggleFav }) {
             <Star size={9} color={C.ink} fill={C.yellow} strokeWidth={2} /> {l.ownerRating}
           </span>
         )}
+        {rel?.score != null && (
+          <span className="flex items-center gap-0.5" style={{ flexShrink: 0, color: reliabilityTier(rel.score).color, fontWeight: 700 }} title={`Güvenilirlik %${rel.score} · ${rel.jobsDone} iş`}>
+            <ShieldCheck size={10} strokeWidth={2.5} /> %{rel.score}
+          </span>
+        )}
       </div>
 
       {/* alt: etiket chip'leri + fiyat + aksiyon */}
@@ -371,8 +378,17 @@ function EmptyBox({ icon, title, sub, action }) {
   );
 }
 
-export default function ListingsPage({ listings = LISTINGS, onRefresh, blockedIds = [] }) {
+export default function ListingsPage({ listings = LISTINGS, onRefresh, blockedIds = [], offers = [], reviews = [] }) {
   const navigate = useNavigate();
+  // İlan sahibi başına güvenilirlik (kart rozeti için, bir kez hesapla).
+  const ownerRel = useMemo(() => {
+    const map = {};
+    for (const l of listings) {
+      const oid = String(l.ownerId);
+      if (l.ownerId != null && !(oid in map)) map[oid] = computeReliability(oid, { listings, offers, reviews });
+    }
+    return map;
+  }, [listings, offers, reviews]);
   const [sp] = useSearchParams();
   // Aşağı-çekip-yenile (dokunmatik). onRefresh yoksa kısa görsel geri bildirim.
   const ptrRefresh = onRefresh || (() => new Promise((r) => setTimeout(r, 500)));
@@ -1029,7 +1045,7 @@ export default function ListingsPage({ listings = LISTINGS, onRefresh, blockedId
                     onClick={() => navigate(`/ilan/${m.listing.id}`)}
                     style={{ display: "block", width: "100%", textAlign: "left" }}
                   >
-                    <ListingCard l={m.listing} history={priceHistory} config={pricingConfig} isFav={isFav(m.listing.id)} onToggleFav={toggleFav} />
+                    <ListingCard l={m.listing} history={priceHistory} config={pricingConfig} isFav={isFav(m.listing.id)} onToggleFav={toggleFav} rel={ownerRel[String(m.listing.ownerId)]} />
                   </button>
                 </div>
                 );
@@ -1088,7 +1104,7 @@ export default function ListingsPage({ listings = LISTINGS, onRefresh, blockedId
                 onClick={() => navigate(`/ilan/${l.id}`)}
                 style={{ display: "block", width: "100%", textAlign: "left" }}
               >
-                <ListingCard l={l} history={priceHistory} config={pricingConfig} isFav={isFav(l.id)} onToggleFav={toggleFav} />
+                <ListingCard l={l} history={priceHistory} config={pricingConfig} isFav={isFav(l.id)} onToggleFav={toggleFav} rel={ownerRel[String(l.ownerId)]} />
               </button>
             ))}
           </div>

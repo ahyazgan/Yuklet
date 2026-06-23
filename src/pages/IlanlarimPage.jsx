@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Check, X, MessageSquare, FileText, Phone, RotateCw, Pencil, Lock, Share2, Trash2, ArrowRight } from "lucide-react";
+import { Plus, Check, X, MessageSquare, FileText, Phone, RotateCw, Pencil, Lock, Share2, Trash2, ArrowRight, ShieldCheck } from "lucide-react";
 import { CATS } from "../data/categories";
 import CategoryIcon from "../components/CategoryIcon";
+import { computeReliability, reliabilityTier } from "../utils/reliability";
 import { useToast } from "../components/Toast";
 import { shareUrl } from "../native/share";
 import { hapticTap, hapticSuccess, hapticWarn } from "../native/haptics";
@@ -56,7 +57,7 @@ function initial(name) {
   return String(name || "?").trim().charAt(0).toUpperCase() || "?";
 }
 
-export default function IlanlarimPage({ listings = [], user, offers = [], onUpdateOffer, onUpdateListing, onDeleteListing, onRequireAuth, getContact }) {
+export default function IlanlarimPage({ listings = [], user, offers = [], reviews = [], onUpdateOffer, onUpdateListing, onDeleteListing, onRequireAuth, getContact }) {
   const navigate = useNavigate();
   const toast = useToast();
   const [tab, setTab] = useState("aktif");
@@ -268,6 +269,7 @@ export default function IlanlarimPage({ listings = [], user, offers = [], onUpda
                           lOffers.map((o) => {
                             const s = OFFER_STATUS[o.status] || OFFER_STATUS.beklemede;
                             const contact = getContact?.(o.fromUserId);
+                            const oRel = computeReliability(o.fromUserId, { listings, offers, reviews });
                             const isLowest = lowest != null && o.price != null && Number(o.price) === lowest;
                             return (
                               <div key={o.id} style={{ background: C.stone, border: `2px solid ${C.ink}`, borderRadius: 6, padding: 12 }}>
@@ -277,9 +279,14 @@ export default function IlanlarimPage({ listings = [], user, offers = [], onUpda
                                     {initial(o.fromUser)}
                                   </div>
                                   <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                    <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                                       <span style={{ fontFamily: HEAD, fontSize: 13.5, fontWeight: 800, textTransform: "uppercase", letterSpacing: "-0.01em", color: C.ink }}>{o.fromUser}</span>
                                       <StatusPill bg={s.bg} fg={s.fg} text={s.label} small />
+                                      {oRel.score != null && (
+                                        <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontFamily: MONO, fontSize: 9.5, fontWeight: 700, color: reliabilityTier(oRel.score).color }} title={`Güvenilirlik %${oRel.score} · ${oRel.jobsDone} iş`}>
+                                          <ShieldCheck size={11} strokeWidth={2.5} /> %{oRel.score}
+                                        </span>
+                                      )}
                                     </div>
                                     <div style={{ fontFamily: MONO, fontSize: 10.5, color: C.sub, marginTop: 3 }}>
                                       {[
