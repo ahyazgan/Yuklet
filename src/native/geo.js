@@ -6,6 +6,15 @@
 
 import { Capacitor } from "@capacitor/core";
 
+// İki [lat,lng] arası mesafe (km, yuvarlamasız) — geofence için hassas.
+export function distanceKm(a, b) {
+  if (!a || !b) return null;
+  const R = 6371, toR = (x) => (x * Math.PI) / 180;
+  const dLat = toR(b[0] - a[0]), dLng = toR(b[1] - a[1]);
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(toR(a[0])) * Math.cos(toR(b[0])) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+
 const toPoint = (pos) => ({
   lat: pos.coords.latitude,
   lng: pos.coords.longitude,
