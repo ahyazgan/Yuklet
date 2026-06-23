@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, Inbox, MessageSquare, Check, X as XIcon, Mail } from "lucide-react";
+import { ChevronLeft, Inbox, MessageSquare, Check, X as XIcon, Mail, Star } from "lucide-react";
 import SEO from "../components/SEO";
 
 // ── DAYIM Bildirim Merkezi — tam sayfa bildirim listesi (geçmiş + okundu).
@@ -26,6 +26,7 @@ function visual(icon) {
   if (icon === "✅") return { Icon: Check, bg: C.green, fg: "#fff" };
   if (icon === "❌") return { Icon: XIcon, bg: C.red, fg: "#fff" };
   if (icon === "💬") return { Icon: MessageSquare, bg: C.stone, fg: C.ink };
+  if (icon === "⭐") return { Icon: Star, bg: C.yellow, fg: C.ink };
   return { Icon: Mail, bg: C.yellow, fg: C.ink }; // 📨 teklif (varsayılan)
 }
 
