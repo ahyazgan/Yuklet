@@ -19,6 +19,8 @@ const rowToListing = (r) => ({
   status: r.status, offers: r.offers_count, createdText: r.created_text, createdAt: r.created_at,
   km: r.km, pickup: r.pickup, dropoff: r.dropoff, phase: r.phase, tripsDone: r.trips_done,
   paymentStatus: r.payment_status, paymentAmount: r.payment_amount, paymentFee: r.payment_fee, paymentRef: r.payment_ref,
+  deliveryProof: r.delivery_proof, cycleStage: r.cycle_stage, arrivedAt: r.arrived_at,
+  earlyPaid: r.early_paid, earlyPayFee: r.early_pay_fee, acceptedById: r.accepted_by_id,
 });
 
 const listingToRow = (l) => ({
@@ -40,6 +42,8 @@ const LISTING_KEYMAP = {
   status: "status", createdText: "created_text", type: "type", cat: "cat",
   km: "km", pickup: "pickup", dropoff: "dropoff", phase: "phase", tripsDone: "trips_done",
   paymentStatus: "payment_status", paymentAmount: "payment_amount", paymentFee: "payment_fee", paymentRef: "payment_ref",
+  deliveryProof: "delivery_proof", cycleStage: "cycle_stage", arrivedAt: "arrived_at",
+  earlyPaid: "early_paid", earlyPayFee: "early_pay_fee", acceptedById: "accepted_by_id",
 };
 const mapPatch = (patch, keymap) => {
   const out = {};
@@ -49,7 +53,7 @@ const mapPatch = (patch, keymap) => {
 
 const rowToOffer = (r) => ({
   id: r.id, listingId: r.listing_id, fromUser: r.from_user_name, fromUserId: r.from_user_id,
-  price: r.price, message: r.message, status: r.status, createdAt: r.created_at,
+  price: r.price, message: r.message, status: r.status, createdAt: r.created_at, updatedAt: r.updated_at,
 });
 
 const rowToMessage = (r) => ({
@@ -179,7 +183,7 @@ export async function createOffer({ listingId, price, message }, profile) {
 }
 
 export async function updateOffer(id, patch) {
-  const { error } = await supabase.from("offers").update({ status: patch.status }).eq("id", id);
+  const { error } = await supabase.from("offers").update({ status: patch.status, updated_at: new Date().toISOString() }).eq("id", id);
   if (error) throw error;
 }
 

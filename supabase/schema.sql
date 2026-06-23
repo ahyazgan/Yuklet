@@ -58,12 +58,26 @@ create table if not exists public.listings (
   payment_amount  numeric,                          -- emanete alinan toplam bedel
   payment_fee     numeric,                          -- platform komisyonu (kesilen)
   payment_ref     text,                             -- saglayici referansi (mock veya gercek)
+  delivery_proof  jsonb,                            -- teslim kaniti: tonnage, ticketNo, photo, signature, location, status…
+  cycle_stage     text,                             -- mekik dongusu: await_load | loaded (geofence sefer sayimi)
+  arrived_at      timestamptz,                      -- bosaltma alanina varis (geofence)
+  early_paid      boolean not null default false,   -- hizli odeme (erken hakedis) yapildi mi
+  early_pay_fee   numeric,                          -- erken odeme ucreti
+  accepted_by_id  uuid,                             -- kabul edilen nakliyeci (hizli odeme hedefi)
   created_text    text default 'az once',
   created_at      timestamptz not null default now()
 );
 create index if not exists listings_owner_idx  on public.listings(owner_id);
 create index if not exists listings_status_idx on public.listings(status);
 create index if not exists listings_cat_idx    on public.listings(cat);
+
+-- Mevcut projeler icin: yeni sutunlari idempotent ekle (sema once kurulmussa).
+alter table public.listings add column if not exists delivery_proof jsonb;
+alter table public.listings add column if not exists cycle_stage    text;
+alter table public.listings add column if not exists arrived_at     timestamptz;
+alter table public.listings add column if not exists early_paid     boolean not null default false;
+alter table public.listings add column if not exists early_pay_fee  numeric;
+alter table public.listings add column if not exists accepted_by_id uuid;
 
 -- Mevcut tabloya (onceden kurulmussa) odeme kolonlarini ekle — tekrar calistirilabilir.
 alter table public.listings add column if not exists payment_status text not null default 'yok';
@@ -82,10 +96,12 @@ create table if not exists public.offers (
   price          numeric,
   message        text default '',
   status         text not null default 'beklemede', -- beklemede | kabul | ret
-  created_at     timestamptz not null default now()
+  created_at     timestamptz not null default now(),
+  updated_at     timestamptz                          -- son durum degisikligi (kabul/ret zamani)
 );
 create index if not exists offers_listing_idx on public.offers(listing_id);
 create index if not exists offers_user_idx    on public.offers(from_user_id);
+alter table public.offers add column if not exists updated_at timestamptz;
 
 -- ──────────────────────────────────────────────
 -- 4) MESSAGES  (eslesen taraflar arasi)
@@ -273,3 +289,43 @@ values
   ('Baskent Altyapi', true, 4.6, 'is','hafriyat','Yol genisletme - kazi fazlasi tasima','Ankara','Etimesgut','Eryaman yol calismasi','Belediye dokum alani','Toprak',800,'m³','10-15 Haziran',true,'Yaklasik 1 hafta',null,null,'teklif',null,'Yol genisletmeden cikan toprak. Birden fazla araca ihtiyac var.','aktif',9,'3 saat once'),
   ('Ege Lojistik', true, 4.4, 'is','silobas','Limandan fabrikaya dokme micir','Izmir','Aliaga','Aliaga limani','Kemalpasa sanayi','Micir',120,'ton','7-9 Haziran',false,'',null,null,'teklif',null,'Limandan bosaltilan micir, fabrikaya tasinacak. Dokme yuk dorse uygun.','aktif',5,'6 saat once')
 on conflict do nothing;
+
+-- ──────────────────────────────────────────────
+-- 9) TRIP_LOCATIONS  (canli sefer konumu — realtime takip cutover'ina hazir)
+--    Su an uygulama localStorage "kanal"i kullanir (src/utils/tripChannel.js);
+--    gercek cok-cihaz takip icin bu tabloya + Supabase Realtime'a baglanir.
+-- ──────────────────────────────────────────────
+create table if not exists public.trip_locations (
+  listing_id  bigint primary key references public.listings(id) on delete cascade,
+  driver_id   uuid references public.profiles(id) on delete set null,
+  lat         double precision,
+  lng         double precision,
+  speed       double precision,            -- m/s
+  heading     double precision,            -- derece
+  accuracy    double precision,            -- m
+  trail       jsonb default '[]'::jsonb,    -- son N nokta
+  active      boolean not null default true,
+  updated_at  timestamptz not null default now()
+);
+create index if not exists trip_loc_driver_idx on public.trip_locations(driver_id);
+alter table public.trip_locations enable row level security;
+drop policy if exists trip_loc_read   on public.trip_locations;
+drop policy if exists trip_loc_write  on public.trip_locations;
+drop policy if exists trip_loc_update on public.trip_locations;
+-- Okuma: islin taraflari (ilan sahibi veya kabul edilen nakliyeci).
+create policy trip_loc_read on public.trip_locations for select using (
+  exists (
+    select 1 from public.listings l where l.id = listing_id and (
+      l.owner_id = auth.uid()
+      or exists (select 1 from public.offers o where o.listing_id = l.id and o.status = 'kabul' and o.from_user_id = auth.uid())
+    )
+  )
+);
+-- Yazma/guncelleme: yalnizca surucu kendi konumunu.
+create policy trip_loc_write  on public.trip_locations for insert with check (auth.uid() = driver_id);
+create policy trip_loc_update on public.trip_locations for update using (auth.uid() = driver_id);
+
+-- Realtime yayinina ekle (varsa hata vermez).
+do $$ begin
+  alter publication supabase_realtime add table public.trip_locations;
+exception when others then null; end $$;
