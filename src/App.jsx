@@ -4,7 +4,7 @@ import { AnimatePresence } from "framer-motion";
 import {
   saveTheme, loadListings, saveListings, loadUser, saveUser,
   loadUsers, saveUsers, loadOffers, saveOffers, loadMessages, saveMessages,
-  loadMsgSeen, saveMsgSeen, loadNotifSeen, loadReviews, saveReviews, loadDocs, saveDocs,
+  loadMsgSeen, saveMsgSeen, loadNotifSeen, saveNotifSeen, loadReviews, saveReviews, loadDocs, saveDocs,
   loadOnboarded, saveOnboarded, loadReports, saveReports, loadPricingConfig,
   loadAuditLog, appendAudit, loadAnnouncement, saveAnnouncement,
 } from "./utils/storage";
@@ -50,6 +50,7 @@ const HakkimizdaPage = lazy(() => import("./pages/HakkimizdaPage"));
 const IletisimPage = lazy(() => import("./pages/IletisimPage"));
 const LegalPage = lazy(() => import("./pages/LegalPage"));
 const PiyasaNabziPage = lazy(() => import("./pages/PiyasaNabziPage"));
+const BildirimlerPage = lazy(() => import("./pages/BildirimlerPage"));
 const FiyatSimulasyonuPage = lazy(() => import("./pages/FiyatSimulasyonuPage"));
 
 function ScrollToTop() {
@@ -179,8 +180,14 @@ function AppShell() {
   // "Goruldu" ve bildirim okundu durumu — yerel tercih, her modda localStorage'da kalir
   const [msgSeen, setMsgSeen] = useState(() => loadMsgSeen());
   useEffect(() => { saveMsgSeen(msgSeen); }, [msgSeen]);
-  // Bildirim "okundu" durumu (yalnızca okuma — push bildirim filtresi için).
-  const [notifSeen] = useState(() => loadNotifSeen());
+  // Bildirim "okundu" durumu — bildirim merkezi açılınca güncellenir.
+  const [notifSeen, setNotifSeen] = useState(() => loadNotifSeen());
+  const markNotifSeen = () => {
+    if (!user) return;
+    const next = { ...notifSeen, [user.id]: new Date().toISOString() };
+    setNotifSeen(next);
+    saveNotifSeen(next);
+  };
 
   // Degerlendirmeler (puan + yorum)
   const [reviews, setReviews] = useState(() => (SB ? [] : loadReviews()));
@@ -406,7 +413,8 @@ function AppShell() {
           <Suspense fallback={<PageLoader />}>
             <AnimatePresence mode="wait">
               <Routes location={location} key={location.pathname}>
-                <Route path="/" element={<PageTransition><NakliyeHome listings={listings} user={user} offers={offers} pendingOffersCount={pendingOffersCount} unreadCount={unreadCount} onLoginClick={requireAuth} announcement={announcement} /></PageTransition>} />
+                <Route path="/" element={<PageTransition><NakliyeHome listings={listings} user={user} offers={offers} pendingOffersCount={pendingOffersCount} unreadCount={unreadCount} notifUnread={notif.unread} onLoginClick={requireAuth} announcement={announcement} /></PageTransition>} />
+                <Route path="/bildirimler" element={<PageTransition><BildirimlerPage user={user} items={notif.items} onSeen={markNotifSeen} onRequireAuth={requireAuth} /></PageTransition>} />
                 <Route path="/ilanlar" element={<PageTransition><ListingsPage listings={listings} onRefresh={SB ? () => Promise.all([reloadListings(), reloadOffers()]) : undefined} /></PageTransition>} />
                 <Route path="/ilan/:id" element={<PageTransition><IlanDetayPage listings={listings} user={user} onRequireAuth={requireAuth} offers={offers} onAddOffer={addOffer} onReport={addReport} /></PageTransition>} />
                 <Route path="/takip/:id" element={<PageTransition><TakipPage listings={listings} user={user} offers={offers} getContact={getContact} reviews={reviews} onAddReview={addReview} getUserRating={getUserRating} onUpdateListing={updateListing} onReport={addReport} onPayToEscrow={payToEscrow} onReleasePayment={releasePayment} onRefundPayment={refundPayment} onEarlyPayout={earlyPayoutNakliyeci} /></PageTransition>} />

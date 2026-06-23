@@ -556,7 +556,7 @@ export default function CuzdanPage({ user, listings = [], offers = [], onRequire
 
           <div style={{ paddingRight: 26 }}>
             <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: "rgba(255,255,255,0.55)" }}>
-              Toplam Bakiye
+              Toplam Hakediş
             </div>
             <div
               style={{
@@ -595,19 +595,20 @@ export default function CuzdanPage({ user, listings = [], offers = [], onRequire
             <div style={{ display: "flex", gap: 10, marginTop: 18 }}>
               <button
                 onClick={() => setSheetOpen(true)}
+                disabled={withdrawable <= 0}
                 style={{
                   flex: 1,
                   border: `2px solid ${C.ink}`,
                   borderRadius: 6,
                   padding: "12px 0",
-                  background: C.yellow,
-                  color: C.ink,
+                  background: withdrawable > 0 ? C.yellow : "rgba(255,255,255,0.18)",
+                  color: withdrawable > 0 ? C.ink : "rgba(255,255,255,0.5)",
                   fontFamily: ARCHIVO,
                   fontSize: 13.5,
                   fontWeight: 900,
                   textTransform: "uppercase",
                   letterSpacing: "-0.01em",
-                  cursor: "pointer",
+                  cursor: withdrawable > 0 ? "pointer" : "default",
                 }}
               >
                 Para Çek
@@ -673,6 +674,26 @@ export default function CuzdanPage({ user, listings = [], offers = [], onRequire
               Komisyon %{Math.round(DEFAULT_FEE_RATE * 100)} · toplam <b style={{ color: C.ink }}>{fmt(feeTotal)}</b>.
             </div>
           </div>
+        </div>
+
+        {/* hakediş aşamaları — para nasıl çekilebilir hale gelir */}
+        <div style={{ marginTop: 12, background: C.card, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "13px 14px" }}>
+          <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", color: C.muted, marginBottom: 8 }}>
+            Hakediş Nasıl İşler?
+          </div>
+          {[
+            { t: "Teklif kabul edilir", d: "İş başlar, ödeme alınır." },
+            { t: "Emanette bloke kalır", d: "Para güvende tutulur (escrow)." },
+            { t: "Teslimde serbest kalır", d: "Onaylanınca çekilebilir olur." },
+          ].map((s, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 0", borderTop: i === 0 ? "none" : `1px solid ${C.border}` }}>
+              <span style={{ flexShrink: 0, width: 22, height: 22, borderRadius: "50%", background: C.ink, color: C.yellow, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: MONO, fontSize: 11, fontWeight: 700 }}>{i + 1}</span>
+              <span style={{ flex: 1, minWidth: 0 }}>
+                <span style={{ display: "block", fontFamily: ARCHIVO, fontSize: 12.5, fontWeight: 800, color: C.ink, textTransform: "uppercase", letterSpacing: "-0.01em" }}>{s.t}</span>
+                <span style={{ display: "block", fontFamily: MONO, fontSize: 10, color: C.sub, marginTop: 1 }}>{s.d}</span>
+              </span>
+            </div>
+          ))}
         </div>
 
         {/* two mini cards */}
