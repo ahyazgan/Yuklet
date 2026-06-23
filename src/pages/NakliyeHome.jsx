@@ -600,7 +600,7 @@ function PiyasaWidget({ nav }) {
 }
 
 export default function NakliyeHome({
-  user, pendingOffersCount = 0, unreadCount = 0, onLoginClick, announcement,
+  user, pendingOffersCount = 0, notifUnread = 0, onLoginClick, announcement,
 }) {
   const navigate = useNavigate();
   const [annDismissed, setAnnDismissed] = useState(false);
@@ -633,7 +633,6 @@ export default function NakliyeHome({
   }[role];
 
   const name = user?.name || (role === "nakliyeci" ? "Demir Nakliyat" : role === "tedarikci" ? "Aliağa Mıcır" : "Yıldızlar İnşaat");
-  const unread = unreadCount || pendingOffersCount;
   const offers = pendingOffersCount || 17;
 
   return (
@@ -646,8 +645,8 @@ export default function NakliyeHome({
       <Header
         name={name}
         role={role}
-        unread={unread}
-        onBell={() => navigate("/mesajlar")}
+        unread={notifUnread}
+        onBell={() => navigate("/bildirimler")}
         onProfile={() => navigate("/profil")}
         onSearch={() => navigate("/ilanlar")}
       />
