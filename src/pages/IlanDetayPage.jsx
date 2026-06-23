@@ -9,7 +9,7 @@
 
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ChevronLeft, Share2, Star, BadgeCheck, ArrowRight, X, Send, AlertTriangle, Truck, TrendingUp, TrendingDown, Boxes, Check, Info, ChevronDown } from "lucide-react";
+import { ChevronLeft, Share2, Heart, Star, BadgeCheck, ArrowRight, X, Send, AlertTriangle, Truck, TrendingUp, TrendingDown, Boxes, Check, Info, ChevronDown } from "lucide-react";
 import { LISTINGS } from "../data/listings";
 import { CATS } from "../data/categories";
 import { backhaulForJob, loadsForVehicle, vehicleClassOf } from "../utils/backhaul";
@@ -19,6 +19,7 @@ import { newId, nowIso } from "../utils/id";
 import { useToast } from "../components/Toast";
 import { shareUrl } from "../native/share";
 import { hapticTap, hapticSuccess } from "../native/haptics";
+import useFavorites from "../hooks/useFavorites";
 import ReportModal from "../components/ReportModal";
 import SEO from "../components/SEO";
 
@@ -122,6 +123,7 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
   const { id } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
+  const { isFav, toggle: toggleFav } = useFavorites();
   const [price, setPrice] = useState("");
   const [message, setMessage] = useState("");
   const [showReport, setShowReport] = useState(false);
@@ -207,6 +209,13 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
     if (res === "copied") toast("Bağlantı kopyalandı", "success");
   };
 
+  // Favori (kaydedilen ilan) — kalp ile ekle/çıkar.
+  const fav = isFav(l.id);
+  const onToggleFav = () => {
+    const added = toggleFav(l.id);
+    toast(added ? "Favorilere eklendi" : "Favorilerden çıkarıldı", added ? "success" : "info");
+  };
+
   const sheetInput = {
     width: "100%", border: `2px solid ${C.ink}`, borderRadius: 6, background: C.card,
     padding: "12px 14px", fontSize: 14, color: C.ink, fontFamily: SANS, outline: "none", boxSizing: "border-box",
@@ -229,9 +238,14 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
         <span style={{ fontFamily: MONO, fontSize: 11, fontWeight: 700, color: C.ink, letterSpacing: "0.04em", textTransform: "uppercase", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {ilanNo(l.id)} · İLAN DETAYI
         </span>
-        <button onClick={onShare} aria-label="Paylaş" style={iconBtn}>
-          <Share2 size={17} strokeWidth={2.4} color={C.ink} />
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <button onClick={onToggleFav} aria-label={fav ? "Favorilerden çıkar" : "Favorilere ekle"} aria-pressed={fav} style={iconBtn}>
+            <Heart size={17} strokeWidth={2.4} color={fav ? C.red : C.ink} fill={fav ? C.red : "none"} />
+          </button>
+          <button onClick={onShare} aria-label="Paylaş" style={iconBtn}>
+            <Share2 size={17} strokeWidth={2.4} color={C.ink} />
+          </button>
+        </div>
       </div>
 
       {/* ── CONTENT ──────────────────────────────────────────────── */}
