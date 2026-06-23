@@ -3,7 +3,7 @@
 // TÜM filtreleme/işlevsellik korunur: URL params, kaydedilmiş aramalar,
 // gelişmiş filtreler (malzeme/fiyat/sıralama), dönüş yükü (backhaul), harita.
 
-import { useState, useMemo, lazy, Suspense } from "react";
+import { useState, useMemo, useEffect, lazy, Suspense } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   Search,
@@ -25,7 +25,7 @@ import { LISTINGS, IL_LIST } from "../data/listings";
 import { CATS, MATERIALS } from "../data/categories";
 import { loadsNearCity } from "../utils/backhaul";
 import { estimatePrice, priceSignal, fmtTL } from "../utils/priceEstimate";
-import { loadSavedSearches, saveSavedSearches, loadOffers, loadPricingConfig } from "../utils/storage";
+import { loadSavedSearches, saveSavedSearches, loadOffers, loadPricingConfig, loadRecentSearches, saveRecentSearches } from "../utils/storage";
 import usePullToRefresh from "../hooks/usePullToRefresh";
 import useFavorites from "../hooks/useFavorites";
 import SEO from "../components/SEO";
@@ -87,6 +87,9 @@ function marketTagOf(l, history, config) {
   }
   return { suggest: `~${fmtTL(est.mid)}` };
 }
+
+// Türkçe-duyarlı küçük harfe çevir (İ→i, I→ı) — arama eşleştirme için.
+const norm = (s) => String(s ?? "").toLocaleLowerCase("tr");
 
 // ── İlan kartı ──
 function ListingCard({ l, history, config, isFav = false, onToggleFav }) {
@@ -393,6 +396,8 @@ export default function ListingsPage({ listings = LISTINGS, onRefresh }) {
   // Favori (kaydedilen) ilanlar
   const { isFav, toggle: toggleFav, count: favCount } = useFavorites();
   const [favOnly, setFavOnly] = useState(sp.get("fav") === "1"); // sadece favorileri göster
+  // Son aramalar — kullanıcı yazmayı bırakınca (debounce) geçmişe eklenir.
+  const [recent, setRecent] = useState(() => loadRecentSearches());
 
   // ── Kaydedilmiş aramalar (mantık birebir korunur) ──
   const [saved, setSaved] = useState(() => loadSavedSearches());
@@ -471,6 +476,13 @@ export default function ListingsPage({ listings = LISTINGS, onRefresh }) {
   const filtered = useMemo(() => {
     const min = priceMin ? Number(priceMin) : null;
     const max = priceMax ? Number(priceMax) : null;
+    // Türkçe-duyarlı, çok kelimeli arama: her kelime ilanın herhangi bir alanında geçmeli.
+    const qTokens = norm(q).split(/\s+/).filter(Boolean);
+    const matchesQ = (l) => {
+      if (qTokens.length === 0) return true;
+      const hay = norm([l.title, l.il, l.ilce, l.material, l.vehicle, l.yukleme, l.bosaltma, l.desc, l.owner].filter(Boolean).join(" "));
+      return qTokens.every((t) => hay.includes(t));
+    };
     let out = listings.filter(
       (l) =>
         l.status !== "kapali" &&
@@ -481,9 +493,7 @@ export default function ListingsPage({ listings = LISTINGS, onRefresh }) {
         (material === "all" || l.material === material) &&
         (min == null || (l.price != null && l.price >= min)) &&
         (max == null || (l.price != null && l.price <= max)) &&
-        (q === "" ||
-          l.title.toLowerCase().includes(q.toLowerCase()) ||
-          (l.ilce || "").toLowerCase().includes(q.toLowerCase()))
+        matchesQ(l)
     );
     if (sort === "teklif") out = [...out].sort((a, b) => (b.offers || 0) - (a.offers || 0));
     else if (sort === "ucuz") out = [...out].sort((a, b) => (a.price ?? Infinity) - (b.price ?? Infinity));
@@ -495,6 +505,28 @@ export default function ListingsPage({ listings = LISTINGS, onRefresh }) {
 
   const activeFilters =
     (material !== "all" ? 1 : 0) + (priceMin || priceMax ? 1 : 0) + (sort !== "yeni" ? 1 : 0);
+
+  // Son aramalar: kullanıcı yazmayı bırakınca (700ms) geçmişe ekle (dedupe, maks 6).
+  useEffect(() => {
+    const term = q.trim();
+    if (term.length < 2) return undefined;
+    const id = setTimeout(() => {
+      setRecent((prev) => {
+        const next = [term, ...prev.filter((r) => norm(r) !== norm(term))].slice(0, 6);
+        saveRecentSearches(next);
+        return next;
+      });
+    }, 700);
+    return () => clearTimeout(id);
+  }, [q]);
+
+  const removeRecent = (term) => {
+    setRecent((prev) => {
+      const next = prev.filter((r) => r !== term);
+      saveRecentSearches(next);
+      return next;
+    });
+  };
 
   // Dönüş yükü: referans il'e yakın açık iş yükleri
   const backhaul = useMemo(() => {
@@ -663,6 +695,11 @@ export default function ListingsPage({ listings = LISTINGS, onRefresh }) {
                   color: C.ink,
                 }}
               />
+              {q && (
+                <button onClick={() => setQ("")} aria-label="Aramayı temizle" style={{ flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", width: 22, height: 22, cursor: "pointer", background: "transparent", border: "none" }}>
+                  <X size={15} color={C.sub} strokeWidth={2.6} />
+                </button>
+              )}
             </div>
             {mode === "normal" && (
               <button
@@ -704,6 +741,21 @@ export default function ListingsPage({ listings = LISTINGS, onRefresh }) {
               </button>
             )}
           </div>
+
+          {/* SON ARAMALAR — yalnızca arama boşken */}
+          {mode === "normal" && q === "" && recent.length > 0 && (
+            <div className="flex items-center gap-2 overflow-x-auto" style={{ marginTop: 10, paddingBottom: 2 }}>
+              <span style={{ ...MONO, fontSize: 8.5, fontWeight: 700, color: C.sub, letterSpacing: "0.06em", flexShrink: 0 }}>SON ARAMALAR</span>
+              {recent.map((r) => (
+                <span key={r} className="flex items-center gap-1" style={{ flexShrink: 0, background: C.card, border: `1.5px solid ${C.ink}`, borderRadius: 5, padding: "3px 4px 3px 8px" }}>
+                  <button onClick={() => setQ(r)} style={{ ...MONO, fontSize: 9.5, fontWeight: 700, color: C.ink, background: "transparent", border: "none", cursor: "pointer", padding: 0 }}>{r}</button>
+                  <button onClick={() => removeRecent(r)} aria-label={`${r} aramasını kaldır`} style={{ display: "flex", alignItems: "center", background: "transparent", border: "none", cursor: "pointer", padding: 0 }}>
+                    <X size={11} color={C.sub} strokeWidth={2.6} />
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
 
           {/* SEKMELER: Tümü / Hafriyat / Silobas / Dönüş */}
           <div className="flex gap-2 overflow-x-auto" style={{ marginTop: 12, paddingBottom: 2 }}>

@@ -43,6 +43,9 @@ export const saveSavedSearches = (v) => save("hamted_saved_searches", v);
 // Favori (kaydedilen) ilanlar — ilan id'lerinin string dizisi.
 export const loadFavorites = () => load("hamted_favorites", []);
 export const saveFavorites = (v) => save("hamted_favorites", v);
+// Son aramalar — serbest metin sorgu geçmişi (en yeni başta, maks 6).
+export const loadRecentSearches = () => load("hamted_recent_searches", []);
+export const saveRecentSearches = (v) => save("hamted_recent_searches", v);
 // Akıllı Fiyat piyasa ayarları (admin): yakıt endeksi vb. — engine'e geçirilir.
 export const loadPricingConfig = () => load("hamted_pricing_config", { fuelIndex: 1.0, feeRate: 0.10 });
 export const savePricingConfig = (v) => save("hamted_pricing_config", v);
