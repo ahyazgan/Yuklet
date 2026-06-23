@@ -25,6 +25,7 @@ import AuthModal from "./components/AuthModal";
 import RoleSelectModal from "./components/RoleSelectModal";
 import OnboardingModal from "./components/OnboardingModal";
 import InstallPrompt from "./components/InstallPrompt";
+import OfflineBanner from "./components/OfflineBanner";
 
 import { LISTINGS } from "./data/listings";
 
@@ -435,6 +436,7 @@ function AppShell() {
         </ErrorBoundary>
       </main>
 
+      <OfflineBanner onReconnect={() => { if (SB) { reloadListings(); reloadOffers(); } }} />
       <InstallPrompt />
       <MobileTabBar unreadCount={unreadCount} />
 

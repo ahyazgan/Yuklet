@@ -1,5 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { Home, List, Plus, MessageCircle, User } from "lucide-react";
+import { hapticTap } from "../native/haptics";
 
 // ── SAHA alt tab bar (Tailwind + inline style). Mobil app kolonuna hizalı (max-w-[460px]).
 // Beyaz zemin, üstte 2px siyah çizgi. Aktif sekmede üstte 18x3px sarı çizgi.
@@ -36,7 +37,7 @@ export default function MobileTabBar({ unreadCount = 0 }) {
         // Center "İlan Ver" — büyük sarı + butonu, yukarı taşar.
         if (tab.center) {
           return (
-            <Link key={tab.to} to={tab.to} aria-label={tab.label} aria-current={active ? "page" : undefined} className="flex flex-1 flex-col items-center">
+            <Link key={tab.to} to={tab.to} onClick={hapticTap} aria-label={tab.label} aria-current={active ? "page" : undefined} className="flex flex-1 flex-col items-center">
               <span
                 className="flex items-center justify-center"
                 style={{
@@ -61,6 +62,7 @@ export default function MobileTabBar({ unreadCount = 0 }) {
           <Link
             key={tab.to}
             to={tab.to}
+            onClick={hapticTap}
             aria-label={tab.label}
             aria-current={active ? "page" : undefined}
             className="relative flex flex-1 flex-col items-center gap-1 py-1"
