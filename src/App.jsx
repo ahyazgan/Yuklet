@@ -18,7 +18,7 @@ import { ToastProvider } from "./components/Toast";
 import { ErrorBoundary, NotFoundPage } from "./components/ErrorBoundary";
 import { SkeletonGrid } from "./components/Skeleton";
 import PageTransition from "./components/PageTransition";
-import { initBackButton } from "./native/capacitor";
+import { initBackButton, initDeepLinks } from "./native/capacitor";
 
 import MobileTabBar from "./components/MobileTabBar";
 import AuthModal from "./components/AuthModal";
@@ -71,6 +71,13 @@ function AppShell() {
   useEffect(() => {
     let cleanup = () => {};
     initBackButton(navigate, () => window.location.pathname === "/").then((fn) => { cleanup = fn; });
+    return () => cleanup();
+  }, [navigate]);
+
+  // Deep link: paylaşılan ilan bağlantısıyla uygulama açılınca ilgili rotaya git.
+  useEffect(() => {
+    let cleanup = () => {};
+    initDeepLinks(navigate).then((fn) => { cleanup = fn; });
     return () => cleanup();
   }, [navigate]);
 

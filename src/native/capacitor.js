@@ -73,3 +73,29 @@ export async function initBackButton(navigate, isRootPath) {
     return () => {};
   }
 }
+
+// Deep link: uygulama bir bağlantıyla açılınca (com.dayim.app://ilan/123 veya
+// https://hamted.com.tr/ilan/123) ilgili rotaya yönlendir. React Router'dan çağrılır.
+export async function initDeepLinks(navigate) {
+  if (!isNative()) return () => {};
+  try {
+    const { App } = await import("@capacitor/app");
+    const routeFromUrl = (url) => {
+      if (!url) return;
+      try {
+        // Hem custom scheme hem https: pathname'i çıkar.
+        const u = new URL(url);
+        const path = (u.pathname || "/") + (u.search || "");
+        if (path && path !== "/") navigate(path);
+      } catch {
+        // URL ayrıştırılamazsa: "scheme://ilan/123" → "/ilan/123"
+        const m = String(url).match(/^[a-z0-9.+-]+:\/\/(.*)$/i);
+        if (m && m[1]) navigate("/" + m[1].replace(/^\/+/, ""));
+      }
+    };
+    const handle = await App.addListener("appUrlOpen", (event) => routeFromUrl(event?.url));
+    return () => handle.remove();
+  } catch {
+    return () => {};
+  }
+}
