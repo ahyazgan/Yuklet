@@ -21,6 +21,7 @@ import { shareUrl } from "../native/share";
 import { hapticTap, hapticSuccess } from "../native/haptics";
 import useFavorites from "../hooks/useFavorites";
 import ReportModal from "../components/ReportModal";
+import ProfitCalc from "../components/ProfitCalc";
 import SEO from "../components/SEO";
 
 // ── SAHA tokens (inline) ──────────────────────────────────────────
@@ -330,6 +331,11 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
             <span style={{ fontFamily: MONO, fontSize: 9, fontWeight: 700, letterSpacing: "0.06em" }}>TAHMİNİ BÜTÇE</span>
             <span style={{ fontFamily: MONO, fontSize: 13, fontWeight: 700 }}>{fmtTL(est.min)} – {fmtTL(est.max)}</span>
           </div>
+        )}
+
+        {/* Sefer kâr hesabı (nakliyeci) — iş ilanlarında, mesafe biliniyorsa */}
+        {l.type === "is" && (l.km || est?.km) && (
+          <ProfitCalc basePrice={isFixed ? l.price : (est?.mid || 0)} km={l.km || est?.km || 0} vehicle={l.vehicle} />
         )}
 
         {/* 2x2 spec grid */}
