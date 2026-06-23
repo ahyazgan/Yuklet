@@ -90,8 +90,13 @@ export default function FiyatSimulasyonuPage() {
               {est.dataDriven ? ` · ${est.sampleSize} benzer işten` : " · sezgisel tahmin"}
             </div>
           )}
-          {est && (est.laneCalibrated || (est.supplyDemand && est.supplyDemand.tone !== "ok")) && (
+          {est && (est.laneCalibrated || est.laneSettled > 0 || (est.supplyDemand && est.supplyDemand.tone !== "ok")) && (
             <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginTop: 10 }}>
+              {est.laneSettled > 0 && (
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "rgba(74,222,128,0.18)", border: "1.5px solid #4ADE80", borderRadius: 5, padding: "3px 8px", fontFamily: MONO, fontSize: 9, fontWeight: 700, color: "#fff" }}>
+                  <Check size={11} color="#4ADE80" strokeWidth={3} /> {est.laneSettled} GERÇEKLEŞEN SEFER
+                </span>
+              )}
               {est.laneCalibrated && (
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "rgba(74,222,128,0.12)", border: "1.5px solid #4ADE80", borderRadius: 5, padding: "3px 8px", fontFamily: MONO, fontSize: 9, fontWeight: 700, color: "#fff" }}>
                   <Check size={11} color="#4ADE80" strokeWidth={3} /> GÜZERGAH KALİBRELİ ({est.laneSamples})

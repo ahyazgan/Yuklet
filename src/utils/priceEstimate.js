@@ -146,7 +146,10 @@ export function collectSamples({ listings = [], offers = [] }) {
     if (l.type !== "is") return;
     const lkm = kmOf(l);
     if (!lkm) return;
-    const tons = tonsOf(l);
+    // Gerçekleşen (tamamlanmış) iş: teslim kanıtındaki GERÇEK tonajı kullan → en doğru oran.
+    const settled = l.status === "kapali" || l.phase === "teslim";
+    const actualTons = settled && Number(l.deliveryProof?.tonnage) > 0 ? Number(l.deliveryProof.tonnage) : null;
+    const tons = actualTons || tonsOf(l);
     if (!tons) return;
     const tonkm = tons * lkm;
     if (tonkm <= 0) return;
@@ -155,9 +158,9 @@ export function collectSamples({ listings = [], offers = [] }) {
     if (acc && acc.length) {
       // kabul edilen teklif = işin toplam bedeli (gerçek işlem sinyali)
       const lastDate = acc.map((a) => a.date).filter(Boolean).sort().pop() || null;
-      samples.push({ rate: median(acc.map((a) => a.price)) / tonkm, cat: l.cat, material: l.material || "", fromIl: r.fromIl, toIl: r.toIl, km: lkm, accepted: true, date: lastDate });
+      samples.push({ rate: median(acc.map((a) => a.price)) / tonkm, cat: l.cat, material: l.material || "", fromIl: r.fromIl, toIl: r.toIl, km: lkm, accepted: true, settled, date: lastDate });
     } else if (l.priceType === "sabit" && Number(l.price) > 0) {
-      samples.push({ rate: Number(l.price) / tonkm, cat: l.cat, material: l.material || "", fromIl: r.fromIl, toIl: r.toIl, km: lkm, accepted: false, date: null });
+      samples.push({ rate: Number(l.price) / tonkm, cat: l.cat, material: l.material || "", fromIl: r.fromIl, toIl: r.toIl, km: lkm, accepted: false, settled: false, date: null });
     }
   });
   return samples;
@@ -172,15 +175,16 @@ function learnRates({ cat, km, material, fromIl, toIl }, history) {
   const weighted = [];
   const rawRates = [];
   const laneRates = [];                 // tam bu güzergahın (fromIl→toIl) oranları
-  let accepted = 0, laneAccepted = 0;
+  let accepted = 0, laneAccepted = 0, settledCount = 0, laneSettled = 0;
   collectSamples(history).forEach((s) => {
     if (s.cat !== cat) return;
     if (km && (s.km < km * 0.4 || s.km > km * 2.5)) return;   // yerel ↔ şehirlerarası karışmasın
     let w = 1;
     if (s.accepted) { w *= 2; accepted++; }
+    if (s.settled) { w *= 2.5; settledCount++; }              // gerçekleşen sefer = en güçlü sinyal
     if (matF && fold(s.material) === matF) w *= 1.6;
     const sameLane = fromIl && toIl && s.fromIl === fromIl && s.toIl === toIl;
-    if (sameLane) { w *= 1.6; laneRates.push(s.rate); if (s.accepted) laneAccepted++; }
+    if (sameLane) { w *= 1.6; laneRates.push(s.rate); if (s.accepted) laneAccepted++; if (s.settled) laneSettled++; }
     if (s.date) {
       const days = (now - new Date(s.date)) / 86400000;
       if (days < 30) w *= 1.4; else if (days < 90) w *= 1.15;
@@ -188,7 +192,7 @@ function learnRates({ cat, km, material, fromIl, toIl }, history) {
     weighted.push({ rate: s.rate, w });
     rawRates.push(s.rate);
   });
-  return { weighted, rawRates, laneRates, accepted, laneAccepted, laneSamples: laneRates.length, n: weighted.length };
+  return { weighted, rawRates, laneRates, accepted, laneAccepted, settledCount, laneSettled, laneSamples: laneRates.length, n: weighted.length };
 }
 
 // Dizinin q-yüzdelik değeri (lineer interpolasyon).
@@ -325,16 +329,18 @@ export function estimatePrice({ cat, amount, unit, fromIl, toIl, material, capac
   const heuristic = perTripRaw * trips;
 
   // ── geçmişten ağırlıklı öğren + harmanla ──
-  let blended = heuristic, sampleSize = 0, accepted = 0, rawRates = [], laneRates = [], laneSamples = 0, laneAccepted = 0;
+  let blended = heuristic, sampleSize = 0, accepted = 0, rawRates = [], laneRates = [], laneSamples = 0, laneAccepted = 0, settledSamples = 0, laneSettled = 0;
   if (history) {
     const lr = learnRates({ cat, km, material, fromIl, toIl }, history);
     const r = weightedMedian(lr.weighted);
     if (r && tons && km) {
       const dataMid = r * tons * km;
-      const w = Math.min(0.7, lr.n / 10);          // veri arttıkça veriye güven artar
+      // Gerçekleşen sefer verisi varsa veriye güveni biraz daha artır (tavan 0.8).
+      const w = Math.min(lr.settledCount > 0 ? 0.8 : 0.7, lr.n / 10);
       blended = w * dataMid + (1 - w) * heuristic;
       sampleSize = lr.n; accepted = lr.accepted; rawRates = lr.rawRates;
       laneRates = lr.laneRates; laneSamples = lr.laneSamples; laneAccepted = lr.laneAccepted;
+      settledSamples = lr.settledCount; laneSettled = lr.laneSettled;
     }
   }
   if (sampleSize > 0) breakdown.push({ key: "veri", label: `Geçmiş işler (${sampleSize})`, value: round50(blended - heuristic) });
@@ -353,6 +359,8 @@ export function estimatePrice({ cat, amount, unit, fromIl, toIl, material, capac
   const laneCalibrated = laneSamples >= 3;
   let confidence = CONF(sampleSize);
   if (laneCalibrated) confidence = bumpConf(confidence);
+  // Bu hatta gerçekleşen (tamamlanmış) sefer varsa güven bir kademe daha artar.
+  if (laneSettled >= 2) confidence = bumpConf(confidence);
 
   // ── aralık: güzergahın kendi dağılımı (varsa) > genel dağılım > sabit ±% ──
   const bandRates = laneRates.length >= 4 ? laneRates : rawRates;
@@ -370,10 +378,10 @@ export function estimatePrice({ cat, amount, unit, fromIl, toIl, material, capac
     min: round50(mid * lowR),
     max: round50(mid * highR),
     real: kmOverride != null,
-    sampleSize, accepted,
+    sampleSize, accepted, settledSamples,
     dataDriven: sampleSize > 0,
     bandFromData: bandRates.length >= 4,
-    laneSamples, laneAccepted, laneCalibrated,
+    laneSamples, laneAccepted, laneSettled, laneCalibrated,
     confidence,
     distLabel: kmOverride != null ? "harita mesafesi" : ["aynı il", "yakın il", "bölge içi", "uzak"][Math.min(d, 3)],
     materialFactor: matF, vehicleFactor: vehF, volumeFactor: volF, urgencyFactor: urgF, backhaul: bh,
