@@ -8,7 +8,9 @@ function fmt(iso) {
   catch { return ""; }
 }
 
-export function buildNotifications(user, { listings = [], offers = [], messages = [], reviews = [] }, seenIso) {
+import { listingMatchesSearch } from "./searchMatch";
+
+export function buildNotifications(user, { listings = [], offers = [], messages = [], reviews = [], savedSearches = [] }, seenIso) {
   if (!user) return { items: [], unread: 0 };
   const uid = String(user.id);
   const myListingIds = new Set(listings.filter((l) => String(l.ownerId) === uid).map((l) => String(l.id)));
@@ -68,6 +70,25 @@ export function buildNotifications(user, { listings = [], offers = [], messages 
       time: l.deliveryProof?.reviewedAt || accepted.updatedAt || accepted.createdAt,
       link: `/takip/${l.id}`,
     });
+  }
+
+  // Kaydedilmiş arama bildirimi: zaman damgalı (yeni) ilanlar bir aramaya uyarsa.
+  // Sadece createdAt'i olan ilanlar (gerçek yeni ilanlar) tetikler; seed veriler değil.
+  // Kendi ilanın hariç. Aynı ilan birden çok aramaya uysa tek bildirim.
+  if (savedSearches.length) {
+    const seenListing = new Set();
+    for (const l of listings) {
+      if (!l.createdAt || String(l.ownerId) === uid || l.status === "kapali") continue;
+      if (seenListing.has(String(l.id))) continue;
+      const hit = savedSearches.find((s) => listingMatchesSearch(l, s));
+      if (!hit) continue;
+      seenListing.add(String(l.id));
+      items.push({
+        id: `find-${l.id}`, icon: "📨",
+        text: `"${hit.label || "kayıtlı arama"}" aramana uygun yeni ilan: ${l.title}`,
+        time: l.createdAt, link: `/ilan/${l.id}`,
+      });
+    }
   }
 
   items.sort((a, b) => (b.time || "").localeCompare(a.time || ""));
