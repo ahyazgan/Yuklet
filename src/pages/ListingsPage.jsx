@@ -390,7 +390,8 @@ export default function ListingsPage({ listings = LISTINGS, onRefresh }) {
   const [material, setMaterial] = useState("all");
   const [priceMin, setPriceMin] = useState("");
   const [priceMax, setPriceMax] = useState("");
-  const [sort, setSort] = useState("yeni"); // yeni | teklif | ucuz | pahali
+  const [sort, setSort] = useState("yeni"); // yeni | teklif | ucuz | pahali | onayli
+  const [verifiedOnly, setVerifiedOnly] = useState(false); // sadece onaylı ilan sahibi
   const [showFilters, setShowFilters] = useState(false);
   const [view, setView] = useState(sp.get("view") === "map" ? "map" : "list"); // list | map
   // Favori (kaydedilen) ilanlar
@@ -405,7 +406,7 @@ export default function ListingsPage({ listings = LISTINGS, onRefresh }) {
     setSaved(next);
     saveSavedSearches(next);
   };
-  const currentSearch = { type, cat, il, q, material, priceMin, priceMax, sort };
+  const currentSearch = { type, cat, il, q, material, priceMin, priceMax, sort, verifiedOnly };
   const isDefaultSearch =
     type === "all" &&
     cat === "all" &&
@@ -414,6 +415,7 @@ export default function ListingsPage({ listings = LISTINGS, onRefresh }) {
     material === "all" &&
     !priceMin &&
     !priceMax &&
+    !verifiedOnly &&
     sort === "yeni";
   const labelFor = (s) => {
     const parts = [];
@@ -453,6 +455,7 @@ export default function ListingsPage({ listings = LISTINGS, onRefresh }) {
     setPriceMin(s.priceMin);
     setPriceMax(s.priceMax);
     setSort(s.sort);
+    setVerifiedOnly(Boolean(s.verifiedOnly));
     setMode("normal");
   };
   const removeSearch = (id) => persistSaved(saved.filter((s) => s.id !== id));
@@ -466,6 +469,7 @@ export default function ListingsPage({ listings = LISTINGS, onRefresh }) {
     setPriceMin("");
     setPriceMax("");
     setSort("yeni");
+    setVerifiedOnly(false);
   };
 
   const materialOpts =
@@ -487,6 +491,7 @@ export default function ListingsPage({ listings = LISTINGS, onRefresh }) {
       (l) =>
         l.status !== "kapali" &&
         (!favOnly || isFav(l.id)) &&
+        (!verifiedOnly || l.ownerVerified) &&
         (type === "all" || l.type === type) &&
         (cat === "all" || l.cat === cat) &&
         (il === "all" || l.il === il) &&
@@ -498,13 +503,14 @@ export default function ListingsPage({ listings = LISTINGS, onRefresh }) {
     if (sort === "teklif") out = [...out].sort((a, b) => (b.offers || 0) - (a.offers || 0));
     else if (sort === "ucuz") out = [...out].sort((a, b) => (a.price ?? Infinity) - (b.price ?? Infinity));
     else if (sort === "pahali") out = [...out].sort((a, b) => (b.price ?? -1) - (a.price ?? -1));
+    else if (sort === "onayli") out = [...out].sort((a, b) => (b.ownerVerified ? 1 : 0) - (a.ownerVerified ? 1 : 0));
     // Sponsorlu (öne çıkan) ilanlar her zaman üstte (mevcut sıra korunur)
     out = [...out].sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
     return out;
-  }, [listings, type, cat, il, q, material, priceMin, priceMax, sort, favOnly, isFav]);
+  }, [listings, type, cat, il, q, material, priceMin, priceMax, sort, verifiedOnly, favOnly, isFav]);
 
   const activeFilters =
-    (material !== "all" ? 1 : 0) + (priceMin || priceMax ? 1 : 0) + (sort !== "yeni" ? 1 : 0);
+    (material !== "all" ? 1 : 0) + (priceMin || priceMax ? 1 : 0) + (sort !== "yeni" ? 1 : 0) + (verifiedOnly ? 1 : 0);
 
   // Son aramalar: kullanıcı yazmayı bırakınca (700ms) geçmişe ekle (dedupe, maks 6).
   useEffect(() => {
@@ -1262,12 +1268,23 @@ export default function ListingsPage({ listings = LISTINGS, onRefresh }) {
                     ["teklif", "EN ÇOK TEKLİF"],
                     ["ucuz", "FİYAT ↑"],
                     ["pahali", "FİYAT ↓"],
+                    ["onayli", "ONAYLI ÖNCE"],
                   ].map(([k, lbl]) => (
                     <button key={k} style={chip(sort === k)} onClick={() => setSort(k)}>
                       {lbl}
                     </button>
                   ))}
                 </div>
+              </div>
+
+              {/* Onaylı ilan sahibi filtresi */}
+              <div>
+                <div style={{ ...MONO, fontSize: 10, fontWeight: 700, color: C.sub, marginBottom: 8, letterSpacing: "0.06em" }}>
+                  GÜVEN
+                </div>
+                <button style={chip(verifiedOnly)} onClick={() => setVerifiedOnly((v) => !v)}>
+                  ✓ SADECE ONAYLI İLAN SAHİBİ
+                </button>
               </div>
             </div>
 
@@ -1282,6 +1299,7 @@ export default function ListingsPage({ listings = LISTINGS, onRefresh }) {
                   setPriceMin("");
                   setPriceMax("");
                   setSort("yeni");
+                  setVerifiedOnly(false);
                 }}
                 style={{
                   ...HEAD,
