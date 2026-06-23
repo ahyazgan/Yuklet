@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, BadgeCheck, Phone, Plus, Send, CheckCircle2 } from "lucide-react";
+import { ChevronLeft, BadgeCheck, Phone, Plus, Send, CheckCircle2, Check, CheckCheck } from "lucide-react";
 import { newId, nowIso } from "../utils/id";
 import { pickPhotoDataUrl, cameraNative } from "../native/camera";
 import SEO from "../components/SEO";
@@ -78,7 +78,7 @@ function listingCode(id) {
   return `HMT-${n}`;
 }
 
-export default function MesajlarPage({ user, listings = [], offers = [], messages = [], onSendMessage, onRequireAuth, onSeen, getContact }) {
+export default function MesajlarPage({ user, listings = [], offers = [], messages = [], onSendMessage, onRequireAuth, onSeen, getContact, msgSeen = {} }) {
   const navigate = useNavigate();
   const [selectedKey, setSelectedKey] = useState(null);
   const [text, setText] = useState("");
@@ -105,6 +105,8 @@ export default function MesajlarPage({ user, listings = [], offers = [], message
 
   const active = conversations.find((c) => c.key === selectedKey) || null;
   const otherPhone = active && getContact ? getContact(active.other.id)?.phone : null;
+  // Karşı tarafın son "gördüm" zamanı — bizim mesajlarımız için okundu (çift tik) hesabı.
+  const otherSeenIso = active ? (msgSeen[active.other.id] || null) : null;
 
   const threadMessages = active
     ? messages
@@ -152,15 +154,17 @@ export default function MesajlarPage({ user, listings = [], offers = [], message
     return { preview, time: fmtTime(last.createdAt) };
   };
 
-  const send = () => {
-    if (!text.trim() || !active) return;
+  const sendText = (value) => {
+    const t = (value ?? text).trim();
+    if (!t || !active) return;
     onSendMessage?.({
       id: newId(), listingId: active.listingId, offerId: active.offerId,
       fromId: user.id, fromName: user.name, toId: active.other.id, toName: active.other.name,
-      text: text.trim(), createdAt: nowIso(),
+      text: t, createdAt: nowIso(),
     });
     setText("");
   };
+  const send = () => sendText();
 
   // Görseli (dataURL) mesaj olarak gönder — hem dosya seçici hem native kamera kullanır.
   const sendImageDataUrl = (dataUrl) => {
@@ -282,7 +286,14 @@ export default function MesajlarPage({ user, listings = [], offers = [], message
                       )}
                       {m.text}
                     </div>
-                    <div style={{ marginTop: 3, fontFamily: MONO, fontSize: 9.5, color: C.faint, letterSpacing: "0.02em" }}>{fmtTime(m.createdAt)}</div>
+                    <div style={{ marginTop: 3, display: "flex", alignItems: "center", gap: 4, fontFamily: MONO, fontSize: 9.5, color: C.faint, letterSpacing: "0.02em" }}>
+                      {fmtTime(m.createdAt)}
+                      {mine && (
+                        otherSeenIso && m.createdAt <= otherSeenIso
+                          ? <CheckCheck size={13} color={C.green} strokeWidth={2.6} aria-label="Okundu" />
+                          : <Check size={13} color={C.faint} strokeWidth={2.6} aria-label="İletildi" />
+                      )}
+                    </div>
                   </div>
                 </div>
               );
@@ -293,6 +304,18 @@ export default function MesajlarPage({ user, listings = [], offers = [], message
 
         {/* Input bar */}
         <div style={{ position: "sticky", bottom: 0, background: C.card, padding: "10px 14px 14px", borderTop: `2px solid ${C.ink}` }}>
+          {/* Hızlı yanıtlar — dokununca anında gönderir */}
+          <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 8 }}>
+            {["Merhaba", "Fiyat nedir?", "Ne zaman uygun?", "Konum atar mısın?", "Anlaştık 👍"].map((qr) => (
+              <button
+                key={qr}
+                onClick={() => sendText(qr)}
+                style={{ flexShrink: 0, background: C.stone, border: `1.5px solid ${C.ink}`, borderRadius: 999, padding: "5px 12px", fontFamily: MONO, fontSize: 11, fontWeight: 700, color: C.ink, cursor: "pointer", whiteSpace: "nowrap" }}
+              >
+                {qr}
+              </button>
+            ))}
+          </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <label
               aria-label="Fotoğraf ekle"
