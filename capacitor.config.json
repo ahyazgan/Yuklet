@@ -8,9 +8,8 @@
     "allowMixedContent": false
   },
   "ios": {
-    "backgroundColor": "#11141a",
-    "contentInset": "always",
-    "limitsNavigationsToAppBoundDomains": true
+    "backgroundColor": "#1b222d",
+    "contentInset": "always"
   },
   "plugins": {
     "SplashScreen": {

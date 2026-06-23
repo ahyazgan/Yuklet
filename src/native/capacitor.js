@@ -19,6 +19,9 @@ export async function initNative() {
 
   try {
     const { StatusBar, Style } = await import("@capacitor/status-bar");
+    // Her iki platformda da koyu (#1b222d) status bar şeridi → AÇIK ikonlar (Style.Dark).
+    // iOS'ta şerit rengi capacitor.config ios.backgroundColor + contentInset:"always"
+    // ile gelir; Android'de aşağıda doğrudan ayarlanır.
     await StatusBar.setStyle({ style: Style.Dark });
     if (platform() === "android") {
       await StatusBar.setBackgroundColor({ color: "#1b222d" });
