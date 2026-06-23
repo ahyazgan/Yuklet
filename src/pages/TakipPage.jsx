@@ -98,6 +98,28 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
     const R = 0.2; // km (≈200 m) geofence yarıçapı
     const dPick = Array.isArray(lst.pickup) ? distanceKm([v.lat, v.lng], lst.pickup) : null;
     const dDrop = Array.isArray(lst.dropoff) ? distanceKm([v.lat, v.lng], lst.dropoff) : null;
+    // Çok seferli (mekik) iş mi? — ton/m³ miktarından tahmini sefer.
+    const eTrips = lst.amount && (lst.unit === "ton" || lst.unit === "m³") ? Math.ceil(lst.amount / 18) : null;
+
+    if (eTrips) {
+      // ── MEKİK: her yükleme→boşaltma = +1 sefer (döngü sayımı) ──
+      const stage = lst.cycleStage || "await_load";
+      if (stage === "await_load" && dPick != null && dPick <= R) {
+        hapticSuccess();
+        onUpdateListing?.(lst.id, { cycleStage: "loaded", ...(ph === "eslesti" ? { phase: "yuklendi" } : {}) });
+        return;
+      }
+      if (stage === "loaded" && dDrop != null && dDrop <= R) {
+        const tDone = (lst.tripsDone || 0) + 1;
+        hapticSuccess();
+        const patch = { tripsDone: tDone, cycleStage: "await_load", ...(ph !== "yolda" ? { phase: "yolda" } : {}) };
+        if (tDone >= eTrips && !lst.arrivedAt) patch.arrivedAt = nowIso(); // son sefer → teslim kanıtı istenir (kapatma yok)
+        onUpdateListing?.(lst.id, patch);
+      }
+      return;
+    }
+
+    // ── TEK SEFER: doğrusal faz akışı ──
     if (ph === "eslesti" && dPick != null && dPick <= R) { hapticSuccess(); onUpdateListing?.(lst.id, { phase: "yuklendi" }); return; }
     if (ph === "yuklendi" && dPick != null && dPick > R * 3) { onUpdateListing?.(lst.id, { phase: "yolda" }); return; }
     if ((ph === "yolda" || ph === "yuklendi") && dDrop != null && dDrop <= R && !lst.arrivedAt) { hapticSuccess(); onUpdateListing?.(lst.id, { arrivedAt: nowIso() }); }
@@ -475,6 +497,17 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
               </div>
             )}
 
+            {estTrips && (
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                <span style={{ fontFamily: MONO, fontSize: 11, fontWeight: 700, color: C.ink, background: C.yellow, border: `2px solid ${C.ink}`, borderRadius: 5, padding: "3px 9px" }}>
+                  SEFER {tripsDone}/{estTrips}
+                </span>
+                <span style={{ fontFamily: MONO, fontSize: 10, fontWeight: 700, color: C.sub, textTransform: "uppercase" }}>
+                  {l.cycleStage === "loaded" ? "● Yükte — boşaltmaya gidiyor" : "○ Dönüşte — yüke gidiyor"}
+                </span>
+              </div>
+            )}
+
             {l.arrivedAt && !isDone && (
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10, background: "#E6F4EA", border: `2px solid ${C.green}`, borderRadius: 6, padding: "9px 11px", fontFamily: MONO, fontSize: 11, fontWeight: 700, color: C.green }}>
                 <MapPin size={14} strokeWidth={2.6} /> Boşaltma noktasına varıldı — teslim kanıtı ekle.
@@ -487,7 +520,9 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
 
             {isNakliyeci && (
               <div style={{ marginTop: 8, fontFamily: MONO, fontSize: 9.5, color: C.muted, lineHeight: 1.5 }}>
-                Otomatik: yükleme alanına girince “yüklendi”, ayrılınca “yolda”, boşaltmaya varınca kanıt istenir.
+                {estTrips
+                  ? "Otomatik mekik: her yükleme→boşaltma 1 sefer sayılır. Manuel “+1 sefer” yedek olarak çalışır."
+                  : "Otomatik: yükleme alanına girince “yüklendi”, ayrılınca “yolda”, boşaltmaya varınca kanıt istenir."}
               </div>
             )}
 
