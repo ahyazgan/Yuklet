@@ -13,6 +13,8 @@ import { watchPosition, distanceKm, getCurrentPosition } from "../native/geo";
 import { startTrip, publishLocation, endTrip, subscribeTrip } from "../utils/tripChannel";
 import { hapticTap, hapticSuccess } from "../native/haptics";
 import { pickPhotoDataUrl, cameraNative } from "../native/camera";
+import { computeReliability } from "../utils/reliability";
+import ReliabilityBadge from "../components/ReliabilityBadge";
 
 const TripMap = lazy(() => import("../components/TripMap"));
 const SignaturePad = lazy(() => import("../components/SignaturePad"));
@@ -169,6 +171,7 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
     (r) => String(r.fromId) === String(user.id) && String(r.toId) === String(counterpart.id) && String(r.listingId) === String(l.id)
   );
   const counterpartRating = counterpart ? getUserRating?.(counterpart.id) : null;
+  const driverRel = accepted ? computeReliability(accepted.fromUserId, { listings, offers, reviews }) : null;
 
   // ── İş durumu akışı ──
   const canManage = matched && (isOwner || isNakliyeci);
@@ -576,6 +579,9 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
                 <div style={{ fontFamily: MONO, fontSize: 10, color: C.sub, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {(l.vehicle || "Araç")}{l.capacity ? ` · ${l.capacity}` : ""}
                 </div>
+                {driverRel?.score != null && (
+                  <div style={{ marginTop: 6 }}><ReliabilityBadge data={driverRel} /></div>
+                )}
               </div>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>

@@ -8,6 +8,7 @@ import SEO from "../components/SEO";
 import Logo from "../components/Logo";
 import { sendSmsCode, verifySmsCode, isValidPhone } from "../lib/smsProvider";
 import { isAdmin } from "../utils/admin";
+import { computeReliability, reliabilityTier } from "../utils/reliability";
 
 // ── SAHA profil — keskin endüstriyel "saha" dili.
 //    2px ink çerçeve, koyu header + hazard, Archivo uppercase, Space Mono, stroke ikon.
@@ -68,7 +69,7 @@ const sectionTitle = { fontFamily: ARCHIVO, fontSize: 13, fontWeight: 800, color
 const labelSt = { display: "block", marginBottom: 6, fontFamily: MONO, fontSize: 10, fontWeight: 700, color: C.sub, letterSpacing: 0.4, textTransform: "uppercase" };
 const inputSt = { width: "100%", boxSizing: "border-box", background: C.card, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "11px 13px", fontSize: 14, color: C.ink, outline: "none", fontFamily: MONO };
 
-export default function ProfilPage({ user, onUpdateProfile, onVerifyPhone, onRequireAuth, onLogout, onDeleteAccount, reviews = [], getUserRating, docs = [], onAddDoc, onRemoveDoc }) {
+export default function ProfilPage({ user, onUpdateProfile, onVerifyPhone, onRequireAuth, onLogout, onDeleteAccount, reviews = [], getUserRating, listings = [], offers = [], docs = [], onAddDoc, onRemoveDoc }) {
   const toast = useToast();
   const navigate = useNavigate();
   const [docType, setDocType] = useState("K Belgesi");
@@ -152,6 +153,8 @@ export default function ProfilPage({ user, onUpdateProfile, onVerifyPhone, onReq
 
   const rating = getUserRating?.(user.id);
   const myReviews = reviews.filter((r) => String(r.toId) === String(user.id)).slice(0, 8);
+  const rel = computeReliability(user.id, { listings, offers, reviews });
+  const relTier = reliabilityTier(rel.score);
   const reviewCount = reviews.filter((r) => String(r.toId) === String(user.id)).length;
   const avgRating = rating ? rating.avg : (user.rating ?? 5.0);
   // Doğrulanmış numara forma eşitse "doğrulandı" göster (numara değişince düşer)
@@ -311,6 +314,45 @@ export default function ProfilPage({ user, onUpdateProfile, onVerifyPhone, onReq
             Değişiklikleri kaydet
           </button>
         </motion.section>
+
+        {/* Güvenilirlik skoru — sefer/teslim/puan verisinden */}
+        <section style={cardSt}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+            <h2 style={{ ...sectionTitle, margin: 0, display: "flex", alignItems: "center", gap: 7 }}>
+              <ShieldCheck size={16} strokeWidth={2.4} color={relTier.color} /> Güvenilirlik
+            </h2>
+            {rel.score != null && (
+              <span style={{ fontFamily: ARCHIVO, fontSize: 26, fontWeight: 900, color: relTier.color, letterSpacing: "-0.02em" }}>%{rel.score}</span>
+            )}
+          </div>
+          {rel.score == null ? (
+            <p style={{ fontFamily: MONO, fontSize: 11, color: C.muted, margin: 0, lineHeight: 1.55 }}>
+              Henüz yeterli veri yok. İş tamamladıkça ve değerlendirme aldıkça güvenilirlik skorun oluşur.
+            </p>
+          ) : (
+            <>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginBottom: 12, fontFamily: MONO, fontSize: 10, fontWeight: 700, color: "#fff", background: relTier.color, borderRadius: 5, padding: "3px 9px", textTransform: "uppercase" }}>
+                {relTier.label}
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                {[
+                  ["Tamamlanan iş", String(rel.jobsDone)],
+                  ["Toplam sefer", String(rel.totalTrips)],
+                  ["Teslim onayı", rel.approvalRate != null ? `%${Math.round(rel.approvalRate * 100)}` : "—"],
+                  ["Ortalama puan", rel.avgRating != null ? `${rel.avgRating.toFixed(1)} ★ (${rel.ratingCount})` : "—"],
+                ].map(([k, v]) => (
+                  <div key={k} style={{ border: `2px solid ${C.border}`, borderRadius: 6, padding: "9px 11px" }}>
+                    <div style={{ fontFamily: MONO, fontSize: 9, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.04em" }}>{k}</div>
+                    <div style={{ fontFamily: MONO, fontSize: 16, fontWeight: 700, color: C.ink, marginTop: 3 }}>{v}</div>
+                  </div>
+                ))}
+              </div>
+              {rel.disputes > 0 && (
+                <p style={{ fontFamily: MONO, fontSize: 10, color: C.red, margin: "10px 0 0" }}>{rel.disputes} anlaşmazlık skoru etkiliyor.</p>
+              )}
+            </>
+          )}
+        </section>
 
         {/* Doğrulama durumu — adım adım rozet yolu */}
         <section style={cardSt}>
