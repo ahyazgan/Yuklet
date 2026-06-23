@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, BadgeCheck, Phone, Plus, Send, CheckCircle2, Check, CheckCheck } from "lucide-react";
 import { newId, nowIso } from "../utils/id";
+import { setTyping, isTyping } from "../utils/typing";
 import { pickPhotoDataUrl, cameraNative } from "../native/camera";
 import SEO from "../components/SEO";
 import Logo from "../components/Logo";
@@ -82,8 +83,10 @@ export default function MesajlarPage({ user, listings = [], offers = [], message
   const navigate = useNavigate();
   const [selectedKey, setSelectedKey] = useState(null);
   const [text, setText] = useState("");
+  const [othersTyping, setOthersTyping] = useState(false);
   const scrollRef = useRef(null);
   const endRef = useRef(null);
+  const lastTypingRef = useRef(0);
 
   useEffect(() => { onSeen?.(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -107,6 +110,26 @@ export default function MesajlarPage({ user, listings = [], offers = [], message
   const otherPhone = active && getContact ? getContact(active.other.id)?.phone : null;
   // Karşı tarafın son "gördüm" zamanı — bizim mesajlarımız için okundu (çift tik) hesabı.
   const otherSeenIso = active ? (msgSeen[active.other.id] || null) : null;
+  const activeListing = active ? listings.find((l) => String(l.id) === String(active.listingId)) : null;
+
+  // "Yazıyor…" — karşı tarafın sinyalini izle (sekmeler arası localStorage simülasyonu).
+  useEffect(() => {
+    if (!active) return undefined;
+    const check = () => setOthersTyping(isTyping(active.key, active.other.id));
+    const iv = setInterval(check, 1200);
+    window.addEventListener("storage", check);
+    return () => { clearInterval(iv); window.removeEventListener("storage", check); setOthersTyping(false); };
+  }, [active?.key, active?.other?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Ben yazarken karşı tarafa sinyal gönder (boğmamak için ~900ms throttle).
+  const signalTyping = () => {
+    if (!active) return;
+    const now = Date.now();
+    if (now - lastTypingRef.current > 900) {
+      lastTypingRef.current = now;
+      setTyping(active.key, user.id);
+    }
+  };
 
   const threadMessages = active
     ? messages
@@ -219,8 +242,12 @@ export default function MesajlarPage({ user, listings = [], offers = [], message
               <span style={{ fontFamily: ARCHIVO, fontSize: 15, fontWeight: 800, letterSpacing: "-0.01em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{active.other.name}</span>
               <BadgeCheck size={15} color={C.green} strokeWidth={2.6} style={{ flexShrink: 0 }} />
             </div>
-            <div style={{ fontFamily: MONO, fontSize: 9.5, color: C.sub, textTransform: "uppercase", letterSpacing: "0.02em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {listingCode(active.listingId)} · {active.listingTitle}
+            <div style={{ fontFamily: MONO, fontSize: 9.5, color: othersTyping ? C.green : C.sub, textTransform: "uppercase", letterSpacing: "0.02em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {othersTyping
+                ? "yazıyor…"
+                : otherSeenIso
+                  ? `son görülme ${fmtTime(otherSeenIso)}`
+                  : "çevrimiçi olduğunda yanıtlar"}
             </div>
           </div>
 
@@ -235,15 +262,24 @@ export default function MesajlarPage({ user, listings = [], offers = [], message
           )}
         </div>
 
-        {/* Listing context bar */}
+        {/* Listing context bar — hangi iş konuşuluyor (üstte sabit önizleme) */}
         <button
           onClick={() => navigate(`/ilan/${active.listingId}`)}
-          style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", border: "none", borderBottom: `2px solid ${C.ink}`, cursor: "pointer", textAlign: "left", background: C.ink, color: "#fff", padding: "9px 16px" }}
+          style={{ display: "flex", flexDirection: "column", gap: 3, width: "100%", border: "none", borderBottom: `2px solid ${C.ink}`, cursor: "pointer", textAlign: "left", background: C.ink, color: "#fff", padding: "9px 16px" }}
         >
-          <span style={{ flex: 1, minWidth: 0, fontFamily: MONO, fontSize: 11, fontWeight: 700, color: C.yellow, textTransform: "uppercase", letterSpacing: "0.04em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {listingCode(active.listingId)} · {active.listingTitle}
+          <span style={{ display: "flex", alignItems: "center", gap: 8, width: "100%" }}>
+            <span style={{ flex: 1, minWidth: 0, fontFamily: MONO, fontSize: 11, fontWeight: 700, color: C.yellow, textTransform: "uppercase", letterSpacing: "0.04em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {listingCode(active.listingId)} · {active.listingTitle}
+            </span>
+            <span style={{ flexShrink: 0, fontFamily: MONO, fontSize: 11, fontWeight: 700, color: C.yellow }}>İLANI GÖR ›</span>
           </span>
-          <span style={{ flexShrink: 0, fontFamily: MONO, fontSize: 11, fontWeight: 700, color: C.yellow }}>İLANI GÖR ›</span>
+          {activeListing && (
+            <span style={{ fontFamily: MONO, fontSize: 9.5, color: "rgba(255,255,255,0.7)", textTransform: "uppercase", letterSpacing: "0.02em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {(activeListing.il || "—")} → {(activeListing.bosaltma || activeListing.varisIl || activeListing.ilce || "—")}
+              {" · "}
+              {activeListing.priceType === "sabit" && activeListing.price ? `₺${Number(activeListing.price).toLocaleString("tr-TR")}` : "Teklife açık"}
+            </span>
+          )}
         </button>
 
         {/* Messages */}
@@ -327,7 +363,7 @@ export default function MesajlarPage({ user, listings = [], offers = [], message
             </label>
             <input
               value={text}
-              onChange={(e) => setText(e.target.value)}
+              onChange={(e) => { setText(e.target.value); signalTyping(); }}
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); send(); } }}
               placeholder="Mesaj yaz…"
               aria-label="Mesaj"
