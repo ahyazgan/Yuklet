@@ -1057,12 +1057,21 @@ export default function ListingsPage({ listings = LISTINGS, onRefresh }) {
             />
           </Suspense>
         ) : filtered.length === 0 ? (
-          <EmptyBox
-            icon={Search}
-            title="İlan bulunamadı"
-            sub="Arama veya filtreleri değiştirip tekrar dene."
-            action={!isDefaultSearch ? { label: "FİLTRELERİ TEMİZLE", onClick: clearAll } : null}
-          />
+          favOnly ? (
+            <EmptyBox
+              icon={Heart}
+              title="Henüz favori ilanın yok"
+              sub="İlanlardaki kalbe dokunarak kaydet; kaydettiklerin burada toplansın."
+              action={{ label: "TÜM İLANLARA GÖZ AT", onClick: () => setFavOnly(false) }}
+            />
+          ) : (
+            <EmptyBox
+              icon={Search}
+              title="İlan bulunamadı"
+              sub="Arama veya filtreleri değiştirip tekrar dene."
+              action={!isDefaultSearch ? { label: "FİLTRELERİ TEMİZLE", onClick: clearAll } : null}
+            />
+          )
         ) : (
           <div className="flex flex-col gap-3">
             {filtered.map((l) => (
