@@ -79,7 +79,7 @@ function listingCode(id) {
   return `HMT-${n}`;
 }
 
-export default function MesajlarPage({ user, listings = [], offers = [], messages = [], onSendMessage, onRequireAuth, onSeen, getContact, msgSeen = {} }) {
+export default function MesajlarPage({ user, listings = [], offers = [], messages = [], onSendMessage, onRequireAuth, onSeen, getContact, msgSeen = {}, blockedIds = [] }) {
   const navigate = useNavigate();
   const [selectedKey, setSelectedKey] = useState(null);
   const [text, setText] = useState("");
@@ -104,7 +104,8 @@ export default function MesajlarPage({ user, listings = [], offers = [], message
       const other = user.id === ownerSide.id ? offerSide : ownerSide;
       return { key: `${o.listingId}:${o.id}`, listingId: l.id, offerId: o.id, listingTitle: l.title, other };
     })
-    .filter(Boolean);
+    .filter(Boolean)
+    .filter((c) => !(blockedIds || []).map(String).includes(String(c.other.id))); // engellenenleri gizle
 
   const active = conversations.find((c) => c.key === selectedKey) || null;
   const otherPhone = active && getContact ? getContact(active.other.id)?.phone : null;

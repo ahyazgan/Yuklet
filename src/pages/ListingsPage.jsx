@@ -371,7 +371,7 @@ function EmptyBox({ icon, title, sub, action }) {
   );
 }
 
-export default function ListingsPage({ listings = LISTINGS, onRefresh }) {
+export default function ListingsPage({ listings = LISTINGS, onRefresh, blockedIds = [] }) {
   const navigate = useNavigate();
   const [sp] = useSearchParams();
   // Aşağı-çekip-yenile (dokunmatik). onRefresh yoksa kısa görsel geri bildirim.
@@ -487,9 +487,11 @@ export default function ListingsPage({ listings = LISTINGS, onRefresh }) {
       const hay = norm([l.title, l.il, l.ilce, l.material, l.vehicle, l.yukleme, l.bosaltma, l.desc, l.owner].filter(Boolean).join(" "));
       return qTokens.every((t) => hay.includes(t));
     };
+    const blockedSet = new Set((blockedIds || []).map(String));
     let out = listings.filter(
       (l) =>
         l.status !== "kapali" &&
+        !blockedSet.has(String(l.ownerId)) &&
         (!favOnly || isFav(l.id)) &&
         (!verifiedOnly || l.ownerVerified) &&
         (type === "all" || l.type === type) &&
@@ -507,7 +509,7 @@ export default function ListingsPage({ listings = LISTINGS, onRefresh }) {
     // Sponsorlu (öne çıkan) ilanlar her zaman üstte (mevcut sıra korunur)
     out = [...out].sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
     return out;
-  }, [listings, type, cat, il, q, material, priceMin, priceMax, sort, verifiedOnly, favOnly, isFav]);
+  }, [listings, type, cat, il, q, material, priceMin, priceMax, sort, verifiedOnly, favOnly, isFav, blockedIds]);
 
   const activeFilters =
     (material !== "all" ? 1 : 0) + (priceMin || priceMax ? 1 : 0) + (sort !== "yeni" ? 1 : 0) + (verifiedOnly ? 1 : 0);
