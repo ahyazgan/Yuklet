@@ -61,10 +61,17 @@ const sectionTitle = { fontFamily: ARCHIVO, fontSize: 13, fontWeight: 800, color
 const labelSt = { display: "block", marginBottom: 6, fontFamily: MONO, fontSize: 10, fontWeight: 700, color: C.sub, letterSpacing: 0.4, textTransform: "uppercase" };
 const inputSt = { width: "100%", boxSizing: "border-box", background: C.card, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "11px 13px", fontSize: 14, color: C.ink, outline: "none", fontFamily: MONO };
 
-export default function ProfilPage({ user, onUpdateProfile, onVerifyPhone, onRequireAuth, onLogout, reviews = [], getUserRating, docs = [], onAddDoc, onRemoveDoc }) {
+export default function ProfilPage({ user, onUpdateProfile, onVerifyPhone, onRequireAuth, onLogout, onDeleteAccount, reviews = [], getUserRating, docs = [], onAddDoc, onRemoveDoc }) {
   const toast = useToast();
   const navigate = useNavigate();
   const [docType, setDocType] = useState("K Belgesi");
+  const [confirmDelete, setConfirmDelete] = useState(false); // hesap silme iki adımlı onay
+
+  // Hesabı kalıcı sil (App Store/Play zorunlu): verileri temizle, çıkış yap, ana sayfaya dön.
+  const handleDeleteAccount = async () => {
+    try { await onDeleteAccount?.(); }
+    finally { toast?.("Hesabın ve verilerin silindi.", "info"); navigate("/"); }
+  };
 
   // ── Telefon doğrulama (SMS, mock-first) ──
   const [smsStep, setSmsStep] = useState("idle"); // idle | sent
@@ -413,6 +420,30 @@ export default function ProfilPage({ user, onUpdateProfile, onVerifyPhone, onReq
           style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, background: C.card, border: `2px solid ${C.ink}`, color: C.red, borderRadius: 6, padding: "14px", fontFamily: MONO, fontSize: 13, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, cursor: "pointer", boxShadow: "3px 3px 0 rgba(10,10,10,.12)" }}>
           <LogOut size={18} strokeWidth={2.2} /> Çıkış yap
         </button>
+
+        {/* Hesap silme (App Store 5.1.1(v) & Google Play zorunlu) — iki adımlı onay */}
+        {!confirmDelete ? (
+          <button type="button" onClick={() => setConfirmDelete(true)}
+            style={{ width: "100%", marginTop: 12, background: "transparent", border: "none", color: C.muted, fontFamily: MONO, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, cursor: "pointer", padding: "8px" }}>
+            Hesabımı kalıcı olarak sil
+          </button>
+        ) : (
+          <div style={{ marginTop: 12, padding: 14, background: C.card, border: `2px solid ${C.red}`, borderRadius: 6 }}>
+            <p style={{ margin: "0 0 12px", fontFamily: MONO, fontSize: 12, color: C.ink, lineHeight: 1.5 }}>
+              Hesabın, ilanların, tekliflerin, mesajların ve belgelerin <strong>kalıcı olarak</strong> silinecek. Bu işlem geri alınamaz.
+            </p>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button type="button" onClick={() => setConfirmDelete(false)}
+                style={{ flex: 1, background: C.card, border: `2px solid ${C.ink}`, color: C.ink, borderRadius: 6, padding: "12px", fontFamily: MONO, fontSize: 12, fontWeight: 700, textTransform: "uppercase", cursor: "pointer" }}>
+                Vazgeç
+              </button>
+              <button type="button" onClick={handleDeleteAccount}
+                style={{ flex: 1, background: C.red, border: `2px solid ${C.red}`, color: "#fff", borderRadius: 6, padding: "12px", fontFamily: MONO, fontSize: 12, fontWeight: 700, textTransform: "uppercase", cursor: "pointer" }}>
+                Evet, sil
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

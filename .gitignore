@@ -17,6 +17,14 @@ dist-ssr
 .env.local
 .env.*.local
 
+# Mobil imzalama (ASLA commit etme) — keystore & şifreler
+*.keystore
+*.jks
+*.p12
+*.mobileprovision
+android/keystore.properties
+android/key.properties
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
