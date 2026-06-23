@@ -231,12 +231,13 @@ export function supplyDemand({ cat, fromIl }, { listings = [] } = {}) {
 export function marketPulse(history) {
   const all = collectSamples(history);
   const accepted = all.filter((s) => s.accepted).length;
+  const settled = all.filter((s) => s.settled).length;
 
   const byCat = {};
   ["hafriyat", "silobas"].forEach((c) => {
     const rs = all.filter((s) => s.cat === c);
     const m = median(rs.map((s) => s.rate));
-    byCat[c] = m ? { rate: m, n: rs.length, accepted: rs.filter((s) => s.accepted).length, min: m * 0.85, max: m * 1.15 } : null;
+    byCat[c] = m ? { rate: m, n: rs.length, accepted: rs.filter((s) => s.accepted).length, settled: rs.filter((s) => s.settled).length, min: m * 0.85, max: m * 1.15 } : null;
   });
 
   // güzergah hatları (fromIl → toIl)
@@ -246,8 +247,8 @@ export function marketPulse(history) {
     const rate = median(arr.map((a) => a.rate));
     const km = Math.round(median(arr.map((a) => a.km)));
     const [from, to] = k.split("→");
-    return { from, to, rate, km, n: arr.length, accepted: arr.filter((a) => a.accepted).length, sampleTrip: round50(rate * 20 * km) };
-  }).sort((a, b) => b.n - a.n || b.rate - a.rate).slice(0, 6);
+    return { from, to, rate, km, n: arr.length, accepted: arr.filter((a) => a.accepted).length, settled: arr.filter((a) => a.settled).length, sampleTrip: round50(rate * 20 * km) };
+  }).sort((a, b) => b.settled - a.settled || b.n - a.n || b.rate - a.rate).slice(0, 6);
 
   // malzeme bazlı ortalama
   const matMap = {};
@@ -269,7 +270,7 @@ export function marketPulse(history) {
     }
   }
 
-  return { samples: all.length, accepted, byCat, lanes, materials, trend };
+  return { samples: all.length, accepted, settled, byCat, lanes, materials, trend };
 }
 
 const CONF_LEVELS = ["tahmin", "düşük", "orta", "yüksek"];
