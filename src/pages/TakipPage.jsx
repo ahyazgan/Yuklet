@@ -10,6 +10,7 @@ import { splitAmount, payableAmount, fmtTL, PAYMENT_LABEL, earlyPayout, EARLY_PA
 import { newId, nowIso } from "../utils/id";
 import { haversineKm } from "../utils/priceEstimate";
 import { watchPosition, distanceKm, getCurrentPosition } from "../native/geo";
+import { getRoute } from "../utils/routing";
 import { startTrip, publishLocation, endTrip, subscribeTrip } from "../utils/tripChannel";
 import { hapticTap, hapticSuccess } from "../native/haptics";
 import { pickPhotoDataUrl, cameraNative } from "../native/camera";
@@ -81,7 +82,9 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
   const [ocrHint, setOcrHint] = useState("");
   const [trip, setTrip] = useState(null);          // canlı sefer (kanaldan)
   const [tracking, setTracking] = useState(false); // sürücü konum paylaşıyor mu
+  const [route, setRoute] = useState(null);        // gerçek yol rotası + süre (OSRM)
   const watchStopRef = useRef(null);
+  const lastRouteRef = useRef(null);
 
   // Sefer kanalına abone ol (canlı konum yayını). Unmount'ta izleme durur.
   useEffect(() => {
@@ -130,6 +133,21 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
     if ((ph === "yolda" || ph === "yuklendi") && dDrop != null && dDrop <= R && !lst.arrivedAt) { hapticSuccess(); onUpdateListing?.(lst.id, { arrivedAt: nowIso() }); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trip?.last?.lat, trip?.last?.lng, id, listings, offers, user]);
+
+  // Gerçek yol rotası + ETA: araç → boşaltma. Throttle (>300m harekette yeniden iste).
+  useEffect(() => {
+    const lst = listings.find((x) => String(x.id) === String(id));
+    const v = trip?.last;
+    const drop = lst && Array.isArray(lst.dropoff) ? lst.dropoff : null;
+    if (!v || !drop) return undefined;
+    const last = lastRouteRef.current;
+    if (last && distanceKm([v.lat, v.lng], last) <= 0.3) return undefined;
+    lastRouteRef.current = [v.lat, v.lng];
+    let alive = true;
+    getRoute([v.lat, v.lng], drop).then((r) => { if (alive && r) setRoute(r); });
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trip?.last?.lat, trip?.last?.lng, id]);
 
   const l = listings.find((x) => String(x.id) === String(id));
 
@@ -206,9 +224,12 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
   // Canlı araç + ETA (mesafe → tahmini süre).
   const vehicle = trip?.last || null;
   const liveDropoff = Array.isArray(l.dropoff) ? l.dropoff : null;
-  const remainKm = vehicle && liveDropoff ? haversineKm([vehicle.lat, vehicle.lng], liveDropoff) : null;
+  // Mesafe & ETA: gerçek yol rotası (varsa) > kuş uçuşu yedeği.
+  const hvKm = vehicle && liveDropoff ? haversineKm([vehicle.lat, vehicle.lng], liveDropoff) : null;
   const speedKmh = vehicle?.speed && vehicle.speed > 1 ? vehicle.speed * 3.6 : 40;
-  const etaMin = remainKm != null ? Math.max(1, Math.round((remainKm / speedKmh) * 60)) : null;
+  const remainKm = route ? Math.round(route.distanceKm) : hvKm;
+  const etaMin = route ? route.durationMin : (hvKm != null ? Math.max(1, Math.round((hvKm / speedKmh) * 60)) : null);
+  const etaReal = Boolean(route);
   const showTripMap = matched && !isDone && (vehicle || isNakliyeci || trip?.trail?.length);
 
   // Canli sefer sayaci — gercek l.tripsDone / estTrips (yoksa faz bazli)
@@ -510,9 +531,12 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
             </div>
 
             {etaMin != null && (
-              <div style={{ display: "flex", gap: 16, marginBottom: 10, fontFamily: MONO, fontSize: 12, fontWeight: 700, color: C.ink }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10, fontFamily: MONO, fontSize: 12, fontWeight: 700, color: C.ink }}>
                 <span>~{remainKm} KM KALDI</span>
                 <span style={{ color: C.green }}>ETA ~{etaMin} DK</span>
+                <span style={{ fontSize: 8.5, fontWeight: 700, color: etaReal ? C.green : C.muted, border: `1.5px solid ${etaReal ? C.green : C.muted}`, borderRadius: 4, padding: "1px 5px", textTransform: "uppercase" }}>
+                  {etaReal ? "Yol" : "Kuş uçuşu"}
+                </span>
               </div>
             )}
 
@@ -534,7 +558,7 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
             )}
 
             <Suspense fallback={<div style={{ height: 280, borderRadius: 6, border: `2px solid ${C.ink}`, background: C.stone, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: MONO, fontSize: 11, color: C.muted }}>Harita yükleniyor…</div>}>
-              <TripMap pickup={Array.isArray(l.pickup) ? l.pickup : null} dropoff={liveDropoff} vehicle={vehicle} trail={trip?.trail || []} />
+              <TripMap pickup={Array.isArray(l.pickup) ? l.pickup : null} dropoff={liveDropoff} vehicle={vehicle} trail={trip?.trail || []} routeCoords={route?.coords || null} />
             </Suspense>
 
             {isNakliyeci && (
