@@ -12,6 +12,8 @@
 	<string>Belge ve mesaj görseli yüklemek için galerinize erişim gerekir.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>İndirilen belge ve görselleri galerinize kaydetmek için erişim gerekir.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Sefer sırasında canlı konumu iş sahibiyle paylaşmak ve tahmini varışı göstermek için konum erişimi gerekir.</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>CFBundleDisplayName</key>
