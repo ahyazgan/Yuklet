@@ -4,6 +4,8 @@ import { Plus, Check, X, MessageSquare, FileText, Phone, RotateCw, Pencil, Lock,
 import { CATS } from "../data/categories";
 import CategoryIcon from "../components/CategoryIcon";
 import { useToast } from "../components/Toast";
+import { shareUrl } from "../native/share";
+import { hapticTap, hapticSuccess, hapticWarn } from "../native/haptics";
 import SEO from "../components/SEO";
 import Logo from "../components/Logo";
 
@@ -86,10 +88,12 @@ export default function IlanlarimPage({ listings = [], user, offers = [], onUpda
   const accept = (listing, offer) => {
     onUpdateOffer?.(offer.id, { status: "kabul" });
     onUpdateListing?.(listing.id, { status: "eslesti" });
+    hapticSuccess();
     toast("Teklif kabul edildi, ilan eşleşti", "success");
   };
   const reject = (offer) => {
     onUpdateOffer?.(offer.id, { status: "ret" });
+    hapticWarn();
     toast("Teklif reddedildi", "info");
   };
   const renew = (l) => {
@@ -105,10 +109,11 @@ export default function IlanlarimPage({ listings = [], user, offers = [], onUpda
   const toggleClose = (l) => onUpdateListing?.(l.id, { status: l.status === "kapali" ? "aktif" : "kapali" });
   const toggleExpand = (id) => setExpanded((e) => ({ ...e, [id]: !e[id] }));
 
-  const share = (l) => {
+  const share = async (l) => {
+    hapticTap();
     const url = `${window.location.origin}/ilan/${l.id}`;
-    if (navigator.share) navigator.share({ title: l.title, url }).catch(() => {});
-    else { navigator.clipboard?.writeText(url); toast("İlan bağlantısı kopyalandı", "info"); }
+    const res = await shareUrl({ title: l.title, text: `${l.title} — DAYIM`, url });
+    if (res === "copied") toast("İlan bağlantısı kopyalandı", "info");
   };
 
   return (

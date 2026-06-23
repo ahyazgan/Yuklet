@@ -17,6 +17,8 @@ import { estimatePrice, fmtTL, priceSignal } from "../utils/priceEstimate";
 import { loadPricingConfig } from "../utils/storage";
 import { newId, nowIso } from "../utils/id";
 import { useToast } from "../components/Toast";
+import { shareUrl } from "../native/share";
+import { hapticTap, hapticSuccess } from "../native/haptics";
 import ReportModal from "../components/ReportModal";
 import SEO from "../components/SEO";
 
@@ -184,6 +186,7 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
     });
     setPrice(""); setMessage("");
     setSent(true);
+    hapticSuccess();
     toast("Teklifiniz iletildi", "success");
   };
 
@@ -196,14 +199,12 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
 
   const closeSheet = () => { setShowSheet(false); setSent(false); };
 
-  // native share (visual share button; no-op when unsupported)
-  const onShare = () => {
+  // Paylaş — native paylaşım sayfası (iOS/Android), web'de Web Share / panoya kopyala.
+  const onShare = async () => {
+    hapticTap();
     const url = typeof window !== "undefined" ? window.location.href : "";
-    if (typeof navigator !== "undefined" && navigator.share) {
-      navigator.share({ title: l.title, url }).catch(() => {});
-    } else if (typeof navigator !== "undefined" && navigator.clipboard) {
-      navigator.clipboard.writeText(url).then(() => toast("Bağlantı kopyalandı", "success")).catch(() => {});
-    }
+    const res = await shareUrl({ title: l.title, text: `${l.title} — DAYIM`, url });
+    if (res === "copied") toast("Bağlantı kopyalandı", "success");
   };
 
   const sheetInput = {
