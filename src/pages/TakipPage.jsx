@@ -15,6 +15,7 @@ import { hapticTap, hapticSuccess } from "../native/haptics";
 import { pickPhotoDataUrl, cameraNative } from "../native/camera";
 import { computeReliability } from "../utils/reliability";
 import ReliabilityBadge from "../components/ReliabilityBadge";
+import { readWeighTicket } from "../utils/ocr";
 
 const TripMap = lazy(() => import("../components/TripMap"));
 const SignaturePad = lazy(() => import("../components/SignaturePad"));
@@ -76,6 +77,8 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
   const [payMsg, setPayMsg] = useState("");
   const [proofForm, setProofForm] = useState({ tonnage: "", ticketNo: "", note: "", photo: null, signature: null });
   const [proofBusy, setProofBusy] = useState(false);
+  const [ocrBusy, setOcrBusy] = useState(false);
+  const [ocrHint, setOcrHint] = useState("");
   const [trip, setTrip] = useState(null);          // canlı sefer (kanaldan)
   const [tracking, setTracking] = useState(false); // sürücü konum paylaşıyor mu
   const watchStopRef = useRef(null);
@@ -242,6 +245,19 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
     reader.onload = () => setProofForm((ff) => ({ ...ff, photo: reader.result }));
     reader.readAsDataURL(f);
     e.target.value = "";
+  };
+  // Kantar fişinden tonajı oku (OCR) → alanı doldur (kullanıcı doğrular).
+  const readTicket = async () => {
+    if (!proofForm.photo || ocrBusy) return;
+    setOcrBusy(true); setOcrHint("Fiş okunuyor…");
+    const res = await readWeighTicket(proofForm.photo, l.unit || "ton");
+    setOcrBusy(false);
+    if (res.ok && res.best != null) {
+      setProofForm((f) => ({ ...f, tonnage: String(res.best) }));
+      setOcrHint(`Okundu: ${res.best} ${(l.unit || "ton").toUpperCase()} — lütfen doğrula.`);
+    } else {
+      setOcrHint(res.ok ? "Fişten sayı okunamadı, elle gir." : "OCR başarısız (çevrimdışı olabilir), elle gir.");
+    }
   };
 
   const submitProof = async () => {
@@ -764,12 +780,19 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
                 </div>
                 {/* Kantar fişi / teslim fotoğrafı */}
                 {proofForm.photo ? (
-                  <div style={{ position: "relative" }}>
-                    <img src={proofForm.photo} alt="Kantar fişi" style={{ width: "100%", maxHeight: 200, objectFit: "cover", borderRadius: 6, border: `2px solid ${C.ink}` }} />
-                    <button type="button" onClick={() => setProofForm((f) => ({ ...f, photo: null }))}
-                      style={{ position: "absolute", top: 8, right: 8, width: 30, height: 30, borderRadius: 6, background: C.card, border: `2px solid ${C.ink}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-                      <X size={15} strokeWidth={2.6} color={C.ink} />
+                  <div>
+                    <div style={{ position: "relative" }}>
+                      <img src={proofForm.photo} alt="Kantar fişi" style={{ width: "100%", maxHeight: 200, objectFit: "cover", borderRadius: 6, border: `2px solid ${C.ink}` }} />
+                      <button type="button" onClick={() => { setProofForm((f) => ({ ...f, photo: null })); setOcrHint(""); }}
+                        style={{ position: "absolute", top: 8, right: 8, width: 30, height: 30, borderRadius: 6, background: C.card, border: `2px solid ${C.ink}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                        <X size={15} strokeWidth={2.6} color={C.ink} />
+                      </button>
+                    </div>
+                    <button type="button" onClick={readTicket} disabled={ocrBusy}
+                      style={{ width: "100%", marginTop: 8, display: "flex", alignItems: "center", justifyContent: "center", gap: 7, background: C.ink, color: C.yellow, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "10px 0", fontFamily: ARCH, fontSize: 12, fontWeight: 800, textTransform: "uppercase", cursor: ocrBusy ? "default" : "pointer", opacity: ocrBusy ? 0.7 : 1 }}>
+                      <Scale size={15} /> {ocrBusy ? "Okunuyor…" : "Fişten tonajı oku"}
                     </button>
+                    {ocrHint && <p style={{ margin: "6px 0 0", fontFamily: MONO, fontSize: 10, color: C.sub }}>{ocrHint}</p>}
                   </div>
                 ) : (
                   <label onClick={pickProofPhoto} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7, background: C.stone, border: `2px dashed ${C.ink}`, borderRadius: 6, padding: "12px 0", cursor: "pointer" }}>
