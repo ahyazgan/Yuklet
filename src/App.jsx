@@ -5,7 +5,7 @@ import {
   saveTheme, loadListings, saveListings, loadUser, saveUser,
   loadUsers, saveUsers, loadOffers, saveOffers, loadMessages, saveMessages,
   loadMsgSeen, saveMsgSeen, loadNotifSeen, saveNotifSeen, loadReviews, saveReviews, loadDocs, saveDocs,
-  loadOnboarded, saveOnboarded, loadReports, saveReports, loadPricingConfig,
+  loadOnboarded, saveOnboarded, loadReports, saveReports, loadPricingConfig, loadSavedSearches,
   loadAuditLog, appendAudit, loadAnnouncement, saveAnnouncement,
 } from "./utils/storage";
 import { isSupabaseConfigured } from "./lib/supabase";
@@ -396,7 +396,7 @@ function AppShell() {
     : 0;
 
   const notifSeenIso = user ? (notifSeen[user.id] || null) : null;
-  const notif = buildNotifications(user, { listings, offers, messages, reviews }, notifSeenIso);
+  const notif = buildNotifications(user, { listings, offers, messages, reviews, savedSearches: loadSavedSearches() }, notifSeenIso);
 
   // Yeni teklif/mesaj/kabul gelince tarayıcı bildirimi göster (giriş yapılmışsa).
   usePushNotifications(notif.items, Boolean(user));
