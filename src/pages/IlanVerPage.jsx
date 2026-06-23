@@ -15,6 +15,8 @@ import { loadOffers, loadPricingConfig } from "../utils/storage";
 import { newId } from "../utils/id";
 import SEO from "../components/SEO";
 import Logo from "../components/Logo";
+import { shareUrl } from "../native/share";
+import { hapticTap, hapticSuccess } from "../native/haptics";
 import {
   ChevronLeft, ArrowRight, Truck, Package, Boxes, Check, CheckCircle2,
   MapPin, Plus, Share2, Pencil, ChevronDown,
@@ -210,6 +212,7 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], user, 
     onPublish?.(listing);
     setPublished(listing);
     setStep(3);
+    hapticSuccess();
   };
 
   const goStep2 = () => { setError(""); setStep(2); };
@@ -255,6 +258,7 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], user, 
     onPublish?.(listing);
     setPublished(listing);
     setStep(3);
+    hapticSuccess();
   };
 
   const materials = MATERIALS[cat] || [];
@@ -312,11 +316,9 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], user, 
       : published.priceType === "sabit" && published.price
         ? "₺" + published.price.toLocaleString("tr-TR") : "Teklife açık";
     const shareListing = async () => {
+      hapticTap();
       const url = `${window.location.origin}/ilan/${published.id}`;
-      try {
-        if (navigator.share) await navigator.share({ title: published.title, url });
-        else if (navigator.clipboard) await navigator.clipboard.writeText(url);
-      } catch { /* user cancelled share */ }
+      await shareUrl({ title: published.title, text: `${published.title} — DAYIM`, url });
     };
     return (
       <div style={{ ...shell, paddingBottom: 96 }}>
