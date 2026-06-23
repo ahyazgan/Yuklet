@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, BadgeCheck, Phone, Plus, Send, CheckCircle2 } from "lucide-react";
 import { newId, nowIso } from "../utils/id";
+import { pickPhotoDataUrl, cameraNative } from "../native/camera";
 import SEO from "../components/SEO";
 import Logo from "../components/Logo";
 
@@ -161,18 +162,32 @@ export default function MesajlarPage({ user, listings = [], offers = [], message
     setText("");
   };
 
+  // Görseli (dataURL) mesaj olarak gönder — hem dosya seçici hem native kamera kullanır.
+  const sendImageDataUrl = (dataUrl) => {
+    if (!dataUrl || !active) return;
+    onSendMessage?.({
+      id: newId(), listingId: active.listingId, offerId: active.offerId,
+      fromId: user.id, fromName: user.name, toId: active.other.id, toName: active.other.name,
+      text: "", image: dataUrl, createdAt: nowIso(),
+    });
+  };
+
   const sendImage = (e) => {
     const f = e.target.files?.[0];
     if (!f || !active) return;
     if (f.size > 1_800_000) { e.target.value = ""; return; } // ~1.8MB limit
     const reader = new FileReader();
-    reader.onload = () => onSendMessage?.({
-      id: newId(), listingId: active.listingId, offerId: active.offerId,
-      fromId: user.id, fromName: user.name, toId: active.other.id, toName: active.other.name,
-      text: "", image: reader.result, createdAt: nowIso(),
-    });
+    reader.onload = () => sendImageDataUrl(reader.result);
     reader.readAsDataURL(f);
     e.target.value = "";
+  };
+
+  // Native'de kamera/galeri aç; web'de bu çağrı no-op döner (label dosya seçiciyi açar).
+  const onPhotoButton = async (e) => {
+    if (!cameraNative()) return; // web → <input type=file> devreye girer
+    e.preventDefault();
+    const dataUrl = await pickPhotoDataUrl();
+    if (dataUrl) sendImageDataUrl(dataUrl);
   };
 
   // ── Thread view (active conversation) ──
@@ -281,6 +296,7 @@ export default function MesajlarPage({ user, listings = [], offers = [], message
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <label
               aria-label="Fotoğraf ekle"
+              onClick={onPhotoButton}
               style={{ flexShrink: 0, width: 44, height: 44, borderRadius: 6, background: C.card, border: `2px solid ${C.ink}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
             >
               <Plus size={20} color={C.ink} strokeWidth={2.6} />

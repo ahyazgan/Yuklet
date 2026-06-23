@@ -33,4 +33,11 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Kamera (sohbet fotoğrafı çekme — @capacitor/camera) -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <!-- Bildirimler (Android 13+ — @capacitor/local-notifications) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- Kamera donanımı zorunlu DEĞİL (kamerasız cihazlar da kursun) -->
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
 </manifest>
