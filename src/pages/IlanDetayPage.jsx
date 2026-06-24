@@ -126,6 +126,7 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
   const toast = useToast();
   const { isFav, toggle: toggleFav } = useFavorites();
   const [price, setPrice] = useState("");
+  const [qty, setQty] = useState("");
   const [message, setMessage] = useState("");
   const [showReport, setShowReport] = useState(false);
   const [showSheet, setShowSheet] = useState(false);
@@ -188,16 +189,21 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
   // ── offer submit (identical logic) ──────────────────────────────
   const submitOffer = () => {
     if (!user) { onRequireAuth?.(); return; }
-    if (!price && !message.trim()) { toast("Fiyat veya mesaj girin", "error"); return; }
+    if (isProduct) {
+      if (!qty && !message.trim()) { toast("Miktar veya mesaj girin", "error"); return; }
+    } else if (!price && !message.trim()) {
+      toast("Fiyat veya mesaj girin", "error"); return;
+    }
     onAddOffer?.({
       id: newId(), listingId: l.id, fromUser: user.name, fromUserId: user.id,
       price: price ? Number(price) : null, message: message.trim(),
+      ...(isProduct ? { qty: qty ? Number(qty) : null, unit: l.unit || "ton", kind: "siparis" } : {}),
       status: "beklemede", createdAt: nowIso(),
     });
-    setPrice(""); setMessage("");
+    setPrice(""); setQty(""); setMessage("");
     setSent(true);
     hapticSuccess();
-    toast("Teklifiniz iletildi", "success");
+    toast(isProduct ? "Talebin iletildi" : "Teklifiniz iletildi", "success");
   };
 
   // open the offer sheet OR route to auth, depending on user
@@ -572,7 +578,7 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
           </div>
           <button onClick={openSheet}
             style={{ display: "flex", alignItems: "center", gap: 7, background: C.yellow, color: C.ink, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "12px 16px", fontFamily: HEAD, fontWeight: 800, fontSize: 14, textTransform: "uppercase", cursor: "pointer", whiteSpace: "nowrap", boxShadow: "3px 3px 0 rgba(10,10,10,0.18)" }}>
-            {!user ? "Giriş Yap" : isProduct ? "İletişime Geç" : "Teklif Ver"} <ArrowRight size={16} strokeWidth={2.8} />
+            {!user ? "Giriş Yap" : isProduct ? "Sipariş Ver" : "Teklif Ver"} <ArrowRight size={16} strokeWidth={2.8} />
           </button>
         </div>
       )}
@@ -592,9 +598,11 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
                 <div style={{ width: 60, height: 60, margin: "0 auto", borderRadius: 6, background: C.green, color: "#fff", border: `2px solid ${C.ink}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <Send size={26} strokeWidth={2.4} />
                 </div>
-                <div style={{ fontFamily: HEAD, fontSize: 20, fontWeight: 900, textTransform: "uppercase", letterSpacing: "-0.02em", marginTop: 16 }}>Teklif gönderildi</div>
+                <div style={{ fontFamily: HEAD, fontSize: 20, fontWeight: 900, textTransform: "uppercase", letterSpacing: "-0.02em", marginTop: 16 }}>{isProduct ? "Talep gönderildi" : "Teklif gönderildi"}</div>
                 <p style={{ fontSize: 13, color: C.sub, marginTop: 6, lineHeight: 1.5 }}>
-                  Teklifiniz ilan sahibine iletildi. Yanıt geldiğinde mesajlardan haberdar olursunuz.
+                  {isProduct
+                    ? "Talebin tedarikçiye iletildi. Onaylandığında iletişim açılır ve nakliyeyi platformdan ayarlayabilirsin."
+                    : "Teklifiniz ilan sahibine iletildi. Yanıt geldiğinde mesajlardan haberdar olursunuz."}
                 </p>
                 <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
                   <button onClick={() => navigate("/mesajlar")}
@@ -611,7 +619,7 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
               // ── Offer form ──
               <>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-                  <div style={{ fontFamily: MONO, fontSize: 11, fontWeight: 700, color: C.ink, letterSpacing: "0.04em", textTransform: "uppercase" }}>{ilanNo(l.id)} · TEKLİF VER</div>
+                  <div style={{ fontFamily: MONO, fontSize: 11, fontWeight: 700, color: C.ink, letterSpacing: "0.04em", textTransform: "uppercase" }}>{ilanNo(l.id)} · {isProduct ? "SİPARİŞ / TALEP" : "TEKLİF VER"}</div>
                   <button onClick={closeSheet} aria-label="Kapat" style={{ ...iconBtn, width: 34, height: 34 }}>
                     <X size={16} strokeWidth={2.6} color={C.ink} />
                   </button>
@@ -696,8 +704,22 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
                   </div>
                 )}
 
+                {/* ürün siparişi: miktar alanı */}
+                {isProduct && (
+                  <>
+                    <label style={{ display: "block", fontFamily: MONO, fontSize: 10, fontWeight: 700, color: C.muted, letterSpacing: "0.06em", textTransform: "uppercase", margin: "18px 0 7px" }}>İSTENEN MİKTAR ({(l.unit || "ton").toUpperCase()})</label>
+                    <input type="number" min="0" value={qty} onChange={(e) => setQty(e.target.value)}
+                      placeholder="0" style={{ ...sheetInput, fontFamily: MONO, fontWeight: 700, fontSize: 26, padding: "12px 14px" }} />
+                    {l.price && qty && (
+                      <div style={{ fontFamily: MONO, fontSize: 11, fontWeight: 700, color: C.green, marginTop: 7 }}>
+                        Tahmini tutar: ₺{(Number(qty) * Number(l.price)).toLocaleString("tr-TR")} <span style={{ color: C.muted, fontWeight: 400 }}>({Number(l.price).toLocaleString("tr-TR")} {l.priceUnit || "/" + (l.unit || "ton")})</span>
+                      </div>
+                    )}
+                  </>
+                )}
+
                 {/* price input — big mono 26px, 2px ink frame */}
-                <label style={{ display: "block", fontFamily: MONO, fontSize: 10, fontWeight: 700, color: C.muted, letterSpacing: "0.06em", textTransform: "uppercase", margin: "18px 0 7px" }}>TEKLİF FİYATINIZ (₺)</label>
+                <label style={{ display: "block", fontFamily: MONO, fontSize: 10, fontWeight: 700, color: C.muted, letterSpacing: "0.06em", textTransform: "uppercase", margin: "18px 0 7px" }}>{isProduct ? "BİRİM FİYAT TEKLİFİN (₺, opsiyonel)" : "TEKLİF FİYATINIZ (₺)"}</label>
                 <input type="number" min="0" value={price} onChange={(e) => setPrice(e.target.value)}
                   placeholder="0" style={{ ...sheetInput, fontFamily: MONO, fontWeight: 700, fontSize: 26, padding: "12px 14px" }} />
 
@@ -741,7 +763,7 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
                 {/* submit */}
                 <button onClick={submitOffer}
                   style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", marginTop: 18, background: C.yellow, color: C.ink, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "14px", fontFamily: HEAD, fontWeight: 800, fontSize: 15, textTransform: "uppercase", cursor: "pointer", boxShadow: "3px 3px 0 rgba(10,10,10,0.18)" }}>
-                  Teklifi Gönder <ArrowRight size={17} strokeWidth={2.6} />
+                  {isProduct ? "Siparişi Gönder" : "Teklifi Gönder"} <ArrowRight size={17} strokeWidth={2.6} />
                 </button>
               </>
             )}
