@@ -93,6 +93,7 @@ function AppShell() {
 
   // ── VERI KATMANI: Supabase yapilandirilmissa async DB, yoksa localStorage ──
   const SB = isSupabaseConfigured;
+  const [sbHealth, setSbHealth] = useState(null); // { ok, code, message } — SB modunda tani
 
   // Ilanlar
   // SB modunda demo ilanlar veritabaninda (seed) oldugu icin LISTINGS eklenmez.
@@ -278,6 +279,11 @@ function AppShell() {
   // SB: oturum degisimini dinle, profil + ortak verileri yukle
   useEffect(() => {
     if (!SB) return;
+    // Baglanti saglik kontrolu — yanlis anahtar / sema yok durumunu net bildir.
+    api.checkHealth().then((h) => {
+      setSbHealth(h);
+      if (!h.ok) console.error("[Supabase] " + h.code + ": " + h.message);
+    }).catch(() => {});
     // Ortak veri (herkese acik ilanlar vb.) oturumdan bagimsiz yuklenir.
     (async () => {
       await Promise.all([reloadListings(), reloadOffers(),
@@ -474,6 +480,14 @@ function AppShell() {
       </main>
 
       <UpdateBanner />
+      {/* SB modunda yanlis yapilandirma uyarisi — sessiz bos ekran yerine net tani */}
+      {SB && sbHealth && !sbHealth.ok && (
+        <div role="alert" style={{ position: "fixed", left: 12, right: 12, bottom: 76, zIndex: 9999, margin: "0 auto", maxWidth: 440, background: "#7A1212", color: "#fff", border: "2px solid #0A0A0A", borderRadius: 8, padding: "10px 12px", boxShadow: "3px 3px 0 rgba(10,10,10,.4)", fontFamily: "'Space Mono', ui-monospace, monospace", fontSize: 11.5, lineHeight: 1.45 }}>
+          <strong style={{ display: "block", fontSize: 12, marginBottom: 2 }}>SUPABASE BAĞLANTI SORUNU</strong>
+          {sbHealth.message}
+          <button onClick={() => setSbHealth(null)} aria-label="Kapat" style={{ position: "absolute", top: 6, right: 8, background: "none", border: "none", color: "#fff", fontSize: 16, cursor: "pointer", lineHeight: 1 }}>×</button>
+        </div>
+      )}
       <OfflineBanner onReconnect={() => { if (SB) { reloadListings(); reloadOffers(); } }} />
       <InstallPrompt />
       <MobileTabBar unreadCount={unreadCount} />
