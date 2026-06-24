@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Settings, BadgeCheck, Truck, Package, Lock, Building2, HelpCircle, LogOut, ChevronRight, ShieldCheck, Smartphone, Upload, FileText, Star, Heart, Navigation, History } from "lucide-react";
+import { Settings, BadgeCheck, Truck, Package, Lock, Building2, HelpCircle, LogOut, ChevronRight, ShieldCheck, Smartphone, Upload, FileText, Star, Heart, Navigation, History, Inbox } from "lucide-react";
 import { useToast } from "../components/Toast";
 import { StarsDisplay } from "../components/Stars";
 import SEO from "../components/SEO";
@@ -477,6 +477,7 @@ export default function ProfilPage({ user, onUpdateProfile, onVerifyPhone, onReq
         <section style={{ background: C.card, border: `2px solid ${C.ink}`, borderRadius: 6, overflow: "hidden", boxShadow: "6px 6px 0 rgba(10,10,10,.12)" }}>
           {[
             { icon: Package, label: "İlanlarım", desc: "Açtığın ilanlar ve gelen teklifler", to: "/ilanlarim" },
+            { icon: Inbox, label: "Tekliflerim & Siparişlerim", desc: "Gönderdiğin teklif ve siparişleri izle", to: "/tekliflerim" },
             { icon: Navigation, label: "Sevkiyat", desc: "Aktif seferleri canlı izle", to: "/sevkiyat" },
             { icon: History, label: "Sefer Geçmişi", desc: "Tamamlanan işler ve hat performansı", to: "/sefer-gecmisi" },
             { icon: Heart, label: "Favorilerim", desc: "Kaydettiğin ilanlar", to: "/ilanlar?fav=1" },
