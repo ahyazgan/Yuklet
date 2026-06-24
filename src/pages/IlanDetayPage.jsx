@@ -715,6 +715,12 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
                         Tahmini tutar: ₺{(Number(qty) * Number(l.price)).toLocaleString("tr-TR")} <span style={{ color: C.muted, fontWeight: 400 }}>({Number(l.price).toLocaleString("tr-TR")} {l.priceUnit || "/" + (l.unit || "ton")})</span>
                       </div>
                     )}
+                    {/* nakliye dahil/hariç bilgisi — alıcı taşımayı bilsin */}
+                    <div style={{ marginTop: 12, padding: "10px 12px", borderRadius: 6, border: `2px solid ${l.deliveryIncluded ? C.green : C.ink}`, background: l.deliveryIncluded ? "#F0FBF3" : C.card, fontFamily: MONO, fontSize: 10.5, fontWeight: 700, color: l.deliveryIncluded ? C.green : C.sub, lineHeight: 1.5 }}>
+                      {l.deliveryIncluded
+                        ? "✓ NAKLİYE DAHİL — teslimat tedarikçiye ait, ayrıca taşıma ayarlamana gerek yok."
+                        : "NAKLİYE HARİÇ — sipariş onaylanınca taşımayı platformdan ayarlarsın."}
+                    </div>
                   </>
                 )}
 

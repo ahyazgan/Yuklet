@@ -127,6 +127,11 @@ export default function IlanlarimPage({ listings = [], user, offers = [], review
     }
   };
   const toggleClose = (l) => onUpdateListing?.(l.id, { status: l.status === "kapali" ? "aktif" : "kapali" });
+  const markDelivered = (l) => {
+    onUpdateListing?.(l.id, { status: "kapali", delivered: true });
+    hapticSuccess();
+    toast("Sipariş teslim edildi olarak işaretlendi", "success");
+  };
   const toggleExpand = (id) => setExpanded((e) => ({ ...e, [id]: !e[id] }));
 
   const share = async (l) => {
@@ -282,12 +287,21 @@ export default function IlanlarimPage({ listings = [], user, offers = [], review
                   </div>
                 ) : matched ? (
                   l.type === "urun" ? (
-                    <div style={{ padding: 14, display: "flex", alignItems: "center", gap: 10 }}>
-                      <span style={{ flex: 1, fontFamily: MONO, fontSize: 11.5, color: C.sub }}>Sipariş onaylandı · nakliyeyi ayarla</span>
-                      <button onClick={() => navigate(`/ilan-ver?${buildHaulParams(l, lOffers)}`)} style={{ ...btnBase, background: C.yellow, borderColor: C.ink }}>
-                        Nakliye Ayarla <ArrowRight size={14} strokeWidth={2.6} />
-                      </button>
-                    </div>
+                    l.deliveryIncluded ? (
+                      <div style={{ padding: 14, display: "flex", alignItems: "center", gap: 10 }}>
+                        <span style={{ flex: 1, fontFamily: MONO, fontSize: 11.5, color: C.sub }}>Sipariş onaylandı · teslimat sana ait</span>
+                        <button onClick={() => markDelivered(l)} style={{ ...btnBase, background: C.green, color: "#fff", borderColor: C.ink }}>
+                          <Check size={14} strokeWidth={3} /> Teslim Edildi
+                        </button>
+                      </div>
+                    ) : (
+                      <div style={{ padding: 14, display: "flex", alignItems: "center", gap: 10 }}>
+                        <span style={{ flex: 1, fontFamily: MONO, fontSize: 11.5, color: C.sub }}>Sipariş onaylandı · nakliyeyi ayarla</span>
+                        <button onClick={() => navigate(`/ilan-ver?${buildHaulParams(l, lOffers)}`)} style={{ ...btnBase, background: C.yellow, borderColor: C.ink }}>
+                          Nakliye Ayarla <ArrowRight size={14} strokeWidth={2.6} />
+                        </button>
+                      </div>
+                    )
                   ) : (
                     <div style={{ padding: 14, display: "flex", alignItems: "center", gap: 10 }}>
                       <span style={{ flex: 1, fontFamily: MONO, fontSize: 11.5, color: C.sub }}>İlan eşleşti · iş süreci başladı</span>
