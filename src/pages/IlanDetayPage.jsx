@@ -9,9 +9,10 @@
 
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ChevronLeft, Share2, Heart, Star, BadgeCheck, ArrowRight, X, Send, AlertTriangle, Truck, TrendingUp, TrendingDown, Boxes, Check, Info, ChevronDown } from "lucide-react";
+import { ChevronLeft, Share2, Heart, Star, BadgeCheck, ArrowRight, X, Send, AlertTriangle, Truck, TrendingUp, TrendingDown, Boxes, Check, Info, ChevronDown, ShieldCheck } from "lucide-react";
 import { LISTINGS } from "../data/listings";
 import { CATS } from "../data/categories";
+import { computeReliability, reliabilityTier } from "../utils/reliability";
 import { backhaulForJob, loadsForVehicle, vehicleClassOf } from "../utils/backhaul";
 import { estimatePrice, fmtTL, priceSignal } from "../utils/priceEstimate";
 import { loadPricingConfig } from "../utils/storage";
@@ -120,7 +121,7 @@ function DetailRow({ label, value }) {
   );
 }
 
-export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth, offers = [], onAddOffer, onReport, isBlocked, onToggleBlock }) {
+export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth, offers = [], reviews = [], onAddOffer, onReport, isBlocked, onToggleBlock }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
@@ -163,6 +164,7 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
   const isVehicle = l.type === "arac";
   const isProduct = l.type === "urun";
   const listingOffers = offers.filter((o) => String(o.listingId) === String(l.id));
+  const ownerRel = l.ownerId != null ? computeReliability(l.ownerId, { listings, offers, reviews }) : null;
   const isOwner = user && l.ownerId && l.ownerId === user.id;
   const isFixed = l.priceType === "sabit" && l.price;
   const closed = l.status === "kapali" || l.status === "eslesti";
@@ -411,12 +413,19 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
                   </span>
                 )}
               </div>
-              {l.ownerRating != null && (
-                <div style={{ fontFamily: MONO, fontSize: 11, fontWeight: 700, color: C.sub, marginTop: 4, display: "flex", alignItems: "center", gap: 4 }}>
-                  <Star size={12} strokeWidth={2.4} color={C.yellowDeep} fill={C.yellow} />
-                  {l.ownerRating}{l.ownerJobs != null ? ` · ${l.ownerJobs} İŞ` : ""}
-                </div>
-              )}
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 4, flexWrap: "wrap" }}>
+                {l.ownerRating != null && (
+                  <div style={{ fontFamily: MONO, fontSize: 11, fontWeight: 700, color: C.sub, display: "flex", alignItems: "center", gap: 4 }}>
+                    <Star size={12} strokeWidth={2.4} color={C.yellowDeep} fill={C.yellow} />
+                    {l.ownerRating}{l.ownerJobs != null ? ` · ${l.ownerJobs} İŞ` : ""}
+                  </div>
+                )}
+                {ownerRel?.score != null && (
+                  <div title={`Güvenilirlik %${ownerRel.score} · ${ownerRel.jobsDone} tamamlanan iş`} style={{ fontFamily: MONO, fontSize: 11, fontWeight: 700, color: reliabilityTier(ownerRel.score).color, display: "flex", alignItems: "center", gap: 4 }}>
+                    <ShieldCheck size={12} strokeWidth={2.5} /> %{ownerRel.score} · {reliabilityTier(ownerRel.score).label}
+                  </div>
+                )}
+              </div>
             </div>
             <button onClick={() => navigate("/mesajlar")}
               style={{ display: "flex", alignItems: "center", gap: 6, border: `2px solid ${C.ink}`, borderRadius: 6, background: C.yellow, padding: "9px 12px", fontFamily: HEAD, fontWeight: 800, fontSize: 12, textTransform: "uppercase", flexShrink: 0, cursor: "pointer" }}>
