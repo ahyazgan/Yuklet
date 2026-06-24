@@ -6,7 +6,7 @@
 // estimate, map location picker, recurring job, every form field.
 
 import { useState, lazy, Suspense } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { CATS, LISTING_TYPES, VEHICLE_TYPES, MATERIALS, UNITS, STOCK_LEVELS } from "../data/categories";
 import { IL_LIST } from "../data/listings";
 import CategoryIcon from "../components/CategoryIcon";
@@ -126,8 +126,12 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], user, 
   const editing = Boolean(id);
   const editListing = editing ? listings.find((l) => String(l.id) === String(id)) : null;
 
-  const [type, setType] = useState(editListing?.type || "is");
-  const [cat, setCat] = useState(editListing?.cat || "hafriyat");
+  // Yeni ilanda URL ön-doldurma (örn. malzeme siparişi sonrası "Nakliye Ayarla").
+  const [sp] = useSearchParams();
+  const pf = editing ? {} : Object.fromEntries(sp.entries());
+
+  const [type, setType] = useState(editListing?.type || (["is", "arac", "urun"].includes(pf.type) ? pf.type : "is"));
+  const [cat, setCat] = useState(editListing?.cat || (["hafriyat", "silobas"].includes(pf.cat) ? pf.cat : "hafriyat"));
   const [form, setForm] = useState(() => editListing ? {
     title: editListing.title || "", il: editListing.il || "İstanbul", ilce: editListing.ilce || "",
     varisIl: editListing.varisIl || editListing.il || "İstanbul",
@@ -145,9 +149,10 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], user, 
     stock: editListing.stock || "bol",
     deliveryIncluded: editListing.deliveryIncluded || false,
   } : {
-    title: "", il: "İstanbul", ilce: "", varisIl: "İstanbul", yukleme: "", bosaltma: "",
-    material: "", amount: "", unit: "ton", vehicle: "", capacity: "",
-    dateText: "", priceType: "teklif", price: "", desc: "", owner: user?.name || "",
+    title: pf.title || "", il: pf.il || "İstanbul", ilce: pf.ilce || "", varisIl: pf.varisIl || pf.il || "İstanbul",
+    yukleme: pf.yukleme || "", bosaltma: pf.bosaltma || "",
+    material: pf.material || "", amount: pf.amount || "", unit: pf.unit || "ton", vehicle: "", capacity: "",
+    dateText: "", priceType: "teklif", price: "", desc: pf.desc || "", owner: user?.name || "",
     recurring: false, recurringFreq: "haftalik", recurringDuration: "", dailyTrips: "",
     stock: "bol", deliveryIncluded: false,
   });

@@ -53,6 +53,25 @@ function shortId(id) {
   return "HMT-" + s.slice(-4).toUpperCase().padStart(4, "0");
 }
 
+// Onaylanan malzeme siparişinden nakliye (iş) ilanı için ön-doldurma parametreleri.
+// Yükleme = tedarikçi konumu; miktar = kabul edilen siparişin qty'si (yoksa ilan miktarı).
+function buildHaulParams(l, lOffers = []) {
+  const accepted = lOffers.find((o) => o.status === "kabul" && o.kind === "siparis");
+  const amount = accepted?.qty != null ? accepted.qty : l.amount;
+  const yukleme = [l.il, l.ilce].filter(Boolean).join(" / ");
+  const params = new URLSearchParams();
+  params.set("type", "is");
+  if (l.cat) params.set("cat", l.cat);
+  if (l.material || l.title) params.set("title", `${l.material || l.title} Nakliyesi`);
+  if (l.il) params.set("il", l.il);
+  if (l.ilce) params.set("ilce", l.ilce);
+  if (yukleme) params.set("yukleme", yukleme);
+  if (l.material) params.set("material", l.material);
+  if (amount != null && amount !== "") params.set("amount", String(amount));
+  if (l.unit || accepted?.unit) params.set("unit", l.unit || accepted.unit);
+  return params.toString();
+}
+
 function initial(name) {
   return String(name || "?").trim().charAt(0).toUpperCase() || "?";
 }
@@ -262,12 +281,21 @@ export default function IlanlarimPage({ listings = [], user, offers = [], review
                     İlan kapatıldı · {lOffers.length} teklif alındı
                   </div>
                 ) : matched ? (
-                  <div style={{ padding: 14, display: "flex", alignItems: "center", gap: 10 }}>
-                    <span style={{ flex: 1, fontFamily: MONO, fontSize: 11.5, color: C.sub }}>İlan eşleşti · iş süreci başladı</span>
-                    <button onClick={() => navigate(`/takip/${l.id}`)} style={{ ...btnBase, background: C.card }}>
-                      İşi Takip Et <ArrowRight size={14} strokeWidth={2.6} />
-                    </button>
-                  </div>
+                  l.type === "urun" ? (
+                    <div style={{ padding: 14, display: "flex", alignItems: "center", gap: 10 }}>
+                      <span style={{ flex: 1, fontFamily: MONO, fontSize: 11.5, color: C.sub }}>Sipariş onaylandı · nakliyeyi ayarla</span>
+                      <button onClick={() => navigate(`/ilan-ver?${buildHaulParams(l, lOffers)}`)} style={{ ...btnBase, background: C.yellow, borderColor: C.ink }}>
+                        Nakliye Ayarla <ArrowRight size={14} strokeWidth={2.6} />
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ padding: 14, display: "flex", alignItems: "center", gap: 10 }}>
+                      <span style={{ flex: 1, fontFamily: MONO, fontSize: 11.5, color: C.sub }}>İlan eşleşti · iş süreci başladı</span>
+                      <button onClick={() => navigate(`/takip/${l.id}`)} style={{ ...btnBase, background: C.card }}>
+                        İşi Takip Et <ArrowRight size={14} strokeWidth={2.6} />
+                      </button>
+                    </div>
+                  )
                 ) : (
                   <div style={{ padding: 14 }}>
                     {/* Action row */}
