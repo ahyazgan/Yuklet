@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plus, Check, X, MessageSquare, FileText, Phone, RotateCw, Pencil, Lock, Share2, Trash2, ArrowRight, ShieldCheck } from "lucide-react";
-import { CATS } from "../data/categories";
+import { CATS, STOCK_LEVELS } from "../data/categories";
 import CategoryIcon from "../components/CategoryIcon";
 import { computeReliability, reliabilityTier } from "../utils/reliability";
 import { useToast } from "../components/Toast";
@@ -224,6 +224,36 @@ export default function IlanlarimPage({ listings = [], user, offers = [], review
                     ).filter(Boolean).join(" · ")}
                     {l.type !== "urun" && lOffers.length > 0 && <span style={{ color: C.ink, fontWeight: 700 }}>{" · "}{lOffers.length} TEKLİF</span>}
                   </p>
+
+                  {/* Ürün ilanı: stok kontrolü + gelen sipariş sayısı */}
+                  {l.type === "urun" && !closed && (
+                    <div style={{ marginTop: 10, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
+                      <span style={{ fontFamily: MONO, fontSize: 10, fontWeight: 700, color: C.sub, textTransform: "uppercase" }}>Stok:</span>
+                      {STOCK_LEVELS.map((s) => {
+                        const active = l.stock === s.id;
+                        return (
+                          <button
+                            key={s.id}
+                            onClick={() => { onUpdateListing?.(l.id, { stock: s.id, stockText: s.label }); toast(`Stok: ${s.label}`, "success"); }}
+                            style={{
+                              fontFamily: MONO, fontSize: 10, fontWeight: 700, textTransform: "uppercase",
+                              padding: "3px 9px", borderRadius: 5, cursor: "pointer",
+                              border: `2px solid ${C.ink}`,
+                              background: active ? C.ink : C.card,
+                              color: active ? C.yellow : C.ink,
+                            }}
+                          >
+                            {s.label}
+                          </button>
+                        );
+                      })}
+                      {lOffers.length > 0 && (
+                        <span style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", background: C.yellow, color: C.ink, fontFamily: MONO, fontWeight: 700, fontSize: 10.5, border: `2px solid ${C.ink}`, borderRadius: 5, padding: "3px 8px", textTransform: "uppercase" }}>
+                          {lOffers.length} SİPARİŞ
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Body */}
