@@ -38,14 +38,30 @@ VITE_SUPABASE_ANON_KEY=eyJhbGciOi...
 Test sırasında her kayıtta e-posta onayı beklememek için:
 - **Authentication** → **Providers** → **Email** → "Confirm email" kapat (canlıya alırken tekrar aç).
 
-## 6) Haber ver
-Bu adımları bitirince bana **"anahtarlar hazır"** de. Ben de **cutover**'ı yapayım:
-- `App.jsx` ve veri katmanını Supabase'e bağlarım (giriş/kayıt → Supabase Auth, ilan/teklif/mesaj → veritabanı)
+## 6) Yeniden derle / çalıştır
+Cutover **otomatik** — bana haber vermene gerek yok. Anahtarları `.env.local`'a yazıp uygulamayı yeniden başlat:
+
+```
+npm run dev      # geliştirme
+# veya
+npm run build && npx cap sync   # mobil derleme
+```
+
+`isSupabaseConfigured` anahtar varsa `true` olur ve uygulama **kendiliğinden** Supabase'e geçer:
+- giriş/kayıt → Supabase Auth, ilan/teklif/mesaj/sipariş → veritabanı
 - localStorage yalnızca tema gibi yerel tercih için kalır
-- Artık veri **çok cihazda paylaşılır**, şifreler **sunucuda güvenli** (hash'li), RLS ile herkes yalnızca kendi verisini değiştirebilir
+- veri **çok cihazda paylaşılır**, şifreler **sunucuda güvenli** (hash'li), RLS ile herkes yalnızca kendi verisini değiştirir
+
+### Bağlantı doğrulama
+Açılışta otomatik **sağlık kontrolü** çalışır. Bir sorun varsa ekranın altında kırmızı bir uyarı çıkar ve tam nedeni söyler:
+- **"tablolar yok"** → `schema.sql`'i SQL Editor'de çalıştırmayı unuttun (Adım 2).
+- **"anahtar geçersiz"** → `.env.local`'daki URL/anon anahtarı yanlış (Adım 4).
+- **"ulaşılamadı"** → ağ veya yanlış proje URL'si.
+
+Uyarı çıkmazsa bağlantı sağlıklı; veriler veritabanından gelir.
 
 ---
 
 ### Şu an ne durumda?
-- Kod iskeleti hazır ama **anahtar girilene kadar app eskisi gibi localStorage'da çalışır** (hiçbir şey bozulmaz).
-- `isSupabaseConfigured` anahtar varsa `true` olur; cutover bu bayrağa göre Supabase'i devreye alır.
+- Kod **tamamen hazır ve bağlanmaya kablolu**; **anahtar girilene kadar app localStorage'da çalışır** (hiçbir şey bozulmaz).
+- Anahtarları girip yeniden derleyince backend kendiliğinden devreye girer — ek kod değişikliği gerekmez.

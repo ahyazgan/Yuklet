@@ -21,6 +21,9 @@ const rowToListing = (r) => ({
   paymentStatus: r.payment_status, paymentAmount: r.payment_amount, paymentFee: r.payment_fee, paymentRef: r.payment_ref,
   deliveryProof: r.delivery_proof, cycleStage: r.cycle_stage, arrivedAt: r.arrived_at,
   earlyPaid: r.early_paid, earlyPayFee: r.early_pay_fee, acceptedById: r.accepted_by_id,
+  // urun (tedarikci) ilan alanlari
+  stock: r.stock, stockText: r.stock_text, deliveryIncluded: r.delivery_included,
+  priceUnit: r.price_unit, delivered: r.delivered,
 });
 
 const listingToRow = (l) => ({
@@ -31,6 +34,8 @@ const listingToRow = (l) => ({
   vehicle: l.vehicle ?? null, capacity: l.capacity ?? null,
   price_type: l.priceType, price: l.price ?? null, description: l.desc ?? "",
   km: l.km ?? null, pickup: l.pickup ?? null, dropoff: l.dropoff ?? null,
+  stock: l.stock ?? null, stock_text: l.stockText ?? null,
+  delivery_included: l.deliveryIncluded ?? false, price_unit: l.priceUnit ?? null,
 });
 
 // camelCase patch -> snake_case (listing guncelleme)
@@ -44,6 +49,8 @@ const LISTING_KEYMAP = {
   paymentStatus: "payment_status", paymentAmount: "payment_amount", paymentFee: "payment_fee", paymentRef: "payment_ref",
   deliveryProof: "delivery_proof", cycleStage: "cycle_stage", arrivedAt: "arrived_at",
   earlyPaid: "early_paid", earlyPayFee: "early_pay_fee", acceptedById: "accepted_by_id",
+  stock: "stock", stockText: "stock_text", deliveryIncluded: "delivery_included",
+  priceUnit: "price_unit", delivered: "delivered",
 };
 const mapPatch = (patch, keymap) => {
   const out = {};
@@ -54,6 +61,8 @@ const mapPatch = (patch, keymap) => {
 const rowToOffer = (r) => ({
   id: r.id, listingId: r.listing_id, fromUser: r.from_user_name, fromUserId: r.from_user_id,
   price: r.price, message: r.message, status: r.status, createdAt: r.created_at, updatedAt: r.updated_at,
+  // urun siparisi alanlari
+  qty: r.qty, unit: r.unit, kind: r.kind,
 });
 
 const rowToMessage = (r) => ({
@@ -129,6 +138,26 @@ export async function updateProfile(userId, patch) {
   return { ok: true, profile: rowToProfile(data) };
 }
 
+// ── Saglik kontrolu ─────────────────────────────────────────
+// Anahtarlar girilince baglantinin gercekten calistigini dogrular.
+// Sessiz bos ekran yerine net tani dondurur (yanlis anahtar / sema yok / RLS).
+// Donus: { ok, code, message }
+export async function checkHealth() {
+  if (!supabase) return { ok: false, code: "no_keys", message: "Supabase anahtarlari girilmemis — localStorage modunda calisiyor." };
+  try {
+    const { error } = await supabase.from("listings").select("id").limit(1);
+    if (!error) return { ok: true, code: "ok", message: "Supabase bagli." };
+    const msg = String(error.message || "");
+    if (/relation .* does not exist|could not find the table|schema cache/i.test(msg))
+      return { ok: false, code: "no_schema", message: "Baglanti var ama tablolar yok. supabase/schema.sql dosyasini SQL Editor'de calistir." };
+    if (/jwt|api key|invalid|unauthorized|401/i.test(msg))
+      return { ok: false, code: "bad_key", message: "Anahtar gecersiz. VITE_SUPABASE_URL ve anon anahtarini kontrol et." };
+    return { ok: false, code: "error", message: msg || "Bilinmeyen Supabase hatasi." };
+  } catch (e) {
+    return { ok: false, code: "network", message: "Supabase'e ulasilamadi (ag/URL). " + (e?.message || "") };
+  }
+}
+
 // ── Listings ────────────────────────────────────────────────
 export async function fetchListings() {
   const { data, error } = await supabase.from("listings").select("*").order("created_at", { ascending: false });
@@ -168,7 +197,7 @@ export async function fetchOffers() {
   return (data || []).map(rowToOffer);
 }
 
-export async function createOffer({ listingId, price, message }, profile) {
+export async function createOffer({ listingId, price, message, qty, unit, kind }, profile) {
   const row = {
     listing_id: listingId,
     from_user_id: profile.id,
@@ -176,6 +205,9 @@ export async function createOffer({ listingId, price, message }, profile) {
     price: price ?? null,
     message: message || "",
     status: "beklemede",
+    qty: qty ?? null,
+    unit: unit ?? null,
+    kind: kind ?? null,
   };
   const { data, error } = await supabase.from("offers").insert(row).select("*").single();
   if (error) throw error;

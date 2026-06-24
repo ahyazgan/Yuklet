@@ -64,6 +64,11 @@ create table if not exists public.listings (
   early_paid      boolean not null default false,   -- hizli odeme (erken hakedis) yapildi mi
   early_pay_fee   numeric,                          -- erken odeme ucreti
   accepted_by_id  uuid,                             -- kabul edilen nakliyeci (hizli odeme hedefi)
+  stock           text,                             -- urun ilani stok seviyesi: bol | orta | az
+  stock_text      text,                             -- stok etiketi (gosterim)
+  delivery_included boolean not null default false, -- urun ilani: nakliye dahil mi
+  price_unit      text,                             -- birim fiyat etiketi ( or. /ton)
+  delivered       boolean not null default false,   -- urun siparisi teslim edildi mi
   created_text    text default 'az once',
   created_at      timestamptz not null default now()
 );
@@ -78,6 +83,13 @@ alter table public.listings add column if not exists arrived_at     timestamptz;
 alter table public.listings add column if not exists early_paid     boolean not null default false;
 alter table public.listings add column if not exists early_pay_fee  numeric;
 alter table public.listings add column if not exists accepted_by_id uuid;
+
+-- urun (tedarikci) ilan alanlari — idempotent
+alter table public.listings add column if not exists stock             text;
+alter table public.listings add column if not exists stock_text        text;
+alter table public.listings add column if not exists delivery_included boolean not null default false;
+alter table public.listings add column if not exists price_unit        text;
+alter table public.listings add column if not exists delivered         boolean not null default false;
 
 -- Mevcut tabloya (onceden kurulmussa) odeme kolonlarini ekle — tekrar calistirilabilir.
 alter table public.listings add column if not exists payment_status text not null default 'yok';
@@ -96,12 +108,19 @@ create table if not exists public.offers (
   price          numeric,
   message        text default '',
   status         text not null default 'beklemede', -- beklemede | kabul | ret
+  qty            numeric,                             -- urun siparisi: istenen miktar
+  unit           text,                                -- siparis birimi (ton, m3...)
+  kind           text,                                -- teklif turu: null=teklif | siparis=urun siparisi
   created_at     timestamptz not null default now(),
   updated_at     timestamptz                          -- son durum degisikligi (kabul/ret zamani)
 );
 create index if not exists offers_listing_idx on public.offers(listing_id);
 create index if not exists offers_user_idx    on public.offers(from_user_id);
 alter table public.offers add column if not exists updated_at timestamptz;
+-- urun siparisi alanlari — idempotent
+alter table public.offers add column if not exists qty  numeric;
+alter table public.offers add column if not exists unit text;
+alter table public.offers add column if not exists kind text;
 
 -- ──────────────────────────────────────────────
 -- 4) MESSAGES  (eslesen taraflar arasi)
