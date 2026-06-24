@@ -305,13 +305,19 @@ export default function IlanlarimPage({ listings = [], user, offers = [], review
                                   )}
                                 </div>
 
+                                {o.qty != null && (
+                                  <div style={{ display: "inline-flex", alignItems: "center", gap: 6, margin: "9px 0 0", fontFamily: MONO, fontSize: 11, fontWeight: 700, color: C.ink, background: C.stone, border: `1.5px solid ${C.ink}`, borderRadius: 5, padding: "3px 9px" }}>
+                                    İSTENEN: {Number(o.qty).toLocaleString("tr-TR")} {(o.unit || "ton").toUpperCase()}
+                                  </div>
+                                )}
+
                                 {o.message && <div style={{ fontFamily: BODY, fontSize: 12.5, color: C.sub, margin: "9px 0 0", lineHeight: 1.4 }}>{o.message}</div>}
 
                                 {/* Actions */}
                                 {o.status === "beklemede" && !matched && (
                                   <div style={{ display: "flex", gap: 7, marginTop: 11 }}>
                                     <button onClick={() => accept(l, o)} style={{ ...btnBase, flex: 1, background: C.green, color: "#fff", borderColor: C.ink }}>
-                                      <Check size={14} strokeWidth={3} /> Kabul Et
+                                      <Check size={14} strokeWidth={3} /> {o.kind === "siparis" ? "Siparişi Onayla" : "Kabul Et"}
                                     </button>
                                     <button onClick={() => navigate("/mesajlar")} style={{ ...btnBase, background: C.card }}>
                                       <MessageSquare size={14} strokeWidth={2.4} /> Mesaj
