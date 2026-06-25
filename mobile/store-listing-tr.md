@@ -1,4 +1,4 @@
-# DAYIM — Mağaza Listeleme Metinleri (TR)
+# YÜKLET — Mağaza Listeleme Metinleri (TR)
 
 Aşağıdaki içerikler App Store Connect ve Play Console'a doğrudan yapıştırılabilir.
 Marka, kategori ve karakter sınırları her iki mağaza için ayrı belirtildi.
@@ -6,11 +6,11 @@ Marka, kategori ve karakter sınırları her iki mağaza için ayrı belirtildi.
 ---
 
 ## Uygulama adı
-**DAYIM** — Yük & Nakliye Eşleştirme
+**YÜKLET** — Yük & Nakliye Eşleştirme
 
-- App Store adı (≤30 karakter): `DAYIM – Yük & Nakliye`
+- App Store adı (≤30 karakter): `YÜKLET – Yük & Nakliye`
 - App Store altyazı (≤30): `Hafriyat & silobas işleri`
-- Play başlık (≤30): `DAYIM: Yük & Nakliye`
+- Play başlık (≤30): `YÜKLET: Yük & Nakliye`
 - Play kısa açıklama (≤80): `Hafriyat ve silobas yüklerini doğru araçla, komisyonsuz eşleştir.`
 
 ## Anahtar kelimeler (App Store, ≤100 karakter, virgülle)
@@ -27,7 +27,7 @@ hafriyat,nakliye,silobas,kamyon,damper,taşıma,yük,müteahhit,ocak,agrega,çak
 ## Tam açıklama (Play uzun açıklama / App Store description)
 
 ```
-DAYIM, hafriyat ve silobas/dökme yük taşımacılığını üç tarafı buluşturan bir
+YÜKLET, hafriyat ve silobas/dökme yük taşımacılığını üç tarafı buluşturan bir
 ilan ve eşleştirme platformudur.
 
 İş sahibi (müteahhit) işini yayınlar, nakliyeciler teklif verir, anlaşma sağlanır
@@ -43,13 +43,13 @@ stok ilanlarını açar; nakliye platform üzerinden ayarlanır.
 • Hafriyat: kazı, toprak, moloz, kaya, asfalt kırığı, metal hurda.
 • Silobas: dökme çimento, agrega, kum, çakıl, mıcır, tahıl, kimyasal granül.
 
-— NEDEN DAYIM? —
+— NEDEN YÜKLET? —
 • Komisyonsuz eşleştirme.
 • Hızlı teklif ve mesajlaşma.
 • İl/ilçe bazlı ilan arama.
 • Güvenli iletişim ve değerlendirme sistemi.
 
-DAYIM bir e-ticaret uygulaması değildir; sepet veya doğrudan satış yoktur.
+YÜKLET bir e-ticaret uygulaması değildir; sepet veya doğrudan satış yoktur.
 Amaç, doğru yükü doğru araçla buluşturmaktır.
 ```
 
@@ -91,4 +91,4 @@ Demo hesap: [App Store/Play inceleme hesabı buraya]
 ## Telif / yayıncı bilgisi
 - Yayıncı: [Şirket/şahıs adı]
 - İletişim: a.hakan_@hotmail.com
-- Web: https://hamted.com.tr
+- Web: https://yuklet.co

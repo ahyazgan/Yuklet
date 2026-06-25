@@ -11,10 +11,10 @@ if (hasKeystore) {
 }
 
 android {
-    namespace = "com.dayim.app"
+    namespace = "com.yuklet.app"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.dayim.app"
+        applicationId "com.yuklet.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

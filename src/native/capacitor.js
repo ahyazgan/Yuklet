@@ -74,7 +74,7 @@ export async function initBackButton(navigate, isRootPath) {
   }
 }
 
-// Deep link: uygulama bir bağlantıyla açılınca (com.dayim.app://ilan/123 veya
+// Deep link: uygulama bir bağlantıyla açılınca (com.yuklet.app://ilan/123 veya
 // https://yuklet.co/ilan/123) ilgili rotaya yönlendir. React Router'dan çağrılır.
 export async function initDeepLinks(navigate) {
   if (!isNative()) return () => {};

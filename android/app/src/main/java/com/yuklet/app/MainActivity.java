@@ -1,4 +1,4 @@
-package com.dayim.app;
+package com.yuklet.app;
 
 import com.getcapacitor.BridgeActivity;
 

@@ -1,6 +1,6 @@
 {
-  "appId": "com.dayim.app",
-  "appName": "DAYIM",
+  "appId": "com.yuklet.app",
+  "appName": "YÜKLET",
   "webDir": "dist",
   "backgroundColor": "#11141a",
   "android": {

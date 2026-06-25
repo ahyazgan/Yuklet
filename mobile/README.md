@@ -1,11 +1,11 @@
-# DAYIM — Mobil Uygulama (Capacitor)
+# YÜKLET — Mobil Uygulama (Capacitor)
 
-DAYIM web uygulaması **Capacitor** ile sarmalanarak iOS (App Store) ve Android
+YÜKLET web uygulaması **Capacitor** ile sarmalanarak iOS (App Store) ve Android
 (Google Play) için **gerçek native uygulamalara** dönüştürüldü. Web kod tabanı
 (`src/`) aynen kullanılır; `dist/` build'i native WebView içine kopyalanır.
 
-- **Uygulama adı:** DAYIM
-- **Bundle / Package ID:** `com.dayim.app`
+- **Uygulama adı:** YÜKLET
+- **Bundle / Package ID:** `com.yuklet.app`
 - **Capacitor:** v8 · **Web dizini:** `dist`
 - **Native projeler:** `android/` (Gradle), `ios/` (Xcode)
 

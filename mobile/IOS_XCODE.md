@@ -1,4 +1,4 @@
-# DAYIM — iOS / Xcode Yayın Rehberi (App Store)
+# YÜKLET — iOS / Xcode Yayın Rehberi (App Store)
 
 iOS derleme, imzalama ve App Store'a yükleme **yalnızca macOS + Xcode** ile yapılır
 (Apple kısıtı). Windows/Linux'ta iOS build alınamaz. Aşağıdaki adımlar bir Mac'te
@@ -29,7 +29,7 @@ Xcode'da `ios/App/App.xcworkspace` açılır (`.xcodeproj` DEĞİL — workspace
 Xcode → sol panelde **App** hedefi → **Signing & Capabilities** sekmesi:
 - `[ ]` **Automatically manage signing** işaretli
 - `[ ]` **Team:** Apple Developer hesabını seç
-- `[ ]` **Bundle Identifier:** `com.dayim.app` (zaten ayarlı)
+- `[ ]` **Bundle Identifier:** `com.yuklet.app` (zaten ayarlı)
 - Xcode provisioning profile'ı otomatik üretir.
 
 ## 3. Gerekli Capability — Sign in with Apple
@@ -37,7 +37,7 @@ Uygulama Google ile girişi sunduğundan Apple, **Sign in with Apple**'ı da zor
 kılar (Guideline 4.8). Sadece localStorage demo modunda test ediyorsan giriş sahte
 olsa da App Store için bu capability eklenmeli:
 - `[ ]` Signing & Capabilities → **+ Capability** → **Sign in with Apple** ekle
-- `[ ]` developer.apple.com → Identifiers → `com.dayim.app` için de etkinleştir
+- `[ ]` developer.apple.com → Identifiers → `com.yuklet.app` için de etkinleştir
 
 > Not: Supabase modunda gerçek OAuth kullanılacaksa, OAuth dönüşü için derin bağlantı
 > (Associated Domains / custom URL scheme) yapılandırması ayrıca gerekir. Demo/inceleme
@@ -45,8 +45,8 @@ olsa da App Store için bu capability eklenmeli:
 
 ## 4. App Store Connect'te uygulama kaydı
 https://appstoreconnect.apple.com → My Apps → **+** → New App:
-- `[ ]` Platform: iOS · Ad: **DAYIM** · Dil: Türkçe
-- `[ ]` Bundle ID: `com.dayim.app` (listeden seç)
+- `[ ]` Platform: iOS · Ad: **YÜKLET** · Dil: Türkçe
+- `[ ]` Bundle ID: `com.yuklet.app` (listeden seç)
 - `[ ]` SKU: serbest (örn. `dayim-001`)
 
 ## 5. Sürüm numarası

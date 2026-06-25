@@ -1,4 +1,4 @@
-# DAYIM — Mağaza Gönderim Kontrol Listesi
+# YÜKLET — Mağaza Gönderim Kontrol Listesi
 
 App Store ve Google Play kriterlerini karşılamak için adım adım rehber.
 Kutular: `[ ]` yapılacak · `[x]` kodda hazır.
@@ -9,7 +9,7 @@ Kutular: `[ ]` yapılacak · `[x]` kodda hazır.
 
 | Madde | Durum | Not |
 |---|---|---|
-| Gizlilik Politikası (Privacy Policy) **public URL** | `[ ]` | Uygulama içinde `/yasal/gizlilik` var; canlı `https://hamted.com.tr/...` URL'i şart. |
+| Gizlilik Politikası (Privacy Policy) **public URL** | `[ ]` | Uygulama içinde `/yasal/gizlilik` var; canlı `https://yuklet.co/...` URL'i şart. |
 | Kullanım Koşulları URL | `[ ]` | `/yasal/kullanim` mevcut → canlıya alın. |
 | Destek (Support) URL + e-posta | `[ ]` | `/iletisim` + a.hakan_@hotmail.com |
 | **Hesap silme** akışı (uygulama içi) | `[ ]` | **Apple 5.1.1(v) ve Google zorunlu.** Aşağıya bakın. |
@@ -22,7 +22,7 @@ Kutular: `[ ]` yapılacak · `[x]` kodda hazır.
 - **Google:** Uygulama içi silme **+** ayrıca **web üzerinden hesap silme talep URL'i**.
 - Yapılacak: Profil sayfasına "Hesabımı Sil" ekleyin → kullanıcının verilerini
   (Supabase satırları / localStorage) temizleyip oturumu kapatın. Web silme talebi
-  için `https://hamted.com.tr/hesap-sil` benzeri bir sayfa yayınlayın.
+  için `https://yuklet.co/hesap-sil` benzeri bir sayfa yayınlayın.
 
 ---
 
@@ -31,10 +31,10 @@ Kutular: `[ ]` yapılacak · `[x]` kodda hazır.
 ### Hesap & araçlar
 - `[ ]` Apple Developer Program üyeliği (99 USD/yıl)
 - `[ ]` **macOS + Xcode** (iOS imzalama yalnızca Mac'te yapılır)
-- `[ ]` App Store Connect'te uygulama kaydı, Bundle ID: `com.dayim.app`
+- `[ ]` App Store Connect'te uygulama kaydı, Bundle ID: `com.yuklet.app`
 
 ### Kodda hazır olanlar
-- `[x]` Bundle ID `com.dayim.app`, görünen ad **DAYIM**
+- `[x]` Bundle ID `com.yuklet.app`, görünen ad **YÜKLET**
 - `[x]` `NSCameraUsageDescription`, `NSPhotoLibraryUsageDescription`,
   `NSPhotoLibraryAddUsageDescription` (foto/PDF yükleme için)
 - `[x]` `ITSAppUsesNonExemptEncryption = false` (ihracat uyumu — standart HTTPS)
@@ -47,7 +47,7 @@ Kutular: `[ ]` yapılacak · `[x]` kodda hazır.
   Store Connect'te Sign in with Apple capability'sini etkinleştirin.
 - `[ ]` **App Privacy (Nutrition Labels):** App Store Connect'te veri toplama
   beyanı. Bkz. §3.
-- `[ ]` Telif/marka: "DAYIM" adı ve logosu sizde olmalı.
+- `[ ]` Telif/marka: "YÜKLET" adı ve logosu sizde olmalı.
 
 ### Build & gönderim (macOS)
 ```bash
@@ -96,7 +96,7 @@ cd android && ./gradlew bundleRelease
 - `[ ]` **Play App Signing**'i etkinleştirin (Google imzalama anahtarını yönetir).
 
 ### Play Console adımları
-- `[ ]` Uygulama oluştur → paket adı `com.dayim.app`
+- `[ ]` Uygulama oluştur → paket adı `com.yuklet.app`
 - `[ ]` **Data safety** formu (bkz. §3)
 - `[ ]` İçerik derecelendirme anketi
 - `[ ]` Hedef kitle & içerik (18+ değil; işletme)
@@ -110,7 +110,7 @@ cd android && ./gradlew bundleRelease
 
 ## 3. Veri toplama beyanı (her iki mağaza)
 
-DAYIM mevcut halde **iki modda** çalışabilir:
+YÜKLET mevcut halde **iki modda** çalışabilir:
 - **localStorage modu** (backend yok): veriler **yalnızca cihazda** tutulur,
   sunucuya gönderilmez.
 - **Supabase modu** (`.env` ile etkin): hesap, ilan, mesaj verileri sunucuda tutulur.
