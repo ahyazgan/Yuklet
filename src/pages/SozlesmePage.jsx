@@ -398,7 +398,7 @@ function EDocCard({ doc, status, busy, onSend, rows = [], totals = [] }) {
         )}
         {onayli && (
           <span style={{ fontFamily: MONO, fontSize: 10.5, fontWeight: 700, color: C.green }}>
-            Belge GİB'e iletildi (demo). ETTN: {doc.ettn}
+            Belge GİB'e iletildi. ETTN: {doc.ettn}
           </span>
         )}
         {hata && (

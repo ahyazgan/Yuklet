@@ -7,6 +7,7 @@ import { fmtTL } from "../utils/payments";
 import SEO from "../components/SEO";
 import { isSupabaseConfigured } from "../lib/supabase";
 import { isAdmin } from "../utils/admin";
+import { PAYMENTS_ENABLED } from "../config/features";
 
 // ── SAHA Admin / moderasyon paneli — şikayetler, belge doğrulama, kullanıcılar.
 //    Sharp industrial: 2px ink frame, dark header + hazard, Archivo uppercase, Space Mono data.
@@ -156,7 +157,8 @@ export default function AdminPage({ user, reports = [], docs = [], users = [], l
           </div>
         )}
 
-        {/* ── PARA AKIŞI — koyu blok: GMV + komisyon + emanet + iade ── */}
+        {/* ── PARA AKIŞI — koyu blok: GMV + komisyon + emanet + iade (PAYMENTS_ENABLED ile gizli) ── */}
+        {PAYMENTS_ENABLED && (
         <div style={{ position: "relative", overflow: "hidden", background: C.ink, border: `2px solid ${C.ink}`, borderRadius: 6, padding: 16, boxShadow: "4px 4px 0 rgba(10,10,10,.18)" }}>
           <span style={{ position: "absolute", top: 0, right: 0, bottom: 0, width: 8, backgroundImage: HAZARD }} />
           <div style={{ fontFamily: MONO, fontSize: 9, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "#9A988E" }}>İŞLEM HACMİ (GMV)</div>
@@ -174,6 +176,7 @@ export default function AdminPage({ user, reports = [], docs = [], users = [], l
             ))}
           </div>
         </div>
+        )}
 
         {/* ── FUNNEL: ilan → teklif → eşleşme ── */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
@@ -483,7 +486,8 @@ export default function AdminPage({ user, reports = [], docs = [], users = [], l
         {tab === "pricing" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
 
-            {/* ── KOMİSYON ORANI ── */}
+            {/* ── KOMİSYON ORANI (PAYMENTS_ENABLED ile gizli) ── */}
+            {PAYMENTS_ENABLED && (
             <div style={{ background: C.card, border: `2px solid ${C.ink}`, borderRadius: 6, padding: 16, boxShadow: "3px 3px 0 rgba(10,10,10,.12)" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
                 <span style={{ width: 36, height: 36, borderRadius: 6, background: C.green, border: `2px solid ${C.ink}`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: MONO, fontWeight: 700, color: "#fff", fontSize: 13 }}>%</span>
@@ -506,6 +510,7 @@ export default function AdminPage({ user, reports = [], docs = [], users = [], l
                 Örn: ₺10.000 iş → komisyon <b style={{ color: C.ink }}>{fmtTL(10000 * feeRate)}</b> · nakliyeci <b style={{ color: C.green }}>{fmtTL(10000 * (1 - feeRate))}</b>
               </div>
             </div>
+            )}
 
             <div style={{ background: C.card, border: `2px solid ${C.ink}`, borderRadius: 6, padding: 16, boxShadow: "3px 3px 0 rgba(10,10,10,.12)" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 4 }}>

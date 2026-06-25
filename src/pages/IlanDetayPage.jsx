@@ -23,6 +23,7 @@ import { hapticTap, hapticSuccess } from "../native/haptics";
 import useFavorites from "../hooks/useFavorites";
 import ReportModal from "../components/ReportModal";
 import ProfitCalc from "../components/ProfitCalc";
+import { PAYMENTS_ENABLED } from "../config/features";
 import SEO from "../components/SEO";
 
 // ── SAHA tokens (inline) ──────────────────────────────────────────
@@ -341,8 +342,8 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
           </div>
         )}
 
-        {/* Sefer kâr hesabı (nakliyeci) — iş ilanlarında, mesafe biliniyorsa */}
-        {l.type === "is" && (l.km || est?.km) && (
+        {/* Sefer kâr hesabı (nakliyeci) — iş ilanlarında, mesafe biliniyorsa (PAYMENTS_ENABLED ile gizli) */}
+        {PAYMENTS_ENABLED && l.type === "is" && (l.km || est?.km) && (
           <ProfitCalc basePrice={isFixed ? l.price : (est?.mid || 0)} km={l.km || est?.km || 0} vehicle={l.vehicle} />
         )}
 

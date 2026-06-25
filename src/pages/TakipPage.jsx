@@ -17,6 +17,7 @@ import { pickPhotoDataUrl, cameraNative } from "../native/camera";
 import { computeReliability } from "../utils/reliability";
 import ReliabilityBadge from "../components/ReliabilityBadge";
 import { readWeighTicket } from "../utils/ocr";
+import { PAYMENTS_ENABLED } from "../config/features";
 
 const TripMap = lazy(() => import("../components/TripMap"));
 const SignaturePad = lazy(() => import("../components/SignaturePad"));
@@ -652,8 +653,8 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
           </div>
         )}
 
-        {/* ÖDEME / ESCROW (emanet) */}
-        {matched && amountToPay > 0 && (
+        {/* ÖDEME / ESCROW (emanet) — yayın öncesi PAYMENTS_ENABLED ile gizli */}
+        {PAYMENTS_ENABLED && matched && amountToPay > 0 && (
           <div style={whiteCard}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
               <h2 style={archTitle}>Güvenli Ödeme</h2>

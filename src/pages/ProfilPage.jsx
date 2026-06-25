@@ -9,6 +9,7 @@ import Logo from "../components/Logo";
 import { sendSmsCode, verifySmsCode, isValidPhone } from "../lib/smsProvider";
 import { isAdmin } from "../utils/admin";
 import { computeReliability, reliabilityTier } from "../utils/reliability";
+import { PAYMENTS_ENABLED } from "../config/features";
 
 // ── SAHA profil — keskin endüstriyel "saha" dili.
 //    2px ink çerçeve, koyu header + hazard, Archivo uppercase, Space Mono, stroke ikon.
@@ -481,8 +482,10 @@ export default function ProfilPage({ user, onUpdateProfile, onVerifyPhone, onReq
             { icon: Navigation, label: "Sevkiyat", desc: "Aktif seferleri canlı izle", to: "/sevkiyat" },
             { icon: History, label: "Sefer Geçmişi", desc: "Tamamlanan işler ve hat performansı", to: "/sefer-gecmisi" },
             { icon: Heart, label: "Favorilerim", desc: "Kaydettiğin ilanlar", to: "/ilanlar?fav=1" },
-            { icon: Truck, label: "Cüzdan", desc: "Kazanç, hakediş ve harcama", to: "/cuzdan" },
-            { icon: Building2, label: "Ödeme & hesap", desc: "Banka / IBAN bilgileri", to: "/cuzdan" },
+            ...(PAYMENTS_ENABLED ? [
+              { icon: Truck, label: "Cüzdan", desc: "Kazanç, hakediş ve harcama", to: "/cuzdan" },
+              { icon: Building2, label: "Ödeme & hesap", desc: "Banka / IBAN bilgileri", to: "/cuzdan" },
+            ] : []),
             ...(isAdmin(user) ? [{ icon: ShieldCheck, label: "Yönetim Paneli", desc: "Şikayet, belge ve moderasyon", to: "/admin" }] : []),
             { icon: HelpCircle, label: "Yardım & destek", desc: "Sık sorulan sorular ve iletişim", to: "/iletisim" },
           ].map((m, i, arr) => {

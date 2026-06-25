@@ -12,6 +12,7 @@ import { isSupabaseConfigured } from "./lib/supabase";
 import * as api from "./lib/api";
 import { chargeToEscrow, releaseFromEscrow, refundEscrow } from "./lib/paymentProvider";
 import { splitAmount, earlyPayout } from "./utils/payments";
+import { PAYMENTS_ENABLED } from "./config/features";
 import { buildNotifications } from "./utils/notifications";
 import usePushNotifications from "./hooks/usePushNotifications";
 import { ToastProvider } from "./components/Toast";
@@ -453,7 +454,9 @@ function AppShell() {
                 <Route path="/ilan/:id" element={<PageTransition><IlanDetayPage listings={listings} user={user} onRequireAuth={requireAuth} offers={offers} reviews={reviews} onAddOffer={addOffer} onReport={addReport} isBlocked={isBlocked} onToggleBlock={toggleBlock} /></PageTransition>} />
                 <Route path="/takip/:id" element={<PageTransition><TakipPage listings={listings} user={user} offers={offers} getContact={getContact} reviews={reviews} onAddReview={addReview} getUserRating={getUserRating} onUpdateListing={updateListing} onReport={addReport} onPayToEscrow={payToEscrow} onReleasePayment={releasePayment} onRefundPayment={refundPayment} onEarlyPayout={earlyPayoutNakliyeci} /></PageTransition>} />
                 <Route path="/sozlesme/:offerId" element={<PageTransition><SozlesmePage listings={listings} offers={offers} getContact={getContact} /></PageTransition>} />
+                {PAYMENTS_ENABLED && (
                 <Route path="/cuzdan" element={<PageTransition><CuzdanPage user={user} listings={listings} offers={offers} onRequireAuth={requireAuth} /></PageTransition>} />
+                )}
                 <Route path="/ilan-ver" element={<PageTransition><IlanVerPage onPublish={publishListing} onUpdate={updateListing} listings={listings} user={user} onRequireAuth={requireAuth} /></PageTransition>} />
                 <Route path="/ilan-duzenle/:id" element={<PageTransition><IlanVerPage onPublish={publishListing} onUpdate={updateListing} listings={listings} user={user} onRequireAuth={requireAuth} /></PageTransition>} />
                 <Route path="/ilanlarim" element={<PageTransition><IlanlarimPage listings={listings} user={user} offers={offers} reviews={reviews} onUpdateOffer={updateOffer} onUpdateListing={updateListing} onDeleteListing={removeListing} onRequireAuth={requireAuth} getContact={getContact} /></PageTransition>} />
