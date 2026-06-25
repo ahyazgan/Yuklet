@@ -1,4 +1,4 @@
-// DAYIM — Fiyat Simülatörü — SAHA marka dili.
+// YÜKLET — Fiyat Simülatörü — SAHA marka dili.
 // Tüm Akıllı Fiyat motorunu canlı sergiler: kategori/malzeme/güzergah/miktar/
 // aciliyet değiştir → anlık önerilen fiyat + "Fiyat neden bu?" dökümü + güven.
 
@@ -59,7 +59,7 @@ export default function FiyatSimulasyonuPage() {
 
   return (
     <div style={shell}>
-      <SEO title="Fiyat Simülatörü" description="Taşıma fiyatını canlı hesapla — DAYIM Akıllı Fiyat motoru." />
+      <SEO title="Fiyat Simülatörü" description="Taşıma fiyatını canlı hesapla — YÜKLET Akıllı Fiyat motoru." />
 
       {/* AppBar */}
       <div style={{ position: "sticky", top: 0, zIndex: 20, background: C.header, borderBottom: `2px solid ${C.ink}` }}>

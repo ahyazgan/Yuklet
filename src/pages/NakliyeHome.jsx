@@ -1,4 +1,4 @@
-// DAYIM — Ana Sayfa (SAHA tasarım sistemi)
+// YÜKLET — Ana Sayfa (SAHA tasarım sistemi)
 // Keskin endüstriyel dil: 2px ink çerçeve · hazard şeritleri · sert offset gölge ·
 // Archivo uppercase başlıklar · Space Mono veriler · koyu header blokları · lucide stroke ikonlar.
 // 3 rol gövdesi tek bileşende (muteahhit / nakliyeci / tedarikci).

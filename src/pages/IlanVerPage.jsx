@@ -1,4 +1,4 @@
-// DAYIM — "İlan Ver" — SAHA marka dili (çok adımlı akış).
+// YÜKLET — "İlan Ver" — SAHA marka dili (çok adımlı akış).
 // Visual: industrial/site, manila/concrete palette, Space Mono numerics,
 // 2px black-framed cards, hazard accent, Archivo uppercase headings.
 // Flow: Adım 1/2 (kategori + tür + yük) → Adım 2/2 (güzergah + detay) → Yayınlandı.
@@ -323,7 +323,7 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], user, 
     const shareListing = async () => {
       hapticTap();
       const url = `${window.location.origin}/ilan/${published.id}`;
-      await shareUrl({ title: published.title, text: `${published.title} — DAYIM`, url });
+      await shareUrl({ title: published.title, text: `${published.title} — YÜKLET`, url });
     };
     return (
       <div style={{ ...shell, paddingBottom: 96 }}>
@@ -759,7 +759,7 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], user, 
             {est && (
               <div style={{ background: C.yellow, border: `2px solid ${C.ink}`, borderRadius: 6, padding: 14 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontFamily: MONO, fontSize: 10.5, fontWeight: 700, color: C.ink, letterSpacing: "0.04em" }}>DAYIM AKILLI FİYAT · GÜVEN: {String(est.confidence).toUpperCase()}</span>
+                  <span style={{ fontFamily: MONO, fontSize: 10.5, fontWeight: 700, color: C.ink, letterSpacing: "0.04em" }}>YÜKLET AKILLI FİYAT · GÜVEN: {String(est.confidence).toUpperCase()}</span>
                   <span style={{ fontFamily: MONO, fontSize: 15, fontWeight: 700 }}>{fmtTL(est.min)} – {fmtTL(est.max)}</span>
                 </div>
                 <div style={{ marginTop: 5, fontFamily: MONO, fontSize: 10.5, color: "#3a3a2a" }}>

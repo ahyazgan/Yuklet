@@ -1,4 +1,4 @@
-// DAYIM - 3 tarafli platform: Alici/Muteahhit | Tedarikci | Nakliyeci
+// YÜKLET - 3 tarafli platform: Alici/Muteahhit | Tedarikci | Nakliyeci
 // Tasima kategorileri (hafriyat + silobas) + genisletilmis yuk/arac tipleri
 
 export const CATS = [

@@ -1,4 +1,4 @@
-// DAYIM — Ilan Detay (SAHA visual language).
+// YÜKLET — Ilan Detay (SAHA visual language).
 // Visual: SAHA signature — 2px ink borders, hard offset shadows (no blur),
 // Archivo uppercase headings, Space Mono data, stroke icons. Vehicle variant
 // gets the dark spec band + "yakın işler" card.
@@ -222,7 +222,7 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
   const onShare = async () => {
     hapticTap();
     const url = typeof window !== "undefined" ? window.location.href : "";
-    const res = await shareUrl({ title: l.title, text: `${l.title} — DAYIM`, url });
+    const res = await shareUrl({ title: l.title, text: `${l.title} — YÜKLET`, url });
     if (res === "copied") toast("Bağlantı kopyalandı", "success");
   };
 
@@ -637,12 +637,12 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
                 <h2 style={{ fontFamily: HEAD, fontSize: 18, fontWeight: 900, textTransform: "uppercase", letterSpacing: "-0.02em", margin: "8px 0 2px", lineHeight: 1.18 }}>{l.title}</h2>
                 <div style={{ fontFamily: MONO, fontSize: 11, color: C.sub }}>{l.il}{l.ilce ? `, ${l.ilce}` : ""}</div>
 
-                {/* DAYIM Akıllı Fiyat — önerilen fiyat + tek-tık doldur + güven */}
+                {/* YÜKLET Akıllı Fiyat — önerilen fiyat + tek-tık doldur + güven */}
                 {est && (
                   <div style={{ marginTop: 14, background: C.ink, border: `2px solid ${C.ink}`, borderRadius: 6, overflow: "hidden", boxShadow: "3px 3px 0 rgba(10,10,10,0.18)" }}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "9px 13px", borderBottom: `2px solid ${C.yellow}` }}>
                       <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontFamily: HEAD, fontSize: 11.5, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.04em", color: C.yellow }}>
-                        <TrendingUp size={15} strokeWidth={2.6} /> DAYIM Akıllı Fiyat
+                        <TrendingUp size={15} strokeWidth={2.6} /> YÜKLET Akıllı Fiyat
                       </span>
                       <span style={{ fontFamily: MONO, fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: C.ink, background: C.yellow, borderRadius: 4, padding: "2px 7px" }}>
                         GÜVEN: {est.confidence}

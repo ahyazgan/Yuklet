@@ -67,7 +67,7 @@ export async function showPush({ title, body, icon, tag, link } = {}) {
       await LocalNotifications.schedule({
         notifications: [{
           id: nativeNotifId++,
-          title: title || "DAYIM",
+          title: title || "YÜKLET",
           body: body || "",
           extra: link ? { link } : undefined,
         }],
@@ -81,7 +81,7 @@ export async function showPush({ title, body, icon, tag, link } = {}) {
   // Kullanıcı zaten uygulamaya bakıyorsa (sekme önde) bildirim gösterme.
   if (typeof document !== "undefined" && document.visibilityState === "visible") return null;
   try {
-    const n = new Notification(title || "DAYIM", {
+    const n = new Notification(title || "YÜKLET", {
       body: body || "",
       icon: icon || "/favicon.ico",
       badge: "/favicon.ico",

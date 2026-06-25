@@ -1,5 +1,5 @@
 // ╔══════════════════════════════════════════════════════════════════╗
-// ║  DAYIM — Native (Capacitor) köprü kurulumu                          ║
+// ║  YÜKLET — Native (Capacitor) köprü kurulumu                         ║
 // ║  Yalnızca iOS/Android native kabukta çalışır; web'de no-op olur.    ║
 // ║  StatusBar / SplashScreen / Keyboard / Android geri tuşu yönetimi.  ║
 // ╚══════════════════════════════════════════════════════════════════╝
@@ -75,7 +75,7 @@ export async function initBackButton(navigate, isRootPath) {
 }
 
 // Deep link: uygulama bir bağlantıyla açılınca (com.dayim.app://ilan/123 veya
-// https://hamted.com.tr/ilan/123) ilgili rotaya yönlendir. React Router'dan çağrılır.
+// https://yuklet.co/ilan/123) ilgili rotaya yönlendir. React Router'dan çağrılır.
 export async function initDeepLinks(navigate) {
   if (!isNative()) return () => {};
   try {

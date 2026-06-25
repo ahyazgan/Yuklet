@@ -238,7 +238,7 @@ export default function SozlesmePage({ listings = LISTINGS, offers = [], getCont
               1. Taşıma; yukarıda belirtilen güzergah, malzeme ve miktar için yapılır.
               2. Araç yetki belgeleri (K belgesi vb.) ve sigorta yükümlülükleri taşıyana aittir.
               3. Yükleme/boşaltma koşulları ve teslim süresi taraflarca teyit edilir.
-              4. Ödeme taraflar arasında belirlenen şekilde yapılır; DAYIM yalnızca eşleştirme
+              4. Ödeme taraflar arasında belirlenen şekilde yapılır; YÜKLET yalnızca eşleştirme
               platformudur, taşıma sözleşmesinin tarafı değildir.
               5. Hafriyat taşımalarında döküm sahası ve ilgili belediye/çevre mevzuatına uyum
               taraflarca sağlanır.
@@ -278,7 +278,7 @@ export default function SozlesmePage({ listings = LISTINGS, offers = [], getCont
             )}
           </div>
           <p style={{ fontFamily: "system-ui, sans-serif", fontSize: 12, color: C.sub, marginTop: 8, lineHeight: 1.55 }}>
-            DAYIM, yük yola çıkınca <b>e-İrsaliye</b>, iş bitince <b>e-Fatura</b> belgesini otomatik
+            YÜKLET, yük yola çıkınca <b>e-İrsaliye</b>, iş bitince <b>e-Fatura</b> belgesini otomatik
             üretir ve (entegratör bağlanınca) GİB'e gönderir.
           </p>
 

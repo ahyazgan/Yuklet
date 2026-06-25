@@ -24,7 +24,7 @@ const HAZARD = "repeating-linear-gradient(45deg,#0A0A0A 0 9px,#FACC15 9px 18px)"
 const LEGAL_PAGES = {
   "gizlilik": {
     title: "Gizlilik Politikasi",
-    content: `DAYIM Teknoloji A.S. ("DAYIM") olarak, kullanicilarimizin gizliligine onem veriyoruz. Bu politika, kisisel verilerinizin nasil toplandigi, kullanildigi ve korundugu hakkinda bilgi vermektedir. DAYIM, yuk sahibi ile nakliyeciyi bulusturan bir eslestirme platformudur.
+    content: `YÜKLET Teknoloji A.Ş. ("YÜKLET") olarak, kullanicilarimizin gizliligine onem veriyoruz. Bu politika, kisisel verilerinizin nasil toplandigi, kullanildigi ve korundugu hakkinda bilgi vermektedir. YÜKLET, yuk sahibi ile nakliyeciyi bulusturan bir eslestirme platformudur.
 
 ## 1. Toplanan Veriler
 
@@ -80,29 +80,29 @@ Platform, kullanici deneyimini iyilestirmek icin cerezler kullanir:
 - Islemenin kisitlanmasini talep etme
 - Verilerin tasinabilirligini talep etme
 
-Basvurulariniz icin: kvkk@hamted.com.tr
+Basvurulariniz icin: kvkk@yuklet.co
 
 ## 7. Iletisim
 
-DAYIM Teknoloji A.S.
+YÜKLET Teknoloji A.Ş.
 Buyukdere Cad. No:123 Kat:5, Levent, Istanbul
-E-posta: info@hamted.com.tr
+E-posta: info@yuklet.co
 Telefon: +90 (212) 555 00 00`
   },
   "kullanim-kosullari": {
     title: "Kullanim Kosullari",
-    content: `Bu kullanim kosullari, DAYIM platformunu kullanan tum kullanicilar icin gecerlidir. Platformu kullanarak bu kosullari kabul etmis sayilirsiniz.
+    content: `Bu kullanim kosullari, YÜKLET platformunu kullanan tum kullanicilar icin gecerlidir. Platformu kullanarak bu kosullari kabul etmis sayilirsiniz.
 
 ## 1. Tanimlar
 
-- **Platform:** hamted.com.tr web sitesi ve mobil uygulamasi
+- **Platform:** yuklet.co web sitesi ve mobil uygulamasi
 - **Kullanici:** Platformu kullanan gercek veya tuzel kisi
 - **Is Sahibi:** Tasinacak yuk icin is ilani veren taraf (muteahhit, firma, kisi)
 - **Nakliyeci:** Arac ilani veren veya ise teklif veren tasiyici taraf
 
 ## 2. Platformun Niteligi
 
-- DAYIM, is sahibi ile nakliyeciyi bulusturan bir eslestirme/ilan platformudur
+- YÜKLET, is sahibi ile nakliyeciyi bulusturan bir eslestirme/ilan platformudur
 - Platform, tasima hizmetinin tarafi degildir; tasima sozlesmesi dogrudan kullanicilar arasinda kurulur
 - Platform, ilan ve tekliflerin dogrulugunu garanti etmez
 
@@ -129,7 +129,7 @@ Telefon: +90 (212) 555 00 00`
 
 ## 6. Fikri Mulkiyet
 
-- Platform uzerindeki tum icerik, tasarim ve yazilim DAYIM'e aittir
+- Platform uzerindeki tum icerik, tasarim ve yazilim YÜKLET'e aittir
 - Izinsiz kopyalama, dagitma veya degistirme yasaktir
 
 ## 7. Uyusmazlik Cozumu
@@ -139,11 +139,11 @@ Telefon: +90 (212) 555 00 00`
   },
   "kvkk": {
     title: "KVKK Aydinlatma Metni",
-    content: `6698 Sayili Kisisel Verilerin Korunmasi Kanunu ("KVKK") uyarinca, DAYIM Teknoloji A.S. olarak veri sorumlusu sifatiyla sizleri bilgilendirmek isteriz.
+    content: `6698 Sayili Kisisel Verilerin Korunmasi Kanunu ("KVKK") uyarinca, YÜKLET Teknoloji A.Ş. olarak veri sorumlusu sifatiyla sizleri bilgilendirmek isteriz.
 
 ## 1. Veri Sorumlusu
 
-DAYIM Teknoloji A.S.
+YÜKLET Teknoloji A.Ş.
 Mersis No: 0123456789012345
 Adres: Buyukdere Cad. No:123 Kat:5, Levent, Istanbul
 
@@ -196,7 +196,7 @@ haklarina sahipsiniz.
 ## 6. Basvuru Yontemi
 
 Haklarinizi kullanmak icin:
-- E-posta: kvkk@hamted.com.tr
+- E-posta: kvkk@yuklet.co
 - Posta: Buyukdere Cad. No:123 Kat:5, Levent, Istanbul
 - KEP: hamted@hs01.kep.tr
 
@@ -232,7 +232,7 @@ export default function LegalPage() {
 
   return (
     <div style={shell}>
-      <SEO title={page.title} description={page.title + " - DAYIM Teknoloji A.Ş."} />
+      <SEO title={page.title} description={page.title + " - YÜKLET Teknoloji A.Ş."} />
 
       {/* App bar */}
       <div
@@ -278,7 +278,7 @@ export default function LegalPage() {
           <div style={{ padding: 18 }}>
             <h2 style={{ margin: 0, fontFamily: ARCHIVO, fontSize: 20, fontWeight: 900, textTransform: "uppercase", letterSpacing: "-0.02em", color: C.ink }}>{page.title}</h2>
             <div style={{ marginTop: 6, fontFamily: MONO, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em", color: C.muted }}>
-              Son güncelleme: 1 Ocak 2026 · DAYIM Teknoloji A.Ş.
+              Son güncelleme: 1 Ocak 2026 · YÜKLET Teknoloji A.Ş.
             </div>
 
             <div style={{ marginTop: 16, fontFamily: BODY, fontSize: 13, lineHeight: 1.6, color: C.sub }}>

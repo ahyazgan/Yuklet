@@ -1,4 +1,4 @@
-// DAYIM — Piyasa Nabzı (Market Pulse) — SAHA marka dili.
+// YÜKLET — Piyasa Nabzı (Market Pulse) — SAHA marka dili.
 // Güzergah / malzeme / kategori bazlı ₺/ton-km referansı, geçmiş
 // işlemlerden (kabul teklif + sabit fiyat) hesaplanır. Veri biriktikçe
 // zenginleşir. Platformu "ilan panosu"ndan "fiyat referansı"na taşır.
@@ -64,7 +64,7 @@ export default function PiyasaNabziPage({ listings = LISTINGS, offers }) {
 
   return (
     <div style={shell}>
-      <SEO title="Piyasa Nabzı" description="Güzergah ve malzeme bazlı güncel taşıma fiyatı referansı — DAYIM Akıllı Fiyat." />
+      <SEO title="Piyasa Nabzı" description="Güzergah ve malzeme bazlı güncel taşıma fiyatı referansı — YÜKLET Akıllı Fiyat." />
 
       {/* AppBar */}
       <div style={{ position: "sticky", top: 0, zIndex: 20, background: C.header, borderBottom: `2px solid ${C.ink}` }}>
@@ -83,7 +83,7 @@ export default function PiyasaNabziPage({ listings = LISTINGS, offers }) {
 
         {/* özet bandı — koyu blok + hazard */}
         <div style={{ position: "relative", overflow: "hidden", background: C.ink, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "16px 16px", boxShadow: "4px 4px 0 rgba(10,10,10,.18)" }}>
-          <div style={{ ...microLabel, color: "#9A988E" }}>DAYIM AKILLI FİYAT REFERANSI</div>
+          <div style={{ ...microLabel, color: "#9A988E" }}>YÜKLET AKILLI FİYAT REFERANSI</div>
           <div style={{ fontFamily: ARCH, fontSize: 20, fontWeight: 900, textTransform: "uppercase", color: "#fff", marginTop: 6, lineHeight: 1.1 }}>
             Taşıma fiyatları, gerçek işlemlerden
           </div>

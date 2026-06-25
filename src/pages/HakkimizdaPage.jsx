@@ -43,7 +43,7 @@ export default function HakkimizdaPage() {
 
   return (
     <div style={shell}>
-      <SEO title="Hakkımızda" description="DAYIM hakkında bilgi edinin. Türkiye'nin yük & nakliye eşleştirme platformu." />
+      <SEO title="Hakkımızda" description="YÜKLET hakkında bilgi edinin. Türkiye'nin yük & nakliye eşleştirme platformu." />
 
       {/* App bar */}
       <div
@@ -72,7 +72,7 @@ export default function HakkimizdaPage() {
               Sahanın Yükünü Dijitale Taşıyoruz
             </h2>
             <p style={{ margin: "12px 0 0", fontFamily: BODY, fontSize: 13, lineHeight: 1.6, color: "#C9C7C0" }}>
-              DAYIM, hafriyat ve silobas taşımacılığında yükü olan ile boş aracı olan tarafı doğrudan buluşturur. Telefon trafiğini ve aracı zincirini ortadan kaldırarak doğru aracı doğru işe hızlıca ulaştırırız.
+              YÜKLET, hafriyat ve silobas taşımacılığında yükü olan ile boş aracı olan tarafı doğrudan buluşturur. Telefon trafiğini ve aracı zincirini ortadan kaldırarak doğru aracı doğru işe hızlıca ulaştırırız.
             </p>
             <p style={{ margin: "10px 0 0", fontFamily: BODY, fontSize: 13, lineHeight: 1.6, color: "#C9C7C0" }}>
               Şeffaf ilanlar, karşılıklı puanlama ve komisyonsuz eşleştirme ile nakliye sektöründe yeni bir standart belirliyoruz.
@@ -90,7 +90,7 @@ export default function HakkimizdaPage() {
 
         {/* Guven sayilari — 3 sutun */}
         <div>
-          <span style={sectionLabel}>RAKAMLARLA DAYIM</span>
+          <span style={sectionLabel}>RAKAMLARLA YÜKLET</span>
           <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10 }}>
             {STATS.map(([num, label]) => (
               <div key={label} style={{ ...cardBase, padding: "14px 8px", textAlign: "center" }}>

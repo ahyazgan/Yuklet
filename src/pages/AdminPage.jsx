@@ -138,7 +138,7 @@ export default function AdminPage({ user, reports = [], docs = [], users = [], l
 
   return (
     <div style={shell}>
-      <SEO title="Yönetim Paneli" description="DAYIM moderasyon paneli." />
+      <SEO title="Yönetim Paneli" description="YÜKLET moderasyon paneli." />
 
       {/* ── Dark header + hazard ── */}
       <div style={{ position: "relative", background: C.ink, padding: "16px 18px", display: "flex", alignItems: "center", gap: 11, overflow: "hidden" }}>

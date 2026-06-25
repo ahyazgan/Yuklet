@@ -1,5 +1,5 @@
-// ── DAYIM marka logosu — SAHA dili. Damperli kamyon + ileri ok simgesi +
-// "DAYIM" yazısı (yatay kilit). Şeffaf PNG (public/logo-full.png).
+// ── YÜKLET marka logosu — SAHA dili. Damperli kamyon + ileri ok simgesi +
+// "YÜKLET" yazısı (yatay kilit). Şeffaf PNG (public/logo-full.png).
 // Tek doğruluk kaynağı: tüm uygulama bunu kullanır.
 //
 //   <Logo />                 → varsayılan (orta boy)
@@ -18,7 +18,7 @@ export default function Logo({ size = "md", onDark = false, icon = false, classN
   return (
     <img
       src={src}
-      alt="DAYIM"
+      alt="YÜKLET"
       className={className}
       style={{
         height: h,

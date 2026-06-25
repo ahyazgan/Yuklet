@@ -1,5 +1,5 @@
 // ╔══════════════════════════════════════════════════════════════════╗
-// ║  DAYIM Akıllı Fiyat — şeffaf sezgisel taban + geçmişten öğrenme.   ║
+// ║  YÜKLET Akıllı Fiyat — şeffaf sezgisel taban + geçmişten öğrenme.   ║
 // ║  Taban: il yakınlığı → ort. km, kategori çarpanı, sefer sayısı.    ║
 // ║  Öğrenme: geçmiş KABUL teklifleri + sabit fiyatlı ilanlardan       ║
 // ║  ₺/ton-km medyanı çıkarır, taban tahminle harmanlar. Veri          ║

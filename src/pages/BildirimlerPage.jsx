@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { ChevronLeft, Inbox, MessageSquare, Check, X as XIcon, Mail, Star } from "lucide-react";
 import SEO from "../components/SEO";
 
-// ── DAYIM Bildirim Merkezi — tam sayfa bildirim listesi (geçmiş + okundu).
+// ── YÜKLET Bildirim Merkezi — tam sayfa bildirim listesi (geçmiş + okundu).
 // Açılınca tüm bildirimler "okundu" işaretlenir (onSeen). Her satır ilgili
 // ekrana götürür. items: buildNotifications çıktısı ({ id, icon, text, fmtTime, link, read }).
 

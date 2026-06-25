@@ -1,4 +1,4 @@
-// DAYIM — İlanlar (SAHA marka dili)
+// YÜKLET — İlanlar (SAHA marka dili)
 // Endüstriyel/şantiye · manila zemin · 2px siyah çerçeve · Archivo başlık · Space Mono rakamlar.
 // TÜM filtreleme/işlevsellik korunur: URL params, kaydedilmiş aramalar,
 // gelişmiş filtreler (malzeme/fiyat/sıralama), dönüş yükü (backhaul), harita.
@@ -74,7 +74,7 @@ const fmtPrice = (l) =>
 const DEVIATION_KM = { 0: 0, 1: 12, 2: 45 };
 const deviationOf = (dist) => DEVIATION_KM[dist] ?? 60;
 
-// İş ilanı için DAYIM Akıllı Fiyat etiketi:
+// İş ilanı için YÜKLET Akıllı Fiyat etiketi:
 // teklife açık → önerilen fiyat ipucu · sabit fiyat → piyasa altı/üstü rozeti.
 function marketTagOf(l, history, config) {
   if (l.type !== "is" || !l.amount) return null;
@@ -303,7 +303,7 @@ function ListingCard({ l, history, config, isFav = false, onToggleFav, rel }) {
             </span>
           ) : market?.suggest ? (
             <span className="flex flex-col items-end" style={{ lineHeight: 1.05 }}>
-              <span style={{ ...MONO, fontSize: 8, fontWeight: 700, color: C.muted, letterSpacing: "0.04em" }}>DAYIM ÖNERİ</span>
+              <span style={{ ...MONO, fontSize: 8, fontWeight: 700, color: C.muted, letterSpacing: "0.04em" }}>YÜKLET ÖNERİ</span>
               <span style={{ ...MONO, fontSize: 13, fontWeight: 700, color: C.ink }}>{market.suggest}</span>
             </span>
           ) : (
@@ -393,7 +393,7 @@ export default function ListingsPage({ listings = LISTINGS, onRefresh, blockedId
   // Aşağı-çekip-yenile (dokunmatik). onRefresh yoksa kısa görsel geri bildirim.
   const ptrRefresh = onRefresh || (() => new Promise((r) => setTimeout(r, 500)));
   const { distance, refreshing, pull } = usePullToRefresh(ptrRefresh);
-  // DAYIM Akıllı Fiyat: kartlardaki piyasa etiketleri için geçmiş veri (bir kez).
+  // YÜKLET Akıllı Fiyat: kartlardaki piyasa etiketleri için geçmiş veri (bir kez).
   const priceHistory = useMemo(() => ({ listings, offers: loadOffers() }), [listings]);
   const pricingConfig = useMemo(() => loadPricingConfig(), []);
   const [type, setType] = useState(["arac", "is", "urun"].includes(sp.get("type")) ? sp.get("type") : "all");
@@ -673,7 +673,7 @@ export default function ListingsPage({ listings = LISTINGS, onRefresh, blockedId
             </button>
           )}
 
-          {/* Piyasa Nabzı girişi — DAYIM Akıllı Fiyat referansı */}
+          {/* Piyasa Nabzı girişi — YÜKLET Akıllı Fiyat referansı */}
           {mode === "normal" && (
             <button
               onClick={() => navigate("/piyasa")}

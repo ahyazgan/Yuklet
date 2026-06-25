@@ -1,7 +1,7 @@
 // ╔══════════════════════════════════════════════════════════════════╗
 // ║  Uygulama içi sürüm uyarısı — uzaktaki app-version.json ile         ║
 // ║  yeni sürüm kontrolü. Hata/erişimsizlikte sessizce null döner.     ║
-// ║  Sürüm çıktıkça hamted.com.tr/app-version.json güncellenir.        ║
+// ║  Sürüm çıktıkça yuklet.co/app-version.json güncellenir.            ║
 // ╚══════════════════════════════════════════════════════════════════╝
 
 import { Capacitor } from "@capacitor/core";
@@ -10,7 +10,7 @@ import { Capacitor } from "@capacitor/core";
 export const APP_VERSION = "1.0.0";
 
 // Uzak sürüm bildirimi. Örnek içerik için public/app-version.json'a bakın.
-const VERSION_URL = "https://hamted.com.tr/app-version.json";
+const VERSION_URL = "https://yuklet.co/app-version.json";
 
 // "1.2.0" vs "1.0.3" → -1 | 0 | 1
 function cmpVersion(a, b) {

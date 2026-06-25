@@ -137,7 +137,7 @@ export default function IlanlarimPage({ listings = [], user, offers = [], review
   const share = async (l) => {
     hapticTap();
     const url = `${window.location.origin}/ilan/${l.id}`;
-    const res = await shareUrl({ title: l.title, text: `${l.title} — DAYIM`, url });
+    const res = await shareUrl({ title: l.title, text: `${l.title} — YÜKLET`, url });
     if (res === "copied") toast("İlan bağlantısı kopyalandı", "info");
   };
 

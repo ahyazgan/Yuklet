@@ -7,7 +7,7 @@
 import { Capacitor } from "@capacitor/core";
 
 // Sonuç: "shared" | "copied" | "failed"
-export async function shareUrl({ title = "DAYIM", text = "", url = "" } = {}) {
+export async function shareUrl({ title = "YÜKLET", text = "", url = "" } = {}) {
   // 1) Native (iOS/Android) → Capacitor Share (her iki platformda çalışır)
   if (Capacitor.isNativePlatform()) {
     try {

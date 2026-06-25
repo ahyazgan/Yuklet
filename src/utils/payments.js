@@ -1,5 +1,5 @@
 // ╔══════════════════════════════════════════════════════════════════╗
-// ║  DAYIM Ödeme & Escrow (emanet) mantığı                            ║
+// ║  YÜKLET Ödeme & Escrow (emanet) mantığı                            ║
 // ║  Para akışı: müteahhit emanete öder → bloke → teslimde nakliyeciye ║
 // ║  serbest. Platform komisyonu keser. Oran DİNAMİK (panelden ayar).  ║
 // ╚══════════════════════════════════════════════════════════════════╝

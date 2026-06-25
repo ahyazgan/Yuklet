@@ -33,7 +33,7 @@ const FIELDS = [
 // [icon, iconBg, iconColor, title, value, sub]
 const CONTACTS = [
   [Phone, C.green, "#FFFFFF", "Telefon", "+90 (212) 555 00 00", "Pazartesi-Cuma 09:00-18:00"],
-  [Mail, C.ink, C.yellow, "E-posta", "info@hamted.com.tr", "En geç 2 saat içinde dönüş"],
+  [Mail, C.ink, C.yellow, "E-posta", "info@yuklet.co", "En geç 2 saat içinde dönüş"],
   [MessageCircle, C.yellow, C.ink, "WhatsApp", "+90 (555) 000 00 00", "7/24 hızlı destek"],
   [MapPin, C.ink, "#FFFFFF", "Adres", "Levent, İstanbul", "Büyükdere Cad. No:123 Kat:5"],
 ];
@@ -64,7 +64,7 @@ export default function IletisimPage() {
 
   return (
     <div style={shell}>
-      <SEO title="İletişim" description="DAYIM ile iletişime geçin. İlan, teklif ve nakliye süreci hakkındaki sorularınız için bize ulaşın." />
+      <SEO title="İletişim" description="YÜKLET ile iletişime geçin. İlan, teklif ve nakliye süreci hakkındaki sorularınız için bize ulaşın." />
 
       {/* App bar */}
       <div
