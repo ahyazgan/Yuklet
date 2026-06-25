@@ -9,10 +9,11 @@ Kutular: `[ ]` yapılacak · `[x]` kodda hazır.
 
 | Madde | Durum | Not |
 |---|---|---|
-| Gizlilik Politikası (Privacy Policy) **public URL** | `[ ]` | Uygulama içinde `/yasal/gizlilik` var; canlı `https://yuklet.co/...` URL'i şart. |
-| Kullanım Koşulları URL | `[ ]` | `/yasal/kullanim` mevcut → canlıya alın. |
-| Destek (Support) URL + e-posta | `[ ]` | `/iletisim` + a.hakan_@hotmail.com |
-| **Hesap silme** akışı (uygulama içi) | `[ ]` | **Apple 5.1.1(v) ve Google zorunlu.** Aşağıya bakın. |
+| Gizlilik Politikası (Privacy Policy) **public URL** | `[x]` | `https://yuklet.co/yasal/gizlilik` (canlı). |
+| Kullanım Koşulları URL | `[x]` | `https://yuklet.co/yasal/kullanim-kosullari` (canlı). |
+| Destek (Support) URL + e-posta | `[x]` | `https://yuklet.co/iletisim` + info@yuklet.co |
+| **Hesap silme** akışı (uygulama içi) | `[x]` | Profil → "Hesabımı kalıcı olarak sil" (iki adımlı onay). **Apple 5.1.1(v) karşılandı.** |
+| **Hesap silme** web URL (Google zorunlu) | `[x]` | `https://yuklet.co/yasal/hesap-silme` (canlı). |
 | Demo / test hesabı (inceleme için) | `[ ]` | Giriş Google/Apple OAuth ile; inceleyiciye hazır hesap + adım verin. |
 | Uygulama ikonu (1024²) | `[x]` | `assets/icon.png` → native projelere üretildi. |
 | Splash ekranı | `[x]` | `assets/splash.png` → üretildi. |

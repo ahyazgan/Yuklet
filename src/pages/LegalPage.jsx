@@ -198,17 +198,65 @@ haklarina sahipsiniz.
 Haklarinizi kullanmak icin:
 - E-posta: kvkk@yuklet.co
 - Posta: Buyukdere Cad. No:123 Kat:5, Levent, Istanbul
-- KEP: hamted@hs01.kep.tr
+- KEP: yuklet@hs01.kep.tr
 
 Basvurular en gec 30 gun icinde sonuclandirilir.`
+  },
+  "hesap-silme": {
+    title: "Hesap ve Veri Silme",
+    content: `YÜKLET hesabinizi ve hesabinizla iliskili tum verileri kalici olarak silebilirsiniz. Bu sayfa, Google Play ve App Store gerekleri uyarinca hesap silme yontemini ve silinen verileri aciklar.
+
+## 1. Uygulama Icinden Silme (Onerilen)
+
+En hizli yontem uygulama uzerinden silmektir:
+
+- **Profil** sekmesini acin
+- Sayfanin altindaki **"Hesabimi kalici olarak sil"** secenegine dokunun
+- Onay adimini tamamlayin
+
+Hesabiniz ve verileriniz aninda silinir, oturumunuz kapatilir.
+
+## 2. Web Uzerinden Silme Talebi
+
+Uygulamaya erisiminiz yoksa, hesabinizi web uzerinden silmek icin talep gonderebilirsiniz:
+
+- **E-posta:** info@yuklet.co adresine, hesabinizla kayitli e-posta adresinden "Hesap Silme Talebi" konusuyla yazin
+- Kimlik dogrulamasi sonrasi talebiniz **en gec 30 gun** icinde islenir
+
+## 3. Silinen Veriler
+
+Hesap silindiginde asagidaki veriler **kalici olarak** silinir:
+
+- **Hesap Bilgileri:** Ad, e-posta, telefon, firma bilgileri
+- **Ilanlariniz:** Yayinladiginiz tum is ve arac ilanlari
+- **Teklifleriniz:** Verdiginiz ve aldiginiz tum teklifler
+- **Mesajlariniz:** Tum mesajlasma gecmisi
+- **Belgeleriniz:** Yukledginiz belgeler ve dogrulama kayitlari
+- **Degerlendirmeler:** Verdiginiz puan ve yorumlar
+
+## 4. Saklanabilecek Veriler
+
+Yasal yukumlulukler geregi bazi veriler sinirli sure saklanabilir:
+
+- Fatura ve odeme kayitlari (Vergi Usul Kanunu uyarinca 5 yil)
+- Yasal uyusmazlik konusu olan kayitlar (uyusmazlik suresince)
+
+Bu veriler yalnizca yasal zorunluluk kapsaminda tutulur ve baska amacla kullanilmaz.
+
+## 5. Iletisim
+
+Sorulariniz icin:
+- E-posta: info@yuklet.co
+- KVKK talepleri: kvkk@yuklet.co`
   }
 };
 
 // Tab chips — slug-based navigation (routing preserved)
 const TABS = [
-  { slug: "kvkk", label: "KVKK" },
+  { slug: "gizlilik", label: "Gizlilik" },
   { slug: "kullanim-kosullari", label: "Kullanım" },
-  { slug: "gizlilik", label: "Çerez" },
+  { slug: "kvkk", label: "KVKK" },
+  { slug: "hesap-silme", label: "Hesap Sil" },
 ];
 
 const shell = { display: "flex", flexDirection: "column", minHeight: "100%", background: C.bg, fontFamily: BODY };
