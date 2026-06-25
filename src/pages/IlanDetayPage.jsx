@@ -14,6 +14,7 @@ import { LISTINGS } from "../data/listings";
 import { CATS } from "../data/categories";
 import { computeReliability, reliabilityTier } from "../utils/reliability";
 import { backhaulForJob, loadsForVehicle, vehicleClassOf } from "../utils/backhaul";
+import { smartRank } from "../utils/matching";
 import { estimatePrice, fmtTL, priceSignal } from "../utils/priceEstimate";
 import { loadPricingConfig } from "../utils/storage";
 import { newId, nowIso } from "../utils/id";
@@ -169,7 +170,9 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
   const isOwner = user && l.ownerId && l.ownerId === user.id;
   const isFixed = l.priceType === "sabit" && l.price;
   const closed = l.status === "kapali" || l.status === "eslesti";
-  const backhaul = isProduct ? [] : isVehicle ? loadsForVehicle(l, listings) : backhaulForJob(l, listings);
+  // Akıllı eşleşme: geniş aday havuzunu (8) bileşik skorla yeniden sırala, en iyi 4'ü al.
+  const rawBackhaul = isProduct ? [] : isVehicle ? loadsForVehicle(l, listings, 8) : backhaulForJob(l, listings, 8);
+  const backhaul = smartRank(l, rawBackhaul, { listings, offers, reviews }, 4);
   // Benzer ilanlar — aynı kategori + tür; aynı il/malzeme öne çıkar. En çok 4.
   const similar = listings
     .filter((x) => String(x.id) !== String(l.id) && x.status !== "kapali" && x.cat === l.cat && x.type === l.type)
@@ -443,12 +446,12 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
               <span style={headLabel}>
                 {isVehicle ? "BU ARACA UYGUN YAKIN İŞLER" : "DÖNÜŞ YÜKÜ FIRSATI"}
               </span>
-              <span style={{ marginLeft: "auto", background: C.yellow, border: `2px solid ${C.ink}`, fontFamily: MONO, fontSize: 8, fontWeight: 700, padding: "1px 6px", borderRadius: 4 }}>YENİ</span>
+              <span style={{ marginLeft: "auto", background: C.yellow, border: `2px solid ${C.ink}`, fontFamily: MONO, fontSize: 8, fontWeight: 700, padding: "1px 6px", borderRadius: 4 }}>AKILLI EŞLEŞME</span>
             </div>
             <p style={{ fontSize: 12, color: C.sub, margin: "0 0 12px", lineHeight: 1.5 }}>
               {isVehicle
-                ? `${vehicleClassOf(l)} aracınıza uygun yakın işler (sefer tahmini dahil).`
-                : "Bu işi alan araç dönüşte boş gitmesin — güzergaha uygun yükler."}
+                ? `${vehicleClassOf(l)} aracınıza en uygun işler — mesafe, kapasite, güven ve tazelikten hesaplanan eşleşme skoruyla sıralı.`
+                : "Bu işi alan araç dönüşte boş gitmesin — güzergah, güven ve tazelik skoruyla sıralı dönüş yükleri."}
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {backhaul.map((m) => (
@@ -467,8 +470,18 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
                     <span style={{ display: "block", fontFamily: MONO, fontSize: 10, color: C.sub, marginTop: 3 }}>
                       {m.listing.il}{m.listing.amount ? ` · ${m.listing.amount} ${m.listing.unit || ""}` : ""}{m.trips ? ` · ~${m.trips} sefer` : ""}
                     </span>
+                    {m.reasons?.length > 0 && (
+                      <span style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 6 }}>
+                        {m.reasons.map((r) => (
+                          <span key={r.k} style={{ fontFamily: MONO, fontSize: 8.5, fontWeight: 700, color: r.strong ? C.ink : C.sub, background: r.strong ? C.yellow : C.card, border: `1.5px solid ${C.ink}`, padding: "1px 5px", borderRadius: 4 }}>{r.t}</span>
+                        ))}
+                      </span>
+                    )}
                   </span>
-                  <span style={{ flexShrink: 0, fontFamily: MONO, fontSize: 9, fontWeight: 700, background: C.yellow, border: `2px solid ${C.ink}`, padding: "4px 8px", borderRadius: 5 }}>{m.fit}</span>
+                  <span style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 2, background: C.card, border: `2px solid ${C.ink}`, padding: "5px 8px", borderRadius: 5, minWidth: 50 }}>
+                    <span style={{ fontFamily: HEAD, fontSize: 16, fontWeight: 900, lineHeight: 1, color: m.tier?.color || C.ink }}>%{m.score}</span>
+                    <span style={{ fontFamily: MONO, fontSize: 7, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.03em", color: C.muted }}>EŞLEŞME</span>
+                  </span>
                 </button>
               ))}
             </div>
