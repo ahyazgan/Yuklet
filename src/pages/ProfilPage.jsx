@@ -1,12 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Settings, BadgeCheck, Truck, Package, Lock, Building2, HelpCircle, LogOut, ChevronRight, ShieldCheck, Smartphone, Upload, FileText, Star, Heart, Navigation, History, Inbox } from "lucide-react";
+import { Settings, BadgeCheck, Truck, Package, Lock, Building2, HelpCircle, LogOut, ChevronRight, ShieldCheck, Upload, FileText, Star, Heart, Navigation, History, Inbox } from "lucide-react";
 import { useToast } from "../components/Toast";
 import { StarsDisplay } from "../components/Stars";
 import SEO from "../components/SEO";
 import Logo from "../components/Logo";
-import { sendSmsCode, verifySmsCode, isValidPhone } from "../lib/smsProvider";
 import { isAdmin } from "../utils/admin";
 import { computeReliability, reliabilityTier } from "../utils/reliability";
 import { PAYMENTS_ENABLED } from "../config/features";
@@ -70,7 +69,7 @@ const sectionTitle = { fontFamily: ARCHIVO, fontSize: 13, fontWeight: 800, color
 const labelSt = { display: "block", marginBottom: 6, fontFamily: MONO, fontSize: 10, fontWeight: 700, color: C.sub, letterSpacing: 0.4, textTransform: "uppercase" };
 const inputSt = { width: "100%", boxSizing: "border-box", background: C.card, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "11px 13px", fontSize: 14, color: C.ink, outline: "none", fontFamily: MONO };
 
-export default function ProfilPage({ user, onUpdateProfile, onVerifyPhone, onRequireAuth, onLogout, onDeleteAccount, reviews = [], getUserRating, listings = [], offers = [], docs = [], onAddDoc, onRemoveDoc }) {
+export default function ProfilPage({ user, onUpdateProfile, onRequireAuth, onLogout, onDeleteAccount, reviews = [], getUserRating, listings = [], offers = [], docs = [], onAddDoc, onRemoveDoc }) {
   const toast = useToast();
   const navigate = useNavigate();
   const [docType, setDocType] = useState("K Belgesi");
@@ -82,36 +81,11 @@ export default function ProfilPage({ user, onUpdateProfile, onVerifyPhone, onReq
     finally { toast?.("Hesabın ve verilerin silindi.", "info"); navigate("/"); }
   };
 
-  // ── Telefon doğrulama (SMS, mock-first) ──
-  const [smsStep, setSmsStep] = useState("idle"); // idle | sent
-  const [smsCode, setSmsCode] = useState("");
-  const [smsHint, setSmsHint] = useState("");     // mock'ta gösterilen kod
-  const [smsBusy, setSmsBusy] = useState(false);
-
   const [form, setForm] = useState({
     name: user?.name || "",
     phone: user?.phone || "",
     role: user?.role || "isveren",
   });
-
-  const startVerify = async () => {
-    setSmsBusy(true); setSmsHint("");
-    const res = await sendSmsCode(form.phone).catch((e) => ({ ok: false, error: e?.message }));
-    setSmsBusy(false);
-    if (!res?.ok) { toast(res?.error || "Kod gönderilemedi", "error"); return; }
-    setSmsStep("sent");
-    if (res.mock) setSmsHint(res.code); // gerçek SMS yokken kodu ekranda göster
-    toast(res.mock ? "Demo: kod ekranda gösterildi" : "Kod telefonuna gönderildi", "success");
-  };
-  const confirmVerify = async () => {
-    setSmsBusy(true);
-    const res = await verifySmsCode(form.phone, smsCode).catch((e) => ({ ok: false, error: e?.message }));
-    setSmsBusy(false);
-    if (!res?.ok) { toast(res?.error || "Kod hatalı", "error"); return; }
-    await onVerifyPhone?.(form.phone.trim());
-    setSmsStep("idle"); setSmsCode(""); setSmsHint("");
-    toast("Telefon doğrulandı ✓", "success");
-  };
 
   const onFile = (e) => {
     const f = e.target.files?.[0];
@@ -158,8 +132,6 @@ export default function ProfilPage({ user, onUpdateProfile, onVerifyPhone, onReq
   const relTier = reliabilityTier(rel.score);
   const reviewCount = reviews.filter((r) => String(r.toId) === String(user.id)).length;
   const avgRating = rating ? rating.avg : (user.rating ?? 5.0);
-  // Doğrulanmış numara forma eşitse "doğrulandı" göster (numara değişince düşer)
-  const phoneVerified = Boolean(user.phoneVerified) && String(user.phone || "").replace(/\D/g, "") === String(form.phone || "").replace(/\D/g, "") && isValidPhone(form.phone);
   const roleBadge = ROLE_BADGE[user.role] || "ÜYE";
 
   return (
@@ -238,58 +210,13 @@ export default function ProfilPage({ user, onUpdateProfile, onVerifyPhone, onReq
             <input style={{ ...inputSt, background: C.stone, opacity: 0.6, cursor: "not-allowed" }} value={user.email} disabled />
           </div>
 
-          {/* Telefon + doğrulama */}
+          {/* Telefon */}
           <div style={{ marginBottom: 14 }}>
             <label style={labelSt}>Telefon</label>
-            <div style={{ display: "flex", gap: 8 }}>
-              <input style={{ ...inputSt, flex: 1 }} value={form.phone}
-                onChange={(e) => { set("phone", e.target.value); setSmsStep("idle"); }} placeholder="05XX XXX XX XX" />
-              {phoneVerified ? (
-                <span style={{ display: "flex", alignItems: "center", gap: 5, background: "#E6F4EA", color: C.green, border: `2px solid ${C.green}`, padding: "0 12px", borderRadius: 6, fontFamily: MONO, fontSize: 11, fontWeight: 700, whiteSpace: "nowrap" }}>
-                  <BadgeCheck size={14} strokeWidth={2.4} /> Doğrulandı
-                </span>
-              ) : (
-                <button type="button" onClick={startVerify} disabled={smsBusy || !isValidPhone(form.phone)}
-                  style={{ flexShrink: 0, background: C.ink, color: C.yellow, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "0 16px", fontFamily: ARCHIVO, fontSize: 12, fontWeight: 800, textTransform: "uppercase", letterSpacing: "-0.01em", cursor: smsBusy || !isValidPhone(form.phone) ? "default" : "pointer", opacity: smsBusy || !isValidPhone(form.phone) ? 0.5 : 1 }}>
-                  {smsBusy && smsStep === "idle" ? "…" : "Doğrula"}
-                </button>
-              )}
-            </div>
-
-            {!phoneVerified && smsStep === "sent" && (
-              <div style={{ marginTop: 12, border: `2px solid ${C.ink}`, background: C.stone, borderRadius: 6, padding: 14 }}>
-                {/* SMS DOĞRULAMA — başlık + siyah ikon kutusu */}
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-                  <span style={{ width: 40, height: 40, flexShrink: 0, borderRadius: 6, background: C.ink, border: `2px solid ${C.ink}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <Smartphone size={20} color={C.yellow} strokeWidth={2} />
-                  </span>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontFamily: ARCHIVO, fontSize: 13, fontWeight: 800, color: C.ink, textTransform: "uppercase", letterSpacing: "-0.02em" }}>Telefonunu doğrula</div>
-                    <div style={{ fontFamily: MONO, fontSize: 10, color: C.sub, marginTop: 1 }}>6 haneli kodu gir</div>
-                  </div>
-                </div>
-                {smsHint && (
-                  <div style={{ marginBottom: 10, background: C.yellow, color: C.ink, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "8px 10px", fontFamily: MONO, fontSize: 11, fontWeight: 700 }}>
-                    Demo modu — kodun: <span style={{ letterSpacing: 3 }}>{smsHint}</span>
-                  </div>
-                )}
-                <div style={{ display: "flex", gap: 8 }}>
-                  <input value={smsCode} onChange={(e) => setSmsCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                    inputMode="numeric" placeholder="6 haneli kod"
-                    style={{ flex: 1, background: C.card, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "11px 13px", fontSize: 16, letterSpacing: 6, textAlign: "center", color: C.ink, outline: "none", fontFamily: MONO, fontWeight: 700 }} />
-                  <button type="button" onClick={confirmVerify} disabled={smsBusy || smsCode.length !== 6}
-                    style={{ flexShrink: 0, background: C.green, color: "#fff", border: `2px solid ${C.ink}`, borderRadius: 6, padding: "0 18px", fontFamily: ARCHIVO, fontSize: 12, fontWeight: 800, textTransform: "uppercase", cursor: smsBusy || smsCode.length !== 6 ? "default" : "pointer", opacity: smsBusy || smsCode.length !== 6 ? 0.5 : 1 }}>
-                    {smsBusy ? "…" : "Onayla"}
-                  </button>
-                </div>
-                <button type="button" onClick={startVerify} disabled={smsBusy}
-                  style={{ marginTop: 10, background: "none", border: "none", padding: 0, fontFamily: MONO, fontSize: 11, fontWeight: 700, color: C.sub, cursor: "pointer", textTransform: "uppercase", letterSpacing: 0.3 }}>
-                  Kodu tekrar gönder
-                </button>
-              </div>
-            )}
+            <input style={inputSt} value={form.phone}
+              onChange={(e) => set("phone", e.target.value)} placeholder="05XX XXX XX XX" />
             <div style={{ marginTop: 7, fontFamily: MONO, fontSize: 10, color: C.faint, lineHeight: 1.5 }}>
-              {phoneVerified ? "Doğrulanmış numara, eşleşen tarafla paylaşılır." : "Doğrula → güven rozeti kazan. Eşleşen tarafla iletişim için paylaşılır."}
+              Numaran yalnızca eşleşen tarafla iletişim için paylaşılır.
             </div>
           </div>
 
@@ -374,7 +301,6 @@ export default function ProfilPage({ user, onUpdateProfile, onVerifyPhone, onReq
             Adımları tamamla → <b>onaylı rozeti</b> kazan. Onaylı üyeler daha çok güven ve teklif alır.
           </p>
           {[
-            { label: "Telefonunu doğrula", done: phoneVerified },
             { label: "Belge yükle (K belgesi, ruhsat, vergi levhası)", done: docs.length > 0 },
             { label: "Ekip incelemesi → onaylı rozet", done: Boolean(user.verified) },
           ].map((s, i) => (
