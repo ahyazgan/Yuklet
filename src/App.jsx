@@ -52,7 +52,7 @@ const NasilCalisirPage = lazy(() => import("./pages/NasilCalisirPage"));
 const HakkimizdaPage = lazy(() => import("./pages/HakkimizdaPage"));
 const IletisimPage = lazy(() => import("./pages/IletisimPage"));
 const LegalPage = lazy(() => import("./pages/LegalPage"));
-const PiyasaNabziPage = lazy(() => import("./pages/PiyasaNabziPage"));
+// const PiyasaNabziPage = lazy(() => import("./pages/PiyasaNabziPage")); // Piyasa Nabzı özelliği komple gizlendi
 const BildirimlerPage = lazy(() => import("./pages/BildirimlerPage"));
 const DispatchPage = lazy(() => import("./pages/DispatchPage"));
 const TripHistoryPage = lazy(() => import("./pages/TripHistoryPage"));
@@ -471,7 +471,8 @@ function AppShell() {
                 <Route path="/nasil-calisir" element={<PageTransition><NasilCalisirPage /></PageTransition>} />
                 <Route path="/hakkimizda" element={<PageTransition><HakkimizdaPage /></PageTransition>} />
                 <Route path="/iletisim" element={<PageTransition><IletisimPage /></PageTransition>} />
-                <Route path="/piyasa" element={<PageTransition><PiyasaNabziPage listings={listings} offers={offers} /></PageTransition>} />
+                {/* Piyasa Nabzı — özellik komple gizlendi (sistem henüz uygun değil); geri açmak için yorumu kaldır */}
+                {/* <Route path="/piyasa" element={<PageTransition><PiyasaNabziPage listings={listings} offers={offers} /></PageTransition>} /> */}
                 <Route path="/fiyat-simulasyonu" element={<PageTransition><FiyatSimulasyonuPage /></PageTransition>} />
                 <Route path="/yasal/:slug" element={<PageTransition><LegalPage /></PageTransition>} />
                 <Route path="*" element={<PageTransition><NotFoundPage /></PageTransition>} />

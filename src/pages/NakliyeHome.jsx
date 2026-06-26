@@ -128,7 +128,7 @@ function Header({ name, role, unread, onBell, onProfile, onSearch }) {
       {/* logo + isim + aksiyonlar */}
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
-          <Logo size="sm" />
+          <Logo size="lg" style={{ height: 72 }} />
           <div>
             <div className="text-[16px] font-extrabold uppercase leading-none" style={{ color: C.ink, fontFamily: ARCH, letterSpacing: "-0.01em" }}>
               Merhaba, {name}
@@ -677,8 +677,8 @@ export default function NakliyeHome({
         transition={{ duration: 0.3 }}
         className="px-[18px] pt-6"
       >
-        {/* Piyasa Nabzı — günlük dönüş sebebi + fiyat referansı */}
-        <PiyasaWidget nav={navigate} />
+        {/* Piyasa Nabzı — sistem henüz buna uygun değil, gizlendi (geri açmak için yorumu kaldır) */}
+        {/* <PiyasaWidget nav={navigate} /> */}
 
         {role === "nakliyeci" ? (
           <NakliyeciStateful navigate={navigate} />

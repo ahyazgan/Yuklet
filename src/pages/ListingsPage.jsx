@@ -673,8 +673,8 @@ export default function ListingsPage({ listings = LISTINGS, onRefresh, blockedId
             </button>
           )}
 
-          {/* Piyasa Nabzı girişi — YÜKLET Akıllı Fiyat referansı */}
-          {mode === "normal" && (
+          {/* Piyasa Nabzı girişi — sistem henüz buna uygun değil, gizlendi (geri açmak için "false &&" kaldır) */}
+          {false && mode === "normal" && (
             <button
               onClick={() => navigate("/piyasa")}
               className="flex items-center justify-between"
