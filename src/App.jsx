@@ -24,6 +24,7 @@ import { initBackButton, initDeepLinks } from "./native/capacitor";
 
 import MobileTabBar from "./components/MobileTabBar";
 import AuthModal from "./components/AuthModal";
+import NewPasswordModal from "./components/NewPasswordModal";
 import RoleSelectModal from "./components/RoleSelectModal";
 import OnboardingModal from "./components/OnboardingModal";
 import InstallPrompt from "./components/InstallPrompt";
@@ -267,6 +268,7 @@ function AppShell() {
   useEffect(() => { if (!SB) saveUser(user); }, [user, SB]);
   const [authReady, setAuthReady] = useState(!SB);                  // SB modunda oturum yuklenince hazir
   const [showAuth, setShowAuth] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false); // sifre sifirlama: yeni sifre modali
   const [showRole, setShowRole] = useState(false);
   const [showOnboard, setShowOnboard] = useState(() => !loadOnboarded());
   const finishOnboard = () => { saveOnboarded(); setShowOnboard(false); };
@@ -303,7 +305,9 @@ function AppShell() {
     };
     api.getSessionUser().then(hydrate).catch(() => setAuthReady(true));
     const unsub = api.onAuthChange(hydrate);
-    return () => { try { unsub?.(); } catch { /* noop */ } };
+    // Sifre sifirlama baglantisina tiklanip donulunce -> yeni sifre modali ac.
+    const unsubPw = api.onPasswordRecovery(() => { setShowAuth(false); setShowNewPassword(true); });
+    return () => { try { unsub?.(); unsubPw?.(); } catch { /* noop */ } };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -334,6 +338,40 @@ function AppShell() {
     setUser(fake);
     setShowAuth(false);
     return { ok: true };
+  };
+  // ── Giris: E-POSTA / SIFRE (kayit + giris) ───────────────────
+  // SB modu: signUp/signIn Supabase'e yazar; onAuthChange oturumu kurar. Onay
+  // e-postasi aciksa needsConfirm doner (modal mesaj gosterir, kapanmaz). Rol
+  // e-postadan da gelmez -> needsRole akisi RoleSelectModal'i acar.
+  // localStorage modu: sahte hesap acar (gelistirme/onizleme).
+  const emailAuth = async ({ mode, name, email, password }) => {
+    if (SB) {
+      const res = mode === "register"
+        ? await api.signUp({ name, email, password })
+        : await api.signIn({ email, password });
+      if (!res.ok) return res;
+      if (res.needsConfirm) return res; // modal acik kalir, onay bekler
+      setShowAuth(false);               // oturum kuruldu -> onAuthChange hydrate eder
+      return res;
+    }
+    // localStorage modu: sahte hesap (rol henuz yok -> rol secim modali)
+    const fake = { id: Date.now(), name: name || email, email, role: "", provider: "email", verified: false, rating: 5.0 };
+    setUsers(prev => prev.some(u => u.email === email) ? prev : [...prev, fake]);
+    setUser(fake);
+    setShowAuth(false);
+    return { ok: true };
+  };
+  // Sifremi unuttum -> sifirlama baglantili e-posta (SB modu). localStorage modunda
+  // backend yok -> bilgi mesaji ile gecistir (gelistirme/onizleme).
+  const resetPassword = async ({ email }) => {
+    if (SB) return api.resetPassword({ email });
+    return { ok: true, message: "Önizleme modunda şifre sıfırlama devre dışı." };
+  };
+  // Yeni sifre belirle (recovery oturumu) -> Supabase'e yazar, modali kapatir.
+  const updatePassword = async ({ password }) => {
+    if (!SB) return { ok: true };
+    const res = await api.updatePassword({ password });
+    return res;
   };
   // Ilk giriste rol secimi -> profile yaz
   const chooseRole = async (role) => {
@@ -501,7 +539,8 @@ function AppShell() {
       <InstallPrompt />
       <MobileTabBar unreadCount={unreadCount} />
 
-      {showAuth && !showRole && <AuthModal onClose={() => setShowAuth(false)} onProvider={startOAuth} />}
+      {showNewPassword && <NewPasswordModal onSubmit={updatePassword} onDone={() => setShowNewPassword(false)} />}
+      {showAuth && !showRole && !showNewPassword && <AuthModal onClose={() => setShowAuth(false)} onProvider={startOAuth} onEmailAuth={emailAuth} onReset={resetPassword} />}
       {showRole && <RoleSelectModal onSelect={chooseRole} />}
       {showOnboard && !showAuth && !showRole && <OnboardingModal onClose={finishOnboard} />}
     </div>

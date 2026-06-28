@@ -1,10 +1,12 @@
 import { useState } from "react";
 import Logo from "./Logo";
 
-// ── SAHA Giriş modal — GOOGLE / APPLE ile giriş (OAuth, şifresiz). 2px ink çerçeve
-// · hazard şeridi · Archivo uppercase · Space Mono. Sağlayıcıya yönlendirir; rol
-// Google/Apple'dan gelmez → ilk girişten sonra RoleSelectModal ile seçilir.
-//   onProvider("google" | "apple")  ->  { ok, error? }  ·  onClose
+// ── SAHA Giriş modal — E-POSTA/ŞİFRE + GOOGLE / APPLE. 2px ink çerçeve · hazard
+// şeridi · Archivo uppercase · Space Mono. E-posta ile giriş/kayıt arasında geçiş;
+// rol Google/Apple/e-postadan gelmez → ilk girişten sonra RoleSelectModal seçilir.
+//   onProvider("google" | "apple")     ->  { ok, error? }
+//   onEmailAuth({ mode, name, email, password })  ->  { ok, error?, message?, needsConfirm? }
+//   onClose
 
 /* SAHA paleti (kesin değerler — _DESIGN_SYSTEM.md) */
 const C = {
@@ -35,12 +37,17 @@ function AppleIcon() {
   );
 }
 
-export default function AuthModal({ onClose, onProvider }) {
-  const [busy, setBusy] = useState("");   // "google" | "apple" | ""
+export default function AuthModal({ onClose, onProvider, onEmailAuth, onReset }) {
+  const [busy, setBusy] = useState("");   // "google" | "apple" | "email" | ""
   const [error, setError] = useState("");
+  const [info, setInfo] = useState("");           // onay e-postası vb. bilgi mesajı
+  const [mode, setMode] = useState("login");      // "login" | "register" | "reset"
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
   const go = async (provider) => {
-    setBusy(provider); setError("");
+    setBusy(provider); setError(""); setInfo("");
     try {
       const res = await onProvider(provider);
       if (res && res.ok === false) { setError(res.error || "Giriş başlatılamadı."); setBusy(""); }
@@ -49,6 +56,44 @@ export default function AuthModal({ onClose, onProvider }) {
       setError(err?.message || "Bir hata oluştu."); setBusy("");
     }
   };
+
+  const submitEmail = async (e) => {
+    e.preventDefault();
+    setError(""); setInfo("");
+    if (!email.trim()) { setError("E-posta gerekli."); return; }
+
+    // Şifremi unuttum: sadece e-posta yeterli, sıfırlama bağlantısı gönderilir.
+    if (mode === "reset") {
+      setBusy("email");
+      try {
+        const res = await onReset({ email: email.trim() });
+        if (res && res.ok === false) { setError(res.error || "İşlem başarısız."); setBusy(""); return; }
+        setInfo(res?.message || "Sıfırlama bağlantısı e-postana gönderildi. Gelen kutusu/spam kontrol et.");
+        setBusy("");
+      } catch (err) {
+        setError(err?.message || "Bir hata oluştu."); setBusy("");
+      }
+      return;
+    }
+
+    if (!password) { setError("Şifre gerekli."); return; }
+    if (mode === "register" && !name.trim()) { setError("Ad Soyad gerekli."); return; }
+    if (password.length < 6) { setError("Şifre en az 6 karakter olmalı."); return; }
+    setBusy("email");
+    try {
+      const res = await onEmailAuth({ mode, name: name.trim(), email: email.trim(), password });
+      if (res && res.ok === false) { setError(res.error || "İşlem başarısız."); setBusy(""); return; }
+      // Onay e-postası gerekiyorsa modal açık kalır, bilgi mesajı gösterilir.
+      if (res && res.needsConfirm) { setInfo(res.message || "E-postanı kontrol et: onay bağlantısı gönderdik."); setBusy(""); return; }
+      // ok: oturum kuruldu, App modalı kapatır.
+    } catch (err) {
+      setError(err?.message || "Bir hata oluştu."); setBusy("");
+    }
+  };
+
+  const toggleMode = () => { setMode((m) => (m === "login" ? "register" : "login")); setError(""); setInfo(""); };
+  const goReset = () => { setMode("reset"); setError(""); setInfo(""); };
+  const backToLogin = () => { setMode("login"); setError(""); setInfo(""); };
 
   return (
     <div
@@ -81,10 +126,10 @@ export default function AuthModal({ onClose, onProvider }) {
               <Logo size="lg" />
             </div>
             <h3 className="text-[20px] font-extrabold uppercase" style={{ color: C.ink, fontFamily: ARCH, letterSpacing: "-0.02em" }}>
-              Giriş Yap
+              {mode === "register" ? "Kayıt Ol" : mode === "reset" ? "Şifre Sıfırla" : "Giriş Yap"}
             </h3>
             <p className="mt-1.5 text-[12px]" style={{ color: C.sub, fontFamily: MONO }}>
-              Hesabınla devam et — kayıt ayrı değil
+              {mode === "register" ? "Yeni hesap oluştur — hemen başla" : mode === "reset" ? "E-postanı gir, sıfırlama bağlantısı gönderelim" : "Hesabınla devam et"}
             </p>
           </div>
 
@@ -93,6 +138,87 @@ export default function AuthModal({ onClose, onProvider }) {
               {error}
             </div>
           )}
+          {info && (
+            <div className="mb-4 px-3 py-2.5 text-[12px] font-bold" style={{ border: `2px solid ${C.green}`, borderRadius: 6, color: C.green, background: "#F0FDF4", fontFamily: MONO }}>
+              {info}
+            </div>
+          )}
+
+          {/* E-posta / şifre formu */}
+          <form onSubmit={submitEmail} className="mb-4 flex flex-col gap-2.5">
+            {mode === "register" && (
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Ad Soyad"
+                autoComplete="name"
+                disabled={Boolean(busy)}
+                className="px-3 py-3 text-[14px] outline-none disabled:opacity-60"
+                style={{ border: FRAME, borderRadius: 6, color: C.ink, fontFamily: MONO }}
+              />
+            )}
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="E-posta"
+              autoComplete="email"
+              inputMode="email"
+              disabled={Boolean(busy)}
+              className="px-3 py-3 text-[14px] outline-none disabled:opacity-60"
+              style={{ border: FRAME, borderRadius: 6, color: C.ink, fontFamily: MONO }}
+            />
+            {mode !== "reset" && (
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Şifre (en az 6 karakter)"
+                autoComplete={mode === "register" ? "new-password" : "current-password"}
+                disabled={Boolean(busy)}
+                className="px-3 py-3 text-[14px] outline-none disabled:opacity-60"
+                style={{ border: FRAME, borderRadius: 6, color: C.ink, fontFamily: MONO }}
+              />
+            )}
+            {/* Şifremi unuttum? — sadece giriş modunda */}
+            {mode === "login" && (
+              <button type="button" onClick={goReset} disabled={Boolean(busy)} className="self-end text-[11px]" style={{ color: C.sub, textDecoration: "underline", background: "none", border: "none", cursor: "pointer", fontFamily: MONO }}>
+                Şifremi unuttum?
+              </button>
+            )}
+            <button
+              type="submit"
+              disabled={Boolean(busy)}
+              className="mt-0.5 py-3.5 text-[14px] font-extrabold uppercase transition disabled:opacity-60"
+              style={{ background: C.yellow, color: C.ink, border: FRAME, borderRadius: 6, fontFamily: ARCH, letterSpacing: "-0.01em", boxShadow: "3px 3px 0 #0A0A0A" }}
+            >
+              {busy === "email" ? "Lütfen bekle…" : mode === "register" ? "Kayıt Ol" : mode === "reset" ? "Bağlantı Gönder" : "Giriş Yap"}
+            </button>
+          </form>
+
+          {/* Mod geçişi */}
+          {mode === "reset" ? (
+            <p className="mb-4 text-center text-[12px]" style={{ color: C.sub, fontFamily: MONO }}>
+              <button type="button" onClick={backToLogin} disabled={Boolean(busy)} style={{ color: C.ink, fontWeight: 700, textDecoration: "underline", background: "none", border: "none", cursor: "pointer", fontFamily: MONO }}>
+                ← Girişe dön
+              </button>
+            </p>
+          ) : (
+            <p className="mb-4 text-center text-[12px]" style={{ color: C.sub, fontFamily: MONO }}>
+              {mode === "register" ? "Zaten hesabın var mı? " : "Hesabın yok mu? "}
+              <button type="button" onClick={toggleMode} disabled={Boolean(busy)} style={{ color: C.ink, fontWeight: 700, textDecoration: "underline", background: "none", border: "none", cursor: "pointer", fontFamily: MONO }}>
+                {mode === "register" ? "Giriş yap" : "Kayıt ol"}
+              </button>
+            </p>
+          )}
+
+          {/* Ayırıcı */}
+          <div className="mb-4 flex items-center gap-3" aria-hidden="true">
+            <span style={{ flex: 1, height: 2, background: "#E5E3DC" }} />
+            <span className="text-[10px] font-bold uppercase" style={{ color: C.sub, fontFamily: MONO, letterSpacing: "0.08em" }}>veya</span>
+            <span style={{ flex: 1, height: 2, background: "#E5E3DC" }} />
+          </div>
 
           <div className="flex flex-col gap-3">
             {/* Google */}

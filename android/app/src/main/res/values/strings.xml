@@ -6,5 +6,5 @@
     <string name="custom_url_scheme">com.yuklet.app</string>
     <!-- Google native giris: Google Cloud "Web application" client ID (xxxx.apps.googleusercontent.com).
          Capacitor Social Login plugin bu degeri kullanir. ASAGIDAKI YER TUTUCUYU GERCEK ID ILE DEGISTIR. -->
-    <string name="server_client_id">YOUR_WEB_CLIENT_ID.apps.googleusercontent.com</string>
+    <string name="server_client_id">69515619867-vlmhpi41ohgq3j19ec3sk3b3c79fggdq.apps.googleusercontent.com</string>
 </resources>

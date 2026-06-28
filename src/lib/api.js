@@ -98,6 +98,19 @@ export async function signIn({ email, password }) {
 
 export async function signOut() { await supabase.auth.signOut(); }
 
+// ── Sifre sifirlama (sifremi unuttum) ────────────────────────
+// Kullaniciya sifirlama baglantili e-posta gonderir. Mobilde deep-link
+// gerektirmemek icin redirectTo VERILMEZ; kullanici maildeki baglantiya
+// tiklayinca Supabase'in barindirdigi sayfada yeni sifresini belirler.
+// NOT: Mail teslimi icin Supabase'de gercek SMTP (Resend vb.) bagli olmali —
+// dahili mail uretim icin guvenilir degil/spam'e duser.
+export async function resetPassword({ email }) {
+  if (!email) return { ok: false, error: "E-posta gerekli." };
+  const { error } = await supabase.auth.resetPasswordForEmail(email);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, message: "Sifre sifirlama baglantisi e-postana gonderildi. Gelen kutusu/spam klasorunu kontrol et." };
+}
+
 // ── OAuth giris (Google / Apple) ─────────────────────────────
 // Supabase saglayiciya yonlendirir; donuste detectSessionInUrl oturumu kurar.
 // Provider'lar Supabase panelinden (Authentication > Providers) acik olmalidir.
@@ -132,7 +145,10 @@ export async function signInWithGoogleNative() {
 
   let idToken;
   try {
-    const res = await SocialLogin.login({ provider: "google", options: { scopes: ["email", "profile"] } });
+    // scopes GONDERME: email/profile online idToken girisinde varsayilan gelir.
+    // Scope vermek plugin'de MainActivity modifikasyonu ZORUNLU kilar ("You CANNOT
+    // use scopes without modifying the main activity") — gereksiz, bu yuzden bos.
+    const res = await SocialLogin.login({ provider: "google", options: {} });
     idToken = res?.result?.idToken;
   } catch (e) {
     return { ok: false, error: e?.message || "Google girisi iptal edildi." };
@@ -176,6 +192,24 @@ export async function getSessionUser() {
 export function onAuthChange(cb) {
   const { data } = supabase.auth.onAuthStateChange((_e, session) => cb(session?.user || null));
   return () => data.subscription.unsubscribe();
+}
+
+// Sifre sifirlama olayini dinler. Kullanici sifirlama baglantisina tiklayip
+// uygulamaya donunce Supabase "PASSWORD_RECOVERY" event'i tetikler -> cb() ile
+// "yeni sifre belirle" modali acilir.
+export function onPasswordRecovery(cb) {
+  const { data } = supabase.auth.onAuthStateChange((event) => {
+    if (event === "PASSWORD_RECOVERY") cb();
+  });
+  return () => data.subscription.unsubscribe();
+}
+
+// Giris yapmis (veya recovery oturumundaki) kullanicinin sifresini gunceller.
+export async function updatePassword({ password }) {
+  if (!password || password.length < 6) return { ok: false, error: "Sifre en az 6 karakter olmali." };
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
 }
 
 export async function getProfile(userId) {
