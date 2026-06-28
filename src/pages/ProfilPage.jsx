@@ -316,8 +316,9 @@ export default function ProfilPage({ user, onUpdateProfile, onVerifyPhone, onReq
           </div>
 
           {/* Rol seçimi — yalnızca rolü henüz atanmamış kullanıcıya gösterilir.
-              Rol kayıt sırasında seçilir; rolü olan kullanıcı profilde değiştiremez. */}
-          {!ROLES.some((r) => r.id === user.role) && (
+              Rol kayıt sırasında seçilir; rolü olan kullanıcı profilde değiştiremez.
+              Yanlış seçim halinde destek ile değiştirilir (admin panelinden). */}
+          {!ROLES.some((r) => r.id === user.role) ? (
             <div style={{ marginBottom: 16 }}>
               <label style={labelSt}>Rol</label>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -331,6 +332,20 @@ export default function ProfilPage({ user, onUpdateProfile, onVerifyPhone, onReq
                     </button>
                   );
                 })}
+              </div>
+            </div>
+          ) : (
+            <div style={{ marginBottom: 16 }}>
+              <label style={labelSt}>Rol</label>
+              <div style={{ border: `2px solid ${C.ink}`, background: C.card, borderRadius: 6, padding: "11px 13px" }}>
+                <div style={{ fontFamily: ARCHIVO, fontSize: 13, fontWeight: 800, color: C.ink, textTransform: "uppercase", letterSpacing: "-0.02em" }}>{roleBadge}</div>
+                <div style={{ fontFamily: MONO, fontSize: 10, color: C.sub, marginTop: 4, lineHeight: 1.5 }}>
+                  Rolün kayıt sırasında belirlenir ve değiştirilemez. Yanlış seçtiysen{" "}
+                  <button type="button" onClick={() => navigate("/iletisim")}
+                    style={{ background: "none", border: "none", padding: 0, font: "inherit", color: C.ink, fontWeight: 700, textDecoration: "underline", cursor: "pointer" }}>
+                    destek ile iletişime geç
+                  </button>.
+                </div>
               </div>
             </div>
           )}
