@@ -315,22 +315,25 @@ export default function ProfilPage({ user, onUpdateProfile, onVerifyPhone, onReq
             </div>
           </div>
 
-          {/* Rol seçimi */}
-          <div style={{ marginBottom: 16 }}>
-            <label style={labelSt}>Rol</label>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {ROLES.map((r) => {
-                const active = form.role === r.id;
-                return (
-                  <button type="button" key={r.id} onClick={() => set("role", r.id)}
-                    style={{ textAlign: "left", border: `2px solid ${C.ink}`, background: active ? C.yellow : C.card, borderRadius: 6, padding: "11px 13px", cursor: "pointer", boxShadow: active ? "3px 3px 0 #0A0A0A" : "none" }}>
-                    <div style={{ fontFamily: ARCHIVO, fontSize: 13, fontWeight: 800, color: C.ink, textTransform: "uppercase", letterSpacing: "-0.02em" }}>{r.label}</div>
-                    <div style={{ fontFamily: MONO, fontSize: 10, color: active ? C.ink : C.sub, marginTop: 3 }}>{r.desc}</div>
-                  </button>
-                );
-              })}
+          {/* Rol seçimi — yalnızca rolü henüz atanmamış kullanıcıya gösterilir.
+              Rol kayıt sırasında seçilir; rolü olan kullanıcı profilde değiştiremez. */}
+          {!ROLES.some((r) => r.id === user.role) && (
+            <div style={{ marginBottom: 16 }}>
+              <label style={labelSt}>Rol</label>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {ROLES.map((r) => {
+                  const active = form.role === r.id;
+                  return (
+                    <button type="button" key={r.id} onClick={() => set("role", r.id)}
+                      style={{ textAlign: "left", border: `2px solid ${C.ink}`, background: active ? C.yellow : C.card, borderRadius: 6, padding: "11px 13px", cursor: "pointer", boxShadow: active ? "3px 3px 0 #0A0A0A" : "none" }}>
+                      <div style={{ fontFamily: ARCHIVO, fontSize: 13, fontWeight: 800, color: C.ink, textTransform: "uppercase", letterSpacing: "-0.02em" }}>{r.label}</div>
+                      <div style={{ fontFamily: MONO, fontSize: 10, color: active ? C.ink : C.sub, marginTop: 3 }}>{r.desc}</div>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          )}
 
           <button type="button" onClick={save}
             style={{ width: "100%", background: C.yellow, color: C.ink, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "14px", fontFamily: ARCHIVO, fontSize: 14, fontWeight: 800, textTransform: "uppercase", letterSpacing: "-0.01em", cursor: "pointer", boxShadow: "3px 3px 0 #0A0A0A" }}>
