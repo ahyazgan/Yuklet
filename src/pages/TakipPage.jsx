@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ChevronLeft, Check, MapPin, Phone, MessageSquare, FileCheck, Star, ShieldCheck, AlertTriangle, X, Scale, Camera, ClipboardCheck, Zap, Navigation } from "lucide-react";
+import { ChevronLeft, Check, MapPin, Phone, MessageSquare, FileCheck, Star, ShieldCheck, AlertTriangle, X, Scale, Camera, ClipboardCheck, Zap, Navigation, Truck, User } from "lucide-react";
 import { LISTINGS } from "../data/listings";
 import { CATS } from "../data/categories";
 import { StarsDisplay } from "../components/Stars";
@@ -412,6 +412,36 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
           <div style={{ ...labelTiny, marginBottom: 12 }}>İŞ DURUMU</div>
           <JobStatusBar listing={l} offers={offers} />
         </div>
+
+        {/* ── ATANAN ARAÇ / ŞOFÖR (kabulde filodan seçildiyse) ── */}
+        {l.assignedVehicle && (
+          <div style={{ ...whiteCard, display: "flex", alignItems: "center", gap: 12 }}>
+            <span style={{ width: 40, height: 40, borderRadius: 6, background: C.yellow, border: `2px solid ${C.ink}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <Truck size={20} strokeWidth={2.4} color={C.ink} />
+            </span>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <div style={{ ...labelTiny, marginBottom: 3 }}>ATANAN ARAÇ</div>
+              <div style={{ fontFamily: MONO, fontSize: 14, fontWeight: 700, letterSpacing: 0.5, color: C.ink }}>{l.assignedVehicle.plate}</div>
+              <div style={{ fontFamily: MONO, fontSize: 10.5, color: C.muted, marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {l.assignedVehicle.vehicle}{l.assignedVehicle.capacity ? ` · ${l.assignedVehicle.capacity}` : ""}
+              </div>
+            </div>
+            {(l.assignedVehicle.driverName || l.assignedVehicle.driverPhone) && (
+              <div style={{ textAlign: "right", flexShrink: 0 }}>
+                {l.assignedVehicle.driverName && (
+                  <div style={{ display: "inline-flex", alignItems: "center", gap: 4, fontFamily: MONO, fontSize: 11, fontWeight: 700, color: C.ink }}>
+                    <User size={12} strokeWidth={2.4} color={C.muted} /> {l.assignedVehicle.driverName}
+                  </div>
+                )}
+                {l.assignedVehicle.driverPhone && (
+                  <a href={`tel:${l.assignedVehicle.driverPhone}`} style={{ display: "block", fontFamily: MONO, fontSize: 11, fontWeight: 700, color: C.green, textDecoration: "none", marginTop: 2 }}>
+                    {l.assignedVehicle.driverPhone}
+                  </a>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* ── KOYU TAKİP KARTI (rota + timeline + sefer ilerlemesi gömülü) ── */}
         <div style={{ position: "relative", background: C.ink, border: `2px solid ${C.ink}`, borderRadius: 6, color: "#fff", overflow: "hidden", boxShadow: `5px 5px 0 rgba(10,10,10,0.18)` }}>

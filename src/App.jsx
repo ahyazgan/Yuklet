@@ -192,11 +192,15 @@ function AppShell() {
   // ── Doğrudan kabul ── (sabit fiyatlı iş ilanı): nakliyeci teklif vermeden işi
   // sabit fiyattan alır. Sonuç durum teklif-kabul ile birebir aynı: offer
   // status "kabul" + listing status "eslesti".
-  const acceptJob = async (listing) => {
+  // assignedVehicle (ops.): nakliyecinin filosundan bu işe atadığı araç+şoför.
+  const acceptJob = async (listing, assignedVehicle = null) => {
     const me = profile || user;
     if (!me) return { ok: false, error: "Giriş gerekli." };
     if (me.status === "banli") return { ok: false, error: "Hesabın askıya alındı." };
     if (listing.status === "eslesti" || listing.status === "kapali") return { ok: false, error: "Bu iş artık uygun değil." };
+    const av = assignedVehicle
+      ? { plate: assignedVehicle.plate, vehicle: assignedVehicle.vehicle, capacity: assignedVehicle.capacity || "", driverName: assignedVehicle.driverName || "", driverPhone: assignedVehicle.driverPhone || "" }
+      : null;
     const base = { listingId: listing.id, price: listing.price ?? null, message: "İş sabit fiyattan kabul edildi." };
     if (SB) {
       try {
@@ -208,7 +212,7 @@ function AppShell() {
     } else {
       const offer = { id: newId(), ...base, fromUser: me.name, fromUserId: me.id, status: "kabul", direct: true, createdAt: nowIso(), updatedAt: nowIso() };
       setOffers(prev => [offer, ...prev]);
-      setUserListings(prev => prev.map(l => String(l.id) === String(listing.id) ? { ...l, status: "eslesti" } : l));
+      setUserListings(prev => prev.map(l => String(l.id) === String(listing.id) ? { ...l, status: "eslesti", ...(av ? { assignedVehicle: av } : {}) } : l));
     }
     return { ok: true };
   };

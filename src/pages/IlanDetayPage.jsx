@@ -15,7 +15,7 @@ import { CATS } from "../data/categories";
 import { computeReliability, reliabilityTier } from "../utils/reliability";
 import { backhaulForJob, loadsForVehicle, vehicleClassOf } from "../utils/backhaul";
 import { estimatePrice, fmtTL, priceSignal } from "../utils/priceEstimate";
-import { loadPricingConfig } from "../utils/storage";
+import { loadPricingConfig, loadFleet } from "../utils/storage";
 import { newId, nowIso } from "../utils/id";
 import { useToast } from "../components/Toast";
 import { shareUrl } from "../native/share";
@@ -141,6 +141,7 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
   const [reviewGate, setReviewGate] = useState(null); // bekleyen değerlendirmeler (zorunlu)
   const [showAcceptConfirm, setShowAcceptConfirm] = useState(false); // doğrudan kabul onayı
   const [accepting, setAccepting] = useState(false);
+  const [pickedVehicleId, setPickedVehicleId] = useState(null); // kabulde atanan filo aracı
 
   const l = listings.find((x) => String(x.id) === String(id));
 
@@ -175,9 +176,11 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
   const ownerRel = l.ownerId != null ? computeReliability(l.ownerId, { listings, offers, reviews }) : null;
   const isOwner = user && l.ownerId && l.ownerId === user.id;
   const isFixed = l.priceType === "sabit" && l.price;
-  // Doğrudan kabul modu: müteahhit "sabit fiyat" seçtiyse nakliyeci teklif
-  // vermeden işi sabit fiyattan kabul eder. "Teklife açık" işlerde teklif akışı kalır.
-  const acceptMode = l.type === "is" && l.priceType === "sabit";
+  // Doğrudan kabul modu: ilan sahibi "sabit fiyat" seçtiyse karşı taraf teklif
+  // vermeden doğrudan kabul eder. İş ilanında nakliyeci işi üstlenir; araç
+  // ilanında müteahhit aracı kiralar. "Teklife açık" ilanlarda teklif akışı kalır.
+  const acceptMode = (l.type === "is" || l.type === "arac") && l.priceType === "sabit";
+  const acceptLabel = isVehicle ? "Aracı Kirala" : "İşi Kabul Et";
   const closed = l.status === "kapali" || l.status === "eslesti";
   const backhaul = isProduct ? [] : isVehicle ? loadsForVehicle(l, listings) : backhaulForJob(l, listings);
   // Benzer ilanlar — aynı kategori + tür; aynı il/malzeme öne çıkar. En çok 4.
@@ -238,15 +241,18 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
   const closeSheet = () => { setShowSheet(false); setSent(false); };
 
   // ── Doğrudan kabul (sabit fiyatlı iş) — aynı kapılar (telefon + değerlendirme) ──
-  const startAccept = () => { if (!offerGate()) return; setShowAcceptConfirm(true); };
+  // Nakliyecinin bu işe atayabileceği aktif filo araçları (ops.).
+  const myFleet = user ? loadFleet().filter((v) => String(v.ownerId) === String(user.id) && v.active) : [];
+  const startAccept = () => { if (!offerGate()) return; setPickedVehicleId(isVehicle ? null : (myFleet[0]?.id ?? null)); setShowAcceptConfirm(true); };
   const confirmAccept = async () => {
     setAccepting(true);
-    const res = await onAcceptJob?.(l);
+    const vehicle = myFleet.find((v) => v.id === pickedVehicleId) || null;
+    const res = await onAcceptJob?.(l, vehicle);
     setAccepting(false);
     setShowAcceptConfirm(false);
     if (res?.ok) {
       hapticSuccess();
-      toast("İşi kabul ettin! Sevkiyatı başlatabilirsin.", "success");
+      toast(isVehicle ? "Aracı kiraladın! Sahibiyle iletişime geçebilirsin." : "İşi kabul ettin! Sevkiyatı başlatabilirsin.", "success");
       navigate(`/takip/${l.id}`);
     } else {
       toast(res?.error || "İş kabul edilemedi.", "error");
@@ -647,7 +653,7 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
           {acceptMode && user ? (
             <button onClick={startAccept}
               style={{ display: "flex", alignItems: "center", gap: 7, background: C.green, color: "#fff", border: `2px solid ${C.ink}`, borderRadius: 6, padding: "12px 18px", fontFamily: HEAD, fontWeight: 800, fontSize: 14, textTransform: "uppercase", cursor: "pointer", whiteSpace: "nowrap", boxShadow: "3px 3px 0 rgba(10,10,10,0.18)" }}>
-              <Check size={17} strokeWidth={3} /> İşi Kabul Et
+              <Check size={17} strokeWidth={3} /> {acceptLabel}
             </button>
           ) : (
             <button onClick={acceptMode ? () => onRequireAuth?.() : openSheet}
@@ -869,11 +875,42 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
               <span style={{ width: 38, height: 38, borderRadius: 6, background: C.green, border: `2px solid ${C.ink}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                 <Check size={20} strokeWidth={3} color="#fff" />
               </span>
-              <h2 style={{ fontFamily: HEAD, fontSize: 18, fontWeight: 800, textTransform: "uppercase", letterSpacing: "-0.02em", color: C.ink, margin: 0 }}>İşi kabul et</h2>
+              <h2 style={{ fontFamily: HEAD, fontSize: 18, fontWeight: 800, textTransform: "uppercase", letterSpacing: "-0.02em", color: C.ink, margin: 0 }}>{isVehicle ? "Aracı kirala" : "İşi kabul et"}</h2>
             </div>
             <p style={{ fontFamily: MONO, fontSize: 12, color: C.sub, lineHeight: 1.55, margin: "0 0 14px" }}>
-              Bu işi <b style={{ color: C.ink }}>{l.price ? `₺${l.price.toLocaleString("tr-TR")}` : "ilan fiyatından"}</b> sabit fiyattan kabul ediyorsun. Onaylarsan iş hemen sana atanır ve müteahhitle iletişime geçebilirsin.
+              {isVehicle ? (
+                <>Bu aracı <b style={{ color: C.ink }}>{l.price ? `₺${l.price.toLocaleString("tr-TR")}` : "ilan fiyatından"}</b> sabit fiyattan kiralıyorsun. Onaylarsan eşleşme oluşur ve sahibiyle iletişime geçebilirsin.</>
+              ) : (
+                <>Bu işi <b style={{ color: C.ink }}>{l.price ? `₺${l.price.toLocaleString("tr-TR")}` : "ilan fiyatından"}</b> sabit fiyattan kabul ediyorsun. Onaylarsan iş hemen sana atanır ve müteahhitle iletişime geçebilirsin.</>
+              )}
             </p>
+
+            {/* Filodan araç/şoför ata (ops.) — sadece iş ilanında (nakliyeci üstlenir) */}
+            {!isVehicle && myFleet.length > 0 && (
+              <div style={{ marginBottom: 14 }}>
+                <div style={{ fontFamily: MONO, fontSize: 9.5, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: C.muted, marginBottom: 8 }}>Bu işe araç ata (ops.)</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+                  {myFleet.map((v) => {
+                    const sel = pickedVehicleId === v.id;
+                    return (
+                      <button key={v.id} type="button" onClick={() => setPickedVehicleId(sel ? null : v.id)}
+                        style={{ display: "flex", alignItems: "center", gap: 10, textAlign: "left", background: sel ? "#FEF9E7" : C.card, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "9px 11px", cursor: "pointer", boxShadow: sel ? "2px 2px 0 #0A0A0A" : "none" }}>
+                        <span style={{ width: 22, height: 22, borderRadius: 5, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: sel ? C.green : C.stone, border: `2px solid ${C.ink}` }}>
+                          {sel && <Check size={13} strokeWidth={3} color="#fff" />}
+                        </span>
+                        <span style={{ minWidth: 0, flex: 1 }}>
+                          <span style={{ display: "block", fontFamily: MONO, fontSize: 12, fontWeight: 700, letterSpacing: 0.5, color: C.ink }}>{v.plate}</span>
+                          <span style={{ display: "block", fontFamily: MONO, fontSize: 9.5, color: C.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {v.vehicle}{v.driverName ? ` · ${v.driverName}` : ""}
+                          </span>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             <div style={{ display: "flex", gap: 10 }}>
               <button onClick={() => setShowAcceptConfirm(false)} disabled={accepting}
                 style={{ flex: 1, background: C.stone, color: C.ink, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "13px", fontFamily: HEAD, fontSize: 13, fontWeight: 800, textTransform: "uppercase", cursor: "pointer", opacity: accepting ? 0.6 : 1 }}>
@@ -881,7 +918,7 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
               </button>
               <button onClick={confirmAccept} disabled={accepting}
                 style={{ flex: 1, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7, background: C.green, color: "#fff", border: `2px solid ${C.ink}`, borderRadius: 6, padding: "13px", fontFamily: HEAD, fontSize: 13, fontWeight: 800, textTransform: "uppercase", cursor: "pointer", boxShadow: "3px 3px 0 rgba(10,10,10,0.18)", opacity: accepting ? 0.6 : 1 }}>
-                {accepting ? "Kabul ediliyor…" : <>Kabul et <Check size={15} strokeWidth={3} /></>}
+                {accepting ? "İşleniyor…" : <>{isVehicle ? "Kirala" : "Kabul et"} <Check size={15} strokeWidth={3} /></>}
               </button>
             </div>
           </div>
