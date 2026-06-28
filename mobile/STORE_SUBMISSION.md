@@ -12,13 +12,13 @@ Kutular: `[ ]` yapılacak · `[x]` kodda hazır.
 | Gizlilik Politikası (Privacy Policy) **public URL** | `[x]` | `https://yuklet.co/yasal/gizlilik` (canlı). |
 | Kullanım Koşulları URL | `[x]` | `https://yuklet.co/yasal/kullanim-kosullari` (canlı). |
 | Destek (Support) URL + e-posta | `[x]` | `https://yuklet.co/iletisim` + info@yuklet.co |
-| **Hesap silme** akışı (uygulama içi) | `[x]` | Profil → "Hesabımı kalıcı olarak sil" (iki adımlı onay). **Apple 5.1.1(v) karşılandı.** |
+| **Hesap silme** akışı (uygulama içi) | `[x]` | Profil → "Hesabımı kalıcı olarak sil" (iki adımlı onay). SB modunda `delete_my_account` RPC auth.users'ı siler → cascade ile TÜM veri gider. **Apple 5.1.1(v) karşılandı.** ⚠️ `supabase/migration-delete-account.sql`'i SQL Editor'de bir kez çalıştır. |
 | **Hesap silme** web URL (Google zorunlu) | `[x]` | `https://yuklet.co/yasal/hesap-silme` (canlı). |
 | Demo / test hesabı (inceleme için) | `[ ]` | Giriş Google/Apple OAuth ile; inceleyiciye hazır hesap + adım verin. |
 | Uygulama ikonu (1024²) | `[x]` | `assets/icon.png` → native projelere üretildi. |
 | Splash ekranı | `[x]` | `assets/splash.png` → üretildi. |
 | **Native Google girişi** (mobil) | `[~]` | Kod hazır (Capacitor Social Login). SHA-1 + Android client ID kalan — bkz. `GOOGLE_SIGNIN_SETUP.md`. |
-| **Native Apple girişi** (iOS) | `[ ]` | UI butonu var, web OAuth çalışır; iOS'ta **native** Apple Sign-In kurulmalı (Guideline 4.8 + plugin `apple` provider). App Store aşamasında. |
+| **Native Apple girişi** (iOS) | `[~]` | Kod hazır (`signInWithAppleNative` + startOAuth). Xcode'da **Sign in with Apple** capability + Apple Developer'da Service ID/Key kalan (Mac/App Store aşaması). Guideline 4.8. |
 
 ### ⚠️ Hesap Silme (ikisi de reddediyor — mutlaka ekleyin)
 - **Apple:** Hesap oluşturulabilen her uygulamada **uygulama içi hesap silme** olmalı.

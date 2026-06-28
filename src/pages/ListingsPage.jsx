@@ -673,8 +673,9 @@ export default function ListingsPage({ listings = LISTINGS, onRefresh, blockedId
             </button>
           )}
 
-          {/* Piyasa Nabzı girişi — sistem henüz buna uygun değil, gizlendi (geri açmak için "false &&" kaldır) */}
-          {false && mode === "normal" && (
+          {/* Piyasa Nabzı girişi — sistem henüz buna uygun değil, gizlendi.
+              Geri açmak için aşağıdaki bloğun yorumunu kaldır:
+          {mode === "normal" && (
             <button
               onClick={() => navigate("/piyasa")}
               className="flex items-center justify-between"
@@ -687,7 +688,7 @@ export default function ListingsPage({ listings = LISTINGS, onRefresh, blockedId
               </span>
               <TrendingUp size={15} color={C.yellow} strokeWidth={2.6} style={{ flexShrink: 0 }} />
             </button>
-          )}
+          )} */}
 
           {/* arama + filtre */}
           <div className="flex items-center gap-2" style={{ marginTop: 12 }}>

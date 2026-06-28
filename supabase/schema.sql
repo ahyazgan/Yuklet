@@ -170,6 +170,29 @@ create trigger on_auth_user_created
   for each row execute function public.handle_new_user();
 
 -- ──────────────────────────────────────────────
+-- 5b) HESAP SİLME (App Store 5.1.1(v) & Google Play zorunlu)
+--    Kullanici KENDI auth.users kaydini siler. profiles.id -> auth.users(id)
+--    on delete cascade oldugundan profil + tum iliskili veri (listings/offers/
+--    messages/reviews/docs) otomatik silinir. security definer ile auth semasina
+--    yazma yetkisi alir; sadece auth.uid() = caller silinebilir (baskasi silinemez).
+-- ──────────────────────────────────────────────
+create or replace function public.delete_my_account()
+returns void language plpgsql security definer set search_path = public, auth as $$
+declare
+  me uuid := auth.uid();
+begin
+  if me is null then
+    raise exception 'Oturum yok: hesap silinemez.';
+  end if;
+  -- Cascade tum public verisini temizler; auth kullanicisini sil.
+  delete from auth.users where id = me;
+end; $$;
+
+-- Yalnizca giris yapmis kullanici kendi hesabini cagirabilir.
+revoke all on function public.delete_my_account() from public;
+grant execute on function public.delete_my_account() to authenticated;
+
+-- ──────────────────────────────────────────────
 -- 6) TRIGGER: teklif eklenince ilanin offers_count'u artsin
 -- ──────────────────────────────────────────────
 create or replace function public.bump_offers_count()

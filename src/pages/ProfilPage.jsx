@@ -127,8 +127,14 @@ export default function ProfilPage({ user, onUpdateProfile, onRequireAuth, onLog
 
   // Hesabı kalıcı sil (App Store/Play zorunlu): verileri temizle, çıkış yap, ana sayfaya dön.
   const handleDeleteAccount = async () => {
-    try { await onDeleteAccount?.(); }
-    finally { toast?.("Hesabın ve verilerin silindi.", "info"); navigate("/"); }
+    const res = await onDeleteAccount?.();
+    if (res && res.ok === false) {
+      // Silme başarısız: oturumu/UI'yi bozmadan kullanıcıya net hata göster.
+      toast?.(res.error || "Hesap silinemedi, lütfen tekrar dene.", "error");
+      return;
+    }
+    toast?.("Hesabın ve verilerin silindi.", "info");
+    navigate("/");
   };
 
   const [form, setForm] = useState({

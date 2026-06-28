@@ -318,10 +318,12 @@ function AppShell() {
   // kurar. localStorage modunda (anahtar yoksa) sahte bir OAuth kullanicisi acar
   // — gelistirme/onizleme icin. Rol Google/Apple'dan gelmez -> needsRole akisi.
   const startOAuth = async (provider) => {
-    // Mobil app (Capacitor) + Google -> native hesap secici. supabase.co redirect
-    // ekrani gorunmez; idToken Supabase'e verilir, onAuthChange oturumu kurar.
-    if (SB && provider === "google" && Capacitor.isNativePlatform()) {
-      const res = await api.signInWithGoogleNative();
+    // Mobil app (Capacitor) -> native giris. supabase.co redirect ekrani gorunmez;
+    // idToken Supabase'e verilir, onAuthChange oturumu kurar.
+    if (SB && Capacitor.isNativePlatform() && (provider === "google" || provider === "apple")) {
+      const res = provider === "apple"
+        ? await api.signInWithAppleNative()
+        : await api.signInWithGoogleNative();
       if (res.ok) setShowAuth(false);
       return res;
     }
@@ -341,24 +343,18 @@ function AppShell() {
   const logout = async () => { if (SB) { await api.signOut().catch(() => {}); } setUser(null); setProfile(null); };
 
   // ── Hesap silme (App Store & Google Play zorunlu) ──
-  // Kullanicinin tum verilerini (ilan/teklif/mesaj/belge/degerlendirme) temizler.
-  // localStorage modu: yereldeki kayitlar silinir. SB modu: kullanici verisi
-  // silinip oturum kapatilir (Auth kullanici kaydinin tam silinmesi sunucu tarafi
-  // servis rolu gerektirir — bkz. mobile/STORE_SUBMISSION.md).
+  // Kullanicinin hesabini ve TUM verilerini kalici siler (App Store 5.1.1(v) &
+  // Google Play zorunlu). SB modu: delete_my_account RPC auth.users'i siler ->
+  // profiles.id cascade ile profil + ilan/teklif/mesaj/yorum/belge otomatik gider.
+  // localStorage modu: yereldeki kayitlar temizlenir.
+  // Donus: { ok, error? } — cagiran (ProfilPage) sonuca gore toast gosterir.
   const deleteAccount = async () => {
     const cur = profile || user;
-    if (!cur) return;
+    if (!cur) return { ok: false, error: "Oturum yok." };
     const uid = String(cur.id);
     if (SB) {
-      try {
-        await Promise.all(
-          userListings.filter((l) => String(l.ownerId) === uid).map((l) => api.deleteListing(l.id).catch(() => {}))
-        );
-        await Promise.all(
-          docs.filter((d) => String(d.ownerId) === uid).map((d) => api.removeDoc(d.id).catch(() => {}))
-        );
-      } catch (e) { console.error(e); }
-      await api.signOut().catch(() => {});
+      const res = await api.deleteMyAccount();
+      if (!res.ok) return res; // hata: oturum/UI'yi bozma, kullaniciya bildir
     } else {
       setUserListings((prev) => prev.filter((l) => String(l.ownerId) !== uid));
       setOffers((prev) => prev.filter((o) => String(o.fromUserId) !== uid));
@@ -369,6 +365,7 @@ function AppShell() {
     }
     setUser(null);
     setProfile(null);
+    return { ok: true };
   };
   const requireAuth = () => setShowAuth(true);
   const markMessagesSeen = () => { if (user) setMsgSeen(prev => ({ ...prev, [user.id]: new Date().toISOString() })); };

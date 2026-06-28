@@ -145,6 +145,29 @@ export async function signInWithGoogleNative() {
   return { ok: true };
 }
 
+// ── Native Apple girisi (iOS — App Store Guideline 4.8 zorunlu) ──
+// Google'i sunan iOS uygulamasi Apple ile girisi de NATIVE sunmalidir.
+// iOS native'de apple provider clientId/redirectUrl istemez (sistem saglar).
+let _appleInited = false;
+export async function signInWithAppleNative() {
+  const { SocialLogin } = await import("@capgo/capacitor-social-login");
+  if (!_appleInited) {
+    await SocialLogin.initialize({ apple: {} });
+    _appleInited = true;
+  }
+  let idToken;
+  try {
+    const res = await SocialLogin.login({ provider: "apple", options: { scopes: ["email", "name"] } });
+    idToken = res?.result?.idToken;
+  } catch (e) {
+    return { ok: false, error: e?.message || "Apple girisi iptal edildi." };
+  }
+  if (!idToken) return { ok: false, error: "Apple kimlik token'i alinamadi." };
+  const { error } = await supabase.auth.signInWithIdToken({ provider: "apple", token: idToken });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
 export async function getSessionUser() {
   const { data } = await supabase.auth.getUser();
   return data?.user || null;
@@ -169,6 +192,16 @@ export async function updateProfile(userId, patch) {
   const { data, error } = await supabase.from("profiles").update(row).eq("id", userId).select("*").single();
   if (error) return { ok: false, error: error.message };
   return { ok: true, profile: rowToProfile(data) };
+}
+
+// Hesabi KALICI sil (App Store/Play zorunlu). delete_my_account RPC auth.users'i
+// siler; profiles.id cascade ile profil + tum iliskili veriyi (listings/offers/
+// messages/reviews/docs) otomatik temizler. Sonra oturumu kapat.
+export async function deleteMyAccount() {
+  const { error } = await supabase.rpc("delete_my_account");
+  if (error) return { ok: false, error: error.message };
+  await supabase.auth.signOut().catch(() => {});
+  return { ok: true };
 }
 
 // ── Saglik kontrolu ─────────────────────────────────────────
