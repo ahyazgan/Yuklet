@@ -30,7 +30,7 @@ hafriyat,nakliye,silobas,kamyon,damper,taşıma,yük,müteahhit,ocak,agrega,çak
 YÜKLET, hafriyat ve silobas/dökme yük taşımacılığını üç tarafı buluşturan bir
 ilan ve eşleştirme platformudur.
 
-İş sahibi (müteahhit) işini yayınlar, nakliyeciler teklif verir, anlaşma sağlanır
+İş sahibi (alıcı) işini yayınlar, nakliyeciler teklif verir, anlaşma sağlanır
 ve iş başlar. Tedarikçiler (kırma ocağı, beton santrali, kum ocağı) ürün ve
 stok ilanlarını açar; nakliye platform üzerinden ayarlanır.
 

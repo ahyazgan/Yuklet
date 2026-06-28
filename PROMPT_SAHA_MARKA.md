@@ -50,11 +50,11 @@ FORM / STİL (dengeli — sert ama kullanışlı):
 ══════════ ÜRÜN (ne tasarlıyoruz) ══════════
 HamTed = Türkiye'de HAFRİYAT ve SİLOBAS/DÖKME yük taşımacılığını buluşturan
 İLAN & EŞLEŞTİRME platformu. E-ticaret DEĞİL (sepet/satın alma yok).
-Akış: müteahhit iş ilanı açar → nakliyeci teklif verir → eşleşir → iş başlar.
+Akış: alıcı iş ilanı açar → nakliyeci teklif verir → eşleşir → iş başlar.
 
 İki tür: HAFRİYAT (toprak/moloz/kaya, damperli kamyon) ·
 SİLOBAS (çimento/kum/mıcır, silobas/tanker).
-Üç kullanıcı: müteahhit (iş açan), nakliyeci (taşıyan), tedarikçi (ocak).
+Üç kullanıcı: alıcı (iş açan), nakliyeci (taşıyan), tedarikçi (ocak).
 
 ══════════ ANA SAYFA İÇERİĞİ ══════════
 (Düzeni sen kurgula — bu öğeler bulunsun:)

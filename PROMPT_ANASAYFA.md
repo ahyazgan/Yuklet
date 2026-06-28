@@ -33,7 +33,7 @@ Nasıl işler:
 • SİLOBAS / DÖKME — çimento, kum, mıcır, çakıl; silobas/tankerle taşınır.
 
 Üç tip kullanıcı:
-• Müteahhit / iş sahibi — iş ilanı açar, teklif toplar.
+• Alıcı / iş sahibi — iş ilanı açar, teklif toplar.
 • Nakliyeci / taşıyıcı — boş aracını ilan eder veya işlere teklif verir.
 • Tedarikçi — ocak/santral, kendi malzemesini ilan eder.
 
