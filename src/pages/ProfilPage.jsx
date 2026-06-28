@@ -36,7 +36,57 @@ const ROLE_BADGE = {
   nakliyeci: "NAKLİYECİ",
 };
 
-const DOC_TYPES = ["K Belgesi", "Araç Ruhsatı", "Vergi Levhası", "Sigorta Poliçesi", "Diğer"];
+// Rol bazlı belge tipleri — her rolün işine uygun evraklar.
+const DOC_TYPES_BY_ROLE = {
+  nakliyeci: ["K Belgesi", "Araç Ruhsatı", "SRC Belgesi", "Sigorta Poliçesi", "Vergi Levhası", "Diğer"],
+  tedarikci: ["Ocak/Maden Ruhsatı", "Kapasite Raporu", "TSE/Uygunluk Belgesi", "Vergi Levhası", "Ticaret Sicil Gazetesi", "Diğer"],
+  isveren: ["Vergi Levhası", "Ticaret Sicil Gazetesi", "İmza Sirküsü", "Faaliyet Belgesi", "Diğer"],
+};
+const DOC_TYPES_DEFAULT = ["Vergi Levhası", "Diğer"];
+const docTypesForRole = (role) => DOC_TYPES_BY_ROLE[role] || DOC_TYPES_DEFAULT;
+
+// Rol bazlı menü satırları — herkese ortak olanlar + role özel kısayollar.
+// to: rota, icon: lucide bileşeni, label/desc: metin.
+function menuForRole(role) {
+  const common = [
+    { icon: Heart, label: "Favorilerim", desc: "Kaydettiğin ilanlar", to: "/ilanlar?fav=1" },
+    { icon: HelpCircle, label: "Yardım & destek", desc: "Sık sorulan sorular ve iletişim", to: "/iletisim" },
+  ];
+  if (role === "nakliyeci") {
+    return [
+      { icon: Navigation, label: "Sevkiyat", desc: "Aktif seferlerini canlı izle", to: "/sevkiyat" },
+      { icon: History, label: "Sefer Geçmişi", desc: "Tamamlanan taşımalar ve hat performansı", to: "/sefer-gecmisi" },
+      { icon: Inbox, label: "Verdiğim Teklifler", desc: "İş ilanlarına gönderdiğin teklifler", to: "/tekliflerim" },
+      { icon: Package, label: "Araç İlanlarım", desc: "Açtığın araç/taşıma ilanları", to: "/ilanlarim" },
+      ...common,
+    ];
+  }
+  if (role === "tedarikci") {
+    return [
+      { icon: Package, label: "Ürün İlanlarım", desc: "Malzeme/stok ilanların ve gelen siparişler", to: "/ilanlarim" },
+      { icon: Inbox, label: "Siparişlerim", desc: "Gelen malzeme siparişlerini yönet", to: "/tekliflerim" },
+      { icon: Navigation, label: "Sevkiyat", desc: "Giden malzemenin teslimatını izle", to: "/sevkiyat" },
+      { icon: History, label: "Satış Geçmişi", desc: "Tamamlanan satışlar ve teslimatlar", to: "/sefer-gecmisi" },
+      ...common,
+    ];
+  }
+  // isveren (Müteahhit / Alıcı) — varsayılan
+  return [
+    { icon: Package, label: "İş İlanlarım", desc: "Açtığın iş ilanları ve gelen teklifler", to: "/ilanlarim" },
+    { icon: Inbox, label: "Tekliflerim & Siparişlerim", desc: "Gönderdiğin teklif ve siparişleri izle", to: "/tekliflerim" },
+    { icon: Navigation, label: "Sevkiyat", desc: "Kabul ettiğin işin teslimatını izle", to: "/sevkiyat" },
+    { icon: History, label: "İş Geçmişi", desc: "Tamamlanan işler ve performans", to: "/sefer-gecmisi" },
+    ...common,
+  ];
+}
+
+// Rol bazlı istatistik bandı etiketleri — orta ve sağ kutu role göre değişir.
+// (Sol kutu her rolde PUAN olarak kalır.) value alanları render'da doldurulur.
+const STAT_LABELS_BY_ROLE = {
+  nakliyeci: { mid: "SEFER", right: "BELGE" },
+  tedarikci: { mid: "SATIŞ", right: "BELGE" },
+  isveren: { mid: "İŞ İLANI", right: "BELGE" },
+};
 
 // Belge başına gerçek durum (admin reviewDoc ile "dogrulandi"/"red" olur; yoksa beklemede).
 function docStatusInfo(d) {
@@ -91,9 +141,10 @@ export default function ProfilPage({ user, onUpdateProfile, onRequireAuth, onLog
     const f = e.target.files?.[0];
     if (!f) return;
     if (f.size > 2_500_000) { toast("Dosya çok büyük (~2.5MB sınırı)", "error"); return; }
+    const docTypeToSave = docTypesForRole(user?.role).includes(docType) ? docType : docTypesForRole(user?.role)[0];
     const reader = new FileReader();
     reader.onload = () => {
-      onAddDoc?.({ id: Date.now(), ownerId: user.id, type: docType, name: f.name, dataUrl: reader.result, createdAt: new Date().toISOString() });
+      onAddDoc?.({ id: Date.now(), ownerId: user.id, type: docTypeToSave, name: f.name, dataUrl: reader.result, createdAt: new Date().toISOString() });
       toast("Belge yüklendi — inceleniyor", "success");
     };
     reader.readAsDataURL(f);
@@ -130,9 +181,22 @@ export default function ProfilPage({ user, onUpdateProfile, onRequireAuth, onLog
   const myReviews = reviews.filter((r) => String(r.toId) === String(user.id)).slice(0, 8);
   const rel = computeReliability(user.id, { listings, offers, reviews });
   const relTier = reliabilityTier(rel.score);
-  const reviewCount = reviews.filter((r) => String(r.toId) === String(user.id)).length;
   const avgRating = rating ? rating.avg : (user.rating ?? 5.0);
   const roleBadge = ROLE_BADGE[user.role] || "ÜYE";
+
+  // ── Rol bazlı türetimler ──
+  const role = user.role;
+  const myDocTypes = docTypesForRole(role);
+  // Seçili belge tipi role uymuyorsa (rol değişmiş olabilir) ilk geçerliye düş.
+  const activeDocType = myDocTypes.includes(docType) ? docType : myDocTypes[0];
+  // İstatistik orta kutusu: nakliyeci→sefer, tedarikçi→satış, müteahhit→iş ilanı sayısı.
+  const myListings = listings.filter((l) => String(l.ownerId) === String(user.id));
+  const midStatValue =
+    role === "nakliyeci" ? String(rel.totalTrips ?? 0)
+    : role === "tedarikci" ? String(myListings.filter((l) => l.delivered).length)
+    : String(myListings.length);
+  const statLabels = STAT_LABELS_BY_ROLE[role] || STAT_LABELS_BY_ROLE.isveren;
+  const myMenu = menuForRole(role);
 
   return (
     <div style={shell}>
@@ -180,13 +244,13 @@ export default function ProfilPage({ user, onUpdateProfile, onRequireAuth, onLog
           </div>
           <div style={{ width: 2, background: "rgba(255,255,255,0.14)" }} />
           <div style={{ flex: 1, textAlign: "center", padding: "11px 4px" }}>
-            <div style={{ fontFamily: MONO, fontSize: 18, fontWeight: 700, color: "#fff" }}>{reviewCount}</div>
-            <div style={{ fontFamily: MONO, fontSize: 9, color: "rgba(255,255,255,0.5)", marginTop: 2, letterSpacing: 0.6 }}>DEĞERLENDİRME</div>
+            <div style={{ fontFamily: MONO, fontSize: 18, fontWeight: 700, color: "#fff" }}>{midStatValue}</div>
+            <div style={{ fontFamily: MONO, fontSize: 9, color: "rgba(255,255,255,0.5)", marginTop: 2, letterSpacing: 0.6 }}>{statLabels.mid}</div>
           </div>
           <div style={{ width: 2, background: "rgba(255,255,255,0.14)" }} />
           <div style={{ flex: 1, textAlign: "center", padding: "11px 4px" }}>
             <div style={{ fontFamily: MONO, fontSize: 18, fontWeight: 700, color: "#fff" }}>{docs.length}</div>
-            <div style={{ fontFamily: MONO, fontSize: 9, color: "rgba(255,255,255,0.5)", marginTop: 2, letterSpacing: 0.6 }}>BELGE</div>
+            <div style={{ fontFamily: MONO, fontSize: 9, color: "rgba(255,255,255,0.5)", marginTop: 2, letterSpacing: 0.6 }}>{statLabels.right}</div>
           </div>
         </div>
       </div>
@@ -301,7 +365,7 @@ export default function ProfilPage({ user, onUpdateProfile, onRequireAuth, onLog
             Adımları tamamla → <b>onaylı rozeti</b> kazan. Onaylı üyeler daha çok güven ve teklif alır.
           </p>
           {[
-            { label: "Belge yükle (K belgesi, ruhsat, vergi levhası)", done: docs.length > 0 },
+            { label: `Belge yükle (${myDocTypes.slice(0, 3).join(", ")})`, done: docs.length > 0 },
             { label: "Ekip incelemesi → onaylı rozet", done: Boolean(user.verified) },
           ].map((s, i) => (
             <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 0", borderTop: i === 0 ? "none" : `1px solid ${C.line}` }}>
@@ -330,15 +394,19 @@ export default function ProfilPage({ user, onUpdateProfile, onRequireAuth, onLog
             </span>
           </div>
           <p style={{ fontFamily: MONO, fontSize: 11, color: C.sub, margin: "0 0 12px", lineHeight: 1.5 }}>
-            K belgesi, araç ruhsatı, vergi levhası yükle → ekibimiz inceleyip <b>doğrulanmış rozeti</b> verir.
+            {role === "nakliyeci"
+              ? <>K belgesi, araç ruhsatı, SRC yükle → ekibimiz inceleyip <b>doğrulanmış rozeti</b> verir.</>
+              : role === "tedarikci"
+              ? <>Ocak ruhsatı, kapasite raporu, vergi levhası yükle → ekibimiz inceleyip <b>doğrulanmış rozeti</b> verir.</>
+              : <>Vergi levhası, ticaret sicil gazetesi, imza sirküsü yükle → ekibimiz inceleyip <b>doğrulanmış rozeti</b> verir.</>}
           </p>
 
           {/* belge tipi seçimi */}
           <div style={{ marginBottom: 10 }}>
             <label style={labelSt}>Belge tipi</label>
-            <select value={docType} onChange={(e) => setDocType(e.target.value)}
+            <select value={activeDocType} onChange={(e) => setDocType(e.target.value)}
               style={{ width: "100%", boxSizing: "border-box", background: C.card, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "11px 12px", fontFamily: MONO, fontSize: 12, fontWeight: 700, color: C.ink, outline: "none" }}>
-              {DOC_TYPES.map((t) => <option key={t}>{t}</option>)}
+              {myDocTypes.map((t) => <option key={t}>{t}</option>)}
             </select>
           </div>
 
@@ -403,11 +471,7 @@ export default function ProfilPage({ user, onUpdateProfile, onRequireAuth, onLog
         {/* Menü satırları */}
         <section style={{ background: C.card, border: `2px solid ${C.ink}`, borderRadius: 6, overflow: "hidden", boxShadow: "6px 6px 0 rgba(10,10,10,.12)" }}>
           {[
-            { icon: Package, label: "İlanlarım", desc: "Açtığın ilanlar ve gelen teklifler", to: "/ilanlarim" },
-            { icon: Inbox, label: "Tekliflerim & Siparişlerim", desc: "Gönderdiğin teklif ve siparişleri izle", to: "/tekliflerim" },
-            { icon: Navigation, label: "Sevkiyat", desc: "Aktif seferleri canlı izle", to: "/sevkiyat" },
-            { icon: History, label: "Sefer Geçmişi", desc: "Tamamlanan işler ve hat performansı", to: "/sefer-gecmisi" },
-            { icon: Heart, label: "Favorilerim", desc: "Kaydettiğin ilanlar", to: "/ilanlar?fav=1" },
+            ...myMenu,
             ...(PAYMENTS_ENABLED ? [
               { icon: Truck, label: "Cüzdan", desc: "Kazanç, hakediş ve harcama", to: "/cuzdan" },
               { icon: Building2, label: "Ödeme & hesap", desc: "Banka / IBAN bilgileri", to: "/cuzdan" },

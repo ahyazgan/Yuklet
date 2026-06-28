@@ -212,28 +212,42 @@ export default function DashboardPage({ user, listings = [], offers = [], messag
   }
 
   const isNakliyeci = user.role === "nakliyeci";
+  const isTedarikci = user.role === "tedarikci";
   const totalTrips = acceptedOffers.length;
   const activeVehicles = myListings.filter((l) => l.type === "arac" && l.status === "aktif").length;
   const activeListings = myListings.filter((l) => l.status === "aktif").length;
   const matchedListings = myListings.filter((l) => l.status === "eslesti").length;
-  const roleLabel = isNakliyeci ? "Nakliyeci" : user.role === "tedarikci" ? "Tedarikçi" : "İş Veren";
+  const deliveredCount = myListings.filter((l) => l.delivered).length;
+  const roleLabel = isNakliyeci ? "Nakliyeci" : isTedarikci ? "Tedarikçi" : "Müteahhit";
 
   // Stat tiles (role-aware) — value + label, value uses Space Mono.
-  // Nakliyeci: "Eşleşen İş/Hafta" = bu haftaki kabul; iş veren ek olarak bekleyen teklif.
+  // Her rol kendi diline uygun 4 metrik görür.
   const thisWeekMatches = weekly.length ? weekly[weekly.length - 1].count : 0;
-  const tiles = isNakliyeci
-    ? [
-        { label: "Eşleşen İş / Hafta", value: `${thisWeekMatches}`, sub: `${totalTrips} sefer` },
-        { label: "Toplam Hakediş", value: totalEarnings > 0 ? compactTry(totalEarnings) : "—", accent: C.green },
-        { label: "Açık Araç İlanı", value: String(activeVehicles) },
-        { label: "Ort. Eşleşme Süresi", value: avgMatchDays != null ? `${avgMatchDays.toFixed(1)}g` : "—" },
-      ]
-    : [
-        { label: "Eşleşen İş / Hafta", value: `${thisWeekMatches}`, sub: `${matchedListings} toplam` },
-        { label: "Toplam Hakediş", value: totalEarnings > 0 ? compactTry(totalEarnings) : (totalVolume > 0 ? `${totalVolume.toLocaleString("tr-TR")}t` : "—"), accent: totalEarnings > 0 ? C.green : C.ink },
-        { label: pendingOffers > 0 ? "Bekleyen Teklif" : "Açık İlan", value: pendingOffers > 0 ? String(pendingOffers) : String(activeListings), accent: pendingOffers > 0 ? C.yellow : C.ink },
-        { label: "Ort. Eşleşme Süresi", value: avgMatchDays != null ? `${avgMatchDays.toFixed(1)}g` : "—" },
-      ];
+  let tiles;
+  if (isNakliyeci) {
+    tiles = [
+      { label: "Eşleşen İş / Hafta", value: `${thisWeekMatches}`, sub: `${totalTrips} sefer` },
+      { label: "Toplam Hakediş", value: totalEarnings > 0 ? compactTry(totalEarnings) : "—", accent: C.green },
+      { label: "Açık Araç İlanı", value: String(activeVehicles) },
+      { label: "Ort. Eşleşme Süresi", value: avgMatchDays != null ? `${avgMatchDays.toFixed(1)}g` : "—" },
+    ];
+  } else if (isTedarikci) {
+    // Tedarikçi: ürün/malzeme satışı odaklı.
+    tiles = [
+      { label: "Yeni Sipariş / Hafta", value: `${thisWeekMatches}`, sub: `${deliveredCount} teslim` },
+      { label: "Toplam Satış", value: totalEarnings > 0 ? compactTry(totalEarnings) : (totalVolume > 0 ? `${totalVolume.toLocaleString("tr-TR")}t` : "—"), accent: totalEarnings > 0 ? C.green : C.ink },
+      { label: pendingOffers > 0 ? "Bekleyen Sipariş" : "Açık Ürün İlanı", value: pendingOffers > 0 ? String(pendingOffers) : String(activeListings), accent: pendingOffers > 0 ? C.yellow : C.ink },
+      { label: "Ort. Eşleşme Süresi", value: avgMatchDays != null ? `${avgMatchDays.toFixed(1)}g` : "—" },
+    ];
+  } else {
+    // Müteahhit / Alıcı: iş ilanı + teklif odaklı.
+    tiles = [
+      { label: "Eşleşen İş / Hafta", value: `${thisWeekMatches}`, sub: `${matchedListings} toplam` },
+      { label: "Toplam Hakediş", value: totalEarnings > 0 ? compactTry(totalEarnings) : (totalVolume > 0 ? `${totalVolume.toLocaleString("tr-TR")}t` : "—"), accent: totalEarnings > 0 ? C.green : C.ink },
+      { label: pendingOffers > 0 ? "Bekleyen Teklif" : "Açık İş İlanı", value: pendingOffers > 0 ? String(pendingOffers) : String(activeListings), accent: pendingOffers > 0 ? C.yellow : C.ink },
+      { label: "Ort. Eşleşme Süresi", value: avgMatchDays != null ? `${avgMatchDays.toFixed(1)}g` : "—" },
+    ];
+  }
 
   // bar chart scaling
   const maxBar = Math.max(1, ...weekly.map((w) => w.count));
@@ -309,7 +323,7 @@ export default function DashboardPage({ user, listings = [], offers = [], messag
               </span>
             }
           >
-            Haftalık Eşleşme
+            {isTedarikci ? "Haftalık Sipariş" : "Haftalık Eşleşme"}
           </SectionTitle>
 
           <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 7, height: 116, padding: "4px 2px 0" }}>
@@ -332,14 +346,14 @@ export default function DashboardPage({ user, listings = [], offers = [], messag
             })}
           </div>
           <div style={{ marginTop: 10, fontFamily: MONO, fontSize: 8.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em", color: C.muted }}>
-            Son 6 hafta · {weeklyTotal} eşleşme
+            Son 6 hafta · {weeklyTotal} {isTedarikci ? "sipariş" : "eşleşme"}
           </div>
         </div>
 
         {/* İlanlarım özeti */}
         <div>
           <SectionTitle right={<button onClick={() => navigate("/ilanlarim")} style={{ border: "none", background: "none", fontFamily: MONO, fontSize: 10, fontWeight: 700, textTransform: "uppercase", color: C.sub, cursor: "pointer" }}>Tümü →</button>}>
-            {isNakliyeci ? "Araç İlanlarım" : "İlanlarım"}
+            {isNakliyeci ? "Araç İlanlarım" : isTedarikci ? "Ürün İlanlarım" : "İş İlanlarım"}
           </SectionTitle>
           {myListings.length === 0 ? (
             <div
