@@ -881,7 +881,7 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
               {isVehicle ? (
                 <>Bu aracı <b style={{ color: C.ink }}>{l.price ? `₺${l.price.toLocaleString("tr-TR")}` : "ilan fiyatından"}</b> sabit fiyattan kiralıyorsun. Onaylarsan eşleşme oluşur ve sahibiyle iletişime geçebilirsin.</>
               ) : (
-                <>Bu işi <b style={{ color: C.ink }}>{l.price ? `₺${l.price.toLocaleString("tr-TR")}` : "ilan fiyatından"}</b> sabit fiyattan kabul ediyorsun. Onaylarsan iş hemen sana atanır ve müteahhitle iletişime geçebilirsin.</>
+                <>Bu işi <b style={{ color: C.ink }}>{l.price ? `₺${l.price.toLocaleString("tr-TR")}` : "ilan fiyatından"}</b> sabit fiyattan kabul ediyorsun. Onaylarsan iş hemen sana atanır ve alıcıyla iletişime geçebilirsin.</>
               )}
             </p>
 

@@ -302,7 +302,7 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
     hapticSuccess();
     setProofForm({ tonnage: "", ticketNo: "", note: "", photo: null, signature: null });
     setProofBusy(false);
-    setPayMsg(loc ? "Teslim kanıtı (konum doğrulandı) gönderildi, müteahhit onayında." : "Teslim kanıtı gönderildi, müteahhit onayında.");
+    setPayMsg(loc ? "Teslim kanıtı (konum doğrulandı) gönderildi, alıcı onayında." : "Teslim kanıtı gönderildi, alıcı onayında.");
   };
   const reviewProof = (ok) => {
     onUpdateListing?.(l.id, ok
@@ -323,7 +323,7 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
     setPayBusy(true); setPayMsg("");
     const res = await onRefundPayment?.(l);
     setPayBusy(false);
-    setPayMsg(res?.ok ? "Ödeme müteahhite iade edildi." : (res?.error || "İade başarısız."));
+    setPayMsg(res?.ok ? "Ödeme alıcıya iade edildi." : (res?.error || "İade başarısız."));
   };
   // ── Hızlı Ödeme (erken hakediş) — teslim onaylı işte nakliyeci anında alır ──
   const early = earlyPayout(split.payout);
@@ -741,7 +741,7 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
             )}
             {payStatus === "iade" && (
               <p style={{ fontFamily: MONO, fontSize: 12, fontWeight: 700, color: C.rose, margin: "12px 0 0", display: "inline-flex", alignItems: "center", gap: 6 }}>
-                <AlertTriangle size={14} /> Anlaşmazlık sonucu {fmtTL(split.total)} müteahhite iade edildi.
+                <AlertTriangle size={14} /> Anlaşmazlık sonucu {fmtTL(split.total)} alıcıya iade edildi.
               </p>
             )}
 
@@ -766,7 +766,7 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
                   <Zap size={16} strokeWidth={2.6} /> Hızlı Ödeme
                 </div>
                 <p style={{ fontSize: 12, lineHeight: 1.55, color: "#C9C6BD", margin: "8px 0 12px" }}>
-                  Teslim onaylandı. Müteahhitin serbest bırakmasını bekleme — hakedişini <b style={{ color: "#fff" }}>şimdi al</b>.
+                  Teslim onaylandı. Alıcının serbest bırakmasını bekleme — hakedişini <b style={{ color: "#fff" }}>şimdi al</b>.
                 </p>
                 <div style={{ background: "rgba(255,255,255,0.06)", border: `2px solid #2A2A2A`, borderRadius: 6, padding: 12, display: "flex", flexDirection: "column", gap: 7 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5 }}>
@@ -786,7 +786,7 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
                   style={{ width: "100%", marginTop: 12, background: C.yellow, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "13px 0", fontFamily: ARCH, fontSize: 13, fontWeight: 900, textTransform: "uppercase", color: C.ink, cursor: payBusy ? "default" : "pointer", opacity: payBusy ? 0.6 : 1, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7 }}>
                   <Zap size={16} /> {payBusy ? "İŞLENİYOR…" : `${fmtTL(early.net)} Şimdi Al`}
                 </button>
-                <p style={{ fontFamily: MONO, fontSize: 9.5, color: "#7A786E", margin: "9px 0 0", textAlign: "center" }}>Beklersen müteahhit serbest bıraktığında {fmtTL(split.payout)} alırsın.</p>
+                <p style={{ fontFamily: MONO, fontSize: 9.5, color: "#7A786E", margin: "9px 0 0", textAlign: "center" }}>Beklersen alıcı serbest bıraktığında {fmtTL(split.payout)} alırsın.</p>
               </div>
             )}
             {isNakliyeci && payStatus === "serbest" && (
@@ -821,7 +821,7 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
             {!proof && canSubmitProof && (
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 <p style={{ fontSize: 12, lineHeight: 1.6, color: C.sub, margin: 0 }}>
-                  Yükü teslim ettin mi? <b style={{ color: C.ink }}>Kantar fişini</b> gir. Müteahhit onaylayınca ödemen serbest kalır.
+                  Yükü teslim ettin mi? <b style={{ color: C.ink }}>Kantar fişini</b> gir. Alıcı onaylayınca ödemen serbest kalır.
                 </p>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                   <div>
@@ -953,7 +953,7 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
                   </div>
                 )}
                 {proof.status === "beklemede" && isNakliyeci && (
-                  <p style={{ fontSize: 12, fontWeight: 700, color: C.yellowDeep, margin: 0 }}>Kanıt gönderildi, müteahhit onayı bekleniyor.</p>
+                  <p style={{ fontSize: 12, fontWeight: 700, color: C.yellowDeep, margin: 0 }}>Kanıt gönderildi, alıcı onayı bekleniyor.</p>
                 )}
                 {proof.status === "onay" && (
                   <p style={{ fontFamily: MONO, fontSize: 12, fontWeight: 700, color: C.green, margin: 0, display: "inline-flex", alignItems: "center", gap: 6 }}>

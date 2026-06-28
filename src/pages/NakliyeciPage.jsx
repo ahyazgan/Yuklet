@@ -40,7 +40,7 @@ const HOW = [
 
 const BENEFITS = [
   { t: "Boş sefer yok", d: "Bölgendeki yükleri önceden gör. Boş dönüş yerine iş al, km başı kazancını artır." },
-  { t: "Anında iş eşleştirme", d: "İş ilanları anlık güncellenir. Sabah ilan veren müteahhit öğleden önce araç bulur." },
+  { t: "Anında iş eşleştirme", d: "İş ilanları anlık güncellenir. Sabah ilan veren alıcı öğleden önce araç bulur." },
   { t: "Fiyatı sen belirle", d: "Platform fiyat dikte etmez. Kendi teklifini ver, iş sahibiyle doğrudan anlaş." },
   { t: "Dijital irsaliye", d: "Kağıt takip yok. Taşıma belgelerini telefonda gör, sakla, gönder." },
 ];

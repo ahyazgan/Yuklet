@@ -69,7 +69,7 @@ export default function MuteahhitPage() {
   return (
     <div className="mx-auto w-full max-w-[460px]" style={{ background: C.bg, color: C.ink }}>
       <SEO
-        title="Müteahhit & Alıcı"
+        title="Alıcı"
         description="Şantiyen için hafriyat ve döküm yük nakliyesi artık çok kolay. Anlık teklif al, belgeli araçlarla çalış."
       />
 

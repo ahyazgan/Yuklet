@@ -358,7 +358,7 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers
           </div>
           <div>
             <h1 style={{ margin: 0, fontFamily: ARCH, fontSize: 24, fontWeight: 900, letterSpacing: "-0.02em", textTransform: "uppercase" }}>İlanın yayında!</h1>
-            <p style={{ margin: "8px 0 0", fontSize: 14, color: C.sub }}>{isUrun ? "Müteahhitler artık ürününü görebilir ve iletişime geçebilir." : (published?.priceType === "sabit" ? (published?.type === "arac" ? "Müteahhitler aracını sabit fiyattan doğrudan kiralayabilir." : "Nakliyeciler işini sabit fiyattan doğrudan kabul edebilir.") : "Nakliyeci ve iş sahipleri artık ilanına teklif verebilir.")}</p>
+            <p style={{ margin: "8px 0 0", fontSize: 14, color: C.sub }}>{isUrun ? "Alıcılar artık ürününü görebilir ve iletişime geçebilir." : (published?.priceType === "sabit" ? (published?.type === "arac" ? "Alıcılar aracını sabit fiyattan doğrudan kiralayabilir." : "Nakliyeciler işini sabit fiyattan doğrudan kabul edebilir.") : "Nakliyeci ve iş sahipleri artık ilanına teklif verebilir.")}</p>
           </div>
 
           {/* summary card — dark header block + hazard stripe */}
@@ -790,10 +790,10 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers
               <div style={{ fontFamily: MONO, fontSize: 10.5, color: C.sub, lineHeight: 1.5, background: C.stone, border: `2px solid ${C.border}`, borderRadius: 6, padding: "9px 11px" }}>
                 {form.priceType === "sabit"
                   ? (type === "arac"
-                      ? "Müteahhit teklif vermeden aracını sabit fiyattan doğrudan KİRALAR — ilk kiralayan alır."
+                      ? "Alıcı teklif vermeden aracını sabit fiyattan doğrudan KİRALAR — ilk kiralayan alır."
                       : "Nakliyeci teklif vermeden işi sabit fiyattan doğrudan KABUL EDER — ilk kabul eden işi alır.")
                   : (type === "arac"
-                      ? "Müteahhitler fiyat teklifi verir; sen en uygununu seçersin."
+                      ? "Alıcılar fiyat teklifi verir; sen en uygununu seçersin."
                       : "Nakliyeciler fiyat teklifi verir; sen en uygununu seçip kabul edersin.")}
               </div>
             )}

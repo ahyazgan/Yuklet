@@ -97,7 +97,7 @@ Telefon: +90 (212) 555 00 00`
 
 - **Platform:** yuklet.co web sitesi ve mobil uygulamasi
 - **Kullanici:** Platformu kullanan gercek veya tuzel kisi
-- **Is Sahibi:** Tasinacak yuk icin is ilani veren taraf (muteahhit, firma, kisi)
+- **Is Sahibi:** Tasinacak yuk icin is ilani veren taraf (alici, firma, kisi)
 - **Nakliyeci:** Arac ilani veren veya ise teklif veren tasiyici taraf
 
 ## 2. Platformun Niteligi

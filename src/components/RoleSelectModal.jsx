@@ -12,7 +12,7 @@ const HAZARD = "repeating-linear-gradient(45deg,#0A0A0A 0 9px,#FACC15 9px 18px)"
 const FRAME = `2px solid ${C.ink}`;
 
 const ROLES = [
-  { id: "isveren", label: "Müteahhit / Alıcı", desc: "İş ilanı açar, teklif alır" },
+  { id: "isveren", label: "Alıcı", desc: "İş ilanı açar, teklif alır" },
   { id: "nakliyeci", label: "Nakliyeci / Taşıyıcı", desc: "Araç ilanı açar, yük taşır" },
   { id: "tedarikci", label: "Tedarikçi", desc: "Malzeme satar: ocak, beton, kum" },
 ];

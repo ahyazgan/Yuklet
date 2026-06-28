@@ -16,7 +16,7 @@ const HAZARD = "repeating-linear-gradient(45deg,#0A0A0A 0 9px,#FACC15 9px 18px)"
 const FRAME = `2px solid ${C.ink}`;
 
 const ROLES = [
-  { letter: "M", title: "Müteahhit / Alıcı", desc: "Yük taşıtmak istiyorum", route: "/muteahhit", bg: C.yellow, fg: C.ink },
+  { letter: "A", title: "Alıcı", desc: "Yük taşıtmak istiyorum", route: "/muteahhit", bg: C.yellow, fg: C.ink },
   { letter: "N", title: "Nakliyeci / Taşıyıcı", desc: "Aracımla iş arıyorum", route: "/nakliyeci", bg: C.stone, fg: C.ink },
   { letter: "T", title: "Tedarikçi / Ocak", desc: "Malzeme satıyorum", route: "/tedarikci", bg: C.green, fg: "#FFFFFF" },
 ];
@@ -45,7 +45,7 @@ export default function OnboardingModal({ onClose }) {
             <>
               <h2 className="text-center text-[20px] font-extrabold uppercase" style={{ color: C.ink, fontFamily: ARCH, letterSpacing: "-0.02em" }}>Hoş Geldin</h2>
               <p className="mb-6 mt-1.5 text-center text-[12.5px]" style={{ color: C.sub, fontFamily: MONO, lineHeight: 1.55 }}>
-                Hafriyat ve dökme yükü doğru araçla, <b style={{ color: C.ink }}>komisyonsuz</b> buluşturuyoruz. Müteahhit, nakliyeci ve tedarikçi tek platformda.
+                Hafriyat ve dökme yükü doğru araçla, <b style={{ color: C.ink }}>komisyonsuz</b> buluşturuyoruz. Alıcı, nakliyeci ve tedarikçi tek platformda.
               </p>
             </>
           )}

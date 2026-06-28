@@ -167,7 +167,7 @@ function AppShell() {
   // forNakliyeci=true → teslim onay + ödeme nakliyeciye serbest; false → müteahhite iade.
   const resolveDispute = async (listing, forNakliyeci) => {
     const proof = { ...(listing.deliveryProof || {}), status: forNakliyeci ? "onay" : "iade", adminResolved: true, resolvedAt: new Date().toISOString() };
-    logAdmin("dispute", `${listing.title || listing.id}: ${forNakliyeci ? "nakliyeci lehine (ödeme)" : "müteahhit lehine (iade)"}`);
+    logAdmin("dispute", `${listing.title || listing.id}: ${forNakliyeci ? "nakliyeci lehine (ödeme)" : "alıcı lehine (iade)"}`);
     if (forNakliyeci) {
       await updateListing(listing.id, { deliveryProof: proof, phase: "teslim", status: "kapali" });
       return releasePayment(listing);

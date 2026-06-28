@@ -45,7 +45,7 @@ const FRAME = `2px solid ${C.ink}`;
 
 /* Rol -> header içeriği */
 const ROLE = {
-  muteahhit: { badge: "MÜTEAHHİT", place: "ÜMRANİYE · İSTANBUL" },
+  muteahhit: { badge: "ALICI", place: "ÜMRANİYE · İSTANBUL" },
   nakliyeci: { badge: "NAKLİYECİ", place: "SİLOBAS 30T · BURSA" },
   tedarikci: { badge: "TEDARİKÇİ", place: "ALİAĞA · İZMİR" },
 };

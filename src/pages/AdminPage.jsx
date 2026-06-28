@@ -333,7 +333,7 @@ export default function AdminPage({ user, reports = [], docs = [], users = [], l
                     <div style={{ display: "flex", gap: 9 }}>
                       <button onClick={() => onResolveDispute?.(l, false)}
                         style={{ flex: 1, ...btnBase, justifyContent: "center", background: C.card, color: C.ink, padding: "11px 0" }}>
-                        Müteahhit lehine · İade
+                        Alıcı lehine · İade
                       </button>
                       <button onClick={() => onResolveDispute?.(l, true)}
                         style={{ flex: 1, ...btnBase, justifyContent: "center", background: C.green, color: "#fff", padding: "11px 0" }}>

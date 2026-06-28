@@ -39,7 +39,7 @@ const HOW = [
 ];
 
 const BENEFITS = [
-  { t: "Geniş müşteri erişimi", d: "Yüzlerce müteahhit ve yapı şirketine ulaş. Sabit ağının ötesine geç." },
+  { t: "Geniş müşteri erişimi", d: "Yüzlerce alıcı ve yapı şirketine ulaş. Sabit ağının ötesine geç." },
   { t: "Nakliye çözümü dahil", d: "Ürünü satan sen, taşıyanı platform bulsun. Müşterine kapıya teslim." },
   { t: "Dijital fatura & sipariş", d: "Kağıt irsaliye yok. Sipariş, fatura ve ödeme durumu tek panelde." },
   { t: "Ürün kataloğu", d: "Çimento, kum, mıcır, çakıl — tümünü fiyatla yayınla, güncellemesi saniyeler." },
@@ -108,7 +108,7 @@ export default function TedarikciPage() {
 
         {/* gövde + sarı vurgu */}
         <p className="mt-4 max-w-[300px] text-[13px] font-medium leading-relaxed" style={{ color: C.heroBody }}>
-          Kum, çakıl, mıcır, kırma taş, çimento — ürünlerini platforma ekle. Yüzlerce müteahhit sana ulaşsın, nakliyeyi platform çözsün.{" "}
+          Kum, çakıl, mıcır, kırma taş, çimento — ürünlerini platforma ekle. Yüzlerce alıcı sana ulaşsın, nakliyeyi platform çözsün.{" "}
           <span style={{ color: C.yellow, fontWeight: 700 }}>%0 komisyon.</span>
         </p>
 
@@ -206,7 +206,7 @@ export default function TedarikciPage() {
           <div className="px-5 pb-5 pt-5">
             <div className="mb-5 grid grid-cols-3 overflow-hidden" style={{ border: `2px solid #222`, borderRadius: 6 }}>
               {[
-                { v: "1.200+", l: "Müteahhit" },
+                { v: "1.200+", l: "Alıcı" },
                 { v: "320+", l: "Tedarikçi" },
                 { v: "%0", l: "Komisyon" },
               ].map((it, i) => (

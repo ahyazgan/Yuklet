@@ -8,7 +8,7 @@ export const CATS = [
 
 // Kullanici rolleri (3 taraf)
 export const ROLES_EXTENDED = [
-  { id: "muteahhit", label: "Müteahhit / Alıcı", icon: "🏗️", desc: "İş ilanı acar, yük ve nakliye arar" },
+  { id: "muteahhit", label: "Alıcı", icon: "🏗️", desc: "İş ilanı acar, yük ve nakliye arar" },
   { id: "tedarikci", label: "Tedarikçi", icon: "⛏️", desc: "Malzeme satar: ocak, beton, kum" },
   { id: "nakliyeci", label: "Nakliyeci / Taşıyıcı", icon: "🚚", desc: "Araç ilanı açar, yük taşır" },
 ];
