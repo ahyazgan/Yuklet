@@ -682,7 +682,7 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
                 <div style={{ fontFamily: HEAD, fontSize: 20, fontWeight: 900, textTransform: "uppercase", letterSpacing: "-0.02em", marginTop: 16 }}>{isProduct ? "Talep gönderildi" : "Teklif gönderildi"}</div>
                 <p style={{ fontSize: 13, color: C.sub, marginTop: 6, lineHeight: 1.5 }}>
                   {isProduct
-                    ? "Talebin tedarikçiye iletildi. Onaylandığında iletişim açılır ve nakliyeyi platformdan ayarlayabilirsin."
+                    ? "Talebin satıcıya iletildi. Onaylandığında iletişim açılır ve nakliyeyi platformdan ayarlayabilirsin."
                     : "Teklifiniz ilan sahibine iletildi. Yanıt geldiğinde mesajlardan haberdar olursunuz."}
                 </p>
                 <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
@@ -799,7 +799,7 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
                     {/* nakliye dahil/hariç bilgisi — alıcı taşımayı bilsin */}
                     <div style={{ marginTop: 12, padding: "10px 12px", borderRadius: 6, border: `2px solid ${l.deliveryIncluded ? C.green : C.ink}`, background: l.deliveryIncluded ? "#F0FBF3" : C.card, fontFamily: MONO, fontSize: 10.5, fontWeight: 700, color: l.deliveryIncluded ? C.green : C.sub, lineHeight: 1.5 }}>
                       {l.deliveryIncluded
-                        ? "✓ NAKLİYE DAHİL — teslimat tedarikçiye ait, ayrıca taşıma ayarlamana gerek yok."
+                        ? "✓ NAKLİYE DAHİL — teslimat satıcıya ait, ayrıca taşıma ayarlamana gerek yok."
                         : "NAKLİYE HARİÇ — sipariş onaylanınca taşımayı platformdan ayarlarsın."}
                     </div>
                   </>

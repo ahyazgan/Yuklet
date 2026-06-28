@@ -10,7 +10,7 @@
 
 - **Ürün:** HamTed — hafriyat & silobas yük taşımacılığı ilan/eşleştirme platformu.
 - **Estetik:** MoveIQ tarzı **mobil-app görünümü** — açık zemin, beyaz kartlar, **sarı (`yellow-400`) vurgu**, lacivert/slate kontrast. Telefon genişliğinde ortalanmış dar kolon.
-- **Ton:** Güvenilir, sade, sahaya yakın. Alıcı/nakliyeci/tedarikçi diliyle konuş — jargon değil, iş dili.
+- **Ton:** Güvenilir, sade, sahaya yakın. Alıcı/nakliyeci/satıcı diliyle konuş — jargon değil, iş dili.
 - **Logo:** Lacivert→sarı gradyan kare (`#11141A → #FACC15`), beyaz "H", radius ~12px.
 - **İki tema:** **Light = varsayılan ve sevk edilen görünüm.** Dark (lacivert `navy` paleti) tema butonuyla açılır; CSS değişkenleri + `navy`/`brand` token'ları hazır, ama sayfalara `dark:` varyantları henüz tam işlenmedi (açık iş — yeni sayfa yazarken `dark:` ekle).
 
@@ -127,7 +127,7 @@ Yukarıdan aşağıya tipik diziliş:
 | Sayfa | Yapı |
 |---|---|
 | **Home `/`** | Üst bar → arama → 2'li promo → Aktif sevkiyat → Son ilanlar → Roller |
-| **Landing `/muteahhit` `/tedarikci` `/nakliyeci`** | Hero (değer cümlesi + tek CTA) → 3 adım "nasıl çalışır" → fayda listesi → kapanış CTA. Persona rengi: alıcı `amber`, tedarikçi `emerald`, nakliyeci `sky`. |
+| **Landing `/muteahhit` `/tedarikci` `/nakliyeci`** | Hero (değer cümlesi + tek CTA) → 3 adım "nasıl çalışır" → fayda listesi → kapanış CTA. Persona rengi: alıcı `amber`, satıcı `emerald`, nakliyeci `sky`. |
 | **İlanlar `/ilanlar`** | Arama + kategori chip'leri + `İş/Araç` segment → tek sütun ilan kartı akışı. Filtre üstte, sonuç sayısı küçük gri. |
 | **İlan Detay `/ilan/:id`** | Başlık + kategori/konum meta → açıklama bloğu → özellik satırları → sabit/altta **Teklif Ver** kartı (fiyat + CTA). |
 | **İlan Ver `/ilan-ver`** | Tek sütun form: `cat` (hafriyat/silobas) → `type` (iş/araç) segment → alanlar (il, malzeme, miktar, tarih…) → altta birincil "İlan oluştur" CTA. |

@@ -41,7 +41,7 @@ const HOW = [
 const BENEFITS = [
   { t: "Anlık teklif", d: "İlanını ver, dakikalar içinde belgeli nakliyecilerden fiyat gelsin." },
   { t: "Malzemeyi kaynağından al", d: "Kum, mıcır, çimentoyu doğrudan ocak ve santrallerden sipariş et — aracısız." },
-  { t: "Belgeli & puanlı", d: "Sadece K belgeli, geçmişi doğrulanmış araç ve tedarikçilerle çalış." },
+  { t: "Belgeli & puanlı", d: "Sadece K belgeli, geçmişi doğrulanmış araç ve satıcılarla çalış." },
   { t: "Her yük tipi", d: "Hafriyat, kum, çakıl, mıcır, çimento — hepsi tek yerde." },
   { t: "Konuma yakın", d: "Şantiyene en yakın boş araçlar öne çıkar, boş sefer maliyeti düşer." },
 ];
@@ -210,7 +210,7 @@ export default function MuteahhitPage() {
             <div className="mb-5 grid grid-cols-3 overflow-hidden" style={{ border: `2px solid #222`, borderRadius: 6 }}>
               {[
                 { v: "850+", l: "Nakliyeci" },
-                { v: "320+", l: "Tedarikçi" },
+                { v: "320+", l: "Satıcı" },
                 { v: "%0", l: "Komisyon" },
               ].map((it, i) => (
                 <div key={it.l} className="px-2 py-3 text-center" style={i > 0 ? { borderLeft: "2px solid #222" } : undefined}>

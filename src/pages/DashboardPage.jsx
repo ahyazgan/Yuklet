@@ -218,7 +218,7 @@ export default function DashboardPage({ user, listings = [], offers = [], messag
   const activeListings = myListings.filter((l) => l.status === "aktif").length;
   const matchedListings = myListings.filter((l) => l.status === "eslesti").length;
   const deliveredCount = myListings.filter((l) => l.delivered).length;
-  const roleLabel = isNakliyeci ? "Nakliyeci" : isTedarikci ? "Tedarikçi" : "Alıcı";
+  const roleLabel = isNakliyeci ? "Nakliyeci" : isTedarikci ? "Satıcı" : "Alıcı";
 
   // Stat tiles (role-aware) — value + label, value uses Space Mono.
   // Her rol kendi diline uygun 4 metrik görür.

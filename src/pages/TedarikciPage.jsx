@@ -33,7 +33,7 @@ const ROLE_LABEL = "TEDARİKÇİ / OCAK SAHİBİ";
 const HERO_TITLE = ["Ocağını dijitale", "taşı, talep topla"];
 
 const HOW = [
-  { n: "01", t: "Tedarikçi hesabı aç", d: "Ocak / tesisini tanımla, belgeleri yükle, doğrulanmış rozet al." },
+  { n: "01", t: "Satıcı hesabı aç", d: "Ocak / tesisini tanımla, belgeleri yükle, doğrulanmış rozet al." },
   { n: "02", t: "Ürün & fiyat gir", d: "Neyi, hangi fiyattan, ne stokla sattığını belirt. Nakliyeli veya teslim." },
   { n: "03", t: "Siparişleri yönet", d: "Alıcılar teklif verir, doğrudan sipariş açar; akışı panelden yönet." },
 ];
@@ -68,7 +68,7 @@ export default function TedarikciPage() {
   return (
     <div className="mx-auto w-full max-w-[460px]" style={{ background: C.bg, color: C.ink }}>
       <SEO
-        title="Tedarikçi"
+        title="Satıcı"
         description="Kırma ocağı, kum ocağı, beton santrali — ürünlerinizi dijitale taşıyın, daha geniş müşteri kitlesine ulaşın."
       />
 
@@ -207,7 +207,7 @@ export default function TedarikciPage() {
             <div className="mb-5 grid grid-cols-3 overflow-hidden" style={{ border: `2px solid #222`, borderRadius: 6 }}>
               {[
                 { v: "1.200+", l: "Alıcı" },
-                { v: "320+", l: "Tedarikçi" },
+                { v: "320+", l: "Satıcı" },
                 { v: "%0", l: "Komisyon" },
               ].map((it, i) => (
                 <div key={it.l} className="px-2 py-3 text-center" style={i > 0 ? { borderLeft: "2px solid #222" } : undefined}>

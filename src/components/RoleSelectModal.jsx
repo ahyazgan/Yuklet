@@ -14,7 +14,7 @@ const FRAME = `2px solid ${C.ink}`;
 const ROLES = [
   { id: "isveren", label: "Alıcı", desc: "İş ilanı açar, teklif alır" },
   { id: "nakliyeci", label: "Nakliyeci / Taşıyıcı", desc: "Araç ilanı açar, yük taşır" },
-  { id: "tedarikci", label: "Tedarikçi", desc: "Malzeme satar: ocak, beton, kum" },
+  { id: "tedarikci", label: "Satıcı", desc: "Malzeme satar: ocak, beton, kum" },
 ];
 
 export default function RoleSelectModal({ onSelect }) {

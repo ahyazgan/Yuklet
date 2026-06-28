@@ -31,13 +31,13 @@ YÜKLET, hafriyat ve silobas/dökme yük taşımacılığını üç tarafı bulu
 ilan ve eşleştirme platformudur.
 
 İş sahibi (alıcı) işini yayınlar, nakliyeciler teklif verir, anlaşma sağlanır
-ve iş başlar. Tedarikçiler (kırma ocağı, beton santrali, kum ocağı) ürün ve
+ve iş başlar. Satıcılar (kırma ocağı, beton santrali, kum ocağı) ürün ve
 stok ilanlarını açar; nakliye platform üzerinden ayarlanır.
 
 — NE İŞE YARAR? —
 • İş ilanı aç, teklifleri karşılaştır, en uygun nakliyeciyle anlaş.
 • Boş aracın mı var? Açık iş ilanlarına teklif ver, geri dönüş yükü bul.
-• Tedarikçiysen ürün ilanını yayınla, alıcılara ulaş.
+• Satıcıysan ürün ilanını yayınla, alıcılara ulaş.
 
 — İKİ TAŞIMA KATEGORİSİ —
 • Hafriyat: kazı, toprak, moloz, kaya, asfalt kırığı, metal hurda.
@@ -76,7 +76,7 @@ Native build cihazda/simülatörde çalışırken şu ekranları çekin:
 
 ## İnceleme (review) notları — kopyala/yapıştır
 ```
-Uygulama, hafriyat ve silobas yük taşımacılığında iş sahibi, tedarikçi ve
+Uygulama, hafriyat ve silobas yük taşımacılığında iş sahibi, satıcı ve
 nakliyeciyi buluşturan bir ilan platformudur. Test için:
 
 1. Açılışta "Google ile giriş" veya "Apple ile giriş" kullanılabilir.

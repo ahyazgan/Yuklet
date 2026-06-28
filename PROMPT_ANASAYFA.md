@@ -35,7 +35,7 @@ Nasıl işler:
 Üç tip kullanıcı:
 • Alıcı / iş sahibi — iş ilanı açar, teklif toplar.
 • Nakliyeci / taşıyıcı — boş aracını ilan eder veya işlere teklif verir.
-• Tedarikçi — ocak/santral, kendi malzemesini ilan eder.
+• Satıcı — ocak/santral, kendi malzemesini ilan eder.
 
 Öne çıkan özellikler (ana sayfada yer bulabilir):
 • İlan açma ve teklif alma (komisyon yok).

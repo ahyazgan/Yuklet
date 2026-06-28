@@ -36,15 +36,15 @@ Neden burası:
 Marketplace organik başlamaz; ilk kıvılcımı elle çakarsın.
 - **Nakliyeci:** hafriyat sahaları, damperci durakları/kahveleri, **WhatsApp/Telegram damperci grupları**, OSB kantarları. Birebir kayıt.
 - **Müteahhit/şantiye:** Anadolu Yakası kentsel dönüşüm şantiye şefleri, yapı denetim, müteahhit dernekleri.
-- **Tedarikçi (silobas):** 2–3 kırma ocağı / beton santrali ile pilot.
+- **Satıcı (silobas):** 2–3 kırma ocağı / beton santrali ile pilot.
 - **Komisyoncuyu düşman etme, kanal yap:** mevcut aracıları platforma al, dijitalleştir (onların ağı = senin ilk likiditen).
 
 ---
 
 ## 4) Taraf bazlı değer önerisi (net cümleler)
-- **Müteahhit:** "Belgeli aracı dakikada bul; **kaçak döküm riski yok** (dijital irsaliye), fiyat şeffaf, telefon trafiği bitti."
+- **Alıcı:** "Belgeli aracı dakikada bul; **kaçak döküm riski yok** (dijital irsaliye), fiyat şeffaf, telefon trafiği bitti."
 - **Nakliyeci:** "**Boş dönme** — dönüşte yük bul; komisyoncuya kaptırma; hakediş garantili (escrow gelince)."
-- **Tedarikçi:** "Ürününü listele, yüzlerce müteahhide ulaş, **nakliyeyi platform çözsün.**"
+- **Satıcı:** "Ürününü listele, yüzlerce müteahhide ulaş, **nakliyeyi platform çözsün.**"
 
 ---
 

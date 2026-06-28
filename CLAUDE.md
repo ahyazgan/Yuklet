@@ -4,11 +4,11 @@
 HamTed, **hafriyat ve silobas/döküme yük taşımacılığını** 3 tarafı buluşturan bir **ilan & eşleştirme platformudur.**
 Bu bir e-ticaret sitesi DEĞİLDİR. Sepet yoktur, doğrudan satın alma yoktur.
 Model: Alıcı "iş ilanı" açar → nakliyeci "teklif" verir → kabul edilir → iletişim → iş başlar.
-Tedarikçi (ocak/santral) kendi ürün/stok ilanını açar, alıcı bulur, nakliyeyi platform üzerinden ayarlar.
+Satıcı (ocak/santral) kendi ürün/stok ilanını açar, alıcı bulur, nakliyeyi platform üzerinden ayarlar.
 
 ## 3 Kullanıcı Rolü
 - **Alıcı** (`isveren`): iş ilanı açar, teklif alır — `/muteahhit` landing
-- **Tedarikçi** (`tedarikci`): kırma ocağı, beton santrali, kum ocağı — `/tedarikci` landing
+- **Satıcı** (`tedarikci`): kırma ocağı, beton santrali, kum ocağı — `/tedarikci` landing
 - **Nakliyeci / Taşıyıcı** (`nakliyeci`): araç ilanı açar veya iş ilanlarına teklif verir — `/nakliyeci` landing
 
 ## İki Taşıma Kategorisi (başka kategori eklenmez)

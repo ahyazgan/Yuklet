@@ -28,7 +28,7 @@ const HAZARD = "repeating-linear-gradient(45deg,#0A0A0A 0 9px,#FACC15 9px 18px)"
 const ROLES = [
   { ltr: "A", color: C.yellow, txt: C.ink, title: "Alıcı", desc: "Taşınacak yükün için iş ilanı aç, gelen teklifleri karşılaştır, en uygun nakliyeciyle anlaş." },
   { ltr: "N", color: "#E7E2D6", txt: C.ink, title: "Nakliyeci / Taşıyıcı", desc: "Boş aracın için ilan ver ya da açık iş ilanlarına teklif gönder, dönüş yükünü doldur." },
-  { ltr: "T", color: C.green, txt: "#FFFFFF", title: "Tedarikçi / Ocak", desc: "Ocak, santral veya kum ocağı stoğunu yayınla; alıcı bulur, nakliyeyi platformda ayarla." },
+  { ltr: "S", color: C.green, txt: "#FFFFFF", title: "Satıcı", desc: "Ocak, santral veya kum ocağı stoğunu yayınla; alıcı bulur, nakliyeyi platformda ayarla." },
 ];
 
 // Akis chip'leri
@@ -90,7 +90,7 @@ export default function NasilCalisirPage() {
             3 Tarafı Tek Sahada Buluştururuz
           </h2>
           <p style={{ margin: "10px 0 0", fontFamily: MONO, fontSize: 12, lineHeight: 1.6, color: C.sub }}>
-            Alıcı, nakliyeci ve tedarikçi — aynı zemin. Telefon trafiği yok, aracı zinciri yok.
+            Alıcı, nakliyeci ve satıcı — aynı zemin. Telefon trafiği yok, aracı zinciri yok.
           </p>
         </div>
 

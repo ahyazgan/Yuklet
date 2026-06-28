@@ -47,7 +47,7 @@ const FRAME = `2px solid ${C.ink}`;
 const ROLE = {
   muteahhit: { badge: "ALICI", place: "ÜMRANİYE · İSTANBUL" },
   nakliyeci: { badge: "NAKLİYECİ", place: "SİLOBAS 30T · BURSA" },
-  tedarikci: { badge: "TEDARİKÇİ", place: "ALİAĞA · İZMİR" },
+  tedarikci: { badge: "SATICI", place: "ALİAĞA · İZMİR" },
 };
 
 /* ── İmza parçaları ─────────────────────────────────────────────────── */
