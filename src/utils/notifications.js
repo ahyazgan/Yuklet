@@ -10,7 +10,17 @@ function fmt(iso) {
 
 import { listingMatchesSearch } from "./searchMatch";
 
-export function buildNotifications(user, { listings = [], offers = [], messages = [], reviews = [], savedSearches = [] }, seenIso) {
+// Bildirim id ön ekini tercih kategorisine eşle.
+function prefKeyForId(id) {
+  if (id.startsWith("off-")) return "offers";
+  if (id.startsWith("res-")) return "accepts";
+  if (id.startsWith("msg-")) return "messages";
+  if (id.startsWith("rev-")) return "reviews";
+  if (id.startsWith("find-")) return "savedSearch";
+  return null;
+}
+
+export function buildNotifications(user, { listings = [], offers = [], messages = [], reviews = [], savedSearches = [] }, seenIso, prefs = null) {
   if (!user) return { items: [], unread: 0 };
   const uid = String(user.id);
   const myListingIds = new Set(listings.filter((l) => String(l.ownerId) === uid).map((l) => String(l.id)));
@@ -91,8 +101,13 @@ export function buildNotifications(user, { listings = [], offers = [], messages 
     }
   }
 
-  items.sort((a, b) => (b.time || "").localeCompare(a.time || ""));
-  const withRead = items.slice(0, 25).map((n) => ({
+  // Kullanıcı tercihiyle kapatılan bildirim türlerini ele (varsayılan: hepsi açık).
+  const filtered = prefs
+    ? items.filter((n) => { const k = prefKeyForId(n.id); return k ? prefs[k] !== false : true; })
+    : items;
+
+  filtered.sort((a, b) => (b.time || "").localeCompare(a.time || ""));
+  const withRead = filtered.slice(0, 25).map((n) => ({
     ...n, read: seenIso ? (n.time || "") <= seenIso : false, fmtTime: fmt(n.time),
   }));
   const unread = withRead.filter((n) => !n.read).length;

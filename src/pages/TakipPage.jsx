@@ -17,6 +17,7 @@ import { pickPhotoDataUrl, cameraNative } from "../native/camera";
 import { computeReliability } from "../utils/reliability";
 import ReliabilityBadge from "../components/ReliabilityBadge";
 import { readWeighTicket } from "../utils/ocr";
+import JobStatusBar from "../components/JobStatusBar";
 import { PAYMENTS_ENABLED } from "../config/features";
 
 const TripMap = lazy(() => import("../components/TripMap"));
@@ -405,6 +406,12 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
 
       {/* ── BODY ── */}
       <div style={{ flex: 1, padding: "16px 14px 110px", display: "flex", flexDirection: "column", gap: 14 }}>
+
+        {/* ── İŞ DURUMU ŞERİDİ (tam yaşam döngüsü; her iki taraf görür) ── */}
+        <div style={{ ...whiteCard, padding: "14px 14px 10px" }}>
+          <div style={{ ...labelTiny, marginBottom: 12 }}>İŞ DURUMU</div>
+          <JobStatusBar listing={l} offers={offers} />
+        </div>
 
         {/* ── KOYU TAKİP KARTI (rota + timeline + sefer ilerlemesi gömülü) ── */}
         <div style={{ position: "relative", background: C.ink, border: `2px solid ${C.ink}`, borderRadius: 6, color: "#fff", overflow: "hidden", boxShadow: `5px 5px 0 rgba(10,10,10,0.18)` }}>

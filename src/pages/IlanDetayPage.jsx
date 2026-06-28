@@ -23,6 +23,9 @@ import { hapticTap, hapticSuccess } from "../native/haptics";
 import useFavorites from "../hooks/useFavorites";
 import ReportModal from "../components/ReportModal";
 import ProfitCalc from "../components/ProfitCalc";
+import PhoneVerifyModal from "../components/PhoneVerifyModal";
+import JobStatusBar from "../components/JobStatusBar";
+import { pendingReviews } from "../utils/reviewGate";
 import { PAYMENTS_ENABLED } from "../config/features";
 import SEO from "../components/SEO";
 
@@ -122,7 +125,7 @@ function DetailRow({ label, value }) {
   );
 }
 
-export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth, offers = [], reviews = [], onAddOffer, onReport, isBlocked, onToggleBlock }) {
+export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth, onVerifyPhone, offers = [], reviews = [], onAddOffer, onReport, isBlocked, onToggleBlock }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
@@ -134,6 +137,8 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
   const [showSheet, setShowSheet] = useState(false);
   const [sent, setSent] = useState(false);
   const [showWhy, setShowWhy] = useState(false);
+  const [showPhoneVerify, setShowPhoneVerify] = useState(false);
+  const [reviewGate, setReviewGate] = useState(null); // bekleyen değerlendirmeler (zorunlu)
 
   const l = listings.find((x) => String(x.id) === String(id));
 
@@ -190,8 +195,17 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
   const lowest = offerPrices.length ? Math.min(...offerPrices) : null;
 
   // ── offer submit (identical logic) ──────────────────────────────
+  // Teklif/sipariş öncesi kapılar: telefon doğrulama + bekleyen zorunlu değerlendirme.
+  const offerGate = () => {
+    if (!user) { onRequireAuth?.(); return false; }
+    if (!user.phoneVerified) { setShowPhoneVerify(true); return false; }
+    const pend = pendingReviews(user, listings, offers, reviews);
+    if (pend.length) { setReviewGate(pend); return false; }
+    return true;
+  };
+
   const submitOffer = () => {
-    if (!user) { onRequireAuth?.(); return; }
+    if (!offerGate()) return;
     if (isProduct) {
       if (!qty && !message.trim()) { toast("Miktar veya mesaj girin", "error"); return; }
     } else if (!price && !message.trim()) {
@@ -209,9 +223,9 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
     toast(isProduct ? "Talebin iletildi" : "Teklifiniz iletildi", "success");
   };
 
-  // open the offer sheet OR route to auth, depending on user
+  // open the offer sheet OR route to auth / verification, depending on user
   const openSheet = () => {
-    if (!user) { onRequireAuth?.(); return; }
+    if (!offerGate()) return;
     setSent(false);
     setShowSheet(true);
   };
@@ -291,6 +305,14 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
         <h1 style={{ fontFamily: HEAD, fontSize: 23, fontWeight: 900, textTransform: "uppercase", lineHeight: 1.12, letterSpacing: "-0.02em", margin: 0 }}>
           {l.title}
         </h1>
+
+        {/* ── İŞ DURUMU ŞERİDİ (her iki tarafın gördüğü özet) ───────── */}
+        {!isProduct && (listingOffers.length > 0 || l.phase || closed) && (
+          <div style={{ ...card, padding: "14px 14px 10px" }}>
+            <div style={{ fontFamily: MONO, fontSize: 9, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: C.muted, marginBottom: 12 }}>İŞ DURUMU</div>
+            <JobStatusBar listing={l} offers={offers} />
+          </div>
+        )}
 
         {/* ── PRODUCT: yellow icon band + price/ton + stock ───────── */}
         {isProduct && (
@@ -795,6 +817,47 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
           onSubmit={(p) => { onReport?.({ type: "listing", targetId: l.id, listingId: l.id, fromId: user?.id || null, fromName: user?.name || "misafir", ...p }); }}
         />
       )}
+
+      {/* ── TELEFON DOĞRULAMA (teklif öncesi zorunlu) ─────────────── */}
+      {showPhoneVerify && (
+        <PhoneVerifyModal
+          initialPhone={user?.phone || ""}
+          reason="Teklif vermeden önce cep numaranı doğrula. Güvenli eşleşmenin ilk adımı."
+          onVerified={(phone) => { onVerifyPhone?.(phone); toast("Numaran doğrulandı, teklifini gönderebilirsin.", "success"); }}
+          onClose={() => setShowPhoneVerify(false)}
+        />
+      )}
+
+      {/* ── ZORUNLU DEĞERLENDİRME KAPISI ──────────────────────────── */}
+      {reviewGate && (
+        <ReviewGateModal items={reviewGate} onClose={() => setReviewGate(null)} onGo={(lid) => { setReviewGate(null); navigate(`/takip/${lid}`); }} />
+      )}
+    </div>
+  );
+}
+
+// Yeni teklif/ilan öncesi: tamamlanan işleri puanlamadıysan kapı açılır.
+function ReviewGateModal({ items, onClose, onGo }) {
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 260, display: "flex", alignItems: "center", justifyContent: "center", padding: 16, background: "rgba(10,10,10,.7)" }} onClick={onClose}>
+      <div style={{ width: "100%", maxWidth: 420, background: "#fff", border: `2px solid ${C.ink}`, borderRadius: 6, padding: 22, boxShadow: "6px 6px 0 rgba(10,10,10,.3)" }} onClick={(e) => e.stopPropagation()}>
+        <h2 style={{ fontFamily: HEAD, fontSize: 18, fontWeight: 800, textTransform: "uppercase", letterSpacing: "-0.02em", color: C.ink, margin: 0 }}>Önce değerlendir</h2>
+        <p style={{ fontFamily: MONO, fontSize: 12, color: C.sub, lineHeight: 1.5, margin: "8px 0 14px" }}>
+          Devam etmeden önce tamamlanan işlerini puanlaman gerekiyor. Karşılıklı değerlendirme, platformdaki güveni ayakta tutar.
+        </p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {items.map((it) => (
+            <button key={it.listingId} onClick={() => onGo(it.listingId)}
+              style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, textAlign: "left", background: C.stone, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "11px 13px", cursor: "pointer" }}>
+              <span style={{ fontFamily: MONO, fontSize: 12, fontWeight: 700, color: C.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.title}</span>
+              <span style={{ fontFamily: HEAD, fontSize: 11, fontWeight: 800, textTransform: "uppercase", color: C.ink, display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>Değerlendir <ArrowRight size={13} /></span>
+            </button>
+          ))}
+        </div>
+        <button onClick={onClose} style={{ marginTop: 14, width: "100%", background: C.ink, color: C.yellow, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "12px", fontFamily: HEAD, fontSize: 13, fontWeight: 800, textTransform: "uppercase", cursor: "pointer" }}>
+          Sonra
+        </button>
+      </div>
     </div>
   );
 }

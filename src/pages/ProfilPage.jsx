@@ -1,11 +1,14 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Settings, BadgeCheck, Truck, Package, Lock, Building2, HelpCircle, LogOut, ChevronRight, ShieldCheck, Upload, FileText, Star, Heart, Navigation, History, Inbox } from "lucide-react";
+import { Settings, BadgeCheck, Truck, Package, Lock, Building2, HelpCircle, LogOut, ChevronRight, ShieldCheck, Upload, FileText, Star, Heart, Navigation, History, Inbox, Bell, Phone } from "lucide-react";
 import { useToast } from "../components/Toast";
 import { StarsDisplay } from "../components/Stars";
 import SEO from "../components/SEO";
 import Logo from "../components/Logo";
+import PhoneVerifyModal from "../components/PhoneVerifyModal";
+import { DEFAULT_NOTIF_PREFS } from "../utils/storage";
+import { visibleReviewsFor } from "../utils/reviewGate";
 import { isAdmin } from "../utils/admin";
 import { computeReliability, reliabilityTier } from "../utils/reliability";
 import { PAYMENTS_ENABLED } from "../config/features";
@@ -119,11 +122,12 @@ const sectionTitle = { fontFamily: ARCHIVO, fontSize: 13, fontWeight: 800, color
 const labelSt = { display: "block", marginBottom: 6, fontFamily: MONO, fontSize: 10, fontWeight: 700, color: C.sub, letterSpacing: 0.4, textTransform: "uppercase" };
 const inputSt = { width: "100%", boxSizing: "border-box", background: C.card, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "11px 13px", fontSize: 14, color: C.ink, outline: "none", fontFamily: MONO };
 
-export default function ProfilPage({ user, onUpdateProfile, onRequireAuth, onLogout, onDeleteAccount, reviews = [], getUserRating, listings = [], offers = [], docs = [], onAddDoc, onRemoveDoc }) {
+export default function ProfilPage({ user, onUpdateProfile, onVerifyPhone, onRequireAuth, onLogout, onDeleteAccount, reviews = [], getUserRating, listings = [], offers = [], docs = [], onAddDoc, onRemoveDoc, notifPrefs = DEFAULT_NOTIF_PREFS, onUpdateNotifPrefs }) {
   const toast = useToast();
   const navigate = useNavigate();
   const [docType, setDocType] = useState("K Belgesi");
   const [confirmDelete, setConfirmDelete] = useState(false); // hesap silme iki adımlı onay
+  const [showPhoneVerify, setShowPhoneVerify] = useState(false);
 
   // Hesabı kalıcı sil (App Store/Play zorunlu): verileri temizle, çıkış yap, ana sayfaya dön.
   const handleDeleteAccount = async () => {
@@ -184,7 +188,8 @@ export default function ProfilPage({ user, onUpdateProfile, onRequireAuth, onLog
   };
 
   const rating = getUserRating?.(user.id);
-  const myReviews = reviews.filter((r) => String(r.toId) === String(user.id)).slice(0, 8);
+  // Çift-kör: sen karşı tarafı puanlamadan (ya da süre dolmadan) yorum gizli kalır.
+  const myReviews = visibleReviewsFor(user.id, reviews).slice(0, 8);
   const rel = computeReliability(user.id, { listings, offers, reviews });
   const relTier = reliabilityTier(rel.score);
   const avgRating = rating ? rating.avg : (user.rating ?? 5.0);
@@ -280,13 +285,32 @@ export default function ProfilPage({ user, onUpdateProfile, onRequireAuth, onLog
             <input style={{ ...inputSt, background: C.stone, opacity: 0.6, cursor: "not-allowed" }} value={user.email} disabled />
           </div>
 
-          {/* Telefon */}
+          {/* Telefon + doğrulama */}
           <div style={{ marginBottom: 14 }}>
-            <label style={labelSt}>Telefon</label>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+              <label style={{ ...labelSt, margin: 0 }}>Telefon</label>
+              {user.phoneVerified ? (
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontFamily: MONO, fontSize: 9.5, fontWeight: 700, color: C.green, border: `2px solid ${C.green}`, background: "#E6F4EA", borderRadius: 5, padding: "2px 7px", textTransform: "uppercase" }}>
+                  <BadgeCheck size={12} strokeWidth={2.6} /> Doğrulandı
+                </span>
+              ) : (
+                <span style={{ fontFamily: MONO, fontSize: 9.5, fontWeight: 700, color: C.muted, border: `2px solid ${C.border}`, background: C.stone, borderRadius: 5, padding: "2px 7px", textTransform: "uppercase" }}>
+                  Doğrulanmadı
+                </span>
+              )}
+            </div>
             <input style={inputSt} value={form.phone}
               onChange={(e) => set("phone", e.target.value)} placeholder="05XX XXX XX XX" />
+            {!user.phoneVerified && (
+              <button type="button" onClick={() => setShowPhoneVerify(true)}
+                style={{ marginTop: 8, width: "100%", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7, background: C.ink, color: C.yellow, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "11px", fontFamily: ARCHIVO, fontSize: 12.5, fontWeight: 800, textTransform: "uppercase", letterSpacing: "-0.01em", cursor: "pointer", boxShadow: "3px 3px 0 #0A0A0A" }}>
+                <Phone size={15} strokeWidth={2.4} /> Numaramı doğrula
+              </button>
+            )}
             <div style={{ marginTop: 7, fontFamily: MONO, fontSize: 10, color: C.faint, lineHeight: 1.5 }}>
-              Numaran yalnızca eşleşen tarafla iletişim için paylaşılır.
+              {user.phoneVerified
+                ? "Numaran doğrulandı. Yalnızca eşleşen tarafla iletişim için paylaşılır."
+                : "Teklif vermek ve ilan açmak için cep numaranı doğrulaman gerekir. Numaran yalnızca eşleşen tarafla paylaşılır."}
             </div>
           </div>
 
@@ -312,6 +336,43 @@ export default function ProfilPage({ user, onUpdateProfile, onRequireAuth, onLog
             Değişiklikleri kaydet
           </button>
         </motion.section>
+
+        {/* Bildirim tercihleri — hangi bildirimleri alacağını seç */}
+        <section style={cardSt}>
+          <h2 style={{ ...sectionTitle, display: "flex", alignItems: "center", gap: 7 }}>
+            <Bell size={16} strokeWidth={2.4} color={C.ink} /> Bildirim tercihleri
+          </h2>
+          {[
+            { key: "offers", label: "Gelen teklifler", desc: "İlanlarına teklif geldiğinde" },
+            { key: "accepts", label: "Teklif sonucu", desc: "Teklifin kabul veya ret edildiğinde" },
+            { key: "messages", label: "Mesajlar", desc: "Yeni mesaj geldiğinde" },
+            { key: "reviews", label: "Değerlendirme hatırlatması", desc: "Tamamlanan işi puanlamak için" },
+            { key: "savedSearch", label: "Kayıtlı arama eşleşmesi", desc: "Aramana uygun yeni ilan çıkınca" },
+          ].map((row, i) => {
+            const on = notifPrefs[row.key] !== false;
+            return (
+              <div key={row.key} style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 0", borderTop: i === 0 ? "none" : `1px solid ${C.line}` }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontFamily: MONO, fontSize: 12, fontWeight: 700, color: C.ink }}>{row.label}</div>
+                  <div style={{ fontFamily: MONO, fontSize: 10, color: C.muted, marginTop: 2 }}>{row.desc}</div>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={on}
+                  aria-label={row.label}
+                  onClick={() => onUpdateNotifPrefs?.({ [row.key]: !on })}
+                  style={{ flexShrink: 0, width: 46, height: 26, borderRadius: 6, border: `2px solid ${C.ink}`, background: on ? C.green : C.stone, position: "relative", cursor: "pointer", padding: 0, transition: "background 0.15s" }}
+                >
+                  <span style={{ position: "absolute", top: 1, left: on ? 21 : 1, width: 20, height: 20, borderRadius: 4, background: "#fff", border: `2px solid ${C.ink}`, transition: "left 0.15s" }} />
+                </button>
+              </div>
+            );
+          })}
+          <p style={{ fontFamily: MONO, fontSize: 10, color: C.faint, margin: "10px 0 0", lineHeight: 1.5 }}>
+            Kapattığın türler bildirim merkezinde ve cihaz bildirimlerinde görünmez.
+          </p>
+        </section>
 
         {/* Güvenilirlik skoru — sefer/teslim/puan verisinden */}
         <section style={cardSt}>
@@ -532,6 +593,15 @@ export default function ProfilPage({ user, onUpdateProfile, onRequireAuth, onLog
           </div>
         )}
       </div>
+
+      {/* ── TELEFON DOĞRULAMA MODALI ──────────────────────────────── */}
+      {showPhoneVerify && (
+        <PhoneVerifyModal
+          initialPhone={form.phone || user.phone || ""}
+          onVerified={(phone) => { onVerifyPhone?.(phone); setForm((f) => ({ ...f, phone })); toast("Numaran doğrulandı", "success"); }}
+          onClose={() => setShowPhoneVerify(false)}
+        />
+      )}
     </div>
   );
 }

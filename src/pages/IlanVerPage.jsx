@@ -13,8 +13,10 @@ import CategoryIcon from "../components/CategoryIcon";
 import { estimatePrice, fmtTL, haversineKm } from "../utils/priceEstimate";
 import { loadOffers, loadPricingConfig } from "../utils/storage";
 import { newId } from "../utils/id";
+import { pendingReviews } from "../utils/reviewGate";
 import SEO from "../components/SEO";
 import Logo from "../components/Logo";
+import PhoneVerifyModal from "../components/PhoneVerifyModal";
 import { shareUrl } from "../native/share";
 import { hapticTap, hapticSuccess } from "../native/haptics";
 import {
@@ -120,7 +122,7 @@ function AppBar({ title, step, total, onBack }) {
   );
 }
 
-export default function IlanVerPage({ onPublish, onUpdate, listings = [], user, onRequireAuth }) {
+export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers = [], reviews = [], user, onRequireAuth, onVerifyPhone }) {
   const navigate = useNavigate();
   const { id } = useParams();
   const editing = Boolean(id);
@@ -163,11 +165,25 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], user, 
   // step: 1 = kategori+tür+yük, 2 = güzergah+detay, 3 = yayınlandı
   const [step, setStep] = useState(1);
   const [published, setPublished] = useState(null);
+  const [showPhoneVerify, setShowPhoneVerify] = useState(false);
+  const [reviewGate, setReviewGate] = useState(null); // bekleyen zorunlu değerlendirmeler
   const realKm = haversineKm(pickup, dropoff);
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
+  // Yeni ilan yayını öncesi kapılar: telefon doğrulama + bekleyen değerlendirme.
+  // (Düzenlemede kapı yok — mevcut ilanı güncelliyor.)
+  const publishGate = () => {
+    if (editing) return true;
+    if (!user) { onRequireAuth?.(); return false; }
+    if (!user.phoneVerified) { setShowPhoneVerify(true); return false; }
+    const pend = pendingReviews(user, listings, offers, reviews);
+    if (pend.length) { setReviewGate(pend); return false; }
+    return true;
+  };
+
   const submit = () => {
+    if (!publishGate()) return;
     if (type === "urun") {
       submitUrun();
       return;
@@ -835,6 +851,40 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], user, 
           <button type="button" onClick={submit} style={inkBtn}>
             {editing ? "Değişiklikleri Kaydet" : "İlanı Oluştur"} <ArrowRight size={18} strokeWidth={2.5} />
           </button>
+        </div>
+      )}
+
+      {/* ── TELEFON DOĞRULAMA (yeni ilan öncesi zorunlu) ──────────── */}
+      {showPhoneVerify && (
+        <PhoneVerifyModal
+          initialPhone={user?.phone || ""}
+          reason="İlan yayınlamadan önce cep numaranı doğrula. Doğrulanmış ilanlar daha çok güven ve teklif alır."
+          onVerified={(phone) => { onVerifyPhone?.(phone); }}
+          onClose={() => setShowPhoneVerify(false)}
+        />
+      )}
+
+      {/* ── ZORUNLU DEĞERLENDİRME KAPISI ──────────────────────────── */}
+      {reviewGate && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 260, display: "flex", alignItems: "center", justifyContent: "center", padding: 16, background: "rgba(10,10,10,.7)" }} onClick={() => setReviewGate(null)}>
+          <div style={{ width: "100%", maxWidth: 420, background: "#fff", border: `2px solid ${C.ink}`, borderRadius: 6, padding: 22, boxShadow: "6px 6px 0 rgba(10,10,10,.3)" }} onClick={(e) => e.stopPropagation()}>
+            <h2 style={{ fontFamily: ARCH, fontSize: 18, fontWeight: 800, textTransform: "uppercase", letterSpacing: "-0.02em", color: C.ink, margin: 0 }}>Önce değerlendir</h2>
+            <p style={{ fontFamily: MONO, fontSize: 12, color: C.sub, lineHeight: 1.5, margin: "8px 0 14px" }}>
+              Yeni ilan açmadan önce tamamlanan işlerini puanlaman gerekiyor. Karşılıklı değerlendirme, platformdaki güveni ayakta tutar.
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {reviewGate.map((it) => (
+                <button key={it.listingId} onClick={() => { setReviewGate(null); navigate(`/takip/${it.listingId}`); }}
+                  style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, textAlign: "left", background: C.stone, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "11px 13px", cursor: "pointer" }}>
+                  <span style={{ fontFamily: MONO, fontSize: 12, fontWeight: 700, color: C.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.title}</span>
+                  <span style={{ fontFamily: ARCH, fontSize: 11, fontWeight: 800, textTransform: "uppercase", color: C.ink, display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>Değerlendir <ArrowRight size={13} /></span>
+                </button>
+              ))}
+            </div>
+            <button onClick={() => setReviewGate(null)} style={{ marginTop: 14, width: "100%", background: C.ink, color: C.yellow, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "12px", fontFamily: ARCH, fontSize: 13, fontWeight: 800, textTransform: "uppercase", cursor: "pointer" }}>
+              Sonra
+            </button>
+          </div>
         </div>
       )}
     </div>

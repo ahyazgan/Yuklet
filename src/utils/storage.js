@@ -49,6 +49,12 @@ export const saveRecentSearches = (v) => save("hamted_recent_searches", v);
 // Engellenen kullanıcılar — { [blockerId]: [engellenenId, ...] }.
 export const loadBlocked = () => load("hamted_blocked", {});
 export const saveBlocked = (v) => save("hamted_blocked", v);
+// Bildirim tercihleri — hangi bildirim türü açık/kapalı (kullanıcı yönetir).
+// Türler: offers (gelen teklif), accepts (teklif sonucu), messages (mesaj),
+// reviews (değerlendirme hatırlatması), savedSearch (kayıtlı arama eşleşmesi).
+export const DEFAULT_NOTIF_PREFS = { offers: true, accepts: true, messages: true, reviews: true, savedSearch: true };
+export const loadNotifPrefs = () => ({ ...DEFAULT_NOTIF_PREFS, ...load("hamted_notif_prefs", {}) });
+export const saveNotifPrefs = (v) => save("hamted_notif_prefs", v);
 // Akıllı Fiyat piyasa ayarları (admin): yakıt endeksi vb. — engine'e geçirilir.
 export const loadPricingConfig = () => load("hamted_pricing_config", { fuelIndex: 1.0, feeRate: 0.10 });
 export const savePricingConfig = (v) => save("hamted_pricing_config", v);
