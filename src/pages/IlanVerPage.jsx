@@ -358,7 +358,7 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers
           </div>
           <div>
             <h1 style={{ margin: 0, fontFamily: ARCH, fontSize: 24, fontWeight: 900, letterSpacing: "-0.02em", textTransform: "uppercase" }}>İlanın yayında!</h1>
-            <p style={{ margin: "8px 0 0", fontSize: 14, color: C.sub }}>{isUrun ? "Müteahhitler artık ürününü görebilir ve iletişime geçebilir." : "Nakliyeci ve iş sahipleri artık ilanına teklif verebilir."}</p>
+            <p style={{ margin: "8px 0 0", fontSize: 14, color: C.sub }}>{isUrun ? "Müteahhitler artık ürününü görebilir ve iletişime geçebilir." : (published?.type === "is" && published?.priceType === "sabit") ? "Nakliyeciler işini sabit fiyattan doğrudan kabul edebilir." : "Nakliyeci ve iş sahipleri artık ilanına teklif verebilir."}</p>
           </div>
 
           {/* summary card — dark header block + hazard stripe */}
@@ -782,10 +782,17 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers
                 <input style={fieldBox} value={form.dateText} onChange={(e) => set("dateText", e.target.value)} placeholder="Örn: 8-12 Haziran" />
               </Field>
               <SelectField label="Fiyatlandırma" value={form.priceType} onChange={(e) => set("priceType", e.target.value)}>
-                <option value="teklif">Teklife açık</option>
-                <option value="sabit">Sabit fiyat</option>
+                <option value="teklif">{type === "is" ? "Teklife açık — teklif topla" : "Teklife açık"}</option>
+                <option value="sabit">{type === "is" ? "Sabit fiyat — doğrudan kabul" : "Sabit fiyat"}</option>
               </SelectField>
             </div>
+            {type === "is" && (
+              <div style={{ fontFamily: MONO, fontSize: 10.5, color: C.sub, lineHeight: 1.5, background: C.stone, border: `2px solid ${C.border}`, borderRadius: 6, padding: "9px 11px" }}>
+                {form.priceType === "sabit"
+                  ? "Nakliyeci teklif vermeden işi sabit fiyattan doğrudan KABUL EDER — ilk kabul eden işi alır."
+                  : "Nakliyeciler fiyat teklifi verir; sen en uygununu seçip kabul edersin."}
+              </div>
+            )}
             {form.priceType === "sabit" && (
               <Field label="Sabit fiyat (₺)">
                 <input style={{ ...fieldBox, fontFamily: MONO, fontWeight: 700 }} type="number" min="0" inputMode="numeric" value={form.price} onChange={(e) => set("price", e.target.value)} placeholder="₺" />

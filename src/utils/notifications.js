@@ -32,13 +32,16 @@ export function buildNotifications(user, { listings = [], offers = [], messages 
     // İlan sahibine: gelen teklif
     if (myListingIds.has(String(o.listingId)) && String(o.fromUserId) !== uid) {
       items.push({
-        id: `off-${o.id}`, icon: "📨",
-        text: `${o.fromUser}, "${titleOf(o.listingId)}" ilanınıza ${o.price ? `₺${o.price.toLocaleString("tr-TR")} ` : ""}teklif verdi`,
+        id: `off-${o.id}`, icon: o.direct ? "✅" : "📨",
+        text: o.direct
+          ? `${o.fromUser}, "${titleOf(o.listingId)}" işini ${o.price ? `₺${o.price.toLocaleString("tr-TR")} sabit fiyattan ` : ""}üstlendi`
+          : `${o.fromUser}, "${titleOf(o.listingId)}" ilanınıza ${o.price ? `₺${o.price.toLocaleString("tr-TR")} ` : ""}teklif verdi`,
         time: o.createdAt, link: "/ilanlarim",
       });
     }
-    // Teklifi verene: sonuç (kabul/ret)
-    if (String(o.fromUserId) === uid && o.status !== "beklemede") {
+    // Teklifi verene: sonuç (kabul/ret). Doğrudan kabulde kişi zaten kendisi
+    // kabul etti -> ona ayrıca "kabul edildi" bildirimi gösterme.
+    if (String(o.fromUserId) === uid && o.status !== "beklemede" && !o.direct) {
       items.push({
         id: `res-${o.id}`, icon: o.status === "kabul" ? "✅" : "❌",
         text: `"${titleOf(o.listingId)}" için teklifin ${o.status === "kabul" ? "kabul edildi 🎉" : "reddedildi"}`,

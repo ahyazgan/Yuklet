@@ -125,7 +125,7 @@ function DetailRow({ label, value }) {
   );
 }
 
-export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth, onVerifyPhone, offers = [], reviews = [], onAddOffer, onReport, isBlocked, onToggleBlock }) {
+export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth, onVerifyPhone, offers = [], reviews = [], onAddOffer, onAcceptJob, onReport, isBlocked, onToggleBlock }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
@@ -139,6 +139,8 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
   const [showWhy, setShowWhy] = useState(false);
   const [showPhoneVerify, setShowPhoneVerify] = useState(false);
   const [reviewGate, setReviewGate] = useState(null); // bekleyen değerlendirmeler (zorunlu)
+  const [showAcceptConfirm, setShowAcceptConfirm] = useState(false); // doğrudan kabul onayı
+  const [accepting, setAccepting] = useState(false);
 
   const l = listings.find((x) => String(x.id) === String(id));
 
@@ -173,6 +175,9 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
   const ownerRel = l.ownerId != null ? computeReliability(l.ownerId, { listings, offers, reviews }) : null;
   const isOwner = user && l.ownerId && l.ownerId === user.id;
   const isFixed = l.priceType === "sabit" && l.price;
+  // Doğrudan kabul modu: müteahhit "sabit fiyat" seçtiyse nakliyeci teklif
+  // vermeden işi sabit fiyattan kabul eder. "Teklife açık" işlerde teklif akışı kalır.
+  const acceptMode = l.type === "is" && l.priceType === "sabit";
   const closed = l.status === "kapali" || l.status === "eslesti";
   const backhaul = isProduct ? [] : isVehicle ? loadsForVehicle(l, listings) : backhaulForJob(l, listings);
   // Benzer ilanlar — aynı kategori + tür; aynı il/malzeme öne çıkar. En çok 4.
@@ -231,6 +236,22 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
   };
 
   const closeSheet = () => { setShowSheet(false); setSent(false); };
+
+  // ── Doğrudan kabul (sabit fiyatlı iş) — aynı kapılar (telefon + değerlendirme) ──
+  const startAccept = () => { if (!offerGate()) return; setShowAcceptConfirm(true); };
+  const confirmAccept = async () => {
+    setAccepting(true);
+    const res = await onAcceptJob?.(l);
+    setAccepting(false);
+    setShowAcceptConfirm(false);
+    if (res?.ok) {
+      hapticSuccess();
+      toast("İşi kabul ettin! Sevkiyatı başlatabilirsin.", "success");
+      navigate(`/takip/${l.id}`);
+    } else {
+      toast(res?.error || "İş kabul edilemedi.", "error");
+    }
+  };
 
   // Paylaş — native paylaşım sayfası (iOS/Android), web'de Web Share / panoya kopyala.
   const onShare = async () => {
@@ -623,10 +644,17 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
               )}
             </div>
           </div>
-          <button onClick={openSheet}
-            style={{ display: "flex", alignItems: "center", gap: 7, background: C.yellow, color: C.ink, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "12px 16px", fontFamily: HEAD, fontWeight: 800, fontSize: 14, textTransform: "uppercase", cursor: "pointer", whiteSpace: "nowrap", boxShadow: "3px 3px 0 rgba(10,10,10,0.18)" }}>
-            {!user ? "Giriş Yap" : isProduct ? "Sipariş Ver" : "Teklif Ver"} <ArrowRight size={16} strokeWidth={2.8} />
-          </button>
+          {acceptMode && user ? (
+            <button onClick={startAccept}
+              style={{ display: "flex", alignItems: "center", gap: 7, background: C.green, color: "#fff", border: `2px solid ${C.ink}`, borderRadius: 6, padding: "12px 18px", fontFamily: HEAD, fontWeight: 800, fontSize: 14, textTransform: "uppercase", cursor: "pointer", whiteSpace: "nowrap", boxShadow: "3px 3px 0 rgba(10,10,10,0.18)" }}>
+              <Check size={17} strokeWidth={3} /> İşi Kabul Et
+            </button>
+          ) : (
+            <button onClick={acceptMode ? () => onRequireAuth?.() : openSheet}
+              style={{ display: "flex", alignItems: "center", gap: 7, background: C.yellow, color: C.ink, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "12px 16px", fontFamily: HEAD, fontWeight: 800, fontSize: 14, textTransform: "uppercase", cursor: "pointer", whiteSpace: "nowrap", boxShadow: "3px 3px 0 rgba(10,10,10,0.18)" }}>
+              {!user ? "Giriş Yap" : isProduct ? "Sipariş Ver" : "Teklif Ver"} <ArrowRight size={16} strokeWidth={2.8} />
+            </button>
+          )}
         </div>
       )}
 
@@ -831,6 +859,33 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
           onClose={() => setShowReport(false)}
           onSubmit={(p) => { onReport?.({ type: "listing", targetId: l.id, listingId: l.id, fromId: user?.id || null, fromName: user?.name || "misafir", ...p }); }}
         />
+      )}
+
+      {/* ── DOĞRUDAN KABUL ONAYI (sabit fiyatlı iş) ───────────────── */}
+      {showAcceptConfirm && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 260, display: "flex", alignItems: "center", justifyContent: "center", padding: 16, background: "rgba(10,10,10,.7)" }} onClick={() => !accepting && setShowAcceptConfirm(false)}>
+          <div style={{ width: "100%", maxWidth: 420, background: "#fff", border: `2px solid ${C.ink}`, borderRadius: 6, padding: 22, boxShadow: "6px 6px 0 rgba(10,10,10,.3)" }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+              <span style={{ width: 38, height: 38, borderRadius: 6, background: C.green, border: `2px solid ${C.ink}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <Check size={20} strokeWidth={3} color="#fff" />
+              </span>
+              <h2 style={{ fontFamily: HEAD, fontSize: 18, fontWeight: 800, textTransform: "uppercase", letterSpacing: "-0.02em", color: C.ink, margin: 0 }}>İşi kabul et</h2>
+            </div>
+            <p style={{ fontFamily: MONO, fontSize: 12, color: C.sub, lineHeight: 1.55, margin: "0 0 14px" }}>
+              Bu işi <b style={{ color: C.ink }}>{l.price ? `₺${l.price.toLocaleString("tr-TR")}` : "ilan fiyatından"}</b> sabit fiyattan kabul ediyorsun. Onaylarsan iş hemen sana atanır ve müteahhitle iletişime geçebilirsin.
+            </p>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button onClick={() => setShowAcceptConfirm(false)} disabled={accepting}
+                style={{ flex: 1, background: C.stone, color: C.ink, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "13px", fontFamily: HEAD, fontSize: 13, fontWeight: 800, textTransform: "uppercase", cursor: "pointer", opacity: accepting ? 0.6 : 1 }}>
+                Vazgeç
+              </button>
+              <button onClick={confirmAccept} disabled={accepting}
+                style={{ flex: 1, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7, background: C.green, color: "#fff", border: `2px solid ${C.ink}`, borderRadius: 6, padding: "13px", fontFamily: HEAD, fontSize: 13, fontWeight: 800, textTransform: "uppercase", cursor: "pointer", boxShadow: "3px 3px 0 rgba(10,10,10,0.18)", opacity: accepting ? 0.6 : 1 }}>
+                {accepting ? "Kabul ediliyor…" : <>Kabul et <Check size={15} strokeWidth={3} /></>}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* ── TELEFON DOĞRULAMA (teklif öncesi zorunlu) ─────────────── */}

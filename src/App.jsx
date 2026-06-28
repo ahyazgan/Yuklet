@@ -10,6 +10,7 @@ import {
   loadNotifPrefs, saveNotifPrefs,
 } from "./utils/storage";
 import { visibleReviewsFor } from "./utils/reviewGate";
+import { newId, nowIso } from "./utils/id";
 import { Capacitor } from "@capacitor/core";
 import { isSupabaseConfigured } from "./lib/supabase";
 import * as api from "./lib/api";
@@ -187,6 +188,29 @@ function AppShell() {
   const updateOffer = async (id, patch) => {
     if (SB) { try { await api.updateOffer(id, patch); setOffers(prev => prev.map(o => o.id === id ? { ...o, ...patch } : o)); } catch (e) { console.error(e); } }
     else setOffers(prev => prev.map(o => o.id === id ? { ...o, ...patch, ...(patch.status ? { updatedAt: new Date().toISOString() } : {}) } : o));
+  };
+  // ── Doğrudan kabul ── (sabit fiyatlı iş ilanı): nakliyeci teklif vermeden işi
+  // sabit fiyattan alır. Sonuç durum teklif-kabul ile birebir aynı: offer
+  // status "kabul" + listing status "eslesti".
+  const acceptJob = async (listing) => {
+    const me = profile || user;
+    if (!me) return { ok: false, error: "Giriş gerekli." };
+    if (me.status === "banli") return { ok: false, error: "Hesabın askıya alındı." };
+    if (listing.status === "eslesti" || listing.status === "kapali") return { ok: false, error: "Bu iş artık uygun değil." };
+    const base = { listingId: listing.id, price: listing.price ?? null, message: "İş sabit fiyattan kabul edildi." };
+    if (SB) {
+      try {
+        const saved = await api.createOffer(base, me);
+        await api.updateOffer(saved.id, { status: "kabul" });
+        await api.updateListing(listing.id, { status: "eslesti" });
+        await Promise.all([reloadOffers(), reloadListings()]);
+      } catch (e) { console.error(e); return { ok: false, error: "İşlem başarısız." }; }
+    } else {
+      const offer = { id: newId(), ...base, fromUser: me.name, fromUserId: me.id, status: "kabul", direct: true, createdAt: nowIso(), updatedAt: nowIso() };
+      setOffers(prev => [offer, ...prev]);
+      setUserListings(prev => prev.map(l => String(l.id) === String(listing.id) ? { ...l, status: "eslesti" } : l));
+    }
+    return { ok: true };
   };
 
   // Mesajlar
@@ -506,7 +530,7 @@ function AppShell() {
                 <Route path="/sefer-gecmisi" element={<PageTransition><TripHistoryPage user={user} listings={listings} offers={offers} onRequireAuth={requireAuth} /></PageTransition>} />
                 <Route path="/filo" element={<PageTransition><FleetPage user={user} onRequireAuth={requireAuth} /></PageTransition>} />
                 <Route path="/ilanlar" element={<PageTransition><ListingsPage listings={listings} blockedIds={myBlocked} offers={offers} reviews={reviews} onRefresh={SB ? () => Promise.all([reloadListings(), reloadOffers()]) : undefined} /></PageTransition>} />
-                <Route path="/ilan/:id" element={<PageTransition><IlanDetayPage listings={listings} user={user} onRequireAuth={requireAuth} onVerifyPhone={verifyPhone} offers={offers} reviews={reviews} onAddOffer={addOffer} onReport={addReport} isBlocked={isBlocked} onToggleBlock={toggleBlock} /></PageTransition>} />
+                <Route path="/ilan/:id" element={<PageTransition><IlanDetayPage listings={listings} user={user} onRequireAuth={requireAuth} onVerifyPhone={verifyPhone} offers={offers} reviews={reviews} onAddOffer={addOffer} onAcceptJob={acceptJob} onReport={addReport} isBlocked={isBlocked} onToggleBlock={toggleBlock} /></PageTransition>} />
                 <Route path="/takip/:id" element={<PageTransition><TakipPage listings={listings} user={user} offers={offers} getContact={getContact} reviews={reviews} onAddReview={addReview} getUserRating={getUserRating} onUpdateListing={updateListing} onReport={addReport} onPayToEscrow={payToEscrow} onReleasePayment={releasePayment} onRefundPayment={refundPayment} onEarlyPayout={earlyPayoutNakliyeci} /></PageTransition>} />
                 <Route path="/sozlesme/:offerId" element={<PageTransition><SozlesmePage listings={listings} offers={offers} getContact={getContact} /></PageTransition>} />
                 {PAYMENTS_ENABLED && (
