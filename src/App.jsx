@@ -8,6 +8,7 @@ import {
   loadOnboarded, saveOnboarded, loadReports, saveReports, loadPricingConfig, loadSavedSearches,
   loadAuditLog, appendAudit, loadAnnouncement, saveAnnouncement, loadBlocked, saveBlocked,
 } from "./utils/storage";
+import { Capacitor } from "@capacitor/core";
 import { isSupabaseConfigured } from "./lib/supabase";
 import * as api from "./lib/api";
 import { chargeToEscrow, releaseFromEscrow, refundEscrow } from "./lib/paymentProvider";
@@ -317,7 +318,14 @@ function AppShell() {
   // kurar. localStorage modunda (anahtar yoksa) sahte bir OAuth kullanicisi acar
   // — gelistirme/onizleme icin. Rol Google/Apple'dan gelmez -> needsRole akisi.
   const startOAuth = async (provider) => {
-    if (SB) return api.signInWithProvider(provider); // tarayici yonlendirilir
+    // Mobil app (Capacitor) + Google -> native hesap secici. supabase.co redirect
+    // ekrani gorunmez; idToken Supabase'e verilir, onAuthChange oturumu kurar.
+    if (SB && provider === "google" && Capacitor.isNativePlatform()) {
+      const res = await api.signInWithGoogleNative();
+      if (res.ok) setShowAuth(false);
+      return res;
+    }
+    if (SB) return api.signInWithProvider(provider); // web: tarayici yonlendirilir
     // localStorage modu: sahte hesap (rol henuz yok -> rol secim modali acilir)
     const fake = { id: Date.now(), name: provider === "apple" ? "Apple Kullanici" : "Google Kullanici", email: "", role: "", provider, verified: false, rating: 5.0 };
     setUsers(prev => prev.some(u => u.id === fake.id) ? prev : [...prev, fake]);

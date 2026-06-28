@@ -112,6 +112,39 @@ export async function signInWithProvider(provider) {
   return { ok: true }; // tarayici yonlendirilir; sonuc donuste isAuthChange ile gelir
 }
 
+// ── Native Google girisi (mobil app — Capacitor) ─────────────
+// Cihazin kendi Google hesap secicisini acar (web redirect ekrani GORUNMEZ).
+// Akis: plugin -> idToken -> Supabase signInWithIdToken -> onAuthChange tetiklenir.
+// webClientId = Google Cloud "Web application" client ID (Android client'i ayni
+// projede SHA-1 ile tanimli olmali; plugin Android'de strings.xml'deki
+// server_client_id'yi de kullanir). VITE_GOOGLE_WEB_CLIENT_ID ile gelir.
+let _socialLoginInited = false;
+export async function signInWithGoogleNative() {
+  // Plugin yalnizca native ortamda calisir; web'de signInWithProvider kullanilir.
+  const { SocialLogin } = await import("@capgo/capacitor-social-login");
+  const webClientId = import.meta.env.VITE_GOOGLE_WEB_CLIENT_ID;
+  if (!webClientId) return { ok: false, error: "VITE_GOOGLE_WEB_CLIENT_ID tanimli degil (.env.local)." };
+
+  if (!_socialLoginInited) {
+    await SocialLogin.initialize({ google: { webClientId, mode: "online" } });
+    _socialLoginInited = true;
+  }
+
+  let idToken;
+  try {
+    const res = await SocialLogin.login({ provider: "google", options: { scopes: ["email", "profile"] } });
+    idToken = res?.result?.idToken;
+  } catch (e) {
+    return { ok: false, error: e?.message || "Google girisi iptal edildi." };
+  }
+  if (!idToken) return { ok: false, error: "Google kimlik token'i alinamadi." };
+
+  // Supabase'e Google idToken ile giris — oturum kurulur, onAuthChange doner.
+  const { error } = await supabase.auth.signInWithIdToken({ provider: "google", token: idToken });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
 export async function getSessionUser() {
   const { data } = await supabase.auth.getUser();
   return data?.user || null;
