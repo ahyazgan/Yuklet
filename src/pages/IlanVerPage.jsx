@@ -134,7 +134,15 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers
   const [sp] = useSearchParams();
   const pf = editing ? {} : Object.fromEntries(sp.entries());
 
-  const [type, setType] = useState(editListing?.type || (["is", "arac", "urun"].includes(pf.type) ? pf.type : "is"));
+  // Rol = ilan türü. Alıcı iş ilanı, satıcı ürün ilanı, nakliyeci araç ilanı açar.
+  // Kullanıcı türü seçmez; rolünden gelir. Bu yüzden state değil, sabit türetim.
+  // Öncelik: düzenleme türü > URL ?type= (nakliye-ayarla akışı) > kullanıcı rolü > "is".
+  const ROLE_TYPE = { isveren: "is", tedarikci: "urun", nakliyeci: "arac" };
+  const type =
+    editListing?.type ||
+    (["is", "arac", "urun"].includes(pf.type) ? pf.type : null) ||
+    ROLE_TYPE[user?.role] ||
+    "is";
   const [cat, setCat] = useState(editListing?.cat || (["hafriyat", "silobas"].includes(pf.cat) ? pf.cat : "hafriyat"));
   const [form, setForm] = useState(() => editListing ? {
     title: editListing.title || "", il: editListing.il || "İstanbul", ilce: editListing.ilce || "",
@@ -409,7 +417,8 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers
     );
   }
 
-  const title = editing ? "İlanı düzenle" : "İlan oluştur";
+  const NEW_TITLE = { is: "İş ilanı ver", arac: "Araç ilanı ver", urun: "Ürün ilanı ver" };
+  const title = editing ? "İlanı düzenle" : (NEW_TITLE[type] || "İlan oluştur");
   const onBack = () => { if (step === 2) { setStep(1); setError(""); } else navigate(-1); };
 
   // primary full-width ink button (Devam Et / İlanı Oluştur)
@@ -466,31 +475,28 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers
             </div>
           </div>
 
-          {/* İLAN TÜRÜ — iş / araç */}
-          <div>
-            <h2 style={sectionTitle}>İlan türü</h2>
-            <div style={{ display: "flex", gap: 12, marginTop: 12 }}>
-              {LISTING_TYPES.map((lt) => {
-                const active = type === lt.id;
-                const Icon = lt.id === "arac" ? Truck : lt.id === "urun" ? Boxes : Package;
-                return (
-                  <button type="button" key={lt.id} onClick={() => setType(lt.id)}
-                    style={{
-                      flex: "1 1 0", minWidth: 0, textAlign: "center", cursor: "pointer",
-                      display: "flex", flexDirection: "column", alignItems: "center", gap: 8,
-                      background: active ? C.ink : C.card, color: active ? C.yellow : C.ink,
-                      border: `2px solid ${C.ink}`, borderRadius: 6, padding: "16px 8px",
-                      boxShadow: active ? "4px 4px 0 #0A0A0A" : "3px 3px 0 rgba(10,10,10,.08)",
-                      transition: "all 0.12s ease",
-                    }}>
-                    <Icon size={26} color={active ? C.yellow : C.ink} strokeWidth={2} />
-                    <span style={{ fontFamily: ARCH, fontSize: 13, fontWeight: 900, textTransform: "uppercase", lineHeight: 1.1 }}>{lt.name}</span>
-                    <span style={{ fontFamily: MONO, fontSize: 9.5, color: active ? "#cfc89a" : C.sub, lineHeight: 1.35 }}>{lt.desc}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+          {/* İLAN TÜRÜ — rol ile belirlenir, seçtirilmez. Sadece bilgi olarak gösterilir. */}
+          {(() => {
+            const lt = LISTING_TYPES.find((t) => t.id === type) || LISTING_TYPES[0];
+            const Icon = type === "arac" ? Truck : type === "urun" ? Boxes : Package;
+            return (
+              <div>
+                <h2 style={sectionTitle}>İlan türü</h2>
+                <div style={{
+                  display: "flex", alignItems: "center", gap: 14, marginTop: 12,
+                  background: C.ink, color: C.yellow,
+                  border: `2px solid ${C.ink}`, borderRadius: 6, padding: "14px 16px",
+                  boxShadow: "4px 4px 0 #0A0A0A",
+                }}>
+                  <Icon size={26} color={C.yellow} strokeWidth={2} />
+                  <span style={{ flex: 1, minWidth: 0 }}>
+                    <span style={{ display: "block", fontFamily: ARCH, fontSize: 15, fontWeight: 900, textTransform: "uppercase", lineHeight: 1.1 }}>{lt.name}</span>
+                    <span style={{ display: "block", fontFamily: MONO, fontSize: 9.5, color: "#cfc89a", marginTop: 3, lineHeight: 1.35 }}>{lt.desc}</span>
+                  </span>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* MALZEME — chip seçici (ürün ilanında Adım 2'de seçilir) */}
           {type !== "urun" && (
