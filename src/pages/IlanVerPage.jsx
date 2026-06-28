@@ -16,7 +16,6 @@ import { newId } from "../utils/id";
 import { pendingReviews } from "../utils/reviewGate";
 import SEO from "../components/SEO";
 import Logo from "../components/Logo";
-import PhoneVerifyModal from "../components/PhoneVerifyModal";
 import { shareUrl } from "../native/share";
 import { hapticTap, hapticSuccess } from "../native/haptics";
 import {
@@ -125,7 +124,7 @@ function AppBar({ title, step, total, onBack }) {
   );
 }
 
-export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers = [], reviews = [], user, onRequireAuth, onVerifyPhone }) {
+export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers = [], reviews = [], user, onRequireAuth }) {
   const navigate = useNavigate();
   const { id } = useParams();
   const editing = Boolean(id);
@@ -168,7 +167,6 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers
   // step: 1 = kategori+tür+yük, 2 = güzergah+detay, 3 = yayınlandı
   const [step, setStep] = useState(1);
   const [published, setPublished] = useState(null);
-  const [showPhoneVerify, setShowPhoneVerify] = useState(false);
   const [reviewGate, setReviewGate] = useState(null); // bekleyen zorunlu değerlendirmeler
   const realKm = haversineKm(pickup, dropoff);
 
@@ -179,7 +177,7 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers
   const publishGate = () => {
     if (editing) return true;
     if (!user) { onRequireAuth?.(); return false; }
-    if (!user.phoneVerified) { setShowPhoneVerify(true); return false; }
+    // Telefon doğrulama (SMS) şimdilik kaldırıldı — gerçek SMS sağlayıcı bağlı değil.
     const pend = pendingReviews(user, listings, offers, reviews);
     if (pend.length) { setReviewGate(pend); return false; }
     return true;
@@ -892,15 +890,6 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers
         </div>
       )}
 
-      {/* ── TELEFON DOĞRULAMA (yeni ilan öncesi zorunlu) ──────────── */}
-      {showPhoneVerify && (
-        <PhoneVerifyModal
-          initialPhone={user?.phone || ""}
-          reason="İlan yayınlamadan önce cep numaranı doğrula. Doğrulanmış ilanlar daha çok güven ve teklif alır."
-          onVerified={(phone) => { onVerifyPhone?.(phone); }}
-          onClose={() => setShowPhoneVerify(false)}
-        />
-      )}
 
       {/* ── ZORUNLU DEĞERLENDİRME KAPISI ──────────────────────────── */}
       {reviewGate && (

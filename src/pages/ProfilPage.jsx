@@ -1,12 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Settings, BadgeCheck, Truck, Package, Lock, Building2, HelpCircle, LogOut, ChevronRight, ShieldCheck, Upload, FileText, Star, Heart, Navigation, History, Inbox, Bell, Phone } from "lucide-react";
+import { Settings, BadgeCheck, Truck, Package, Lock, Building2, HelpCircle, LogOut, ChevronRight, ShieldCheck, Upload, FileText, Star, Heart, Navigation, History, Inbox, Bell } from "lucide-react";
 import { useToast } from "../components/Toast";
 import { StarsDisplay } from "../components/Stars";
 import SEO from "../components/SEO";
 import Logo from "../components/Logo";
-import PhoneVerifyModal from "../components/PhoneVerifyModal";
 import { DEFAULT_NOTIF_PREFS } from "../utils/storage";
 import { visibleReviewsFor } from "../utils/reviewGate";
 import { isAdmin } from "../utils/admin";
@@ -123,12 +122,11 @@ const sectionTitle = { fontFamily: ARCHIVO, fontSize: 13, fontWeight: 800, color
 const labelSt = { display: "block", marginBottom: 6, fontFamily: MONO, fontSize: 10, fontWeight: 700, color: C.sub, letterSpacing: 0.4, textTransform: "uppercase" };
 const inputSt = { width: "100%", boxSizing: "border-box", background: C.card, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "11px 13px", fontSize: 14, color: C.ink, outline: "none", fontFamily: MONO };
 
-export default function ProfilPage({ user, onUpdateProfile, onVerifyPhone, onRequireAuth, onLogout, onDeleteAccount, reviews = [], getUserRating, listings = [], offers = [], docs = [], onAddDoc, onRemoveDoc, notifPrefs = DEFAULT_NOTIF_PREFS, onUpdateNotifPrefs }) {
+export default function ProfilPage({ user, onUpdateProfile, onRequireAuth, onLogout, onDeleteAccount, reviews = [], getUserRating, listings = [], offers = [], docs = [], onAddDoc, onRemoveDoc, notifPrefs = DEFAULT_NOTIF_PREFS, onUpdateNotifPrefs }) {
   const toast = useToast();
   const navigate = useNavigate();
   const [docType, setDocType] = useState("K Belgesi");
   const [confirmDelete, setConfirmDelete] = useState(false); // hesap silme iki adımlı onay
-  const [showPhoneVerify, setShowPhoneVerify] = useState(false);
 
   // Hesabı kalıcı sil (App Store/Play zorunlu): verileri temizle, çıkış yap, ana sayfaya dön.
   const handleDeleteAccount = async () => {
@@ -286,32 +284,13 @@ export default function ProfilPage({ user, onUpdateProfile, onVerifyPhone, onReq
             <input style={{ ...inputSt, background: C.stone, opacity: 0.6, cursor: "not-allowed" }} value={user.email} disabled />
           </div>
 
-          {/* Telefon + doğrulama */}
+          {/* Telefon (SMS doğrulama şimdilik kaldırıldı — gerçek SMS sağlayıcı bağlı değil) */}
           <div style={{ marginBottom: 14 }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-              <label style={{ ...labelSt, margin: 0 }}>Telefon</label>
-              {user.phoneVerified ? (
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontFamily: MONO, fontSize: 9.5, fontWeight: 700, color: C.green, border: `2px solid ${C.green}`, background: "#E6F4EA", borderRadius: 5, padding: "2px 7px", textTransform: "uppercase" }}>
-                  <BadgeCheck size={12} strokeWidth={2.6} /> Doğrulandı
-                </span>
-              ) : (
-                <span style={{ fontFamily: MONO, fontSize: 9.5, fontWeight: 700, color: C.muted, border: `2px solid ${C.border}`, background: C.stone, borderRadius: 5, padding: "2px 7px", textTransform: "uppercase" }}>
-                  Doğrulanmadı
-                </span>
-              )}
-            </div>
+            <label style={labelSt}>Telefon</label>
             <input style={inputSt} value={form.phone}
               onChange={(e) => set("phone", e.target.value)} placeholder="05XX XXX XX XX" />
-            {!user.phoneVerified && (
-              <button type="button" onClick={() => setShowPhoneVerify(true)}
-                style={{ marginTop: 8, width: "100%", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7, background: C.ink, color: C.yellow, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "11px", fontFamily: ARCHIVO, fontSize: 12.5, fontWeight: 800, textTransform: "uppercase", letterSpacing: "-0.01em", cursor: "pointer", boxShadow: "3px 3px 0 #0A0A0A" }}>
-                <Phone size={15} strokeWidth={2.4} /> Numaramı doğrula
-              </button>
-            )}
             <div style={{ marginTop: 7, fontFamily: MONO, fontSize: 10, color: C.faint, lineHeight: 1.5 }}>
-              {user.phoneVerified
-                ? "Numaran doğrulandı. Yalnızca eşleşen tarafla iletişim için paylaşılır."
-                : "Teklif vermek ve ilan açmak için cep numaranı doğrulaman gerekir. Numaran yalnızca eşleşen tarafla paylaşılır."}
+              Numaran yalnızca eşleşen tarafla iletişim için paylaşılır.
             </div>
           </div>
 
@@ -613,14 +592,6 @@ export default function ProfilPage({ user, onUpdateProfile, onVerifyPhone, onReq
         )}
       </div>
 
-      {/* ── TELEFON DOĞRULAMA MODALI ──────────────────────────────── */}
-      {showPhoneVerify && (
-        <PhoneVerifyModal
-          initialPhone={form.phone || user.phone || ""}
-          onVerified={(phone) => { onVerifyPhone?.(phone); setForm((f) => ({ ...f, phone })); toast("Numaran doğrulandı", "success"); }}
-          onClose={() => setShowPhoneVerify(false)}
-        />
-      )}
     </div>
   );
 }

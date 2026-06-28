@@ -23,7 +23,6 @@ import { hapticTap, hapticSuccess } from "../native/haptics";
 import useFavorites from "../hooks/useFavorites";
 import ReportModal from "../components/ReportModal";
 import ProfitCalc from "../components/ProfitCalc";
-import PhoneVerifyModal from "../components/PhoneVerifyModal";
 import JobStatusBar from "../components/JobStatusBar";
 import { pendingReviews } from "../utils/reviewGate";
 import { PAYMENTS_ENABLED } from "../config/features";
@@ -125,7 +124,7 @@ function DetailRow({ label, value }) {
   );
 }
 
-export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth, onVerifyPhone, offers = [], reviews = [], onAddOffer, onAcceptJob, onReport, isBlocked, onToggleBlock }) {
+export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth, offers = [], reviews = [], onAddOffer, onAcceptJob, onReport, isBlocked, onToggleBlock }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
@@ -137,7 +136,6 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
   const [showSheet, setShowSheet] = useState(false);
   const [sent, setSent] = useState(false);
   const [showWhy, setShowWhy] = useState(false);
-  const [showPhoneVerify, setShowPhoneVerify] = useState(false);
   const [reviewGate, setReviewGate] = useState(null); // bekleyen değerlendirmeler (zorunlu)
   const [showAcceptConfirm, setShowAcceptConfirm] = useState(false); // doğrudan kabul onayı
   const [accepting, setAccepting] = useState(false);
@@ -206,7 +204,7 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
   // Teklif/sipariş öncesi kapılar: telefon doğrulama + bekleyen zorunlu değerlendirme.
   const offerGate = () => {
     if (!user) { onRequireAuth?.(); return false; }
-    if (!user.phoneVerified) { setShowPhoneVerify(true); return false; }
+    // Telefon doğrulama (SMS) şimdilik kaldırıldı — gerçek SMS sağlayıcı bağlı değil.
     const pend = pendingReviews(user, listings, offers, reviews);
     if (pend.length) { setReviewGate(pend); return false; }
     return true;
@@ -925,15 +923,6 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
         </div>
       )}
 
-      {/* ── TELEFON DOĞRULAMA (teklif öncesi zorunlu) ─────────────── */}
-      {showPhoneVerify && (
-        <PhoneVerifyModal
-          initialPhone={user?.phone || ""}
-          reason="Teklif vermeden önce cep numaranı doğrula. Güvenli eşleşmenin ilk adımı."
-          onVerified={(phone) => { onVerifyPhone?.(phone); toast("Numaran doğrulandı, teklifini gönderebilirsin.", "success"); }}
-          onClose={() => setShowPhoneVerify(false)}
-        />
-      )}
 
       {/* ── ZORUNLU DEĞERLENDİRME KAPISI ──────────────────────────── */}
       {reviewGate && (
