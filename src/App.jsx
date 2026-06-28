@@ -118,9 +118,15 @@ function AppShell() {
   const listings = bannedIds.size ? allListings.filter((l) => !bannedIds.has(String(l.ownerId))) : allListings;
   const reloadListings = async () => { try { setUserListings(await api.fetchListings()); } catch (e) { console.error(e); } };
   const publishListing = async (listing) => {
-    if (user?.status === "banli") return;   // yaptirim: banli kullanici ilan veremez
-    if (SB) { try { await api.createListing(listing, profile || user); await reloadListings(); } catch (e) { console.error(e); } }
-    else setUserListings(prev => [listing, ...prev]);
+    if (user?.status === "banli") return null;   // yaptirim: banli kullanici ilan veremez
+    if (SB) {
+      // DB kaydı başarısızsa hata yukarı fırlatılır; UI sahte "yayında" göstermez.
+      const saved = await api.createListing(listing, profile || user);
+      await reloadListings();
+      return saved; // gerçek DB id'li ilan
+    }
+    setUserListings(prev => [listing, ...prev]);
+    return listing;
   };
   const updateListing = async (id, patch) => {
     if (SB) { try { await api.updateListing(id, patch); setUserListings(prev => prev.map(l => l.id === id ? { ...l, ...patch } : l)); } catch (e) { console.error(e); } }

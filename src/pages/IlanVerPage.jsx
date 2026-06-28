@@ -183,10 +183,10 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers
     return true;
   };
 
-  const submit = () => {
+  const submit = async () => {
     if (!publishGate()) return;
     if (type === "urun") {
-      submitUrun();
+      await submitUrun();
       return;
     }
     if (!form.title.trim() || !form.ilce.trim() || !form.owner.trim()) {
@@ -231,16 +231,22 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers
       ownerRating: user?.rating || 5.0,
       status: "aktif", offers: 0, createdText: "az önce", createdAt: new Date().toISOString(),
     };
-    onPublish?.(listing);
-    setPublished(listing);
-    setStep(3);
-    hapticSuccess();
+    try {
+      // Başarı ekranı yalnızca gerçekten kaydedildiyse gösterilir.
+      // SB modunda onPublish DB id'li gerçek ilanı döndürür; onu kullan.
+      const saved = (await onPublish?.(listing)) || listing;
+      setPublished(saved);
+      setStep(3);
+      hapticSuccess();
+    } catch (e) {
+      setError(e?.message || "İlan kaydedilemedi. Lütfen tekrar dene.");
+    }
   };
 
   const goStep2 = () => { setError(""); setStep(2); };
 
   // ── urun ilani submit (tedarikci malzeme satisi) ──
-  const submitUrun = () => {
+  const submitUrun = async () => {
     const productName = form.title.trim();
     if (!productName || !form.ilce.trim() || !form.owner.trim()) {
       setError("Ürün adı, ilçe ve ad/firma alanları zorunludur.");
@@ -277,10 +283,14 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers
       ownerRating: user?.rating || 5.0,
       status: "aktif", offers: 0, createdText: "az önce", createdAt: new Date().toISOString(),
     };
-    onPublish?.(listing);
-    setPublished(listing);
-    setStep(3);
-    hapticSuccess();
+    try {
+      const saved = (await onPublish?.(listing)) || listing;
+      setPublished(saved);
+      setStep(3);
+      hapticSuccess();
+    } catch (e) {
+      setError(e?.message || "İlan kaydedilemedi. Lütfen tekrar dene.");
+    }
   };
 
   const materials = MATERIALS[cat] || [];
