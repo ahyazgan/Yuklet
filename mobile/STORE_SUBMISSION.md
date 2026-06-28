@@ -17,6 +17,8 @@ Kutular: `[ ]` yapılacak · `[x]` kodda hazır.
 | Demo / test hesabı (inceleme için) | `[ ]` | Giriş Google/Apple OAuth ile; inceleyiciye hazır hesap + adım verin. |
 | Uygulama ikonu (1024²) | `[x]` | `assets/icon.png` → native projelere üretildi. |
 | Splash ekranı | `[x]` | `assets/splash.png` → üretildi. |
+| **Native Google girişi** (mobil) | `[~]` | Kod hazır (Capacitor Social Login). SHA-1 + Android client ID kalan — bkz. `GOOGLE_SIGNIN_SETUP.md`. |
+| **Native Apple girişi** (iOS) | `[ ]` | UI butonu var, web OAuth çalışır; iOS'ta **native** Apple Sign-In kurulmalı (Guideline 4.8 + plugin `apple` provider). App Store aşamasında. |
 
 ### ⚠️ Hesap Silme (ikisi de reddediyor — mutlaka ekleyin)
 - **Apple:** Hesap oluşturulabilen her uygulamada **uygulama içi hesap silme** olmalı.
@@ -123,15 +125,19 @@ Hangi mod canlıya çıkacaksa beyanı ona göre doldurun. Supabase modu için:
 | Ad, e-posta, telefon | Evet | Hesap, kullanıcı doğrulama, iletişim |
 | Kullanıcı içeriği (ilan, mesaj, foto/belge) | Evet | Uygulama işlevi (eşleştirme) |
 | Konum (il/ilçe — kullanıcı girer) | Evet (hassas GPS değil) | İlan eşleştirme |
+| **Konum (GPS — sefer takibi)** | **Evet** | **Canlı sevkiyat/sefer takibi** |
 | Tanımlayıcılar (kullanıcı ID) | Evet | Hesap yönetimi |
 | Reklam/izleme | Hayır | — |
 
 - Veriler **şifreli (HTTPS)** aktarılır.
-- Kullanıcı **hesabını silebilir** (eklenecek — §0).
+- Kullanıcı **hesabını silebilir** (§0 — kodda hazır).
 - Üçüncü taraf girişler: Google, Apple (OAuth).
 
-> Not: Uygulama **konum izni (GPS) istemez** — il/ilçe kullanıcı tarafından elle
-> girilir; bu yüzden `NSLocationUsageDescription` / Android konum izni eklenmedi.
+> ⚠️ **GÜNCELLENDİ:** Uygulama **GPS konum izni İSTER** (canlı sefer takibi için).
+> Kodda mevcut izinler: Android `ACCESS_FINE_LOCATION`/`ACCESS_COARSE_LOCATION`,
+> iOS `NSLocationWhenInUseUsageDescription`. Bu yüzden **store veri beyanında konum
+> "Toplanıyor" işaretlenmeli** ve amaç "App functionality / sefer takibi" olmalı.
+> (Önceki sürüm "konum izni yok" diyordu — sefer takibi eklendikten sonra değişti.)
 
 ---
 
@@ -141,6 +147,7 @@ Hangi mod canlıya çıkacaksa beyanı ona göre doldurun. Supabase modu için:
 - iOS: Xcode → `MARKETING_VERSION` (1.0.0) ve `CURRENT_PROJECT_VERSION` (build no).
 
 ## 5. Yayın öncesi son test
+- `[ ]` **Native Google girişi** (cihazda): hesap seçici açılır, supabase.co görünmez, rol modalı → giriş. Bkz. `GOOGLE_SIGNIN_SETUP.md`.
 - `[ ]` Android cihaz/emülatörde: giriş, ilan ver, teklif, mesaj, geri tuşu, splash.
 - `[ ]` iOS cihaz/simülatörde: aynı akışlar + çentik güvenli alanı.
 - `[ ]` Çevrimdışı davranış makul (native'de SW kapalı; ağ hatası zarifçe yönetilir).
