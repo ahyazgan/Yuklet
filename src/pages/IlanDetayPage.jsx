@@ -9,7 +9,7 @@
 
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ChevronLeft, Share2, Heart, Star, BadgeCheck, ArrowRight, X, Send, AlertTriangle, Truck, TrendingUp, TrendingDown, Boxes, Check, Info, ChevronDown, ShieldCheck } from "lucide-react";
+import { ChevronLeft, Share2, Heart, Star, BadgeCheck, ArrowRight, X, Send, AlertTriangle, Truck, TrendingUp, TrendingDown, Boxes, Check, Info, ChevronDown, ShieldCheck, RotateCw } from "lucide-react";
 import { LISTINGS } from "../data/listings";
 import { CATS } from "../data/categories";
 import { computeReliability, reliabilityTier } from "../utils/reliability";
@@ -305,6 +305,21 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
         <h1 style={{ fontFamily: HEAD, fontSize: 23, fontWeight: 900, textTransform: "uppercase", lineHeight: 1.12, letterSpacing: "-0.02em", margin: 0 }}>
           {l.title}
         </h1>
+
+        {/* ── TEKRARLAYAN / ABONELİK İŞ vurgusu (sürekli yük) ───────── */}
+        {!isProduct && l.recurring && (
+          <div style={{ display: "flex", alignItems: "center", gap: 12, background: "#FEF9E7", border: `2px solid ${C.ink}`, borderRadius: 6, padding: "12px 14px", boxShadow: "3px 3px 0 rgba(10,10,10,0.10)" }}>
+            <span style={{ width: 38, height: 38, borderRadius: 6, background: C.yellow, border: `2px solid ${C.ink}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <RotateCw size={19} strokeWidth={2.5} color={C.ink} />
+            </span>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontFamily: HEAD, fontSize: 13, fontWeight: 900, textTransform: "uppercase", letterSpacing: "-0.01em", color: C.ink }}>Tekrarlayan / Abonelik İş</div>
+              <div style={{ fontFamily: MONO, fontSize: 11, fontWeight: 700, color: C.sub, marginTop: 2 }}>
+                {l.recurringText || "Süreklilik arz eden taşıma"}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ── İŞ DURUMU ŞERİDİ (her iki tarafın gördüğü özet) ───────── */}
         {!isProduct && (listingOffers.length > 0 || l.phase || closed) && (

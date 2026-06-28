@@ -11,7 +11,7 @@ import { CATS, LISTING_TYPES, VEHICLE_TYPES, MATERIALS, UNITS, STOCK_LEVELS } fr
 import { IL_LIST } from "../data/listings";
 import CategoryIcon from "../components/CategoryIcon";
 import { estimatePrice, fmtTL, haversineKm } from "../utils/priceEstimate";
-import { loadOffers, loadPricingConfig } from "../utils/storage";
+import { loadOffers, loadPricingConfig, loadFleet } from "../utils/storage";
 import { newId } from "../utils/id";
 import { pendingReviews } from "../utils/reviewGate";
 import SEO from "../components/SEO";
@@ -36,6 +36,9 @@ const MONO = "'Space Mono', ui-monospace, monospace";
 const SANS = "'Plus Jakarta Sans', system-ui, sans-serif";
 const ARCH = "'Archivo', sans-serif";
 const HAZARD = "repeating-linear-gradient(45deg,#0A0A0A 0 9px,#FACC15 9px 18px)";
+
+// Tekrarlayan iş sıklık etiketleri (kart/detayda okunur metin).
+const FREQ_LABELS = { gunluk: "Her gün", haftalik: "Her hafta", aylik: "Her ay" };
 
 const shell = {
   margin: "0 auto", width: "100%", maxWidth: 460, minHeight: "100vh",
@@ -210,7 +213,7 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers
       recurringDuration: form.recurring ? form.recurringDuration.trim() : undefined,
       dailyTrips: form.recurring && form.dailyTrips ? Number(form.dailyTrips) : undefined,
       recurringText: form.recurring
-        ? [form.dailyTrips ? `Günde ${form.dailyTrips} sefer` : "", form.recurringDuration ? `• ${form.recurringDuration}` : ""].filter(Boolean).join(" ")
+        ? [FREQ_LABELS[form.recurringFreq] || "", form.dailyTrips ? `• Günde ${form.dailyTrips} sefer` : "", form.recurringDuration ? `• ${form.recurringDuration}` : ""].filter(Boolean).join(" ")
         : "",
     };
 
@@ -284,6 +287,11 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers
 
   const materials = MATERIALS[cat] || [];
   const vehicles = VEHICLE_TYPES[cat] || [];
+  // Filo: kullanıcının bu kategorideki aktif araçları — ilana hızlı seçim için.
+  const myFleet = user
+    ? loadFleet().filter((v) => String(v.ownerId) === String(user.id) && v.active && v.cat === cat)
+    : [];
+  const pickFleet = (v) => { set("vehicle", v.vehicle); if (v.capacity) set("capacity", v.capacity); };
   const est = type === "is" && Number(form.amount) > 0
     ? estimatePrice({ cat, amount: Number(form.amount), unit: form.unit, fromIl: form.il, toIl: form.varisIl, material: form.material, vehicle: form.vehicle, dateText: form.dateText, recurring: form.recurring, kmOverride: realKm, history: { listings, offers: loadOffers() }, config: loadPricingConfig() })
     : null;
@@ -736,6 +744,25 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers
           {/* araç tipi + kapasite (sadece araç) */}
           {type === "arac" && (
             <Block>
+              {/* Filodan hızlı seçim */}
+              {myFleet.length > 0 && (
+                <div style={{ marginBottom: 14 }}>
+                  <div style={{ fontFamily: MONO, fontSize: 10, fontWeight: 700, color: C.sub, letterSpacing: 0.4, textTransform: "uppercase", marginBottom: 8 }}>Filondan seç</div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                    {myFleet.map((v) => {
+                      const active = form.vehicle === v.vehicle && form.capacity === (v.capacity || "");
+                      return (
+                        <button type="button" key={v.id} onClick={() => pickFleet(v)}
+                          style={{ display: "inline-flex", alignItems: "center", gap: 6, border: `2px solid ${C.ink}`, background: active ? C.yellow : C.card, borderRadius: 6, padding: "8px 11px", cursor: "pointer", boxShadow: active ? "2px 2px 0 #0A0A0A" : "none" }}>
+                          <Truck size={14} strokeWidth={2.4} color={C.ink} />
+                          <span style={{ fontFamily: MONO, fontSize: 11, fontWeight: 700, letterSpacing: 0.5, color: C.ink }}>{v.plate}</span>
+                          {v.capacity && <span style={{ fontFamily: MONO, fontSize: 9.5, color: C.muted }}>· {v.capacity}</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <SelectField label="Araç tipi" value={form.vehicle} onChange={(e) => set("vehicle", e.target.value)}>
                   <option value="">Seçin</option>

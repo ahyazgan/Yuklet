@@ -61,6 +61,7 @@ const BildirimlerPage = lazy(() => import("./pages/BildirimlerPage"));
 const DispatchPage = lazy(() => import("./pages/DispatchPage"));
 const TripHistoryPage = lazy(() => import("./pages/TripHistoryPage"));
 const FiyatSimulasyonuPage = lazy(() => import("./pages/FiyatSimulasyonuPage"));
+const FleetPage = lazy(() => import("./pages/FleetPage"));
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -503,6 +504,7 @@ function AppShell() {
                 <Route path="/bildirimler" element={<PageTransition><BildirimlerPage user={user} items={notif.items} onSeen={markNotifSeen} onRequireAuth={requireAuth} /></PageTransition>} />
                 <Route path="/sevkiyat" element={<PageTransition><DispatchPage user={user} listings={listings} offers={offers} onRequireAuth={requireAuth} /></PageTransition>} />
                 <Route path="/sefer-gecmisi" element={<PageTransition><TripHistoryPage user={user} listings={listings} offers={offers} onRequireAuth={requireAuth} /></PageTransition>} />
+                <Route path="/filo" element={<PageTransition><FleetPage user={user} onRequireAuth={requireAuth} /></PageTransition>} />
                 <Route path="/ilanlar" element={<PageTransition><ListingsPage listings={listings} blockedIds={myBlocked} offers={offers} reviews={reviews} onRefresh={SB ? () => Promise.all([reloadListings(), reloadOffers()]) : undefined} /></PageTransition>} />
                 <Route path="/ilan/:id" element={<PageTransition><IlanDetayPage listings={listings} user={user} onRequireAuth={requireAuth} onVerifyPhone={verifyPhone} offers={offers} reviews={reviews} onAddOffer={addOffer} onReport={addReport} isBlocked={isBlocked} onToggleBlock={toggleBlock} /></PageTransition>} />
                 <Route path="/takip/:id" element={<PageTransition><TakipPage listings={listings} user={user} offers={offers} getContact={getContact} reviews={reviews} onAddReview={addReview} getUserRating={getUserRating} onUpdateListing={updateListing} onReport={addReport} onPayToEscrow={payToEscrow} onReleasePayment={releasePayment} onRefundPayment={refundPayment} onEarlyPayout={earlyPayoutNakliyeci} /></PageTransition>} />

@@ -177,6 +177,28 @@ function ListingCard({ l, history, config, isFav = false, onToggleFav, rel }) {
               ● EŞLEŞTİ
             </span>
           )}
+          {l.recurring && !isProduct && (
+            <span
+              style={{
+                ...MONO,
+                fontSize: 8.5,
+                fontWeight: 700,
+                padding: "2px 6px",
+                borderRadius: 4,
+                background: C.yellow,
+                color: C.ink,
+                border: `1.5px solid ${C.ink}`,
+                textTransform: "uppercase",
+                whiteSpace: "nowrap",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 3,
+              }}
+              title={l.recurringText || "Tekrarlayan / abonelik iş"}
+            >
+              <RotateCw size={9} strokeWidth={2.6} /> TEKRARLI
+            </span>
+          )}
           {isProduct && (
             <span
               style={{
@@ -408,6 +430,7 @@ export default function ListingsPage({ listings = LISTINGS, onRefresh, blockedId
   const [priceMax, setPriceMax] = useState("");
   const [sort, setSort] = useState("yeni"); // yeni | teklif | ucuz | pahali | onayli
   const [verifiedOnly, setVerifiedOnly] = useState(false); // sadece onaylı ilan sahibi
+  const [recurringOnly, setRecurringOnly] = useState(false); // sadece tekrarlayan / abonelik işler
   const [showFilters, setShowFilters] = useState(false);
   const [view, setView] = useState(sp.get("view") === "map" ? "map" : "list"); // list | map
   // Favori (kaydedilen) ilanlar
@@ -510,6 +533,7 @@ export default function ListingsPage({ listings = LISTINGS, onRefresh, blockedId
         !blockedSet.has(String(l.ownerId)) &&
         (!favOnly || isFav(l.id)) &&
         (!verifiedOnly || l.ownerVerified) &&
+        (!recurringOnly || l.recurring) &&
         (type === "all" || l.type === type) &&
         (cat === "all" || l.cat === cat) &&
         (il === "all" || l.il === il) &&
@@ -525,10 +549,10 @@ export default function ListingsPage({ listings = LISTINGS, onRefresh, blockedId
     // Sponsorlu (öne çıkan) ilanlar her zaman üstte (mevcut sıra korunur)
     out = [...out].sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
     return out;
-  }, [listings, type, cat, il, q, material, priceMin, priceMax, sort, verifiedOnly, favOnly, isFav, blockedIds]);
+  }, [listings, type, cat, il, q, material, priceMin, priceMax, sort, verifiedOnly, recurringOnly, favOnly, isFav, blockedIds]);
 
   const activeFilters =
-    (material !== "all" ? 1 : 0) + (priceMin || priceMax ? 1 : 0) + (sort !== "yeni" ? 1 : 0) + (verifiedOnly ? 1 : 0);
+    (material !== "all" ? 1 : 0) + (priceMin || priceMax ? 1 : 0) + (sort !== "yeni" ? 1 : 0) + (verifiedOnly ? 1 : 0) + (recurringOnly ? 1 : 0);
 
   // Son aramalar: kullanıcı yazmayı bırakınca (700ms) geçmişe ekle (dedupe, maks 6).
   useEffect(() => {
@@ -1305,6 +1329,16 @@ export default function ListingsPage({ listings = LISTINGS, onRefresh, blockedId
                   ✓ SADECE ONAYLI İLAN SAHİBİ
                 </button>
               </div>
+
+              {/* Tekrarlayan / abonelik iş filtresi */}
+              <div>
+                <div style={{ ...MONO, fontSize: 10, fontWeight: 700, color: C.sub, marginBottom: 8, letterSpacing: "0.06em" }}>
+                  SÜREKLİLİK
+                </div>
+                <button style={chip(recurringOnly)} onClick={() => setRecurringOnly((v) => !v)}>
+                  ↻ SADECE TEKRARLAYAN / ABONELİK İŞLER
+                </button>
+              </div>
             </div>
 
             {/* Alt: Temizle + Göster */}
@@ -1319,6 +1353,7 @@ export default function ListingsPage({ listings = LISTINGS, onRefresh, blockedId
                   setPriceMax("");
                   setSort("yeni");
                   setVerifiedOnly(false);
+                  setRecurringOnly(false);
                 }}
                 style={{
                   ...HEAD,

@@ -57,6 +57,7 @@ function menuForRole(role) {
   ];
   if (role === "nakliyeci") {
     return [
+      { icon: Truck, label: "Filom", desc: "Araç + şoför + plaka kayıtların", to: "/filo" },
       { icon: Navigation, label: "Sevkiyat", desc: "Aktif seferlerini canlı izle", to: "/sevkiyat" },
       { icon: History, label: "Sefer Geçmişi", desc: "Tamamlanan taşımalar ve hat performansı", to: "/sefer-gecmisi" },
       { icon: Inbox, label: "Verdiğim Teklifler", desc: "İş ilanlarına gönderdiğin teklifler", to: "/tekliflerim" },

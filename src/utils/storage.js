@@ -55,6 +55,10 @@ export const saveBlocked = (v) => save("hamted_blocked", v);
 export const DEFAULT_NOTIF_PREFS = { offers: true, accepts: true, messages: true, reviews: true, savedSearch: true };
 export const loadNotifPrefs = () => ({ ...DEFAULT_NOTIF_PREFS, ...load("hamted_notif_prefs", {}) });
 export const saveNotifPrefs = (v) => save("hamted_notif_prefs", v);
+// Filo — nakliyecinin araç + şoför kayıtları (çoklu araç yönetimi).
+// Araç: { id, ownerId, plate, cat, vehicle, capacity, driverName, driverPhone, note, active, createdAt }
+export const loadFleet = () => load("hamted_fleet", []);
+export const saveFleet = (v) => save("hamted_fleet", v);
 // Akıllı Fiyat piyasa ayarları (admin): yakıt endeksi vb. — engine'e geçirilir.
 export const loadPricingConfig = () => load("hamted_pricing_config", { fuelIndex: 1.0, feeRate: 0.10 });
 export const savePricingConfig = (v) => save("hamted_pricing_config", v);
