@@ -289,7 +289,7 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
     setProofBusy(true);
     // Teslim konumunu yakala (kanıtı sağlamlaştırır; başarısızsa kanıt yine gönderilir).
     const loc = await getCurrentPosition().catch(() => null);
-    onUpdateListing?.(l.id, {
+    const res = await onUpdateListing?.(l.id, {
       deliveryProof: {
         tonnage, unit: l.unit || "ton", ticketNo: proofForm.ticketNo.trim(),
         note: proofForm.note.trim(),
@@ -299,24 +299,28 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
         byId: user.id, byName: user.name, submittedAt: nowIso(), status: "beklemede",
       },
     });
+    setProofBusy(false);
+    if (res && res.ok === false) { setPayMsg(res.error || "Teslim kanıtı gönderilemedi. Tekrar dene."); return; }
     hapticSuccess();
     setProofForm({ tonnage: "", ticketNo: "", note: "", photo: null, signature: null });
-    setProofBusy(false);
     setPayMsg(loc ? "Teslim kanıtı (konum doğrulandı) gönderildi, alıcı onayında." : "Teslim kanıtı gönderildi, alıcı onayında.");
   };
-  const reviewProof = (ok) => {
-    onUpdateListing?.(l.id, ok
+  const reviewProof = async (ok) => {
+    const res = await onUpdateListing?.(l.id, ok
       ? { deliveryProof: { ...proof, status: "onay", reviewedAt: nowIso() }, phase: "teslim", status: "kapali" }
       : { deliveryProof: { ...proof, status: "itiraz", reviewedAt: nowIso() } });
+    if (res && res.ok === false) { setPayMsg(res.error || "İşlem kaydedilemedi. Tekrar dene."); return; }
     setPayMsg(ok ? "Teslim onaylandı. Ödemeyi serbest bırakabilirsin." : "Teslim kanıtına itiraz edildi. Anlaşmazlık çözümü açıldı.");
   };
   // ── Anlaşmazlık çözümü (teslim itirazı sonrası) ──
-  const acceptAfterDispute = () => {     // müteahhit yine de teslimi kabul eder
-    onUpdateListing?.(l.id, { deliveryProof: { ...proof, status: "onay", reviewedAt: nowIso() }, phase: "teslim", status: "kapali" });
+  const acceptAfterDispute = async () => {     // müteahhit yine de teslimi kabul eder
+    const res = await onUpdateListing?.(l.id, { deliveryProof: { ...proof, status: "onay", reviewedAt: nowIso() }, phase: "teslim", status: "kapali" });
+    if (res && res.ok === false) { setPayMsg(res.error || "İşlem kaydedilemedi. Tekrar dene."); return; }
     setPayMsg("Teslim kabul edildi. Ödemeyi serbest bırakabilirsin.");
   };
-  const resubmitProof = () => {          // nakliyeci düzeltilmiş kanıt için sıfırlar
-    onUpdateListing?.(l.id, { deliveryProof: null });
+  const resubmitProof = async () => {          // nakliyeci düzeltilmiş kanıt için sıfırlar
+    const res = await onUpdateListing?.(l.id, { deliveryProof: null });
+    if (res && res.ok === false) { setPayMsg(res.error || "İşlem kaydedilemedi. Tekrar dene."); return; }
     setPayMsg("Kanıt sıfırlandı. Düzeltilmiş kantar fişini tekrar gönderebilirsin.");
   };
   const doRefund = async () => {         // müteahhite iade

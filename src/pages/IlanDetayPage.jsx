@@ -135,6 +135,7 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
   const [showReport, setShowReport] = useState(false);
   const [showSheet, setShowSheet] = useState(false);
   const [sent, setSent] = useState(false);
+  const [sending, setSending] = useState(false);   // teklif gönderiliyor (çift-tık koruması)
   const [showWhy, setShowWhy] = useState(false);
   const [reviewGate, setReviewGate] = useState(null); // bekleyen değerlendirmeler (zorunlu)
   const [showAcceptConfirm, setShowAcceptConfirm] = useState(false); // doğrudan kabul onayı
@@ -210,19 +211,24 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
     return true;
   };
 
-  const submitOffer = () => {
+  const submitOffer = async () => {
+    if (sending) return;                       // çift-tık koruması
     if (!offerGate()) return;
     if (isProduct) {
       if (!qty && !message.trim()) { toast("Miktar veya mesaj girin", "error"); return; }
     } else if (!price && !message.trim()) {
       toast("Fiyat veya mesaj girin", "error"); return;
     }
-    onAddOffer?.({
+    setSending(true);
+    const res = await onAddOffer?.({
       id: newId(), listingId: l.id, fromUser: user.name, fromUserId: user.id,
       price: price ? Number(price) : null, message: message.trim(),
       ...(isProduct ? { qty: qty ? Number(qty) : null, unit: l.unit || "ton", kind: "siparis" } : {}),
       status: "beklemede", createdAt: nowIso(),
     });
+    setSending(false);
+    // Yalnızca gerçekten kaydedildiyse başarı göster.
+    if (res && res.ok === false) { toast(res.error || (isProduct ? "Talep gönderilemedi" : "Teklif gönderilemedi"), "error"); return; }
     setPrice(""); setQty(""); setMessage("");
     setSent(true);
     hapticSuccess();
@@ -846,9 +852,9 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
                   style={{ ...sheetInput, minHeight: 84, resize: "vertical" }} />
 
                 {/* submit */}
-                <button onClick={submitOffer}
-                  style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", marginTop: 18, background: C.yellow, color: C.ink, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "14px", fontFamily: HEAD, fontWeight: 800, fontSize: 15, textTransform: "uppercase", cursor: "pointer", boxShadow: "3px 3px 0 rgba(10,10,10,0.18)" }}>
-                  {isProduct ? "Siparişi Gönder" : "Teklifi Gönder"} <ArrowRight size={17} strokeWidth={2.6} />
+                <button onClick={submitOffer} disabled={sending}
+                  style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", marginTop: 18, background: C.yellow, color: C.ink, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "14px", fontFamily: HEAD, fontWeight: 800, fontSize: 15, textTransform: "uppercase", cursor: sending ? "default" : "pointer", opacity: sending ? 0.6 : 1, boxShadow: "3px 3px 0 rgba(10,10,10,0.18)" }}>
+                  {sending ? "Gönderiliyor…" : (isProduct ? "Siparişi Gönder" : "Teklifi Gönder")} <ArrowRight size={17} strokeWidth={2.6} />
                 </button>
               </>
             )}

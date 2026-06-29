@@ -6,6 +6,7 @@ import { setTyping, isTyping } from "../utils/typing";
 import { pickPhotoDataUrl, cameraNative } from "../native/camera";
 import SEO from "../components/SEO";
 import Logo from "../components/Logo";
+import { useToast } from "../components/Toast";
 
 // ── SAHA messages view — sharp industrial language: 2px ink borders, Archivo
 //    uppercase headings, Space Mono codes/times, hard (no-blur) shadows.
@@ -81,6 +82,7 @@ function listingCode(id) {
 
 export default function MesajlarPage({ user, listings = [], offers = [], messages = [], onSendMessage, onRequireAuth, onSeen, getContact, msgSeen = {}, blockedIds = [] }) {
   const navigate = useNavigate();
+  const toast = useToast();
   const [selectedKey, setSelectedKey] = useState(null);
   const [text, setText] = useState("");
   const [othersTyping, setOthersTyping] = useState(false);
@@ -178,15 +180,16 @@ export default function MesajlarPage({ user, listings = [], offers = [], message
     return { preview, time: fmtTime(last.createdAt) };
   };
 
-  const sendText = (value) => {
+  const sendText = async (value) => {
     const t = (value ?? text).trim();
     if (!t || !active) return;
-    onSendMessage?.({
+    setText("");   // optimistik temizle; hata olursa geri yaz
+    const res = await onSendMessage?.({
       id: newId(), listingId: active.listingId, offerId: active.offerId,
       fromId: user.id, fromName: user.name, toId: active.other.id, toName: active.other.name,
       text: t, createdAt: nowIso(),
     });
-    setText("");
+    if (res && res.ok === false) { setText(t); toast?.(res.error || "Mesaj gönderilemedi", "error"); }
   };
   const send = () => sendText();
 

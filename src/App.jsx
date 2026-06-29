@@ -129,12 +129,20 @@ function AppShell() {
     return listing;
   };
   const updateListing = async (id, patch) => {
-    if (SB) { try { await api.updateListing(id, patch); setUserListings(prev => prev.map(l => l.id === id ? { ...l, ...patch } : l)); } catch (e) { console.error(e); } }
-    else setUserListings(prev => prev.map(l => l.id === id ? { ...l, ...patch } : l));
+    if (SB) {
+      try { await api.updateListing(id, patch); setUserListings(prev => prev.map(l => l.id === id ? { ...l, ...patch } : l)); return { ok: true }; }
+      catch (e) { console.error(e); return { ok: false, error: e?.message || "Güncelleme başarısız." }; }
+    }
+    setUserListings(prev => prev.map(l => l.id === id ? { ...l, ...patch } : l));
+    return { ok: true };
   };
   const removeListing = async (id) => {
-    if (SB) { try { await api.deleteListing(id); setUserListings(prev => prev.filter(l => l.id !== id)); } catch (e) { console.error(e); } }
-    else { setUserListings(prev => prev.filter(l => l.id !== id)); setOffers(prev => prev.filter(o => String(o.listingId) !== String(id))); }
+    if (SB) {
+      try { await api.deleteListing(id); setUserListings(prev => prev.filter(l => l.id !== id)); return { ok: true }; }
+      catch (e) { console.error(e); return { ok: false, error: e?.message || "Silme başarısız." }; }
+    }
+    setUserListings(prev => prev.filter(l => l.id !== id)); setOffers(prev => prev.filter(o => String(o.listingId) !== String(id)));
+    return { ok: true };
   };
 
   // ── Ödeme / Escrow (emanet) — sağlayıcı (mock veya gerçek) + listing durumu ──
@@ -187,13 +195,21 @@ function AppShell() {
   useEffect(() => { if (!SB) saveOffers(offers); }, [offers, SB]);
   const reloadOffers = async () => { try { setOffers(await api.fetchOffers()); } catch (e) { console.error(e); } };
   const addOffer = async (offer) => {
-    if (user?.status === "banli") return;   // yaptirim: banli kullanici teklif veremez
-    if (SB) { try { await api.createOffer(offer, profile || user); await Promise.all([reloadOffers(), reloadListings()]); } catch (e) { console.error(e); } }
-    else setOffers(prev => [offer, ...prev]);
+    if (user?.status === "banli") return { ok: false, error: "Hesabın askıya alındı." };   // yaptirim: banli kullanici teklif veremez
+    if (SB) {
+      try { await api.createOffer(offer, profile || user); await Promise.all([reloadOffers(), reloadListings()]); return { ok: true }; }
+      catch (e) { console.error(e); return { ok: false, error: e?.message || "Teklif gönderilemedi." }; }
+    }
+    setOffers(prev => [offer, ...prev]);
+    return { ok: true };
   };
   const updateOffer = async (id, patch) => {
-    if (SB) { try { await api.updateOffer(id, patch); setOffers(prev => prev.map(o => o.id === id ? { ...o, ...patch } : o)); } catch (e) { console.error(e); } }
-    else setOffers(prev => prev.map(o => o.id === id ? { ...o, ...patch, ...(patch.status ? { updatedAt: new Date().toISOString() } : {}) } : o));
+    if (SB) {
+      try { await api.updateOffer(id, patch); setOffers(prev => prev.map(o => o.id === id ? { ...o, ...patch } : o)); return { ok: true }; }
+      catch (e) { console.error(e); return { ok: false, error: e?.message || "Teklif güncellenemedi." }; }
+    }
+    setOffers(prev => prev.map(o => o.id === id ? { ...o, ...patch, ...(patch.status ? { updatedAt: new Date().toISOString() } : {}) } : o));
+    return { ok: true };
   };
   // ── Doğrudan kabul ── (sabit fiyatlı iş ilanı): nakliyeci teklif vermeden işi
   // sabit fiyattan alır. Sonuç durum teklif-kabul ile birebir aynı: offer
@@ -227,8 +243,12 @@ function AppShell() {
   const [messages, setMessages] = useState(() => (SB ? [] : loadMessages()));
   useEffect(() => { if (!SB) saveMessages(messages); }, [messages, SB]);
   const addMessage = async (msg) => {
-    if (SB) { try { const saved = await api.sendMessage(msg); setMessages(prev => [...prev, saved]); } catch (e) { console.error(e); } }
-    else setMessages(prev => [...prev, msg]);
+    if (SB) {
+      try { const saved = await api.sendMessage(msg); setMessages(prev => [...prev, saved]); return { ok: true }; }
+      catch (e) { console.error(e); return { ok: false, error: e?.message || "Mesaj gönderilemedi." }; }
+    }
+    setMessages(prev => [...prev, msg]);
+    return { ok: true };
   };
   // "Goruldu" ve bildirim okundu durumu — yerel tercih, her modda localStorage'da kalir
   const [msgSeen, setMsgSeen] = useState(() => loadMsgSeen());
@@ -253,28 +273,44 @@ function AppShell() {
   const [reviews, setReviews] = useState(() => (SB ? [] : loadReviews()));
   useEffect(() => { if (!SB) saveReviews(reviews); }, [reviews, SB]);
   const addReview = async (r) => {
-    if (SB) { try { await api.addReview(r); setReviews(await api.fetchReviews()); } catch (e) { console.error(e); } }
-    else setReviews(prev => [r, ...prev]);
+    if (SB) {
+      try { await api.addReview(r); setReviews(await api.fetchReviews()); return { ok: true }; }
+      catch (e) { console.error(e); return { ok: false, error: e?.message || "Değerlendirme gönderilemedi." }; }
+    }
+    setReviews(prev => [r, ...prev]);
+    return { ok: true };
   };
 
   // Belgeler (K belgesi, ruhsat, vergi levhasi)
   const [docs, setDocs] = useState(() => (SB ? [] : loadDocs()));
   useEffect(() => { if (!SB) saveDocs(docs); }, [docs, SB]);
   const addDoc = async (d) => {
-    if (SB) { try { const saved = await api.addDoc({ ...d, ownerId: (profile || user)?.id }); setDocs(prev => [{ ...d, ...saved, ownerId: (profile || user)?.id }, ...prev]); } catch (e) { console.error(e); } }
-    else setDocs(prev => [d, ...prev]);
+    if (SB) {
+      try { const saved = await api.addDoc({ ...d, ownerId: (profile || user)?.id }); setDocs(prev => [{ ...d, ...saved, ownerId: (profile || user)?.id }, ...prev]); return { ok: true }; }
+      catch (e) { console.error(e); return { ok: false, error: e?.message || "Belge yüklenemedi." }; }
+    }
+    setDocs(prev => [d, ...prev]);
+    return { ok: true };
   };
   const removeDoc = async (id) => {
-    if (SB) { try { await api.removeDoc(id); } catch (e) { console.error(e); } }
+    if (SB) {
+      // Yalnızca DB silme başarılıysa state'ten kaldır (hayalet silme önlenir).
+      try { await api.removeDoc(id); } catch (e) { console.error(e); return { ok: false, error: e?.message || "Belge silinemedi." }; }
+    }
     setDocs(prev => prev.filter(x => x.id !== id));
+    return { ok: true };
   };
 
   // Sikayet / uyusmazlik bildirimleri
   const [reports, setReports] = useState(() => (SB ? [] : loadReports()));
   useEffect(() => { if (!SB) saveReports(reports); }, [reports, SB]);
   const addReport = async (r) => {
-    if (SB) { try { await api.addReport({ ...r, fromId: (profile || user)?.id, fromName: (profile || user)?.name }); } catch (e) { console.error(e); } }
-    else setReports(prev => [{ ...r, id: Date.now(), createdAt: new Date().toISOString(), status: "acik" }, ...prev]);
+    if (SB) {
+      try { await api.addReport({ ...r, fromId: (profile || user)?.id, fromName: (profile || user)?.name }); return { ok: true }; }
+      catch (e) { console.error(e); return { ok: false, error: e?.message || "Şikayet gönderilemedi." }; }
+    }
+    setReports(prev => [{ ...r, id: newId(), createdAt: nowIso(), status: "acik" }, ...prev]);
+    return { ok: true };
   };
   // Çift-kör: karşı taraf da puanlamadan (ya da süre dolmadan) yorum gizli kalır.
   const getUserRating = (userId) => {
@@ -479,12 +515,15 @@ function AppShell() {
 
   const updateProfile = async (patch) => {
     if (SB) {
-      try { const res = await api.updateProfile(user.id, patch); if (res.ok) { setProfile(res.profile); setUser(res.profile); } }
-      catch (e) { console.error(e); }
-      return;
+      try {
+        const res = await api.updateProfile(user.id, patch);
+        if (res.ok) { setProfile(res.profile); setUser(res.profile); return { ok: true }; }
+        return { ok: false, error: res.error || "Profil güncellenemedi." };
+      } catch (e) { console.error(e); return { ok: false, error: e?.message || "Profil güncellenemedi." }; }
     }
     setUser(prev => prev ? { ...prev, ...patch } : prev);
     setUsers(prev => prev.map(u => (user && u.id === user.id) ? { ...u, ...patch } : u));
+    return { ok: true };
   };
   // NOT: Telefon SMS doğrulaması şimdilik kaldırıldı (gerçek SMS sağlayıcı bağlı değil).
   // Sağlayıcı bağlanınca PhoneVerifyModal + bu yardımcı geri eklenir:

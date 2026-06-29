@@ -152,8 +152,10 @@ export default function ProfilPage({ user, onUpdateProfile, onRequireAuth, onLog
     if (f.size > 2_500_000) { toast("Dosya çok büyük (~2.5MB sınırı)", "error"); return; }
     const docTypeToSave = docTypesForRole(user?.role).includes(docType) ? docType : docTypesForRole(user?.role)[0];
     const reader = new FileReader();
-    reader.onload = () => {
-      onAddDoc?.({ id: Date.now(), ownerId: user.id, type: docTypeToSave, name: f.name, dataUrl: reader.result, createdAt: new Date().toISOString() });
+    reader.onload = async () => {
+      // url = belge içeriği (data-url). İleride Supabase Storage public URL'i ile değişir.
+      const res = await onAddDoc?.({ id: Date.now(), ownerId: user.id, type: docTypeToSave, name: f.name, url: reader.result, dataUrl: reader.result, createdAt: new Date().toISOString() });
+      if (res && res.ok === false) { toast(res.error || "Belge yüklenemedi", "error"); return; }
       toast("Belge yüklendi — inceleniyor", "success");
     };
     reader.readAsDataURL(f);
@@ -180,9 +182,10 @@ export default function ProfilPage({ user, onUpdateProfile, onRequireAuth, onLog
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
-  const save = () => {
+  const save = async () => {
     if (!form.name.trim()) { toast("Ad / firma zorunludur", "error"); return; }
-    onUpdateProfile?.({ name: form.name.trim(), phone: form.phone.trim(), role: form.role });
+    const res = await onUpdateProfile?.({ name: form.name.trim(), phone: form.phone.trim(), role: form.role });
+    if (res && res.ok === false) { toast(res.error || "Profil güncellenemedi", "error"); return; }
     toast("Profil güncellendi", "success");
   };
 

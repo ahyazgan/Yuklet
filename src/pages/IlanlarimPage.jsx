@@ -105,19 +105,23 @@ export default function IlanlarimPage({ listings = [], user, offers = [], review
   const visible = myListings.filter((l) => (l.status || "aktif") === tab);
 
   // ── Actions (functionality preserved 1:1) ──
-  const accept = (listing, offer) => {
-    onUpdateOffer?.(offer.id, { status: "kabul" });
-    onUpdateListing?.(listing.id, { status: "eslesti" });
+  const accept = async (listing, offer) => {
+    const r1 = await onUpdateOffer?.(offer.id, { status: "kabul" });
+    if (r1 && r1.ok === false) { toast(r1.error || "Teklif kabul edilemedi", "error"); return; }
+    const r2 = await onUpdateListing?.(listing.id, { status: "eslesti" });
+    if (r2 && r2.ok === false) { toast(r2.error || "İlan eşleştirilemedi", "error"); return; }
     hapticSuccess();
     toast("Teklif kabul edildi, ilan eşleşti", "success");
   };
-  const reject = (offer) => {
-    onUpdateOffer?.(offer.id, { status: "ret" });
+  const reject = async (offer) => {
+    const res = await onUpdateOffer?.(offer.id, { status: "ret" });
+    if (res && res.ok === false) { toast(res.error || "Teklif reddedilemedi", "error"); return; }
     hapticWarn();
     toast("Teklif reddedildi", "info");
   };
-  const renew = (l) => {
-    onUpdateListing?.(l.id, { status: "aktif", createdText: "az önce" });
+  const renew = async (l) => {
+    const res = await onUpdateListing?.(l.id, { status: "aktif", createdText: "az önce" });
+    if (res && res.ok === false) { toast(res.error || "İlan yenilenemedi", "error"); return; }
     toast("İlan yenilendi ve tekrar yayında", "success");
   };
   const del = (l) => {

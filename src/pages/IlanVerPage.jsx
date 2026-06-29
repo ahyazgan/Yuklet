@@ -169,6 +169,7 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers
     stock: "bol", deliveryIncluded: false,
   });
   const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);   // yayınla/kaydet gönderimi (çift-tık koruması)
   const [pickup, setPickup] = useState(editListing?.pickup || null);
   const [dropoff, setDropoff] = useState(editListing?.dropoff || null);
   const [showMap, setShowMap] = useState(false);
@@ -192,6 +193,7 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers
   };
 
   const submit = async () => {
+    if (saving) return;                  // çift-tık koruması
     if (!publishGate()) return;
     if (type === "urun") {
       await submitUrun();
@@ -224,7 +226,10 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers
     };
 
     if (editing) {
-      onUpdate?.(editListing.id, data);
+      setSaving(true);
+      const res = await onUpdate?.(editListing.id, data);
+      setSaving(false);
+      if (res && res.ok === false) { setError(res.error || "Değişiklikler kaydedilemedi."); return; }
       navigate(`/ilan/${editListing.id}`);
       return;
     }
@@ -239,6 +244,7 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers
       ownerRating: user?.rating || 5.0,
       status: "aktif", offers: 0, createdText: "az önce", createdAt: new Date().toISOString(),
     };
+    setSaving(true);
     try {
       // Başarı ekranı yalnızca gerçekten kaydedildiyse gösterilir.
       // SB modunda onPublish DB id'li gerçek ilanı döndürür; onu kullan.
@@ -248,6 +254,8 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers
       hapticSuccess();
     } catch (e) {
       setError(e?.message || "İlan kaydedilemedi. Lütfen tekrar dene.");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -255,6 +263,7 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers
 
   // ── urun ilani submit (tedarikci malzeme satisi) ──
   const submitUrun = async () => {
+    if (saving) return;                  // çift-tık koruması
     const productName = form.title.trim();
     if (!productName || !form.ilce.trim() || !form.owner.trim()) {
       setError("Ürün adı, ilçe ve ad/firma alanları zorunludur.");
@@ -277,7 +286,10 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers
     };
 
     if (editing) {
-      onUpdate?.(editListing.id, data);
+      setSaving(true);
+      const res = await onUpdate?.(editListing.id, data);
+      setSaving(false);
+      if (res && res.ok === false) { setError(res.error || "Değişiklikler kaydedilemedi."); return; }
       navigate(`/ilan/${editListing.id}`);
       return;
     }
@@ -291,6 +303,7 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers
       ownerRating: user?.rating || 5.0,
       status: "aktif", offers: 0, createdText: "az önce", createdAt: new Date().toISOString(),
     };
+    setSaving(true);
     try {
       const saved = (await onPublish?.(listing)) || listing;
       setPublished(saved);
@@ -298,6 +311,8 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers
       hapticSuccess();
     } catch (e) {
       setError(e?.message || "İlan kaydedilemedi. Lütfen tekrar dene.");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -669,8 +684,8 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers
             <div style={{ background: "#FEF2F2", border: "2px solid #DC2626", borderRadius: 6, padding: "10px 14px", fontFamily: MONO, fontSize: 12, fontWeight: 700, color: "#B91C1C" }}>{error}</div>
           )}
 
-          <button type="button" onClick={submit} style={inkBtn}>
-            {editing ? "Değişiklikleri Kaydet" : "Ürünü Yayınla"} <ArrowRight size={18} strokeWidth={2.5} />
+          <button type="button" onClick={submit} disabled={saving} style={{ ...inkBtn, opacity: saving ? 0.6 : 1, cursor: saving ? "default" : "pointer" }}>
+            {saving ? "Kaydediliyor…" : (editing ? "Değişiklikleri Kaydet" : "Ürünü Yayınla")} <ArrowRight size={18} strokeWidth={2.5} />
           </button>
         </div>
       )}
@@ -900,8 +915,8 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers
             <div style={{ background: "#FEF2F2", border: "2px solid #DC2626", borderRadius: 6, padding: "10px 14px", fontFamily: MONO, fontSize: 12, fontWeight: 700, color: "#B91C1C" }}>{error}</div>
           )}
 
-          <button type="button" onClick={submit} style={inkBtn}>
-            {editing ? "Değişiklikleri Kaydet" : "İlanı Oluştur"} <ArrowRight size={18} strokeWidth={2.5} />
+          <button type="button" onClick={submit} disabled={saving} style={{ ...inkBtn, opacity: saving ? 0.6 : 1, cursor: saving ? "default" : "pointer" }}>
+            {saving ? "Kaydediliyor…" : (editing ? "Değişiklikleri Kaydet" : "İlanı Oluştur")} <ArrowRight size={18} strokeWidth={2.5} />
           </button>
         </div>
       )}
