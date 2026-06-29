@@ -43,7 +43,7 @@ Kutular: `[ ]` yapılacak · `[x]` kodda hazır.
 | Destek (Support) URL + e-posta | `[x]` | `https://yuklet.co/iletisim` + info@yuklet.co |
 | **Hesap silme** akışı (uygulama içi) | `[x]` | Profil → "Hesabımı kalıcı olarak sil" (iki adımlı onay). SB modunda `delete_my_account` RPC auth.users'ı siler → cascade ile TÜM veri gider. **Apple 5.1.1(v) karşılandı.** ⚠️ `supabase/migration-delete-account.sql`'i SQL Editor'de bir kez çalıştır. |
 | **Hesap silme** web URL (Google zorunlu) | `[x]` | `https://yuklet.co/yasal/hesap-silme` (canlı). |
-| Demo / test hesabı (inceleme için) | `[ ]` | Giriş Google/Apple OAuth ile; inceleyiciye hazır hesap + adım verin. |
+| Demo / test hesabı (inceleme için) | `[x]` | **E-posta:** `review@yuklet.co` · **Şifre:** `YukletReview2026!` (Alıcı rolü, hazır). Inceleme notuna ekle. E-posta/şifre ile giriş yapılır (Google/Apple gerekmez). |
 | Uygulama ikonu (1024²) | `[x]` | `assets/icon.png` → native projelere üretildi. |
 | Splash ekranı | `[x]` | `assets/splash.png` → üretildi. |
 | **Native Google girişi** (mobil) | `[~]` | Kod hazır (Capacitor Social Login). SHA-1 + Android client ID kalan — bkz. `GOOGLE_SIGNIN_SETUP.md`. |
@@ -92,6 +92,20 @@ npm run cap:ios            # build + sync + Xcode
 - `[ ]` App Store açıklaması, anahtar kelimeler, kategori (bkz. store-listing-tr.md)
 - `[ ]` Yaş sınırı (Age Rating) anketi
 - `[ ]` İnceleme notları: demo hesap + "ilan ver → teklif" akışını açıklayın.
+
+> **Hazır inceleme notu (kopyala-yapıştır):**
+> ```
+> Test account — Email: review@yuklet.co  Password: YukletReview2026!
+> Sign in with email/password (Google/Apple sign-in also available, optional).
+>
+> YÜKLET is a freight-matching marketplace for excavation/bulk transport in Turkey.
+> Flow to test:
+> 1. Log in with the account above.
+> 2. Tap "İlan Ver" (Post listing) to create a job/material/vehicle listing.
+> 3. Browse "İlanlar" (Listings) and tap a listing to send an offer or accept a fixed-price job.
+> 4. Matched parties can message each other under "Mesajlar".
+> Account deletion: Profile → "Hesabımı kalıcı olarak sil" (in-app, permanent).
+> ```
 
 ---
 
