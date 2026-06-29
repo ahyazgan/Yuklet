@@ -5,6 +5,35 @@ Kutular: `[ ]` yapılacak · `[x]` kodda hazır.
 
 ---
 
+## ⭐ DURUM ÖZETİ (2026-06-30 denetim sonrası)
+
+**Backend & çekirdek akış: HAZIR ve canlı doğrulandı.**
+- ✅ 37 teknik sorun denetlenip düzeltildi (sessiz hatalar, RLS, şema-kod uyumu).
+- ✅ Canlı Supabase'de test edildi: ilan ver, teklif, **iş kabul (RPC)**, teslim
+  kanıtı, atanan araç — hepsi DB'ye yazılıyor.
+- ✅ Çalıştırılan 4 SQL (canlı DB'de doğrulandı): eksik listings sütunları,
+  `accept_job` RPC, admin moderasyon (`is_admin`+politikalar), `delete_my_account`.
+- ✅ Üretim bağımlılıklarında 0 güvenlik açığı; ana bundle 86 KB.
+
+**Yayına çıkmak için kalan işler İKİ grupta — aşağıdaki sıralama:**
+
+### A) Kod/operasyon — yayından önce (kısa)
+- `[ ]` **Demo ilanları sil** (canlı DB'de ~7 örnek ilan var; gerçek kullanıcı öncesi temizle).
+- `[ ]` **Supabase "Confirm email"** politikasına karar ver (şu an kapalı = kolay kayıt ama spam'e açık).
+- `[ ]` İnceleyici için **demo/test hesabı** hazırla (Apple/Google zorunlu — §0).
+
+### B) Mağaza hesabı & araçlar — bunlar dış adımlar (uzun)
+- `[ ]` Apple Developer (99$/yıl) + **Mac/Xcode** (iOS imzalama Mac şart).
+- `[ ]` Google Play Developer (25$ tek sefer) + keystore üret (§2).
+- `[ ]` Native Google/Apple girişi son ayarı (SHA-1, Service ID — §0).
+- `[ ]` Ekran görüntüleri, açıklama, veri beyanı (§1–3).
+
+> Sıralama önerisi: önce **A grubunu** bitir (1 oturumda yapılır), sonra hangi
+> mağazadan başlayacağına karar ver. **Google Play daha hızlı/ucuz** ve Mac
+> gerektirmez — ilk yayın için pratik başlangıç.
+
+---
+
 ## 0. Her iki mağaza için ön koşullar (ZORUNLU)
 
 | Madde | Durum | Not |
