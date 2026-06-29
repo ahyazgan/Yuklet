@@ -14,12 +14,18 @@ export default function usePullToRefresh(onRefresh, { disabled = false } = {}) {
   const [refreshing, setRefreshing] = useState(false);
   const startY = useRef(null);
   const active = useRef(false);
+  // Listener'lar her parmak hareketinde yeniden bağlanmasın diye güncel
+  // değerlere ref üzerinden erişilir (effect bağımlılığı sabit kalır).
+  const distanceRef = useRef(0);
+  const refreshingRef = useRef(false);
+  const setDist = (v) => { distanceRef.current = v; setDistance(v); };
+  const setRefr = (v) => { refreshingRef.current = v; setRefreshing(v); };
 
   useEffect(() => {
     if (disabled || typeof window === "undefined" || !("ontouchstart" in window)) return;
 
     const onStart = (e) => {
-      if (refreshing) return;
+      if (refreshingRef.current) return;
       // Yalnızca en üstteyken ve tek parmakla başlat.
       if (window.scrollY <= 0 && e.touches.length === 1) {
         startY.current = e.touches[0].clientY;
@@ -30,14 +36,14 @@ export default function usePullToRefresh(onRefresh, { disabled = false } = {}) {
     };
 
     const onMove = (e) => {
-      if (!active.current || startY.current == null || refreshing) return;
+      if (!active.current || startY.current == null || refreshingRef.current) return;
       const dy = e.touches[0].clientY - startY.current;
       if (dy > 0 && window.scrollY <= 0) {
         // Dirençli (lastik) his: karekök yumuşatma.
         const eased = Math.min(MAX, Math.sqrt(dy) * 9);
-        setDistance(eased);
+        setDist(eased);
       } else {
-        setDistance(0);
+        setDist(0);
         active.current = false;
       }
     };
@@ -45,15 +51,15 @@ export default function usePullToRefresh(onRefresh, { disabled = false } = {}) {
     const onEnd = async () => {
       if (!active.current) return;
       active.current = false;
-      const reached = distance >= THRESHOLD;
+      const reached = distanceRef.current >= THRESHOLD;
       if (reached && onRefresh) {
-        setRefreshing(true);
-        setDistance(THRESHOLD);
+        setRefr(true);
+        setDist(THRESHOLD);
         try { await onRefresh(); } catch { /* noop */ }
         // Kısa süre göster, sonra kapat.
-        setTimeout(() => { setRefreshing(false); setDistance(0); }, 400);
+        setTimeout(() => { setRefr(false); setDist(0); }, 400);
       } else {
-        setDistance(0);
+        setDist(0);
       }
       startY.current = null;
     };
@@ -68,7 +74,7 @@ export default function usePullToRefresh(onRefresh, { disabled = false } = {}) {
       window.removeEventListener("touchend", onEnd);
       window.removeEventListener("touchcancel", onEnd);
     };
-  }, [onRefresh, disabled, refreshing, distance]);
+  }, [onRefresh, disabled]);
 
   return { distance, refreshing, pull: Math.min(1, distance / THRESHOLD) };
 }

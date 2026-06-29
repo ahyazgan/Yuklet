@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { MapContainer, TileLayer, Marker, Polyline, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -29,13 +29,23 @@ function truckIcon(heading) {
   return L.divIcon({ html, className: "trip-truck", iconSize: [30, 30], iconAnchor: [15, 15] });
 }
 
-function FitBounds({ points }) {
+function FitBounds({ pickup, dropoff, v }) {
   const map = useMap();
+  const userMoved = useRef(false);
+  // Kullanıcı haritayı elle oynattıysa otomatik fit'i bırak (snap-back'i önler).
   useEffect(() => {
-    const pts = points.filter(Boolean);
+    const onDrag = () => { userMoved.current = true; };
+    map.on("dragstart zoomstart", onDrag);
+    return () => map.off("dragstart zoomstart", onDrag);
+  }, [map]);
+  // Yalnızca koordinat DEĞERLERİ değişince ve kullanıcı haritayı oynatmadıysa fit et.
+  useEffect(() => {
+    if (userMoved.current) return;
+    const pts = [pickup, dropoff, v].filter(Boolean);
     if (pts.length === 1) map.setView(pts[0], 12);
-    else if (pts.length > 1) map.fitBounds(L.latLngBounds(pts).pad(0.25), { animate: true });
-  }, [map, points]);
+    else if (pts.length > 1) map.fitBounds(L.latLngBounds(pts).pad(0.25), { animate: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, pickup?.[0], pickup?.[1], dropoff?.[0], dropoff?.[1], v?.[0], v?.[1]]);
   return null;
 }
 
@@ -58,7 +68,7 @@ export default function TripMap({ pickup, dropoff, vehicle, trail = [], routeCoo
         {pickup && <Marker position={pickup} icon={pinIcon("YÜKLEME", C.ink, C.yellow)} />}
         {dropoff && <Marker position={dropoff} icon={pinIcon("BOŞALTMA", C.card, C.ink)} />}
         {v && <Marker position={v} icon={truckIcon(vehicle.heading)} />}
-        <FitBounds points={[pickup, dropoff, v]} />
+        <FitBounds pickup={pickup} dropoff={dropoff} v={v} />
       </MapContainer>
     </div>
   );

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -23,19 +23,28 @@ function truckIcon(label, live) {
   return L.divIcon({ html, className: "fleet-truck", iconSize: [0, 0], iconAnchor: [0, 14] });
 }
 
-function FitAll({ points }) {
+// posKey: araç konumlarının değer-bazlı imzası — referans yerine içerik değişince fit.
+function FitAll({ posKey }) {
   const map = useMap();
+  const userMoved = useRef(false);
   useEffect(() => {
-    const pts = points.filter(Boolean);
+    const onDrag = () => { userMoved.current = true; };
+    map.on("dragstart zoomstart", onDrag);
+    return () => map.off("dragstart zoomstart", onDrag);
+  }, [map]);
+  useEffect(() => {
+    if (userMoved.current) return;
+    const pts = posKey ? posKey.split("|").map((s) => s.split(",").map(Number)) : [];
     if (pts.length === 1) map.setView(pts[0], 11);
-    else if (pts.length > 1) map.fitBounds(L.latLngBounds(pts).pad(0.3), { animate: true });
-  }, [map, points]);
+    else if (pts.length > 1) map.fitBounds(L.latLngBounds(pts).pad(0.3), { animate: false });
+  }, [map, posKey]);
   return null;
 }
 
 export default function FleetMap({ items = [] }) {
   const vehiclePts = items.filter((i) => i.vehicle).map((i) => [i.vehicle.lat, i.vehicle.lng]);
   const center = vehiclePts[0] || [39.3, 35.2];
+  const posKey = vehiclePts.map((p) => `${p[0]},${p[1]}`).join("|");
   return (
     <div style={{ height: 300, borderRadius: 6, overflow: "hidden", border: `2px solid ${C.ink}` }}>
       <MapContainer center={center} zoom={6} scrollWheelZoom={false} zoomControl={false} style={{ height: "100%", width: "100%" }}>
@@ -43,7 +52,7 @@ export default function FleetMap({ items = [] }) {
         {items.map((i) => i.vehicle && (
           <Marker key={i.id} position={[i.vehicle.lat, i.vehicle.lng]} icon={truckIcon(i.label, i.live)} />
         ))}
-        <FitAll points={vehiclePts} />
+        <FitAll posKey={posKey} />
       </MapContainer>
     </div>
   );

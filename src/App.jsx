@@ -241,6 +241,7 @@ function AppShell() {
   // Mesajlar
   const [messages, setMessages] = useState(() => (SB ? [] : loadMessages()));
   useEffect(() => { if (!SB) saveMessages(messages); }, [messages, SB]);
+  const reloadMessages = async () => { try { setMessages(await api.fetchMessages()); } catch (e) { console.error(e); } };
   const addMessage = async (msg) => {
     if (SB) {
       try { const saved = await api.sendMessage(msg); setMessages(prev => [...prev, saved]); return { ok: true }; }
@@ -395,6 +396,20 @@ function AppShell() {
   useEffect(() => {
     if (!SB || !user?.id) { return; }
     api.fetchDocs(user.id).then(setDocs).catch(() => {});
+  }, [SB, user?.id]);
+
+  // SB modunda canli tazeleme: mesaj/teklif/ilan periyodik cekilir (realtime yok).
+  // Sekme arka plandayken durur (pil/veri tasarrufu); one gelince hemen tazeler.
+  useEffect(() => {
+    if (!SB || !user?.id) return;
+    let timer = null;
+    const tick = () => { if (document.visibilityState === "visible") { reloadMessages(); reloadOffers(); reloadListings(); } };
+    const start = () => { if (!timer) timer = setInterval(tick, 15000); };
+    const stop = () => { if (timer) { clearInterval(timer); timer = null; } };
+    const onVis = () => { if (document.visibilityState === "visible") { tick(); start(); } else stop(); };
+    document.addEventListener("visibilitychange", onVis);
+    start();
+    return () => { stop(); document.removeEventListener("visibilitychange", onVis); };
   }, [SB, user?.id]);
 
   // ── Giris: GOOGLE / APPLE (OAuth, sifresiz) ──────────────────

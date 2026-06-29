@@ -8,7 +8,7 @@ import { hapticTap } from "../native/haptics";
 
 const TABS = [
   { to: "/", label: "Ana", Icon: Home, match: (p) => p === "/" },
-  { to: "/ilanlar", label: "İlanlar", Icon: List, match: (p) => p.startsWith("/ilanlar") || p.startsWith("/ilan/") },
+  { to: "/ilanlar", label: "İlanlar", Icon: List, match: (p) => p === "/ilanlar" || p.startsWith("/ilanlar?") || p.startsWith("/ilan/") },
   { to: "/ilan-ver", label: "İlan Ver", Icon: Plus, center: true, match: (p) => p.startsWith("/ilan-ver") },
   { to: "/mesajlar", label: "Mesajlar", Icon: MessageCircle, match: (p) => p.startsWith("/mesajlar") },
   { to: "/profil", label: "Profil", Icon: User, match: (p) => p.startsWith("/profil") || p.startsWith("/ilanlarim") || p.startsWith("/panel") },
