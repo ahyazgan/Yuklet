@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense } from "react";
+import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import {
@@ -226,11 +226,10 @@ function AppShell() {
     const base = { listingId: listing.id, price: listing.price ?? null, message: "İş sabit fiyattan kabul edildi." };
     if (SB) {
       try {
-        const saved = await api.createOffer(base, me);
-        await api.updateOffer(saved.id, { status: "kabul" });
-        await api.updateListing(listing.id, { status: "eslesti" });
+        // Tek atomik RPC: teklif 'kabul' + ilan 'eslesti' + atanan araç (RLS-uyumlu).
+        await api.acceptJobRpc({ listingId: listing.id, price: listing.price ?? null, vehicle: av });
         await Promise.all([reloadOffers(), reloadListings()]);
-      } catch (e) { console.error(e); return { ok: false, error: "İşlem başarısız." }; }
+      } catch (e) { console.error(e); return { ok: false, error: e?.message || "İşlem başarısız." }; }
     } else {
       const offer = { id: newId(), ...base, fromUser: me.name, fromUserId: me.id, status: "kabul", direct: true, createdAt: nowIso(), updatedAt: nowIso() };
       setOffers(prev => [offer, ...prev]);
@@ -488,9 +487,24 @@ function AppShell() {
   };
   const requireAuth = () => setShowAuth(true);
   const markMessagesSeen = () => { if (user) setMsgSeen(prev => ({ ...prev, [user.id]: new Date().toISOString() })); };
+  // SB modunda eşleşen tarafların profil iletişim bilgisi (telefon/e-posta) önbelleği.
+  // getContact senkron; eksikse profil arka planda çekilir, sonraki render'da dolar.
+  const [contactCache, setContactCache] = useState({}); // { [id]: {name, phone, email} }
+  const fetchingContacts = useRef(new Set());
+  const ensureContact = (id) => {
+    if (!SB || !id || contactCache[id] || fetchingContacts.current.has(String(id))) return;
+    fetchingContacts.current.add(String(id));
+    api.getProfile(id)
+      .then((p) => { if (p) setContactCache(prev => ({ ...prev, [id]: { name: p.name, phone: p.phone || "", email: p.email || "" } })); })
+      .catch((e) => console.error(e))
+      .finally(() => fetchingContacts.current.delete(String(id)));
+  };
   const getContact = (id) => {
     if (SB) {
-      // Iletisim bilgileri profiles'tan; eslesen taraf icin isim/ telefon
+      if (id) ensureContact(id);                       // eksikse arka planda yükle
+      const cached = contactCache[id];
+      if (cached) return cached;
+      // Önbellek dolana kadar en azından ismi göster (mesaj/teklif/ilandan).
       const fromMsg = messages.find(m => String(m.fromId) === String(id));
       const fromOffer = offers.find(o => String(o.fromUserId) === String(id));
       const name = fromMsg?.fromName || fromOffer?.fromUser || listings.find(l => String(l.ownerId) === String(id))?.owner;

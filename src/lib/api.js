@@ -319,6 +319,18 @@ export async function updateOffer(id, patch) {
   if (error) throw error;
 }
 
+// Doğrudan iş kabul — sunucu RPC'si (RLS'i güvenli aşar, atomik).
+// Teklifi 'kabul' oluşturur + ilanı 'eslesti' + accepted_by_id + assigned_vehicle yazar.
+export async function acceptJobRpc({ listingId, price, vehicle }) {
+  const { data, error } = await supabase.rpc("accept_job", {
+    p_listing_id: listingId,
+    p_price: price ?? null,
+    p_vehicle: vehicle ?? null,
+  });
+  if (error) throw error;
+  return data ? rowToListing(data) : null;
+}
+
 // ── Messages ────────────────────────────────────────────────
 export async function fetchMessages() {
   const { data, error } = await supabase.from("messages").select("*").order("created_at", { ascending: true });

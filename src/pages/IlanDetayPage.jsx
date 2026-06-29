@@ -174,6 +174,12 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
   const listingOffers = offers.filter((o) => String(o.listingId) === String(l.id));
   const ownerRel = l.ownerId != null ? computeReliability(l.ownerId, { listings, offers, reviews }) : null;
   const isOwner = user && l.ownerId && l.ownerId === user.id;
+  // Rol-aksiyon eşleşmesi: iş ilanına yalnız nakliyeci teklif/kabul eder;
+  // ürün ve araç ilanına yalnız alıcı (isveren) sipariş/kiralama yapar.
+  // Giriş yapmamışsa izin ver (auth modalı açılır, rol girişte belirlenir).
+  const roleForListing = l.type === "is" ? "nakliyeci" : "isveren";
+  const roleAllowed = !user || !user.role || user.role === roleForListing;
+  const roleHint = roleForListing === "nakliyeci" ? "Bu işlem nakliyeci hesabı içindir." : "Bu işlem alıcı hesabı içindir.";
   const isFixed = l.priceType === "sabit" && l.price;
   // Doğrudan kabul modu: ilan sahibi "sabit fiyat" seçtiyse karşı taraf teklif
   // vermeden doğrudan kabul eder. İş ilanında nakliyeci işi üstlenir; araç
@@ -205,6 +211,7 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
   // Teklif/sipariş öncesi kapılar: telefon doğrulama + bekleyen zorunlu değerlendirme.
   const offerGate = () => {
     if (!user) { onRequireAuth?.(); return false; }
+    if (!roleAllowed) { toast(roleHint, "error"); return false; }   // yanlış rol bu aksiyonu yapamaz
     // Telefon doğrulama (SMS) şimdilik kaldırıldı — gerçek SMS sağlayıcı bağlı değil.
     const pend = pendingReviews(user, listings, offers, reviews);
     if (pend.length) { setReviewGate(pend); return false; }
@@ -654,7 +661,11 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
               )}
             </div>
           </div>
-          {acceptMode && user ? (
+          {!roleAllowed ? (
+            <span style={{ flex: "0 1 auto", fontFamily: MONO, fontSize: 10, fontWeight: 700, color: C.muted, textAlign: "right", lineHeight: 1.4, maxWidth: 160 }}>
+              {roleHint}
+            </span>
+          ) : acceptMode && user ? (
             <button onClick={startAccept}
               style={{ display: "flex", alignItems: "center", gap: 7, background: C.green, color: "#fff", border: `2px solid ${C.ink}`, borderRadius: 6, padding: "12px 18px", fontFamily: HEAD, fontWeight: 800, fontSize: 14, textTransform: "uppercase", cursor: "pointer", whiteSpace: "nowrap", boxShadow: "3px 3px 0 rgba(10,10,10,0.18)" }}>
               <Check size={17} strokeWidth={3} /> {acceptLabel}
