@@ -74,6 +74,7 @@ const rowToMessage = (r) => ({
 const rowToProfile = (r) => r && ({
   id: r.id, name: r.name, email: r.email, role: r.role,
   phone: r.phone, phoneVerified: r.phone_verified, verified: r.verified, rating: r.rating,
+  status: r.status || "aktif",
 });
 
 // ── Auth ────────────────────────────────────────────────────
@@ -366,6 +367,40 @@ export async function addReport({ type, targetId, listingId, fromId, fromName, r
     listing_id: typeof listingId === "number" ? listingId : null,
     from_id: fromId || null, from_name: fromName || "", reason, description: description || "",
   });
+  if (error) throw error;
+}
+
+// ── Admin / moderasyon (RLS: yalnızca is_admin() geçer) ──────
+const rowToReport = (r) => ({
+  id: r.id, type: r.type, targetId: r.target_id, listingId: r.listing_id,
+  fromId: r.from_id, fromName: r.from_name, reason: r.reason, description: r.description,
+  status: r.status, createdAt: r.created_at,
+});
+export async function fetchAllProfiles() {
+  const { data, error } = await supabase.from("profiles").select("*").order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data || []).map(rowToProfile);
+}
+export async function fetchAllReports() {
+  const { data, error } = await supabase.from("reports").select("*").order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data || []).map(rowToReport);
+}
+export async function updateReport(id, patch) {
+  const { error } = await supabase.from("reports").update({ status: patch.status }).eq("id", id);
+  if (error) throw error;
+}
+export async function adminUpdateProfile(userId, patch) {
+  // Admin: ban/rol/onay. snake_case'e çevir.
+  const row = {};
+  if (patch.status != null) row.status = patch.status;
+  if (patch.role != null) row.role = patch.role;
+  if (patch.verified != null) row.verified = patch.verified;
+  const { error } = await supabase.from("profiles").update(row).eq("id", userId);
+  if (error) throw error;
+}
+export async function updateDocStatus(docId, status) {
+  const { error } = await supabase.from("docs").update({ status }).eq("id", docId);
   if (error) throw error;
 }
 

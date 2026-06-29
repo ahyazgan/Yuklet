@@ -11,6 +11,7 @@ import {
 } from "./utils/storage";
 import { visibleReviewsFor } from "./utils/reviewGate";
 import { newId, nowIso } from "./utils/id";
+import { isAdmin } from "./utils/admin";
 import { Capacitor } from "@capacitor/core";
 import { isSupabaseConfigured } from "./lib/supabase";
 import * as api from "./lib/api";
@@ -319,16 +320,27 @@ function AppShell() {
     return { avg: rs.reduce((s, r) => s + r.rating, 0) / rs.length, count: rs.length };
   };
 
-  // ── Admin / moderasyon (yerel modda tam çalışır; SB için servis rolü ileride) ──
-  const setReportStatus = (id, status) => setReports(prev => prev.map(r => r.id === id ? { ...r, status } : r));
-  const reviewDoc = (docId, decision) => {
+  // ── Admin / moderasyon (SB modunda RLS is_admin() ile DB'ye yazar) ──
+  const setReportStatus = async (id, status) => {
+    if (SB) { try { await api.updateReport(id, { status }); } catch (e) { console.error(e); return { ok: false, error: e?.message }; } }
+    setReports(prev => prev.map(r => r.id === id ? { ...r, status } : r));
+    return { ok: true };
+  };
+  const reviewDoc = async (docId, decision) => {
     // decision: "dogrulandi" | "red". Onaylanırsa belge sahibini verified yap.
     const d = docs.find(x => x.id === docId);
+    if (SB) {
+      try {
+        await api.updateDocStatus(docId, decision);
+        if (decision === "dogrulandi" && d) await api.adminUpdateProfile(d.ownerId, { verified: true });
+      } catch (e) { console.error(e); return { ok: false, error: e?.message }; }
+    }
     setDocs(prev => prev.map(x => x.id === docId ? { ...x, status: decision } : x));
     if (decision === "dogrulandi" && d) {
       setUsers(prev => prev.map(u => String(u.id) === String(d.ownerId) ? { ...u, verified: true } : u));
       setUser(prev => prev && String(prev.id) === String(d.ownerId) ? { ...prev, verified: true } : prev);
     }
+    return { ok: true };
   };
 
   // ── Kullanici / kimlik dogrulama ── (users state yukari tasindi: banli filtreleme listings'ten once gerekir)
@@ -337,12 +349,14 @@ function AppShell() {
   // Admin: ana sayfa duyuru/kampanya bandini kaydet.
   const saveAnnouncementAdmin = (next) => { setAnnouncement(next); saveAnnouncement(next); logAdmin("duyuru", next.active ? `Yayında: "${next.text}"` : "Kapatıldı"); };
   // Admin: herhangi bir kullaniciyi guncelle (ban/askiya al/rol/manuel onay).
-  const updateUserAdmin = (userId, patch) => {
+  const updateUserAdmin = async (userId, patch) => {
+    if (SB) { try { await api.adminUpdateProfile(userId, patch); } catch (e) { console.error(e); return { ok: false, error: e?.message }; } }
     setUsers((prev) => prev.map((u) => String(u.id) === String(userId) ? { ...u, ...patch } : u));
     setUser((cur) => (cur && String(cur.id) === String(userId) ? { ...cur, ...patch } : cur));
     const target = users.find((u) => String(u.id) === String(userId));
     const label = "status" in patch ? (patch.status === "banli" ? "Banlandı" : "Ban kaldırıldı") : "role" in patch ? `Rol → ${patch.role}` : patch.verified ? "Onaylandı" : "Onay kaldırıldı";
     logAdmin("user", `${target?.name || userId}: ${label}`);
+    return { ok: true };
   };
   const [user, setUser] = useState(() => (SB ? null : loadUser()));  // localStorage'da kayitli kullanici
   const [profile, setProfile] = useState(null);                     // SB modunda profiles satiri
@@ -397,6 +411,16 @@ function AppShell() {
     if (!SB || !user?.id) { return; }
     api.fetchDocs(user.id).then(setDocs).catch(() => {});
   }, [SB, user?.id]);
+
+  // SB modunda admin giris yapinca moderasyon verisini yukle (profiller + sikayetler).
+  // RLS: bu sorgular yalnizca is_admin() icin doner.
+  useEffect(() => {
+    if (!SB || !isAdmin(user)) return;
+    api.fetchAllProfiles().then(setUsers).catch((e) => console.error(e));
+    api.fetchAllReports().then(setReports).catch((e) => console.error(e));
+    // user yerine id+email yeterli (isAdmin yalnizca bunlara bakar).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [SB, user?.id, user?.email]);
 
   // SB modunda canli tazeleme: mesaj/teklif/ilan periyodik cekilir (realtime yok).
   // Sekme arka plandayken durur (pil/veri tasarrufu); one gelince hemen tazeler.
