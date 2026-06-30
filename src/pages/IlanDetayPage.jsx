@@ -509,6 +509,7 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
               const profilePath = l.ownerId == null ? null
                 : l.type === "urun" ? `/satici/${l.ownerId}`
                 : l.type === "is" ? `/alici/${l.ownerId}`
+                : l.type === "arac" ? `/nakliyeci-profil/${l.ownerId}`
                 : null;
               const canVisit = profilePath != null;
               const Tag = canVisit ? "button" : "div";

@@ -82,6 +82,9 @@ const rowToProfile = (r) => r && ({
   // Alıcı (işveren) profil alanları — sehir/ilce/hakkinda yukarıdan paylaşılır.
   firmaTuru: r.firma_turu || "", web: r.web || "", vergiNo: r.vergi_no || "",
   faaliyetAlani: Array.isArray(r.faaliyet_alani) ? r.faaliyet_alani : [],
+  // Nakliyeci profil alanları — sehir/ilce/hakkinda yukarıdan paylaşılır.
+  tasimaTuru: r.tasima_turu || "", filoOzeti: r.filo_ozeti || "",
+  hizmetBolgeleri: Array.isArray(r.hizmet_bolgeleri) ? r.hizmet_bolgeleri : [],
 });
 
 // ── Auth ────────────────────────────────────────────────────
@@ -245,6 +248,10 @@ export async function updateProfile(userId, patch) {
   if (patch.web != null) row.web = patch.web;
   if (patch.vergiNo != null) row.vergi_no = patch.vergiNo;
   if (patch.faaliyetAlani != null) row.faaliyet_alani = patch.faaliyetAlani;
+  // Nakliyeci profil alanları
+  if (patch.tasimaTuru != null) row.tasima_turu = patch.tasimaTuru;
+  if (patch.filoOzeti != null) row.filo_ozeti = patch.filoOzeti;
+  if (patch.hizmetBolgeleri != null) row.hizmet_bolgeleri = patch.hizmetBolgeleri;
   const { data, error } = await supabase.from("profiles").update(row).eq("id", userId).select("*").single();
   if (error) return { ok: false, error: error.message };
   return { ok: true, profile: rowToProfile(data) };

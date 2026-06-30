@@ -69,6 +69,15 @@ const FAALIYET_ALANLARI = [
   "Maden / enerji",
 ];
 
+// Nakliyeci taşıma türleri — ne taşıdığı.
+const TASIMA_TURLERI = [
+  "Hafriyat (damperli)",
+  "Silobas / dökme",
+  "Hafriyat + Silobas (ikisi)",
+  "Treyler / lowbed (ağır yük)",
+  "Tanker (sıvı)",
+];
+
 // Role label shown in the dark identity header.
 const ROLE_BADGE = {
   isveren: "ALICI",
@@ -194,6 +203,10 @@ export default function ProfilPage({ user, onUpdateProfile, onRequireAuth, onLog
     web: user?.web || "",
     vergiNo: user?.vergiNo || "",
     faaliyetAlani: Array.isArray(user?.faaliyetAlani) ? user.faaliyetAlani : [],
+    // Nakliyeci profil alanları — yalnızca nakliyeci rolünde kullanılır.
+    tasimaTuru: user?.tasimaTuru || "",
+    filoOzeti: user?.filoOzeti || "",
+    hizmetBolgeleri: Array.isArray(user?.hizmetBolgeleri) ? user.hizmetBolgeleri : [],
   });
 
   const onFile = (e) => {
@@ -250,6 +263,15 @@ export default function ProfilPage({ user, onUpdateProfile, onRequireAuth, onLog
         : [...f.faaliyetAlani, m],
     }));
 
+  // Bir hizmet bölgesini (il) nakliyecinin listesine ekle/çıkar (toggle).
+  const toggleBolge = (m) =>
+    setForm((f) => ({
+      ...f,
+      hizmetBolgeleri: f.hizmetBolgeleri.includes(m)
+        ? f.hizmetBolgeleri.filter((x) => x !== m)
+        : [...f.hizmetBolgeleri, m],
+    }));
+
   const save = async () => {
     if (!form.name.trim()) { toast("Ad / firma zorunludur", "error"); return; }
     const patch = { name: form.name.trim(), phone: form.phone.trim(), role: form.role };
@@ -271,6 +293,15 @@ export default function ProfilPage({ user, onUpdateProfile, onRequireAuth, onLog
       patch.faaliyetAlani = form.faaliyetAlani;
       patch.web = form.web.trim();
       patch.vergiNo = form.vergiNo.trim();
+    }
+    // Nakliyeci rolündeyse taşıma/konum/bölge alanlarını kaydet.
+    if (user.role === "nakliyeci") {
+      patch.tasimaTuru = form.tasimaTuru;
+      patch.sehir = form.sehir;
+      patch.ilce = form.ilce.trim();
+      patch.hakkinda = form.hakkinda.trim();
+      patch.filoOzeti = form.filoOzeti.trim();
+      patch.hizmetBolgeleri = form.hizmetBolgeleri;
     }
     const res = await onUpdateProfile?.(patch);
     if (res && res.ok === false) { toast(res.error || "Profil güncellenemedi", "error"); return; }
@@ -592,6 +623,92 @@ export default function ProfilPage({ user, onUpdateProfile, onRequireAuth, onLog
             <button type="button" onClick={save}
               style={{ width: "100%", marginTop: 18, background: C.yellow, color: C.ink, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "14px", fontFamily: ARCHIVO, fontSize: 14, fontWeight: 800, textTransform: "uppercase", letterSpacing: "-0.01em", cursor: "pointer", boxShadow: "3px 3px 0 #0A0A0A" }}>
               Firma bilgilerini kaydet
+            </button>
+          </section>
+        )}
+
+        {/* Taşıma bilgileri — yalnızca nakliyeci rolünde görünür.
+            Herkese açık nakliyeci vitrini (/nakliyeci-profil/:id) bu alanlardan beslenir. */}
+        {role === "nakliyeci" && (
+          <section style={cardSt}>
+            <h2 style={{ ...sectionTitle, display: "flex", alignItems: "center", gap: 7 }}>
+              <Truck size={16} strokeWidth={2.4} color={C.ink} /> Taşıma bilgileri
+            </h2>
+            <p style={{ fontFamily: MONO, fontSize: 10, color: C.faint, margin: "0 0 14px", lineHeight: 1.5 }}>
+              Bu bilgiler herkese açık nakliyeci profilinde görünür. Alıcılar seni böyle bulur.
+            </p>
+
+            {/* Taşıma türü */}
+            <div style={{ marginBottom: 14 }}>
+              <label style={labelSt}>Taşıma türü</label>
+              <select value={form.tasimaTuru} onChange={(e) => set("tasimaTuru", e.target.value)}
+                style={{ ...inputSt, fontWeight: 700, fontSize: 13 }}>
+                <option value="">Seçiniz…</option>
+                {TASIMA_TURLERI.map((t) => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+
+            {/* Konum: il + ilçe (merkez) */}
+            <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <label style={labelSt}>Merkez il</label>
+                <select value={form.sehir} onChange={(e) => set("sehir", e.target.value)}
+                  style={{ ...inputSt, fontWeight: 700, fontSize: 13 }}>
+                  <option value="">Seçiniz…</option>
+                  {IL_LIST.map((il) => <option key={il} value={il}>{il}</option>)}
+                </select>
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <label style={labelSt}>İlçe</label>
+                <input style={inputSt} value={form.ilce} onChange={(e) => set("ilce", e.target.value)} placeholder="Nilüfer" />
+              </div>
+            </div>
+
+            {/* Hakkında / tanıtım */}
+            <div style={{ marginBottom: 14 }}>
+              <label style={labelSt}>Hakkında</label>
+              <textarea value={form.hakkinda} onChange={(e) => set("hakkinda", e.target.value)}
+                rows={3} maxLength={400} placeholder="Filonu, çalıştığın güzergahları ve deneyimini kısaca anlat."
+                style={{ ...inputSt, resize: "vertical", lineHeight: 1.5, minHeight: 70 }} />
+              <div style={{ marginTop: 5, fontFamily: MONO, fontSize: 9, color: C.faint, textAlign: "right" }}>{form.hakkinda.length}/400</div>
+            </div>
+
+            {/* Filo özeti */}
+            <div style={{ marginBottom: 14 }}>
+              <label style={labelSt}>Filo özeti</label>
+              <input style={inputSt} value={form.filoOzeti} onChange={(e) => set("filoOzeti", e.target.value)} placeholder="5 araç · 18–30 ton · damperli + silobas" />
+              <div style={{ marginTop: 7, fontFamily: MONO, fontSize: 10, color: C.faint, lineHeight: 1.5 }}>
+                Araçlarını ayrıca <button type="button" onClick={() => navigate("/filo")}
+                  style={{ background: "none", border: "none", padding: 0, font: "inherit", color: C.ink, fontWeight: 700, textDecoration: "underline", cursor: "pointer" }}>Filom</button> sayfasından yönetebilirsin.
+              </div>
+            </div>
+
+            {/* Hizmet bölgeleri — çoklu il seçimi */}
+            <div>
+              <label style={labelSt}>Hizmet bölgeleri</label>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginTop: 2 }}>
+                {IL_LIST.map((il) => {
+                  const active = form.hizmetBolgeleri.includes(il);
+                  return (
+                    <button type="button" key={il} onClick={() => toggleBolge(il)}
+                      style={{
+                        fontFamily: MONO, fontSize: 10, fontWeight: 700, padding: "6px 10px", borderRadius: 6, cursor: "pointer",
+                        border: `2px solid ${C.ink}`, background: active ? C.yellow : C.card, color: C.ink,
+                        boxShadow: active ? "2px 2px 0 #0A0A0A" : "none",
+                      }}>
+                      {il}
+                    </button>
+                  );
+                })}
+              </div>
+              {form.hizmetBolgeleri.length > 0 && (
+                <div style={{ marginTop: 9, fontFamily: MONO, fontSize: 10, color: C.sub }}>{form.hizmetBolgeleri.length} il seçili</div>
+              )}
+            </div>
+
+            <button type="button" onClick={save}
+              style={{ width: "100%", marginTop: 18, background: C.yellow, color: C.ink, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "14px", fontFamily: ARCHIVO, fontSize: 14, fontWeight: 800, textTransform: "uppercase", letterSpacing: "-0.01em", cursor: "pointer", boxShadow: "3px 3px 0 #0A0A0A" }}>
+              Taşıma bilgilerini kaydet
             </button>
           </section>
         )}

@@ -30,6 +30,10 @@ alter table public.profiles add column if not exists firma_turu       text defau
 alter table public.profiles add column if not exists web              text default '';
 alter table public.profiles add column if not exists vergi_no         text default '';
 alter table public.profiles add column if not exists faaliyet_alani   text[] default '{}';
+-- Nakliyeci profil alanları — herkese açık vitrin (/nakliyeci-profil/:id) besler.
+alter table public.profiles add column if not exists tasima_turu      text default '';
+alter table public.profiles add column if not exists filo_ozeti       text default '';
+alter table public.profiles add column if not exists hizmet_bolgeleri text[] default '{}';
 
 -- ──────────────────────────────────────────────
 -- 2) LISTINGS  (is / arac ilanlari)
