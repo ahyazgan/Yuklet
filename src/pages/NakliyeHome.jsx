@@ -287,58 +287,99 @@ function TrustStrip() {
 }
 
 /* ── MÜTEAHHİT gövdesi ──────────────────────────────────────────────── */
-function MuteahhitBody({ nav, offers }) {
+function MuteahhitBody({ nav, user, active, offersOnMine, recentJobs }) {
   return (
     <>
-      {/* Aktif İşim — öne çıkan kart, koyu üst blok */}
+      {/* Aktif İşim — gerçek aktif ilan VEYA boş-durum */}
       <SectionTitle>Aktif İşim</SectionTitle>
-      <div className="relative mb-6 overflow-hidden" style={{ border: FRAME, borderRadius: 6, boxShadow: SHADOW }}>
-        {/* ÜST: koyu blok */}
-        <div className="relative overflow-hidden px-4 py-3.5" style={{ background: "#0A0A0A" }}>
-          <Hazard vertical w={18} className="absolute right-0 top-0" />
-          <div className="pr-7">
-            <div className="mb-2.5 flex items-center gap-2">
-              <span className="text-[9.5px] font-bold uppercase" style={{ color: C.muted, fontFamily: MONO }}>HMT-0042</span>
-              <StatusBadge bg={C.yellow} fg={C.ink}>Aktif</StatusBadge>
-            </div>
-            <div className="mb-2 text-[18px] font-extrabold uppercase leading-tight" style={{ color: "#FFFFFF", fontFamily: ARCH, letterSpacing: "-0.01em" }}>
-              Dudullu Şantiye Hafriyat
-            </div>
-            <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase" style={{ color: C.yellow, fontFamily: MONO }}>
-              Dudullu OSB <ArrowRight size={12} strokeWidth={2.5} /> Samandıra
-            </div>
+      {active ? (
+        <ActiveJobCard nav={nav} job={active} offersOnMine={offersOnMine} />
+      ) : (
+        <EmptyActiveJob nav={nav} user={user} />
+      )}
+
+      <YellowCTA nav={nav} title="İlanını Aç / Teklif Al" action="İlan Ver" to="/ilan-ver" />
+      <RecentListings nav={nav} jobs={recentJobs} />
+    </>
+  );
+}
+
+/* Aktif iş kartı — gerçek ilan verisinden */
+function ActiveJobCard({ nav, job, offersOnMine }) {
+  const code = "HMT-" + String(job.id).padStart(4, "0").slice(-4);
+  const statusLabel = job.status === "eslesti" ? "Eşleşti" : "Aktif";
+  const from = (job.il || job.yukleme || "—").toUpperCase();
+  const to = (job.varisIl || job.bosaltma || job.ilce || "—").toUpperCase();
+  const offerCount = job.offers != null ? job.offers : offersOnMine;
+  return (
+    <div className="relative mb-6 overflow-hidden" style={{ border: FRAME, borderRadius: 6, boxShadow: SHADOW }}>
+      <div className="relative overflow-hidden px-4 py-3.5" style={{ background: "#0A0A0A" }}>
+        <Hazard vertical w={18} className="absolute right-0 top-0" />
+        <div className="pr-7">
+          <div className="mb-2.5 flex items-center gap-2">
+            <span className="text-[9.5px] font-bold uppercase" style={{ color: C.muted, fontFamily: MONO }}>{code}</span>
+            <StatusBadge bg={job.status === "eslesti" ? C.green : C.yellow} fg={job.status === "eslesti" ? "#FFFFFF" : C.ink}>{statusLabel}</StatusBadge>
           </div>
-        </div>
-        {/* ALT: beyaz */}
-        <div className="px-4 py-3.5" style={{ background: C.card }}>
-          <div className="mb-3 flex items-center justify-between text-[10.5px] font-bold uppercase" style={{ color: C.sub, fontFamily: MONO }}>
-            <span>47/100 SEFER</span>
-            <span style={{ color: C.green }}>{offers} TEKLİF</span>
+          <div className="mb-2 text-[18px] font-extrabold uppercase leading-tight" style={{ color: "#FFFFFF", fontFamily: ARCH, letterSpacing: "-0.01em" }}>
+            {job.title}
           </div>
-          <div className="flex gap-2.5">
-            <button
-              onClick={() => nav("/ilanlarim")}
-              className="flex h-[42px] flex-1 items-center justify-center text-[12.5px] font-extrabold uppercase"
-              style={{ background: C.ink, color: C.yellow, border: FRAME, borderRadius: 5, fontFamily: ARCH }}
-            >
-              İlanı Yönet
-            </button>
-            <button
-              onClick={() => nav("/mesajlar")}
-              aria-label="Mesajlar"
-              className="flex h-[42px] w-[42px] items-center justify-center"
-              style={{ background: C.card, border: FRAME, borderRadius: 5 }}
-            >
-              <MessageCircle size={20} strokeWidth={2} style={{ color: C.ink }} />
-            </button>
+          <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase" style={{ color: C.yellow, fontFamily: MONO }}>
+            {from} <ArrowRight size={12} strokeWidth={2.5} /> {to}
           </div>
         </div>
       </div>
+      <div className="px-4 py-3.5" style={{ background: C.card }}>
+        <div className="mb-3 flex items-center justify-between text-[10.5px] font-bold uppercase" style={{ color: C.sub, fontFamily: MONO }}>
+          <span>{job.amount ? `${job.amount} ${job.unit || "TON"}` : (job.material || "—")}</span>
+          <span style={{ color: C.green }}>{offerCount} TEKLİF</span>
+        </div>
+        <div className="flex gap-2.5">
+          <button
+            onClick={() => nav(`/ilan/${job.id}`)}
+            className="flex h-[42px] flex-1 items-center justify-center text-[12.5px] font-extrabold uppercase"
+            style={{ background: C.ink, color: C.yellow, border: FRAME, borderRadius: 5, fontFamily: ARCH }}
+          >
+            İlanı Yönet
+          </button>
+          <button
+            onClick={() => nav("/mesajlar")}
+            aria-label="Mesajlar"
+            className="flex h-[42px] w-[42px] items-center justify-center"
+            style={{ background: C.card, border: FRAME, borderRadius: 5 }}
+          >
+            <MessageCircle size={20} strokeWidth={2} style={{ color: C.ink }} />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
-      <YellowCTA nav={nav} title="İlanını Aç / Teklif Al" action="İlan Ver" to="/ilan-ver" />
-      <BackhaulRow nav={nav} count={3} />
-      <RecentListings nav={nav} />
-    </>
+/* Boş-durum: henüz aktif iş yok → ilan açmaya yönlendir */
+function EmptyActiveJob({ nav, user }) {
+  return (
+    <div className="relative mb-6 overflow-hidden" style={{ border: FRAME, borderRadius: 6, boxShadow: SHADOW_SM, background: C.card }}>
+      <div className="flex flex-col items-center gap-3 px-5 py-7 text-center">
+        <div className="flex h-12 w-12 items-center justify-center" style={{ border: `2px dashed ${C.ink}`, borderRadius: 8, background: C.stone }}>
+          <Package size={24} strokeWidth={2} style={{ color: C.ink }} />
+        </div>
+        <div>
+          <div className="text-[15px] font-extrabold uppercase leading-tight" style={{ color: C.ink, fontFamily: ARCH, letterSpacing: "-0.01em" }}>
+            Henüz aktif işin yok
+          </div>
+          <div className="mt-1.5 text-[10.5px] font-bold uppercase leading-snug" style={{ color: C.sub, fontFamily: MONO }}>
+            {user ? "İlk iş ilanını aç, nakliyecilerden teklif al" : "Giriş yap, ilanını aç, teklif al"}
+          </div>
+        </div>
+        <button
+          onClick={() => nav("/ilan-ver")}
+          className="inline-flex items-center gap-1.5 px-5 py-2.5 text-[12.5px] font-extrabold uppercase"
+          style={{ background: C.yellow, color: C.ink, border: FRAME, borderRadius: 5, fontFamily: ARCH, boxShadow: SHADOW_SM }}
+        >
+          İlan Ver <ArrowRight size={15} strokeWidth={2.5} />
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -525,25 +566,45 @@ function TedarikciBody({ nav }) {
   );
 }
 
-/* ── Son ilanlar (müteahhit) ────────────────────────────────────────── */
-function RecentListings({ nav }) {
+/* ── Son ilanlar (müteahhit) — DB'deki gerçek son iş ilanları ────────── */
+function RecentListings({ nav, jobs = [] }) {
   return (
     <>
       <SectionTitle right={<TumuLink nav={nav} />}>Son İlanlar</SectionTitle>
-      <div className="mb-6 flex flex-col gap-2.5">
-        <ListingCard
-          code="HMT-0119" status="Açık" statusBg={C.yellow} statusFg={C.ink}
-          title="Kazı Toprağı Taşıma" from="ÇEKMEKÖY" to="ŞİLE"
-          cat="HAFRİYAT" catColor={C.yellow} price="800T · TEKLİF"
+      {jobs.length === 0 ? (
+        <button
           onClick={() => nav("/ilanlar")}
-        />
-        <ListingCard
-          code="HMT-0116" status="Açık" statusBg={C.yellow} statusFg={C.ink}
-          title="Dökme Çakıl Sevkiyatı" from="GEBZE" to="DARICA"
-          cat="SİLOBAS" catColor={C.ink} price="60T · ₺7.200"
-          onClick={() => nav("/ilanlar")}
-        />
-      </div>
+          className="mb-6 flex w-full items-center justify-center gap-1.5 px-4 py-5 text-[11px] font-bold uppercase"
+          style={{ background: C.card, border: `2px dashed ${C.ink}`, borderRadius: 6, color: C.sub, fontFamily: MONO }}
+        >
+          Henüz ilan yok — panoya göz at <ArrowRight size={14} strokeWidth={2.5} />
+        </button>
+      ) : (
+        <div className="mb-6 flex flex-col gap-2.5">
+          {jobs.map((l) => {
+            const code = "HMT-" + String(l.id).padStart(4, "0").slice(-4);
+            const from = (l.il || l.yukleme || "—").toUpperCase();
+            const to = (l.varisIl || l.bosaltma || l.ilce || "—").toUpperCase();
+            const isHafriyat = l.cat === "hafriyat";
+            const amount = l.amount ? `${l.amount}${(l.unit || "T").charAt(0).toUpperCase()}` : "";
+            const price = l.priceType === "sabit" && l.price != null
+              ? `${amount ? amount + " · " : ""}₺${Number(l.price).toLocaleString("tr-TR")}`
+              : `${amount ? amount + " · " : ""}TEKLİF`;
+            return (
+              <ListingCard
+                key={l.id}
+                code={code} status="Açık" statusBg={C.yellow} statusFg={C.ink}
+                title={l.title}
+                from={from} to={to}
+                cat={isHafriyat ? "HAFRİYAT" : "SİLOBAS"}
+                catColor={isHafriyat ? C.yellow : C.ink}
+                price={price}
+                onClick={() => nav(`/ilan/${l.id}`)}
+              />
+            );
+          })}
+        </div>
+      )}
     </>
   );
 }
@@ -600,7 +661,7 @@ function PiyasaWidget({ nav }) {
 }
 
 export default function NakliyeHome({
-  user, pendingOffersCount = 0, notifUnread = 0, onLoginClick, announcement,
+  user, listings = [], offers = [], pendingOffersCount = 0, notifUnread = 0, onLoginClick, announcement,
 }) {
   const navigate = useNavigate();
   const [annDismissed, setAnnDismissed] = useState(false);
@@ -613,12 +674,37 @@ export default function NakliyeHome({
   // Gerçek rol id'si "isveren" — bu sayfanın içsel anahtarı "muteahhit". Eşle.
   const role = (user?.role === "isveren" ? "muteahhit" : user?.role) || "muteahhit";
 
-  // istatistik şeridi (rol başına 3 kutu)
+  // ── Alıcı (müteahhit) için gerçek veri türetimleri ──
+  // myListings: kullanıcının açtığı ilanlar. Aktif iş: eşleşmiş > en yeni aktif.
+  const buyer = useMemo(() => {
+    if (!user) return { mine: [], active: null, activeCount: 0, done: 0, offersOnMine: 0 };
+    const mine = listings.filter((l) => String(l.ownerId) === String(user.id));
+    const isJobs = mine.filter((l) => l.type === "is");
+    // Aktif iş: önce eşleşmiş/yolda olan, yoksa en son açılan aktif ilan.
+    const active =
+      isJobs.find((l) => l.status === "eslesti" || l.phase) ||
+      isJobs.find((l) => l.status === "aktif") ||
+      null;
+    const activeCount = mine.filter((l) => l.status === "aktif" || l.status === "eslesti").length;
+    const done = mine.filter((l) => l.status === "kapali").length;
+    // Kullanıcının ilanlarına gelen toplam teklif sayısı.
+    const mineIds = new Set(mine.map((l) => String(l.id)));
+    const offersOnMine = offers.filter((o) => mineIds.has(String(o.listingId))).length;
+    return { mine, active, activeCount, done, offersOnMine };
+  }, [user, listings, offers]);
+
+  // Son ilanlar: en yeni iş ilanları (kendi ilanların hariç değil — piyasa görünümü).
+  const recentJobs = useMemo(
+    () => listings.filter((l) => l.type === "is" && l.status === "aktif").slice(0, 3),
+    [listings]
+  );
+
+  // istatistik şeridi (rol başına 3 kutu) — alıcı gerçek veriye bağlı.
   const STAT = {
     muteahhit: [
-      { value: user ? "3" : "—", label: "Aktif İlan" },
-      { value: user ? String(pendingOffersCount || 17) : "—", label: "Yeni Teklif", dot: true },
-      { value: "₺48B", label: "Cüzdan", money: true },
+      { value: user ? String(buyer.activeCount) : "—", label: "Aktif İlan" },
+      { value: user ? String(pendingOffersCount || buyer.offersOnMine) : "—", label: "Gelen Teklif", dot: (pendingOffersCount || buyer.offersOnMine) > 0 },
+      { value: user ? String(buyer.done) : "—", label: "Tamamlanan" },
     ],
     nakliyeci: [
       { value: "8", label: "Açık Teklif" },
@@ -633,7 +719,6 @@ export default function NakliyeHome({
   }[role];
 
   const name = user?.name || (role === "nakliyeci" ? "Demir Nakliyat" : role === "tedarikci" ? "Aliağa Mıcır" : "Yıldızlar İnşaat");
-  const offers = pendingOffersCount || 17;
 
   return (
     <div className="mx-auto flex w-full max-w-[460px] flex-col pb-24" style={{ background: C.bg, color: C.ink }}>
@@ -685,7 +770,7 @@ export default function NakliyeHome({
         ) : role === "tedarikci" ? (
           <TedarikciBody nav={navigate} />
         ) : (
-          <MuteahhitBody nav={navigate} offers={offers} />
+          <MuteahhitBody nav={navigate} user={user} active={buyer.active} offersOnMine={buyer.offersOnMine} recentJobs={recentJobs} />
         )}
 
         {/* güven şeridi */}
