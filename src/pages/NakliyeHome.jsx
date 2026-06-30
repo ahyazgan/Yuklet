@@ -18,6 +18,7 @@ import Logo from "../components/Logo";
 import { LISTINGS } from "../data/listings";
 import { loadListings, loadOffers } from "../utils/storage";
 import { marketPulse } from "../utils/priceEstimate";
+import { loadsNearCity } from "../utils/backhaul";
 
 /* ── SAHA paleti (kesin değerler — _DESIGN_SYSTEM.md) ────────────────── */
 const C = {
@@ -384,7 +385,9 @@ function EmptyActiveJob({ nav, user }) {
 }
 
 /* ── NAKLİYECİ gövdesi ──────────────────────────────────────────────── */
-function NakliyeciBody({ nav, available, setAvailable }) {
+function NakliyeciBody({ nav, available, setAvailable, carrier }) {
+  const backhaulCount = carrier?.backhaulCount || 0;
+  const suitableJobs = carrier?.suitableJobs || [];
   return (
     <>
       {/* müsaitlik anahtarı */}
@@ -410,7 +413,7 @@ function NakliyeciBody({ nav, available, setAvailable }) {
       </div>
 
       {/* Dönüş yükü — koyu map kartı */}
-      <SectionTitle right={<StatusBadge bg={C.green} fg="#FFFFFF">3 Eşleşme</StatusBadge>}>Dönüş Yükü</SectionTitle>
+      <SectionTitle right={backhaulCount > 0 ? <StatusBadge bg={C.green} fg="#FFFFFF">{backhaulCount} Eşleşme</StatusBadge> : null}>Dönüş Yükü</SectionTitle>
       <div className="relative mb-6 overflow-hidden" style={{ border: FRAME, borderRadius: 6, boxShadow: SHADOW }}>
         <div className="relative h-[120px] overflow-hidden" style={{ background: "#141414" }}>
           <div
@@ -442,7 +445,7 @@ function NakliyeciBody({ nav, available, setAvailable }) {
               Boş Dönme — Yolda Yük Al
             </div>
             <div className="mb-3.5 text-[10px] font-bold uppercase" style={{ color: C.muted, fontFamily: MONO }}>
-              Güzergahında 3 Uygun Dökme Yük · 12 KM Sapma
+              {backhaulCount > 0 ? `Güzergahında ${backhaulCount} Uygun Dökme Yük` : "Güzergahına uygun yük çıkınca burada listelenir"}
             </div>
             <div className="flex gap-2.5">
               <button
@@ -466,102 +469,142 @@ function NakliyeciBody({ nav, available, setAvailable }) {
       </div>
 
       <SectionTitle right={<TumuLink nav={nav} />}>Sana Uygun İşler</SectionTitle>
-      <div className="mb-6 flex flex-col gap-2.5">
-        <ListingCard
-          code="HMT-0118" status="Sana Uygun" statusBg={C.yellow} statusFg={C.ink}
-          title="Fabrikadan Şantiyeye Dökme Çimento"
-          from="GEBZE" to="ÇAYIROVA" cat="SİLOBAS" catColor={C.ink}
-          price="28T · ₺4.500" onClick={() => nav("/ilanlar")}
-        />
-        <ListingCard
-          code="HMT-0117" status="Açık" statusBg={C.yellow} statusFg={C.ink}
-          title="Limandan Fabrikaya Dökme Mıcır"
-          from="ALİAĞA" to="KEMALPAŞA" cat="SİLOBAS" catColor={C.ink}
-          price="120T · TEKLİF" onClick={() => nav("/ilanlar")}
-        />
-      </div>
+      {suitableJobs.length === 0 ? (
+        <button
+          onClick={() => nav("/ilanlar")}
+          className="mb-6 flex w-full items-center justify-center gap-1.5 px-4 py-5 text-[11px] font-bold uppercase"
+          style={{ background: C.card, border: `2px dashed ${C.ink}`, borderRadius: 6, color: C.sub, fontFamily: MONO }}
+        >
+          Şu an açık iş yok — panoya göz at <ArrowRight size={14} strokeWidth={2.5} />
+        </button>
+      ) : (
+        <div className="mb-6 flex flex-col gap-2.5">
+          {suitableJobs.map((l) => {
+            const code = "HMT-" + String(l.id).padStart(4, "0").slice(-4);
+            const from = (l.il || l.yukleme || "—").toUpperCase();
+            const to = (l.varisIl || l.bosaltma || l.ilce || "—").toUpperCase();
+            const isHafriyat = l.cat === "hafriyat";
+            const amount = l.amount ? `${l.amount}${(l.unit || "T").charAt(0).toUpperCase()}` : "";
+            const price = l.priceType === "sabit" && l.price != null
+              ? `${amount ? amount + " · " : ""}₺${Number(l.price).toLocaleString("tr-TR")}`
+              : `${amount ? amount + " · " : ""}TEKLİF`;
+            return (
+              <ListingCard
+                key={l.id}
+                code={code} status="Açık" statusBg={C.yellow} statusFg={C.ink}
+                title={l.title} from={from} to={to}
+                cat={isHafriyat ? "HAFRİYAT" : "SİLOBAS"} catColor={isHafriyat ? C.yellow : C.ink}
+                price={price} onClick={() => nav(`/ilan/${l.id}`)}
+              />
+            );
+          })}
+        </div>
+      )}
 
-      <BackhaulRow nav={nav} count={3} />
+      {backhaulCount > 0 && <BackhaulRow nav={nav} count={backhaulCount} />}
     </>
   );
 }
 
 /* ── TEDARİKÇİ gövdesi ──────────────────────────────────────────────── */
-function TedarikciBody({ nav }) {
+// Stok seviyesi → etiket + nokta rengi.
+const STOCK_INFO = {
+  bol: { label: "STOK BOL", dot: C.green },
+  orta: { label: "STOK ORTA", dot: C.yellow },
+  az: { label: "STOK AZ", dot: C.red },
+};
+
+function TedarikciBody({ nav, seller }) {
+  const products = seller?.products || [];
+  const demand = seller?.demand || 0;
   return (
     <>
-      {/* Gelen talep — koyu üst blok */}
-      <SectionTitle right={<StatusBadge bg={C.green} fg="#FFFFFF">11 Yeni</StatusBadge>}>Gelen Talep</SectionTitle>
-      <div className="relative mb-6 overflow-hidden" style={{ border: FRAME, borderRadius: 6, boxShadow: SHADOW }}>
-        <div className="relative overflow-hidden px-4 py-3.5" style={{ background: "#0A0A0A" }}>
-          <Hazard vertical w={18} className="absolute right-0 top-0" />
-          <div className="pr-7">
-            <div className="mb-2.5">
-              <StatusBadge bg={C.green} fg="#FFFFFF">Büyük Sipariş</StatusBadge>
-            </div>
-            <div className="mb-2 text-[20px] font-black uppercase leading-tight" style={{ color: "#FFFFFF", fontFamily: ARCH, letterSpacing: "-0.02em" }}>
-              120 Ton Mıcır Talebi
-            </div>
-            <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase" style={{ color: C.yellow, fontFamily: MONO }}>
-              <MapPin size={12} strokeWidth={2.5} /> Kemalpaşa Sanayi · 18 KM
-            </div>
-          </div>
-        </div>
-        <div className="px-4 py-3.5" style={{ background: C.card }}>
-          <div className="mb-3 flex items-center gap-2.5 px-3 py-2.5" style={{ border: `2px solid ${C.green}`, borderRadius: 5 }}>
-            <Truck size={20} strokeWidth={2} style={{ color: C.green }} />
-            <div className="flex-1">
-              <div className="text-[11px] font-extrabold uppercase" style={{ color: C.ink, fontFamily: ARCH }}>Nakliye Eşleştirme Hazır</div>
-              <div className="text-[9.5px] font-bold uppercase" style={{ color: C.sub, fontFamily: MONO }}>5 Nakliyeci Uygun</div>
+      {/* Gelen talep — gerçek talep varsa özet, yoksa boş-durum */}
+      <SectionTitle right={demand > 0 ? <StatusBadge bg={C.green} fg="#FFFFFF">{demand} Yeni</StatusBadge> : null}>Gelen Talep</SectionTitle>
+      {demand > 0 ? (
+        <div className="relative mb-6 overflow-hidden" style={{ border: FRAME, borderRadius: 6, boxShadow: SHADOW }}>
+          <div className="relative overflow-hidden px-4 py-3.5" style={{ background: "#0A0A0A" }}>
+            <Hazard vertical w={18} className="absolute right-0 top-0" />
+            <div className="pr-7">
+              <div className="mb-2.5"><StatusBadge bg={C.green} fg="#FFFFFF">Sipariş Talebi</StatusBadge></div>
+              <div className="mb-2 text-[20px] font-black uppercase leading-tight" style={{ color: "#FFFFFF", fontFamily: ARCH, letterSpacing: "-0.02em" }}>
+                {demand} Yeni Talep / Teklif
+              </div>
+              <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase" style={{ color: C.yellow, fontFamily: MONO }}>
+                <MapPin size={12} strokeWidth={2.5} /> Ürün ilanlarına gelen siparişler
+              </div>
             </div>
           </div>
-          <div className="flex gap-2.5">
+          <div className="px-4 py-3.5" style={{ background: C.card }}>
             <button
-              onClick={() => nav("/ilan-ver")}
-              className="flex h-[42px] flex-1 items-center justify-center text-[12.5px] font-extrabold uppercase"
+              onClick={() => nav("/tekliflerim")}
+              className="flex h-[42px] w-full items-center justify-center gap-1.5 text-[12.5px] font-extrabold uppercase"
               style={{ background: C.ink, color: C.yellow, border: FRAME, borderRadius: 5, fontFamily: ARCH }}
             >
-              Teklif Gönder
-            </button>
-            <button
-              onClick={() => nav("/ilanlar")}
-              className="flex h-[42px] flex-1 items-center justify-center text-[12.5px] font-extrabold uppercase"
-              style={{ background: C.card, color: C.ink, border: FRAME, borderRadius: 5, fontFamily: ARCH }}
-            >
-              Nakliyeci Bul
+              Talepleri Gör <ArrowRight size={15} strokeWidth={2.5} />
             </button>
           </div>
         </div>
-      </div>
+      ) : (
+        <div className="relative mb-6 overflow-hidden" style={{ border: FRAME, borderRadius: 6, boxShadow: SHADOW_SM, background: C.card }}>
+          <div className="flex flex-col items-center gap-3 px-5 py-7 text-center">
+            <div className="flex h-12 w-12 items-center justify-center" style={{ border: `2px dashed ${C.ink}`, borderRadius: 8, background: C.stone }}>
+              <Truck size={24} strokeWidth={2} style={{ color: C.ink }} />
+            </div>
+            <div>
+              <div className="text-[15px] font-extrabold uppercase leading-tight" style={{ color: C.ink, fontFamily: ARCH, letterSpacing: "-0.01em" }}>Henüz talep yok</div>
+              <div className="mt-1.5 text-[10.5px] font-bold uppercase leading-snug" style={{ color: C.sub, fontFamily: MONO }}>
+                Ürün ekledikçe alıcılar sana ulaşır
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <YellowCTA nav={nav} eyebrow="STOKTAN SAT" title="Ürün İlanı Aç" action="İlan Ver" to="/ilan-ver" />
 
-      <SectionTitle right={<button onClick={() => nav("/ilanlarim")} className="text-[10px] font-bold uppercase" style={{ color: C.ink, fontFamily: MONO, textDecoration: "underline" }}>Düzenle</button>}>
+      <SectionTitle right={products.length > 0 ? <button onClick={() => nav("/ilanlarim")} className="text-[10px] font-bold uppercase" style={{ color: C.ink, fontFamily: MONO, textDecoration: "underline" }}>Düzenle</button> : null}>
         Ürün Kataloğum
       </SectionTitle>
-      <div className="mb-6 flex flex-col gap-2.5">
-        {[
-          { t: "Mıcır (16–32 mm)", s: "STOK BOL · AGREGA", dot: C.green, p: "₺480" },
-          { t: "Kum (0–3 mm)", s: "STOK ORTA · YIKANMIŞ", dot: C.yellow, p: "₺350" },
-        ].map((p) => (
-          <div key={p.t} className="flex items-center gap-3 p-3" style={{ background: C.card, border: FRAME, borderRadius: 6, boxShadow: SHADOW_SM }}>
-            <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center" style={{ border: FRAME, borderRadius: 6, background: C.stone }}>
-              <Package size={22} strokeWidth={2} style={{ color: C.ink }} />
-            </div>
-            <div className="flex-1">
-              <div className="text-[13.5px] font-extrabold uppercase" style={{ color: C.ink, fontFamily: ARCH, letterSpacing: "-0.01em" }}>{p.t}</div>
-              <div className="mt-1 flex items-center gap-1.5">
-                <span className="h-1.5 w-1.5 rounded-full" style={{ background: p.dot }} />
-                <span className="text-[9.5px] font-bold uppercase" style={{ color: C.sub, fontFamily: MONO }}>{p.s}</span>
-              </div>
-            </div>
-            <div className="text-right">
-              <div style={{ fontFamily: MONO, fontSize: 14, fontWeight: 700, color: C.ink }}>{p.p}</div>
-              <div className="text-[8px] font-bold uppercase" style={{ color: C.muted, fontFamily: MONO }}>/ TON</div>
-            </div>
-          </div>
-        ))}
-      </div>
+      {products.length === 0 ? (
+        <button
+          onClick={() => nav("/ilan-ver")}
+          className="mb-6 flex w-full items-center justify-center gap-1.5 px-4 py-5 text-[11px] font-bold uppercase"
+          style={{ background: C.card, border: `2px dashed ${C.ink}`, borderRadius: 6, color: C.sub, fontFamily: MONO }}
+        >
+          Henüz ürün yok — ilk ürününü ekle <ArrowRight size={14} strokeWidth={2.5} />
+        </button>
+      ) : (
+        <div className="mb-6 flex flex-col gap-2.5">
+          {products.map((p) => {
+            const st = STOCK_INFO[p.stock] || { label: p.material || "ÜRÜN", dot: C.faint };
+            const price = p.priceType === "sabit" && p.price != null ? `₺${Number(p.price).toLocaleString("tr-TR")}` : "TEKLİF";
+            return (
+              <button
+                key={p.id}
+                onClick={() => nav(`/ilan/${p.id}`)}
+                className="flex w-full items-center gap-3 p-3 text-left"
+                style={{ background: C.card, border: FRAME, borderRadius: 6, boxShadow: SHADOW_SM }}
+              >
+                <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center" style={{ border: FRAME, borderRadius: 6, background: C.stone }}>
+                  <Package size={22} strokeWidth={2} style={{ color: C.ink }} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-[13.5px] font-extrabold uppercase" style={{ color: C.ink, fontFamily: ARCH, letterSpacing: "-0.01em" }}>{p.material || p.title}</div>
+                  <div className="mt-1 flex items-center gap-1.5">
+                    <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full" style={{ background: st.dot }} />
+                    <span className="truncate text-[9.5px] font-bold uppercase" style={{ color: C.sub, fontFamily: MONO }}>{st.label}{p.il ? ` · ${p.il}` : ""}</span>
+                  </div>
+                </div>
+                <div className="flex-shrink-0 text-right">
+                  <div style={{ fontFamily: MONO, fontSize: 14, fontWeight: 700, color: C.ink }}>{price}</div>
+                  {p.priceType === "sabit" && <div className="text-[8px] font-bold uppercase" style={{ color: C.muted, fontFamily: MONO }}>/ {p.unit || "TON"}</div>}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
     </>
   );
 }
@@ -699,6 +742,36 @@ export default function NakliyeHome({
     [listings]
   );
 
+  // ── Satıcı (tedarikçi) için gerçek veri türetimleri ──
+  const seller = useMemo(() => {
+    if (!user) return { products: [], live: 0, demand: 0, done: 0 };
+    const mine = listings.filter((l) => String(l.ownerId) === String(user.id));
+    const products = mine.filter((l) => l.type === "urun");
+    const live = products.filter((l) => l.status === "aktif").length;
+    const done = mine.filter((l) => l.status === "kapali" || l.delivered).length;
+    // Gelen talep: ürün ilanlarına gelen teklif/sipariş sayısı.
+    const myIds = new Set(mine.map((l) => String(l.id)));
+    const demand = offers.filter((o) => myIds.has(String(o.listingId))).length;
+    return { products: products.slice(0, 4), live, demand, done };
+  }, [user, listings, offers]);
+
+  // ── Nakliyeci için gerçek veri türetimleri ──
+  const carrier = useMemo(() => {
+    if (!user) return { suitableJobs: [], openOffers: 0, won: 0, backhaulCount: 0 };
+    // Verdiğim teklifler (açık + kazanılan).
+    const myOffers = offers.filter((o) => String(o.fromUserId) === String(user.id));
+    const openOffers = myOffers.filter((o) => o.status === "beklemede").length;
+    const won = myOffers.filter((o) => o.status === "kabul").length;
+    // Sana uygun işler: açık iş ilanları (başkalarının), en yeni 2.
+    const suitableJobs = listings
+      .filter((l) => l.type === "is" && l.status === "aktif" && String(l.ownerId) !== String(user.id))
+      .slice(0, 2);
+    // Dönüş yükü: kullanıcının ilinden çıkan uygun yük sayısı (yaklaşık).
+    const city = user.sehir || user.il || "";
+    const backhaulCount = city ? loadsNearCity(city, listings, { limit: 20 }).length : 0;
+    return { suitableJobs, openOffers, won, backhaulCount };
+  }, [user, listings, offers]);
+
   // istatistik şeridi (rol başına 3 kutu) — alıcı gerçek veriye bağlı.
   const STAT = {
     muteahhit: [
@@ -707,14 +780,14 @@ export default function NakliyeHome({
       { value: user ? String(buyer.done) : "—", label: "Tamamlanan" },
     ],
     nakliyeci: [
-      { value: "8", label: "Açık Teklif" },
-      { value: "3", label: "Kazanılan", dot: true },
-      { value: "₺22B", label: "Hakediş", money: true },
+      { value: user ? String(carrier.openOffers) : "—", label: "Açık Teklif" },
+      { value: user ? String(carrier.won) : "—", label: "Kazanılan", dot: carrier.won > 0 },
+      { value: user ? String(carrier.backhaulCount) : "—", label: "Dönüş Yükü" },
     ],
     tedarikci: [
-      { value: "6", label: "Yayında Ürün" },
-      { value: "11", label: "Yeni Talep", dot: true },
-      { value: "₺96B", label: "Cüzdan", money: true },
+      { value: user ? String(seller.live) : "—", label: "Yayında Ürün" },
+      { value: user ? String(seller.demand) : "—", label: "Gelen Talep", dot: seller.demand > 0 },
+      { value: user ? String(seller.done) : "—", label: "Tamamlanan" },
     ],
   }[role];
 
@@ -766,9 +839,9 @@ export default function NakliyeHome({
         {/* <PiyasaWidget nav={navigate} /> */}
 
         {role === "nakliyeci" ? (
-          <NakliyeciStateful navigate={navigate} />
+          <NakliyeciStateful navigate={navigate} carrier={carrier} />
         ) : role === "tedarikci" ? (
-          <TedarikciBody nav={navigate} />
+          <TedarikciBody nav={navigate} seller={seller} />
         ) : (
           <MuteahhitBody nav={navigate} user={user} active={buyer.active} offersOnMine={buyer.offersOnMine} recentJobs={recentJobs} />
         )}
@@ -804,7 +877,7 @@ export default function NakliyeHome({
 }
 
 /* müsaitlik state'i için ince sarmalayıcı (hook kuralları) */
-function NakliyeciStateful({ navigate }) {
+function NakliyeciStateful({ navigate, carrier }) {
   const [available, setAvailable] = useState(true);
-  return <NakliyeciBody nav={navigate} available={available} setAvailable={setAvailable} />;
+  return <NakliyeciBody nav={navigate} available={available} setAvailable={setAvailable} carrier={carrier} />;
 }
