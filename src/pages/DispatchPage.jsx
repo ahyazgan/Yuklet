@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { ChevronLeft, Navigation, Inbox, ArrowRight } from "lucide-react";
 import { LISTINGS } from "../data/listings";
 import SEO from "../components/SEO";
-import { getTrip } from "../utils/tripChannel";
+import { subscribeTrip } from "../utils/tripChannel";
 import { distanceKm } from "../native/geo";
 
 const FleetMap = lazy(() => import("../components/FleetMap"));
@@ -43,19 +43,14 @@ export default function DispatchPage({ user, listings = LISTINGS, offers = [], o
     return out;
   }, [user, listings, offers]);
 
-  // Tüm işlerin canlı konumunu izle (poll + storage).
+  // Tüm işlerin canlı konumunu izle — her iş için kanal aboneliği
+  // (Supabase'de Realtime, yoksa localStorage; tripChannel soyutlar).
   useEffect(() => {
     if (!jobs.length) return undefined;
-    const refresh = () => {
-      const next = {};
-      for (const j of jobs) next[j.l.id] = getTrip(j.l.id);
-      setTrips(next);
-    };
-    refresh();
-    const iv = setInterval(refresh, 3000);
-    window.addEventListener("dayim:trip", refresh);
-    window.addEventListener("storage", refresh);
-    return () => { clearInterval(iv); window.removeEventListener("dayim:trip", refresh); window.removeEventListener("storage", refresh); };
+    const unsubs = jobs.map((j) =>
+      subscribeTrip(j.l.id, (t) => setTrips((prev) => ({ ...prev, [j.l.id]: t })))
+    );
+    return () => unsubs.forEach((u) => u && u());
   }, [jobs]);
 
   if (!user) {
