@@ -333,6 +333,33 @@ create policy docs_write  on public.docs for insert with check (auth.uid() = own
 create policy docs_delete on public.docs for delete using (auth.uid() = owner_id);
 
 -- ──────────────────────────────────────────────
+-- 7e) FİLO  (fleet) — nakliyecinin araç + şoför kayıtları (sahibi-özel)
+-- ──────────────────────────────────────────────
+create table if not exists public.fleet (
+  id            bigint generated always as identity primary key,
+  owner_id      uuid not null references public.profiles(id) on delete cascade,
+  plate         text not null,
+  cat           text not null default 'hafriyat',
+  vehicle       text default '',
+  capacity      text default '',
+  driver_name   text default '',
+  driver_phone  text default '',
+  note          text default '',
+  active        boolean not null default true,
+  created_at    timestamptz not null default now()
+);
+create index if not exists fleet_owner_idx on public.fleet(owner_id);
+alter table public.fleet enable row level security;
+drop policy if exists fleet_read   on public.fleet;
+drop policy if exists fleet_insert on public.fleet;
+drop policy if exists fleet_update on public.fleet;
+drop policy if exists fleet_delete on public.fleet;
+create policy fleet_read   on public.fleet for select using (auth.uid() = owner_id);
+create policy fleet_insert on public.fleet for insert with check (auth.uid() = owner_id);
+create policy fleet_update on public.fleet for update using (auth.uid() = owner_id);
+create policy fleet_delete on public.fleet for delete using (auth.uid() = owner_id);
+
+-- ──────────────────────────────────────────────
 -- 8) DEMO SEED  (owner_id null = sistem ilani; herkes gorur, kimse duzenleyemez)
 -- ──────────────────────────────────────────────
 insert into public.listings

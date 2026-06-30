@@ -7,7 +7,7 @@ import {
   loadMsgSeen, saveMsgSeen, loadNotifSeen, saveNotifSeen, loadReviews, saveReviews, loadDocs, saveDocs,
   loadOnboarded, saveOnboarded, loadReports, saveReports, loadPricingConfig, loadSavedSearches,
   loadAuditLog, appendAudit, loadAnnouncement, saveAnnouncement, loadBlocked, saveBlocked,
-  loadNotifPrefs, saveNotifPrefs,
+  loadNotifPrefs, saveNotifPrefs, loadFleet, saveFleet,
 } from "./utils/storage";
 import { visibleReviewsFor } from "./utils/reviewGate";
 import { newId, nowIso } from "./utils/id";
@@ -310,6 +310,36 @@ function AppShell() {
     return { ok: true };
   };
 
+  // ── Filo (fleet) — nakliyecinin araçları. SB: DB, yerel: localStorage ──
+  const [fleet, setFleet] = useState(() => (SB ? [] : loadFleet()));
+  useEffect(() => { if (!SB) saveFleet(fleet); }, [fleet, SB]);
+  // Sadece kendi araçlarım (her iki modda da owner filtresi).
+  const myFleet = fleet.filter((v) => user && String(v.ownerId) === String(user.id));
+  const addVehicle = async (v) => {
+    if (SB) {
+      try { const saved = await api.addFleetVehicle(user.id, v); setFleet(prev => [saved, ...prev]); return { ok: true, vehicle: saved }; }
+      catch (e) { console.error(e); return { ok: false, error: e?.message || "Araç eklenemedi." }; }
+    }
+    const rec = { id: Date.now(), ownerId: user.id, ...v, active: v.active !== false, createdAt: new Date().toISOString() };
+    setFleet(prev => [rec, ...prev]);
+    return { ok: true, vehicle: rec };
+  };
+  const updateVehicle = async (id, patch) => {
+    if (SB) {
+      try { const saved = await api.updateFleetVehicle(id, patch); setFleet(prev => prev.map(v => v.id === id ? saved : v)); return { ok: true }; }
+      catch (e) { console.error(e); return { ok: false, error: e?.message || "Araç güncellenemedi." }; }
+    }
+    setFleet(prev => prev.map(v => v.id === id ? { ...v, ...patch } : v));
+    return { ok: true };
+  };
+  const removeVehicle = async (id) => {
+    if (SB) {
+      try { await api.removeFleetVehicle(id); } catch (e) { console.error(e); return { ok: false, error: e?.message || "Araç silinemedi." }; }
+    }
+    setFleet(prev => prev.filter(v => v.id !== id));
+    return { ok: true };
+  };
+
   // Sikayet / uyusmazlik bildirimleri
   const [reports, setReports] = useState(() => (SB ? [] : loadReports()));
   useEffect(() => { if (!SB) saveReports(reports); }, [reports, SB]);
@@ -416,10 +446,11 @@ function AppShell() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // SB modunda kullanici giris yapinca kendi belgelerini yukle
+  // SB modunda kullanici giris yapinca kendi belgelerini + filosunu yukle
   useEffect(() => {
     if (!SB || !user?.id) { return; }
     api.fetchDocs(user.id).then(setDocs).catch(() => {});
+    api.fetchMyFleet().then(setFleet).catch(() => {});
   }, [SB, user?.id]);
 
   // SB modunda admin giris yapinca moderasyon verisini yukle (profiller + sikayetler).
@@ -605,6 +636,7 @@ function AppShell() {
       else if (e.key === "hamted_msg_seen") setMsgSeen(loadMsgSeen());
       else if (e.key === "hamted_reviews") setReviews(loadReviews());
       else if (e.key === "hamted_docs") setDocs(loadDocs());
+      else if (e.key === "hamted_fleet") setFleet(loadFleet());
     };
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
@@ -641,16 +673,16 @@ function AppShell() {
                 <Route path="/bildirimler" element={<PageTransition><BildirimlerPage user={user} items={notif.items} onSeen={markNotifSeen} onRequireAuth={requireAuth} /></PageTransition>} />
                 <Route path="/sevkiyat" element={<PageTransition><DispatchPage user={user} listings={listings} offers={offers} onRequireAuth={requireAuth} /></PageTransition>} />
                 <Route path="/sefer-gecmisi" element={<PageTransition><TripHistoryPage user={user} listings={listings} offers={offers} onRequireAuth={requireAuth} /></PageTransition>} />
-                <Route path="/filo" element={<PageTransition><FleetPage user={user} onRequireAuth={requireAuth} /></PageTransition>} />
+                <Route path="/filo" element={<PageTransition><FleetPage user={user} fleet={myFleet} onAddVehicle={addVehicle} onUpdateVehicle={updateVehicle} onRemoveVehicle={removeVehicle} onRequireAuth={requireAuth} /></PageTransition>} />
                 <Route path="/ilanlar" element={<PageTransition><ListingsPage listings={listings} blockedIds={myBlocked} offers={offers} reviews={reviews} onRefresh={SB ? () => Promise.all([reloadListings(), reloadOffers()]) : undefined} /></PageTransition>} />
-                <Route path="/ilan/:id" element={<PageTransition><IlanDetayPage listings={listings} user={user} onRequireAuth={requireAuth} offers={offers} reviews={reviews} onAddOffer={addOffer} onAcceptJob={acceptJob} onReport={addReport} isBlocked={isBlocked} onToggleBlock={toggleBlock} /></PageTransition>} />
+                <Route path="/ilan/:id" element={<PageTransition><IlanDetayPage listings={listings} user={user} fleet={myFleet} onRequireAuth={requireAuth} offers={offers} reviews={reviews} onAddOffer={addOffer} onAcceptJob={acceptJob} onReport={addReport} isBlocked={isBlocked} onToggleBlock={toggleBlock} /></PageTransition>} />
                 <Route path="/takip/:id" element={<PageTransition><TakipPage listings={listings} user={user} offers={offers} getContact={getContact} reviews={reviews} onAddReview={addReview} getUserRating={getUserRating} onUpdateListing={updateListing} onReport={addReport} onPayToEscrow={payToEscrow} onReleasePayment={releasePayment} onRefundPayment={refundPayment} onEarlyPayout={earlyPayoutNakliyeci} /></PageTransition>} />
                 <Route path="/sozlesme/:offerId" element={<PageTransition><SozlesmePage listings={listings} offers={offers} getContact={getContact} /></PageTransition>} />
                 {PAYMENTS_ENABLED && (
                 <Route path="/cuzdan" element={<PageTransition><CuzdanPage user={user} listings={listings} offers={offers} onRequireAuth={requireAuth} /></PageTransition>} />
                 )}
-                <Route path="/ilan-ver" element={<PageTransition><IlanVerPage onPublish={publishListing} onUpdate={updateListing} listings={listings} offers={offers} reviews={reviews} user={user} onRequireAuth={requireAuth} /></PageTransition>} />
-                <Route path="/ilan-duzenle/:id" element={<PageTransition><IlanVerPage onPublish={publishListing} onUpdate={updateListing} listings={listings} offers={offers} reviews={reviews} user={user} onRequireAuth={requireAuth} /></PageTransition>} />
+                <Route path="/ilan-ver" element={<PageTransition><IlanVerPage onPublish={publishListing} onUpdate={updateListing} listings={listings} offers={offers} reviews={reviews} user={user} fleet={myFleet} onRequireAuth={requireAuth} /></PageTransition>} />
+                <Route path="/ilan-duzenle/:id" element={<PageTransition><IlanVerPage onPublish={publishListing} onUpdate={updateListing} listings={listings} offers={offers} reviews={reviews} user={user} fleet={myFleet} onRequireAuth={requireAuth} /></PageTransition>} />
                 <Route path="/ilanlarim" element={<PageTransition><IlanlarimPage listings={listings} user={user} offers={offers} reviews={reviews} onUpdateOffer={updateOffer} onUpdateListing={updateListing} onDeleteListing={removeListing} onRequireAuth={requireAuth} getContact={getContact} /></PageTransition>} />
                 <Route path="/tekliflerim" element={<PageTransition><TekliflerimPage listings={listings} user={user} offers={offers} onRequireAuth={requireAuth} /></PageTransition>} />
                 <Route path="/mesajlar" element={<PageTransition><MesajlarPage user={user} listings={listings} offers={offers} messages={messages} onSendMessage={addMessage} onRequireAuth={requireAuth} onSeen={markMessagesSeen} getContact={getContact} msgSeen={msgSeen} blockedIds={myBlocked} /></PageTransition>} />

@@ -15,7 +15,7 @@ import { CATS } from "../data/categories";
 import { computeReliability, reliabilityTier } from "../utils/reliability";
 import { backhaulForJob, loadsForVehicle, vehicleClassOf } from "../utils/backhaul";
 import { estimatePrice, fmtTL, priceSignal } from "../utils/priceEstimate";
-import { loadPricingConfig, loadFleet } from "../utils/storage";
+import { loadPricingConfig } from "../utils/storage";
 import { newId, nowIso } from "../utils/id";
 import { useToast } from "../components/Toast";
 import { shareUrl } from "../native/share";
@@ -125,7 +125,7 @@ function DetailRow({ label, value }) {
   );
 }
 
-export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth, offers = [], reviews = [], onAddOffer, onAcceptJob, onReport, isBlocked, onToggleBlock }) {
+export default function IlanDetayPage({ listings = LISTINGS, user, fleet = [], onRequireAuth, offers = [], reviews = [], onAddOffer, onAcceptJob, onReport, isBlocked, onToggleBlock }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
@@ -266,7 +266,7 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
 
   // ── Doğrudan kabul (sabit fiyatlı iş) — aynı kapılar (telefon + değerlendirme) ──
   // Nakliyecinin bu işe atayabileceği aktif filo araçları (ops.).
-  const myFleet = user ? loadFleet().filter((v) => String(v.ownerId) === String(user.id) && v.active) : [];
+  const myFleet = user ? fleet.filter((v) => v.active) : [];
   const startAccept = () => { if (!offerGate()) return; setPickedVehicleId(isVehicle ? null : (myFleet[0]?.id ?? null)); setShowAcceptConfirm(true); };
   const confirmAccept = async () => {
     setAccepting(true);

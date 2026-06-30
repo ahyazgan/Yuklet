@@ -452,3 +452,43 @@ export async function removeDoc(id) {
   const { error } = await supabase.from("docs").delete().eq("id", id);
   if (error) throw error;
 }
+
+// ── Filo (fleet) — nakliyecinin araç + şoför kayıtları (sahibi-özel) ──
+const rowToVehicle = (v) => ({
+  id: v.id, ownerId: v.owner_id, plate: v.plate, cat: v.cat, vehicle: v.vehicle,
+  capacity: v.capacity, driverName: v.driver_name, driverPhone: v.driver_phone,
+  note: v.note, active: v.active, createdAt: v.created_at,
+});
+export async function fetchMyFleet() {
+  const { data, error } = await supabase.from("fleet").select("*").order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data || []).map(rowToVehicle);
+}
+export async function addFleetVehicle(ownerId, v) {
+  const row = {
+    owner_id: ownerId, plate: v.plate, cat: v.cat, vehicle: v.vehicle || "",
+    capacity: v.capacity || "", driver_name: v.driverName || "", driver_phone: v.driverPhone || "",
+    note: v.note || "", active: v.active !== false,
+  };
+  const { data, error } = await supabase.from("fleet").insert(row).select("*").single();
+  if (error) throw error;
+  return rowToVehicle(data);
+}
+export async function updateFleetVehicle(id, patch) {
+  const row = {};
+  if (patch.plate != null) row.plate = patch.plate;
+  if (patch.cat != null) row.cat = patch.cat;
+  if (patch.vehicle != null) row.vehicle = patch.vehicle;
+  if (patch.capacity != null) row.capacity = patch.capacity;
+  if (patch.driverName != null) row.driver_name = patch.driverName;
+  if (patch.driverPhone != null) row.driver_phone = patch.driverPhone;
+  if (patch.note != null) row.note = patch.note;
+  if (patch.active != null) row.active = patch.active;
+  const { data, error } = await supabase.from("fleet").update(row).eq("id", id).select("*").single();
+  if (error) throw error;
+  return rowToVehicle(data);
+}
+export async function removeFleetVehicle(id) {
+  const { error } = await supabase.from("fleet").delete().eq("id", id);
+  if (error) throw error;
+}

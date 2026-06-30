@@ -11,7 +11,7 @@ import { CATS, LISTING_TYPES, VEHICLE_TYPES, MATERIALS, UNITS, STOCK_LEVELS } fr
 import { IL_LIST } from "../data/listings";
 import CategoryIcon from "../components/CategoryIcon";
 import { estimatePrice, fmtTL, haversineKm } from "../utils/priceEstimate";
-import { loadOffers, loadPricingConfig, loadFleet } from "../utils/storage";
+import { loadOffers, loadPricingConfig } from "../utils/storage";
 import { newId } from "../utils/id";
 import { pendingReviews } from "../utils/reviewGate";
 import SEO from "../components/SEO";
@@ -125,7 +125,7 @@ function AppBar({ title, step, total, onBack }) {
   );
 }
 
-export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers = [], reviews = [], user, onRequireAuth }) {
+export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers = [], reviews = [], user, fleet = [], onRequireAuth }) {
   const navigate = useNavigate();
   const { id } = useParams();
   const editing = Boolean(id);
@@ -332,8 +332,9 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers
   const materials = MATERIALS[cat] || [];
   const vehicles = VEHICLE_TYPES[cat] || [];
   // Filo: kullanıcının bu kategorideki aktif araçları — ilana hızlı seçim için.
+  // fleet App'ten owner-filtreli (myFleet) gelir; burada kategori+aktif süzgeci.
   const myFleet = user
-    ? loadFleet().filter((v) => String(v.ownerId) === String(user.id) && v.active && v.cat === cat)
+    ? fleet.filter((v) => v.active && v.cat === cat)
     : [];
   const pickFleet = (v) => { set("vehicle", v.vehicle); if (v.capacity) set("capacity", v.capacity); };
   const est = type === "is" && Number(form.amount) > 0

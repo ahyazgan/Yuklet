@@ -5,9 +5,7 @@ import { ChevronLeft, Truck, Plus, Pencil, Trash2, User, Phone, X, Check, BadgeC
 import { useToast } from "../components/Toast";
 import SEO from "../components/SEO";
 import Logo from "../components/Logo";
-import { loadFleet, saveFleet } from "../utils/storage";
 import { CATS, VEHICLE_TYPES } from "../data/categories";
-import { newId, nowIso } from "../utils/id";
 
 // ── SAHA filo yönetimi — nakliyeci birden çok araç + şoför kaydı tutar.
 //    Kurumsal nakliyeciler için: araç + plaka + şoför + kapasite tek yerde.
@@ -28,14 +26,14 @@ const inputSt = { width: "100%", boxSizing: "border-box", background: C.card, bo
 
 const EMPTY = { plate: "", cat: "hafriyat", vehicle: "", capacity: "", driverName: "", driverPhone: "", note: "" };
 
-export default function FleetPage({ user, onRequireAuth }) {
+export default function FleetPage({ user, fleet = [], onAddVehicle, onUpdateVehicle, onRemoveVehicle, onRequireAuth }) {
   const navigate = useNavigate();
   const toast = useToast();
-  const [fleet, setFleet] = useState(() => loadFleet());
   const [editId, setEditId] = useState(null);     // düzenlenen aracın id'si
   const [adding, setAdding] = useState(false);     // yeni araç formu açık mı
   const [form, setForm] = useState(EMPTY);
   const [confirmDel, setConfirmDel] = useState(null);
+  const [busy, setBusy] = useState(false);         // CRUD sırasında çift tıklamayı engelle
 
   // ── Giriş yoksa ──
   if (!user) {
@@ -55,8 +53,8 @@ export default function FleetPage({ user, onRequireAuth }) {
     );
   }
 
-  const mine = fleet.filter((v) => String(v.ownerId) === String(user.id));
-  const persist = (next) => { setFleet(next); saveFleet(next); };
+  // fleet App'ten zaten owner-filtreli (myFleet) gelir.
+  const mine = fleet;
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v, ...(k === "cat" ? { vehicle: "" } : {}) }));
 
   const startAdd = () => { setForm(EMPTY); setEditId(null); setAdding(true); };
@@ -66,23 +64,31 @@ export default function FleetPage({ user, onRequireAuth }) {
   };
   const cancelForm = () => { setAdding(false); setEditId(null); setForm(EMPTY); };
 
-  const submit = () => {
+  const submit = async () => {
+    if (busy) return;
     if (!form.plate.trim()) { toast("Plaka zorunludur", "error"); return; }
     if (!form.vehicle) { toast("Araç tipi seçin", "error"); return; }
     const plate = form.plate.trim().toUpperCase();
-    if (editId) {
-      persist(fleet.map((v) => v.id === editId ? { ...v, ...form, plate } : v));
-      toast("Araç güncellendi", "success");
-    } else {
-      const rec = { id: newId(), ownerId: user.id, ...form, plate, active: true, createdAt: nowIso() };
-      persist([rec, ...fleet]);
-      toast("Araç eklendi", "success");
-    }
+    setBusy(true);
+    const res = editId
+      ? await onUpdateVehicle?.(editId, { ...form, plate })
+      : await onAddVehicle?.({ ...form, plate, active: true });
+    setBusy(false);
+    if (res && res.ok === false) { toast(res.error || "İşlem başarısız", "error"); return; }
+    toast(editId ? "Araç güncellendi" : "Araç eklendi", "success");
     cancelForm();
   };
 
-  const remove = (id) => { persist(fleet.filter((v) => v.id !== id)); setConfirmDel(null); toast("Araç silindi", "info"); };
-  const toggleActive = (id) => persist(fleet.map((v) => v.id === id ? { ...v, active: !v.active } : v));
+  const remove = async (id) => {
+    setConfirmDel(null);
+    const res = await onRemoveVehicle?.(id);
+    if (res && res.ok === false) { toast(res.error || "Araç silinemedi", "error"); return; }
+    toast("Araç silindi", "info");
+  };
+  const toggleActive = async (v) => {
+    const res = await onUpdateVehicle?.(v.id, { active: !v.active });
+    if (res && res.ok === false) toast(res.error || "İşlem başarısız", "error");
+  };
 
   const vehicleOptions = VEHICLE_TYPES[form.cat] || [];
   const formOpen = adding || editId != null;
@@ -172,7 +178,7 @@ export default function FleetPage({ user, onRequireAuth }) {
 
             <div style={{ display: "flex", gap: 10 }}>
               <button onClick={cancelForm} style={{ flex: 1, background: C.stone, color: C.ink, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "13px", fontFamily: ARCH, fontSize: 13, fontWeight: 800, textTransform: "uppercase", cursor: "pointer" }}>Vazgeç</button>
-              <button onClick={submit} style={{ flex: 1, background: C.yellow, color: C.ink, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "13px", fontFamily: ARCH, fontSize: 13, fontWeight: 800, textTransform: "uppercase", cursor: "pointer", boxShadow: "3px 3px 0 #0A0A0A" }}>{editId ? "Kaydet" : "Ekle"}</button>
+              <button onClick={submit} disabled={busy} style={{ flex: 1, background: C.yellow, color: C.ink, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "13px", fontFamily: ARCH, fontSize: 13, fontWeight: 800, textTransform: "uppercase", cursor: busy ? "default" : "pointer", opacity: busy ? 0.6 : 1, boxShadow: "3px 3px 0 #0A0A0A" }}>{busy ? "…" : editId ? "Kaydet" : "Ekle"}</button>
             </div>
           </motion.section>
         )}
@@ -229,7 +235,7 @@ export default function FleetPage({ user, onRequireAuth }) {
                   </div>
                 ) : (
                   <div style={{ display: "flex", gap: 8, padding: "0 14px 14px" }}>
-                    <button onClick={() => toggleActive(v.id)} style={{ flex: 1, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 5, background: C.stone, color: C.ink, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "10px", fontFamily: MONO, fontSize: 11, fontWeight: 700, textTransform: "uppercase", cursor: "pointer" }}>
+                    <button onClick={() => toggleActive(v)} style={{ flex: 1, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 5, background: C.stone, color: C.ink, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "10px", fontFamily: MONO, fontSize: 11, fontWeight: 700, textTransform: "uppercase", cursor: "pointer" }}>
                       {v.active ? <X size={13} /> : <Check size={13} />} {v.active ? "Pasifleştir" : "Aktifleştir"}
                     </button>
                     <button onClick={() => startEdit(v)} aria-label="Düzenle" style={{ width: 42, display: "flex", alignItems: "center", justifyContent: "center", background: C.card, color: C.ink, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "10px", cursor: "pointer" }}><Pencil size={15} strokeWidth={2.4} /></button>
