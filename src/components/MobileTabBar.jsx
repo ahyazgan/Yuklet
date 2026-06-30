@@ -1,18 +1,26 @@
 import { Link, useLocation } from "react-router-dom";
-import { Home, List, Plus, MessageCircle, User } from "lucide-react";
+import { Home, List, Plus, MessageCircle, User, Coffee } from "lucide-react";
 import { hapticTap } from "../native/haptics";
 
 // ── SAHA alt tab bar (Tailwind + inline style). Mobil app kolonuna hizalı (max-w-[460px]).
 // Beyaz zemin, üstte 2px siyah çizgi. Aktif sekmede üstte 18x3px sarı çizgi.
 // Ortada büyük sarı "+" butonu (48px, 2px ink çerçeve, radius 8px). Emoji DEĞİL — lucide stroke ikonlar.
 
-const TABS = [
-  { to: "/", label: "Ana", Icon: Home, match: (p) => p === "/" },
-  { to: "/ilanlar", label: "İlanlar", Icon: List, match: (p) => p === "/ilanlar" || p.startsWith("/ilanlar?") || p.startsWith("/ilan/") },
-  { to: "/ilan-ver", label: "İlan Ver", Icon: Plus, center: true, match: (p) => p.startsWith("/ilan-ver") },
-  { to: "/mesajlar", label: "Mesajlar", Icon: MessageCircle, match: (p) => p.startsWith("/mesajlar") },
-  { to: "/profil", label: "Profil", Icon: User, match: (p) => p.startsWith("/profil") || p.startsWith("/ilanlarim") || p.startsWith("/panel") },
-];
+// Ortak sekmeler. Nakliyeciye ayrıca "Mola" eklenir (role-duyarlı).
+const HOME_TAB = { to: "/", label: "Ana", Icon: Home, match: (p) => p === "/" };
+const LISTINGS_TAB = { to: "/ilanlar", label: "İlanlar", Icon: List, match: (p) => p === "/ilanlar" || p.startsWith("/ilanlar?") || p.startsWith("/ilan/") };
+const ADD_TAB = { to: "/ilan-ver", label: "İlan Ver", Icon: Plus, center: true, match: (p) => p.startsWith("/ilan-ver") };
+const MESSAGES_TAB = { to: "/mesajlar", label: "Mesaj", Icon: MessageCircle, match: (p) => p.startsWith("/mesajlar") };
+const MOLA_TAB = { to: "/mola", label: "Mola", Icon: Coffee, match: (p) => p.startsWith("/mola") };
+const PROFILE_TAB = { to: "/profil", label: "Profil", Icon: User, match: (p) => p.startsWith("/profil") || p.startsWith("/ilanlarim") || p.startsWith("/panel") };
+
+// Nakliyecide 6 sekme (Mola eklenir); diğer rollerde 5.
+function tabsForRole(role) {
+  if (role === "nakliyeci") {
+    return [HOME_TAB, LISTINGS_TAB, ADD_TAB, MOLA_TAB, MESSAGES_TAB, PROFILE_TAB];
+  }
+  return [HOME_TAB, LISTINGS_TAB, ADD_TAB, MESSAGES_TAB, PROFILE_TAB];
+}
 
 const LABEL_STYLE = {
   fontFamily: "'Space Mono', monospace",
@@ -22,16 +30,19 @@ const LABEL_STYLE = {
   letterSpacing: "0.04em",
 };
 
-export default function MobileTabBar({ unreadCount = 0 }) {
+export default function MobileTabBar({ unreadCount = 0, role }) {
   const { pathname } = useLocation();
+  const tabs = tabsForRole(role);
+  // 6 sekmede (nakliyeci) yatay boşluğu daralt — 460px'te sığsın.
+  const sixUp = tabs.length > 5;
 
   return (
     <nav
       aria-label="Alt gezinme"
-      className="fixed inset-x-0 bottom-0 z-50 mx-auto flex w-full max-w-[460px] items-end justify-around px-2 pb-[max(8px,env(safe-area-inset-bottom))] pt-2.5"
+      className={`fixed inset-x-0 bottom-0 z-50 mx-auto flex w-full max-w-[460px] items-end justify-around pb-[max(8px,env(safe-area-inset-bottom))] pt-2.5 ${sixUp ? "px-1" : "px-2"}`}
       style={{ background: "#FFFFFF", borderTop: "2px solid #0A0A0A" }}
     >
-      {TABS.map((tab) => {
+      {tabs.map((tab) => {
         const active = tab.match(pathname);
 
         // Center "İlan Ver" — büyük sarı + butonu, yukarı taşar.

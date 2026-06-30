@@ -1,0 +1,225 @@
+import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import { Coffee, Plus, MapPin, Phone, MessageCircle, ShieldCheck, Trash2, Lock } from "lucide-react";
+import { useToast } from "../components/Toast";
+import SEO from "../components/SEO";
+import Logo from "../components/Logo";
+import { MOLA_CATS, catOf } from "../data/molaCats";
+
+// ── SAHA "Mola Yeri" — nakliyeci topluluk ilan panosu (Faz 1).
+//    Nakliyeciler okur; yalnız ONAYLI nakliyeci paylaşır. Ayrı içerik (mola_posts).
+
+const C = {
+  ink: "#0A0A0A", yellow: "#FACC15", green: "#16803C", red: "#DC2626",
+  bg: "#F1EDE5", card: "#FFFFFF", stone: "#F4F1EA", border: "#E3DDD0", line: "#F0ECE3",
+  sub: "#5A5852", muted: "#9A968D", faint: "#A8A39A",
+};
+const MONO = "'Space Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
+const ARCHIVO = "'Archivo', system-ui, sans-serif";
+const HAZARD = "repeating-linear-gradient(45deg,#0A0A0A 0 9px,#FACC15 9px 18px)";
+
+const shell = { width: "100%", maxWidth: 460, margin: "0 auto", minHeight: "100vh", display: "flex", flexDirection: "column", background: C.bg };
+const cardSt = { background: C.card, border: `2px solid ${C.ink}`, borderRadius: 6, padding: 14, boxShadow: "3px 3px 0 rgba(10,10,10,.12)" };
+
+function fmtDate(iso) {
+  try { return new Date(iso).toLocaleDateString("tr-TR", { day: "numeric", month: "short" }); }
+  catch { return ""; }
+}
+
+export default function MolaYeriPage({ user, posts = [], onRemovePost, onRequireAuth }) {
+  const navigate = useNavigate();
+  const toast = useToast();
+  const [cat, setCat] = useState("all");
+  const [confirmDel, setConfirmDel] = useState(null);
+
+  const filtered = useMemo(
+    () => (cat === "all" ? posts : posts.filter((p) => p.category === cat)),
+    [posts, cat]
+  );
+
+  // ── Gate: giriş yok ──
+  if (!user) {
+    return (
+      <div style={shell}>
+        <SEO title="Mola Yeri" />
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, padding: "0 24px", textAlign: "center" }}>
+          <Logo size="lg" />
+          <h1 style={{ fontFamily: ARCHIVO, fontSize: 20, fontWeight: 800, color: C.ink, textTransform: "uppercase", letterSpacing: "-0.02em", margin: 0 }}>Mola Yeri için giriş yapın</h1>
+          <p style={{ fontSize: 13, color: C.sub, margin: 0, maxWidth: 280 }}>Nakliyecilere özel topluluk panosu. Satılık dorse, eleman, ekipman ilanları.</p>
+          <button onClick={() => onRequireAuth?.()}
+            style={{ marginTop: 4, background: C.ink, color: C.yellow, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "13px 22px", fontFamily: ARCHIVO, fontSize: 14, fontWeight: 800, textTransform: "uppercase", cursor: "pointer", boxShadow: "3px 3px 0 #0A0A0A" }}>
+            Giriş yap / Kayıt ol
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Gate: nakliyeci değil ──
+  if (user.role !== "nakliyeci") {
+    return (
+      <div style={shell}>
+        <SEO title="Mola Yeri" />
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, padding: "0 24px", textAlign: "center" }}>
+          <div style={{ width: 64, height: 64, borderRadius: 8, background: C.ink, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Coffee size={30} color={C.yellow} strokeWidth={2.2} />
+          </div>
+          <h1 style={{ fontFamily: ARCHIVO, fontSize: 20, fontWeight: 800, color: C.ink, textTransform: "uppercase", letterSpacing: "-0.02em", margin: 0 }}>Mola Yeri nakliyecilere özel</h1>
+          <p style={{ fontSize: 13, color: C.sub, margin: 0, maxWidth: 290 }}>Bu topluluk panosu yalnızca nakliyeci/taşıyıcı üyeler içindir.</p>
+          <button onClick={() => navigate("/")}
+            style={{ marginTop: 4, background: C.yellow, color: C.ink, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "12px 20px", fontFamily: ARCHIVO, fontSize: 13, fontWeight: 800, textTransform: "uppercase", cursor: "pointer", boxShadow: "3px 3px 0 #0A0A0A" }}>
+            Ana sayfa
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const canPost = Boolean(user.verified);
+  const tryShare = () => {
+    if (!canPost) { toast("Paylaşmak için önce belge onayı gerekir", "error"); return; }
+    navigate("/mola-paylas");
+  };
+  const doRemove = async (id) => {
+    setConfirmDel(null);
+    const res = await onRemovePost?.(id);
+    if (res && res.ok === false) { toast(res.error || "Silinemedi", "error"); return; }
+    toast("Gönderi silindi", "info");
+  };
+
+  return (
+    <div style={shell}>
+      <SEO title="Mola Yeri" description="Nakliyecilere özel topluluk panosu: satılık dorse, eleman, ekipman ilanları." />
+
+      {/* Header */}
+      <div style={{ background: C.ink, padding: "16px 18px", color: "#fff", position: "relative", overflow: "hidden", display: "flex", alignItems: "center", gap: 12 }}>
+        <span style={{ position: "absolute", top: 0, right: 0, bottom: 0, width: 14, backgroundImage: HAZARD }} />
+        <span style={{ width: 40, height: 40, borderRadius: 6, background: C.yellow, border: `2px solid ${C.yellow}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <Coffee size={21} color={C.ink} strokeWidth={2.4} />
+        </span>
+        <div style={{ minWidth: 0 }}>
+          <h1 style={{ fontFamily: ARCHIVO, fontSize: 18, fontWeight: 800, textTransform: "uppercase", letterSpacing: "-0.02em", margin: 0, lineHeight: 1 }}>Mola Yeri</h1>
+          <div style={{ fontFamily: MONO, fontSize: 10, color: "rgba(255,255,255,0.6)", marginTop: 3 }}>Nakliyeci topluluk panosu</div>
+        </div>
+      </div>
+      <div style={{ height: 8, backgroundImage: HAZARD }} />
+
+      {/* Onaylı değilse uyarı bandı */}
+      {!canPost && (
+        <div style={{ margin: "14px 16px 0", padding: "11px 13px", background: "#FEF9E7", border: `2px solid ${C.ink}`, borderRadius: 6, display: "flex", alignItems: "center", gap: 10 }}>
+          <Lock size={18} color="#92600A" strokeWidth={2.4} style={{ flexShrink: 0 }} />
+          <div style={{ flex: 1, fontFamily: MONO, fontSize: 11, color: "#92600A", fontWeight: 700, lineHeight: 1.45 }}>
+            Paylaşım yapmak için belge onayı gerekir. Okuma herkese açık.
+          </div>
+          <button onClick={() => navigate("/profil")}
+            style={{ flexShrink: 0, background: C.ink, color: C.yellow, border: "none", borderRadius: 5, padding: "7px 10px", fontFamily: ARCHIVO, fontSize: 10, fontWeight: 800, textTransform: "uppercase", cursor: "pointer" }}>
+            Belge yükle
+          </button>
+        </div>
+      )}
+
+      {/* Kategori filtre çipleri */}
+      <div style={{ display: "flex", gap: 7, overflowX: "auto", padding: "14px 16px 4px", WebkitOverflowScrolling: "touch" }}>
+        {[{ id: "all", short: "Tümü" }, ...MOLA_CATS].map((c) => {
+          const active = cat === c.id;
+          return (
+            <button key={c.id} onClick={() => setCat(c.id)}
+              style={{ flexShrink: 0, fontFamily: MONO, fontSize: 11, fontWeight: 700, padding: "7px 12px", borderRadius: 6, cursor: "pointer", border: `2px solid ${C.ink}`, background: active ? C.yellow : C.card, color: C.ink, boxShadow: active ? "2px 2px 0 #0A0A0A" : "none", textTransform: "uppercase" }}>
+              {c.short}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Gönderi listesi */}
+      <div style={{ flex: 1, padding: "10px 16px 120px", display: "flex", flexDirection: "column", gap: 11 }}>
+        {filtered.length === 0 ? (
+          <div style={{ ...cardSt, textAlign: "center", padding: "36px 20px", marginTop: 8 }}>
+            <div style={{ width: 56, height: 56, margin: "0 auto 14px", borderRadius: 8, background: C.stone, border: `2px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Coffee size={28} strokeWidth={2} color={C.muted} />
+            </div>
+            <h3 style={{ fontFamily: ARCHIVO, fontSize: 15, fontWeight: 800, textTransform: "uppercase", color: C.ink, margin: 0 }}>Henüz gönderi yok</h3>
+            <p style={{ fontFamily: MONO, fontSize: 11.5, color: C.sub, margin: "8px 0 0", lineHeight: 1.5 }}>
+              {canPost ? "İlk gönderiyi sen paylaş — satılık dorse, eleman ilanı veya duyuru." : "Onaylı nakliyeciler paylaşım yapabilir."}
+            </p>
+          </div>
+        ) : (
+          filtered.map((p) => {
+            const c = catOf(p.category);
+            const Icon = c.Icon;
+            const mine = String(p.ownerId) === String(user.id);
+            return (
+              <motion.div key={p.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} style={cardSt}>
+                {/* Üst: kategori + tarih */}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 9 }}>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontFamily: MONO, fontSize: 9.5, fontWeight: 700, padding: "4px 8px", borderRadius: 5, border: `2px solid ${C.ink}`, background: C.stone, color: C.ink, textTransform: "uppercase" }}>
+                    <Icon size={12} strokeWidth={2.4} /> {c.short}
+                  </span>
+                  <span style={{ fontFamily: MONO, fontSize: 10, color: C.faint }}>{fmtDate(p.createdAt)}</span>
+                </div>
+
+                {/* Başlık + fiyat */}
+                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
+                  <h3 style={{ fontFamily: ARCHIVO, fontSize: 15, fontWeight: 800, color: C.ink, textTransform: "uppercase", letterSpacing: "-0.01em", margin: 0, lineHeight: 1.2 }}>{p.title}</h3>
+                  {p.price != null && (
+                    <span style={{ flexShrink: 0, fontFamily: MONO, fontSize: 14, fontWeight: 700, color: C.green }}>{Number(p.price).toLocaleString("tr-TR")} ₺</span>
+                  )}
+                </div>
+
+                {/* Açıklama */}
+                {p.body && <p style={{ fontSize: 13, color: C.sub, margin: "8px 0 0", lineHeight: 1.5 }}>{p.body}</p>}
+
+                {/* Künye: il + sahip */}
+                <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 11, flexWrap: "wrap" }}>
+                  {p.il && (
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontFamily: MONO, fontSize: 11, color: C.sub }}>
+                      <MapPin size={13} strokeWidth={2.2} color={C.muted} /> {p.il}
+                    </span>
+                  )}
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontFamily: MONO, fontSize: 11, color: C.ink, fontWeight: 700 }}>
+                    {p.ownerName}
+                    {p.ownerVerified && <ShieldCheck size={13} strokeWidth={2.4} color={C.green} />}
+                  </span>
+                </div>
+
+                {/* Aksiyonlar */}
+                <div style={{ display: "flex", gap: 8, marginTop: 12, paddingTop: 11, borderTop: `1.5px solid ${C.line}` }}>
+                  {mine ? (
+                    confirmDel === p.id ? (
+                      <>
+                        <button onClick={() => setConfirmDel(null)} style={{ flex: 1, background: C.card, color: C.ink, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "9px", fontFamily: MONO, fontSize: 11, fontWeight: 700, textTransform: "uppercase", cursor: "pointer" }}>Vazgeç</button>
+                        <button onClick={() => doRemove(p.id)} style={{ flex: 1, background: C.red, color: "#fff", border: `2px solid ${C.red}`, borderRadius: 6, padding: "9px", fontFamily: MONO, fontSize: 11, fontWeight: 700, textTransform: "uppercase", cursor: "pointer" }}>Sil</button>
+                      </>
+                    ) : (
+                      <button onClick={() => setConfirmDel(p.id)} style={{ flex: 1, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, background: C.card, color: C.red, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "9px", fontFamily: MONO, fontSize: 11, fontWeight: 700, textTransform: "uppercase", cursor: "pointer" }}>
+                        <Trash2 size={13} strokeWidth={2.4} /> Gönderimi sil
+                      </button>
+                    )
+                  ) : (
+                    <>
+                      <button onClick={() => navigate("/mesajlar")} style={{ flex: 1, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, background: C.yellow, color: C.ink, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "10px", fontFamily: ARCHIVO, fontSize: 12, fontWeight: 800, textTransform: "uppercase", cursor: "pointer" }}>
+                        <MessageCircle size={15} strokeWidth={2.4} /> Mesaj
+                      </button>
+                      {p.phone && (
+                        <a href={`tel:${p.phone}`} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, background: C.card, color: C.green, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "10px 14px", fontFamily: ARCHIVO, fontSize: 12, fontWeight: 800, textTransform: "uppercase", textDecoration: "none" }}>
+                          <Phone size={15} strokeWidth={2.4} /> Ara
+                        </a>
+                      )}
+                    </>
+                  )}
+                </div>
+              </motion.div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Paylaş FAB — sabit, sağ alt (tab bar üstünde) */}
+      <button onClick={tryShare} aria-label="Paylaş"
+        style={{ position: "fixed", bottom: 86, left: "50%", transform: "translateX(calc(230px - 100% - 16px))", zIndex: 40, display: "inline-flex", alignItems: "center", gap: 7, background: canPost ? C.yellow : C.stone, color: C.ink, border: `2px solid ${C.ink}`, borderRadius: 8, padding: "12px 16px", fontFamily: ARCHIVO, fontSize: 13, fontWeight: 800, textTransform: "uppercase", cursor: "pointer", boxShadow: "3px 3px 0 #0A0A0A" }}>
+        {canPost ? <Plus size={18} strokeWidth={2.6} /> : <Lock size={16} strokeWidth={2.4} />} Paylaş
+      </button>
+    </div>
+  );
+}

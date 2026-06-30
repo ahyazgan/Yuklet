@@ -7,7 +7,7 @@ import {
   loadMsgSeen, saveMsgSeen, loadNotifSeen, saveNotifSeen, loadReviews, saveReviews, loadDocs, saveDocs,
   loadOnboarded, saveOnboarded, loadReports, saveReports, loadPricingConfig, loadSavedSearches,
   loadAuditLog, appendAudit, loadAnnouncement, saveAnnouncement, loadBlocked, saveBlocked,
-  loadNotifPrefs, saveNotifPrefs, loadFleet, saveFleet,
+  loadNotifPrefs, saveNotifPrefs, loadFleet, saveFleet, loadMolaPosts, saveMolaPosts,
 } from "./utils/storage";
 import { visibleReviewsFor } from "./utils/reviewGate";
 import { newId, nowIso } from "./utils/id";
@@ -52,6 +52,8 @@ const ProfilPage = lazy(() => import("./pages/ProfilPage"));
 const SaticiProfilPage = lazy(() => import("./pages/SaticiProfilPage"));
 const AliciProfilPage = lazy(() => import("./pages/AliciProfilPage"));
 const NakliyeciProfilPage = lazy(() => import("./pages/NakliyeciProfilPage"));
+const MolaYeriPage = lazy(() => import("./pages/MolaYeriPage"));
+const MolaPaylasPage = lazy(() => import("./pages/MolaPaylasPage"));
 const AdminPage = lazy(() => import("./pages/AdminPage"));
 const DashboardPage = lazy(() => import("./pages/DashboardPage"));
 const MuteahhitPage = lazy(() => import("./pages/MuteahhitPage"));
@@ -340,6 +342,28 @@ function AppShell() {
     return { ok: true };
   };
 
+  // ── Mola Yeri (mola_posts) — nakliyeci topluluk ilan panosu ──
+  const [molaPosts, setMolaPosts] = useState(() => (SB ? [] : loadMolaPosts()));
+  useEffect(() => { if (!SB) saveMolaPosts(molaPosts); }, [molaPosts, SB]);
+  const addMolaPost = async (p) => {
+    const cur = profile || user;
+    const meta = { ownerName: cur?.name || "", ownerVerified: Boolean(cur?.verified) };
+    if (SB) {
+      try { const saved = await api.addMolaPost(cur.id, { ...p, ...meta }); setMolaPosts(prev => [saved, ...prev]); return { ok: true, post: saved }; }
+      catch (e) { console.error(e); return { ok: false, error: e?.message || "Gönderi paylaşılamadı." }; }
+    }
+    const rec = { id: Date.now(), ownerId: cur.id, ...meta, ...p, status: "aktif", createdAt: new Date().toISOString() };
+    setMolaPosts(prev => [rec, ...prev]);
+    return { ok: true, post: rec };
+  };
+  const removeMolaPost = async (id) => {
+    if (SB) {
+      try { await api.removeMolaPost(id); } catch (e) { console.error(e); return { ok: false, error: e?.message || "Gönderi silinemedi." }; }
+    }
+    setMolaPosts(prev => prev.filter(p => p.id !== id));
+    return { ok: true };
+  };
+
   // Sikayet / uyusmazlik bildirimleri
   const [reports, setReports] = useState(() => (SB ? [] : loadReports()));
   useEffect(() => { if (!SB) saveReports(reports); }, [reports, SB]);
@@ -451,7 +475,9 @@ function AppShell() {
     if (!SB || !user?.id) { return; }
     api.fetchDocs(user.id).then(setDocs).catch(() => {});
     api.fetchMyFleet().then(setFleet).catch(() => {});
-  }, [SB, user?.id]);
+    // Mola Yeri nakliyeci-özel: yalnız nakliyeci rolünde çek (RLS de korur).
+    if (user.role === "nakliyeci") api.fetchMolaPosts().then(setMolaPosts).catch(() => {});
+  }, [SB, user?.id, user?.role]);
 
   // SB modunda admin giris yapinca moderasyon verisini yukle (profiller + sikayetler).
   // RLS: bu sorgular yalnizca is_admin() icin doner.
@@ -637,6 +663,7 @@ function AppShell() {
       else if (e.key === "hamted_reviews") setReviews(loadReviews());
       else if (e.key === "hamted_docs") setDocs(loadDocs());
       else if (e.key === "hamted_fleet") setFleet(loadFleet());
+      else if (e.key === "hamted_mola_posts") setMolaPosts(loadMolaPosts());
     };
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
@@ -694,6 +721,8 @@ function AppShell() {
                 <Route path="/satici/:id" element={<PageTransition><SaticiProfilPage user={user} users={users} listings={listings} reviews={reviews} getUserRating={getUserRating} /></PageTransition>} />
                 <Route path="/alici/:id" element={<PageTransition><AliciProfilPage user={user} users={users} listings={listings} reviews={reviews} getUserRating={getUserRating} /></PageTransition>} />
                 <Route path="/nakliyeci-profil/:id" element={<PageTransition><NakliyeciProfilPage user={user} users={users} listings={listings} reviews={reviews} getUserRating={getUserRating} /></PageTransition>} />
+                <Route path="/mola" element={<PageTransition><MolaYeriPage user={user} posts={molaPosts} onRemovePost={removeMolaPost} onRequireAuth={requireAuth} /></PageTransition>} />
+                <Route path="/mola-paylas" element={<PageTransition><MolaPaylasPage user={user} onAddPost={addMolaPost} onRequireAuth={requireAuth} /></PageTransition>} />
                 <Route path="/nakliyeci" element={<PageTransition><NakliyeciPage /></PageTransition>} />
                 <Route path="/nasil-calisir" element={<PageTransition><NasilCalisirPage /></PageTransition>} />
                 <Route path="/hakkimizda" element={<PageTransition><HakkimizdaPage /></PageTransition>} />
@@ -721,7 +750,7 @@ function AppShell() {
       )}
       <OfflineBanner onReconnect={() => { if (SB) { reloadListings(); reloadOffers(); } }} />
       <InstallPrompt />
-      <MobileTabBar unreadCount={unreadCount} />
+      <MobileTabBar unreadCount={unreadCount} role={(profile || user)?.role} />
 
       {showNewPassword && <NewPasswordModal onSubmit={updatePassword} onDone={() => setShowNewPassword(false)} />}
       {showAuth && !showRole && !showNewPassword && <AuthModal onClose={() => setShowAuth(false)} onProvider={startOAuth} onEmailAuth={emailAuth} onReset={resetPassword} />}

@@ -55,6 +55,11 @@ export const saveBlocked = (v) => save("hamted_blocked", v);
 export const DEFAULT_NOTIF_PREFS = { offers: true, accepts: true, messages: true, reviews: true, savedSearch: true };
 export const loadNotifPrefs = () => ({ ...DEFAULT_NOTIF_PREFS, ...load("hamted_notif_prefs", {}) });
 export const saveNotifPrefs = (v) => save("hamted_notif_prefs", v);
+// Mola Yeri — nakliyeci topluluk ilan panosu (satılık dorse, eleman vb.).
+// Gönderi: { id, ownerId, ownerName, ownerVerified, category, title, body,
+//            price, il, phone, status, createdAt }
+export const loadMolaPosts = () => load("hamted_mola_posts", []);
+export const saveMolaPosts = (v) => save("hamted_mola_posts", v);
 // Filo — nakliyecinin araç + şoför kayıtları (çoklu araç yönetimi).
 // Araç: { id, ownerId, plate, cat, vehicle, capacity, driverName, driverPhone, note, active, createdAt }
 export const loadFleet = () => load("hamted_fleet", []);

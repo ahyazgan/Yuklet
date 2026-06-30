@@ -492,3 +492,29 @@ export async function removeFleetVehicle(id) {
   const { error } = await supabase.from("fleet").delete().eq("id", id);
   if (error) throw error;
 }
+
+// ── Mola Yeri (mola_posts) — nakliyeci topluluk ilan panosu ──
+const rowToMolaPost = (m) => ({
+  id: m.id, ownerId: m.owner_id, ownerName: m.owner_name, ownerVerified: m.owner_verified,
+  category: m.category, title: m.title, body: m.body, price: m.price, il: m.il,
+  phone: m.phone, status: m.status, createdAt: m.created_at,
+});
+export async function fetchMolaPosts() {
+  const { data, error } = await supabase.from("mola_posts").select("*").eq("status", "aktif").order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data || []).map(rowToMolaPost);
+}
+export async function addMolaPost(ownerId, p) {
+  const row = {
+    owner_id: ownerId, owner_name: p.ownerName || "", owner_verified: p.ownerVerified === true,
+    category: p.category, title: p.title, body: p.body || "",
+    price: p.price ?? null, il: p.il || "", phone: p.phone || "",
+  };
+  const { data, error } = await supabase.from("mola_posts").insert(row).select("*").single();
+  if (error) throw error;
+  return rowToMolaPost(data);
+}
+export async function removeMolaPost(id) {
+  const { error } = await supabase.from("mola_posts").delete().eq("id", id);
+  if (error) throw error;
+}
