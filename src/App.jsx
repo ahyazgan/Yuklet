@@ -8,6 +8,7 @@ import {
   loadOnboarded, saveOnboarded, loadReports, saveReports, loadPricingConfig, loadSavedSearches,
   loadAuditLog, appendAudit, loadAnnouncement, saveAnnouncement, loadBlocked, saveBlocked,
   loadNotifPrefs, saveNotifPrefs, loadFleet, saveFleet, loadMolaPosts, saveMolaPosts,
+  loadMolaThreads, saveMolaThreads, loadMolaReplies, saveMolaReplies,
 } from "./utils/storage";
 import { visibleReviewsFor } from "./utils/reviewGate";
 import { newId, nowIso } from "./utils/id";
@@ -54,6 +55,8 @@ const AliciProfilPage = lazy(() => import("./pages/AliciProfilPage"));
 const NakliyeciProfilPage = lazy(() => import("./pages/NakliyeciProfilPage"));
 const MolaYeriPage = lazy(() => import("./pages/MolaYeriPage"));
 const MolaPaylasPage = lazy(() => import("./pages/MolaPaylasPage"));
+const MolaThreadPage = lazy(() => import("./pages/MolaThreadPage"));
+const MolaBaslikAcPage = lazy(() => import("./pages/MolaBaslikAcPage"));
 const AdminPage = lazy(() => import("./pages/AdminPage"));
 const DashboardPage = lazy(() => import("./pages/DashboardPage"));
 const MuteahhitPage = lazy(() => import("./pages/MuteahhitPage"));
@@ -364,6 +367,52 @@ function AppShell() {
     return { ok: true };
   };
 
+  // ── Mola Forum (mola_threads / mola_replies) — başlık + yorumlar ──
+  const [molaThreads, setMolaThreads] = useState(() => (SB ? [] : loadMolaThreads()));
+  const [molaReplies, setMolaReplies] = useState(() => (SB ? [] : loadMolaReplies()));
+  useEffect(() => { if (!SB) saveMolaThreads(molaThreads); }, [molaThreads, SB]);
+  useEffect(() => { if (!SB) saveMolaReplies(molaReplies); }, [molaReplies, SB]);
+  const ownerMeta = () => { const c = profile || user; return { ownerName: c?.name || "", ownerVerified: Boolean(c?.verified) }; };
+  // Başlık aç (yalnız onaylı nakliyeci — UI + RLS korur).
+  const addThread = async (t) => {
+    const cur = profile || user;
+    if (SB) {
+      try { const saved = await api.addThread(cur.id, { ...t, ...ownerMeta() }); setMolaThreads(prev => [saved, ...prev]); return { ok: true, thread: saved }; }
+      catch (e) { console.error(e); return { ok: false, error: e?.message || "Başlık açılamadı." }; }
+    }
+    const rec = { id: Date.now(), ownerId: cur.id, ...ownerMeta(), ...t, replyCount: 0, lastReplyAt: new Date().toISOString(), status: "aktif", createdAt: new Date().toISOString() };
+    setMolaThreads(prev => [rec, ...prev]);
+    return { ok: true, thread: rec };
+  };
+  const removeThread = async (id) => {
+    if (SB) { try { await api.removeThread(id); } catch (e) { console.error(e); return { ok: false, error: e?.message || "Başlık silinemedi." }; } }
+    setMolaThreads(prev => prev.filter(t => t.id !== id));
+    setMolaReplies(prev => prev.filter(r => String(r.threadId) !== String(id)));
+    return { ok: true };
+  };
+  // Yorum yaz (tüm nakliyeci).
+  const addReply = async (threadId, body) => {
+    const cur = profile || user;
+    if (SB) {
+      try {
+        const saved = await api.addReply(cur.id, { threadId, body, ...ownerMeta() });
+        setMolaReplies(prev => [...prev, saved]);
+        setMolaThreads(prev => prev.map(t => t.id === threadId ? { ...t, replyCount: (t.replyCount || 0) + 1, lastReplyAt: saved.createdAt } : t));
+        return { ok: true, reply: saved };
+      } catch (e) { console.error(e); return { ok: false, error: e?.message || "Yorum gönderilemedi." }; }
+    }
+    const rec = { id: Date.now(), threadId, ownerId: cur.id, ...ownerMeta(), body, createdAt: new Date().toISOString() };
+    setMolaReplies(prev => [...prev, rec]);
+    setMolaThreads(prev => prev.map(t => t.id === threadId ? { ...t, replyCount: (t.replyCount || 0) + 1, lastReplyAt: rec.createdAt } : t));
+    return { ok: true, reply: rec };
+  };
+  const removeReply = async (id, threadId) => {
+    if (SB) { try { await api.removeReply(id); } catch (e) { console.error(e); return { ok: false, error: e?.message || "Yorum silinemedi." }; } }
+    setMolaReplies(prev => prev.filter(r => r.id !== id));
+    setMolaThreads(prev => prev.map(t => t.id === threadId ? { ...t, replyCount: Math.max(0, (t.replyCount || 0) - 1) } : t));
+    return { ok: true };
+  };
+
   // Sikayet / uyusmazlik bildirimleri
   const [reports, setReports] = useState(() => (SB ? [] : loadReports()));
   useEffect(() => { if (!SB) saveReports(reports); }, [reports, SB]);
@@ -476,7 +525,10 @@ function AppShell() {
     api.fetchDocs(user.id).then(setDocs).catch(() => {});
     api.fetchMyFleet().then(setFleet).catch(() => {});
     // Mola Yeri nakliyeci-özel: yalnız nakliyeci rolünde çek (RLS de korur).
-    if (user.role === "nakliyeci") api.fetchMolaPosts().then(setMolaPosts).catch(() => {});
+    if (user.role === "nakliyeci") {
+      api.fetchMolaPosts().then(setMolaPosts).catch(() => {});
+      api.fetchThreads().then(setMolaThreads).catch(() => {});
+    }
   }, [SB, user?.id, user?.role]);
 
   // SB modunda admin giris yapinca moderasyon verisini yukle (profiller + sikayetler).
@@ -664,6 +716,8 @@ function AppShell() {
       else if (e.key === "hamted_docs") setDocs(loadDocs());
       else if (e.key === "hamted_fleet") setFleet(loadFleet());
       else if (e.key === "hamted_mola_posts") setMolaPosts(loadMolaPosts());
+      else if (e.key === "hamted_mola_threads") setMolaThreads(loadMolaThreads());
+      else if (e.key === "hamted_mola_replies") setMolaReplies(loadMolaReplies());
     };
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
@@ -721,8 +775,10 @@ function AppShell() {
                 <Route path="/satici/:id" element={<PageTransition><SaticiProfilPage user={user} users={users} listings={listings} reviews={reviews} getUserRating={getUserRating} /></PageTransition>} />
                 <Route path="/alici/:id" element={<PageTransition><AliciProfilPage user={user} users={users} listings={listings} reviews={reviews} getUserRating={getUserRating} /></PageTransition>} />
                 <Route path="/nakliyeci-profil/:id" element={<PageTransition><NakliyeciProfilPage user={user} users={users} listings={listings} reviews={reviews} getUserRating={getUserRating} /></PageTransition>} />
-                <Route path="/mola" element={<PageTransition><MolaYeriPage user={user} posts={molaPosts} onRemovePost={removeMolaPost} onRequireAuth={requireAuth} /></PageTransition>} />
+                <Route path="/mola" element={<PageTransition><MolaYeriPage user={user} posts={molaPosts} threads={molaThreads} onRemovePost={removeMolaPost} onRequireAuth={requireAuth} /></PageTransition>} />
                 <Route path="/mola-paylas" element={<PageTransition><MolaPaylasPage user={user} onAddPost={addMolaPost} onRequireAuth={requireAuth} /></PageTransition>} />
+                <Route path="/mola/baslik-ac" element={<PageTransition><MolaBaslikAcPage user={user} onAddThread={addThread} onRequireAuth={requireAuth} /></PageTransition>} />
+                <Route path="/mola/forum/:id" element={<PageTransition><MolaThreadPage user={user} threads={molaThreads} replies={molaReplies} onFetchReplies={SB ? api.fetchReplies : undefined} onAddReply={addReply} onRemoveReply={removeReply} onRemoveThread={removeThread} onRequireAuth={requireAuth} /></PageTransition>} />
                 <Route path="/nakliyeci" element={<PageTransition><NakliyeciPage /></PageTransition>} />
                 <Route path="/nasil-calisir" element={<PageTransition><NasilCalisirPage /></PageTransition>} />
                 <Route path="/hakkimizda" element={<PageTransition><HakkimizdaPage /></PageTransition>} />

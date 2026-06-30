@@ -518,3 +518,44 @@ export async function removeMolaPost(id) {
   const { error } = await supabase.from("mola_posts").delete().eq("id", id);
   if (error) throw error;
 }
+
+// ── Mola Forum (mola_threads / mola_replies) — başlık + yorumlar ──
+const rowToThread = (t) => ({
+  id: t.id, ownerId: t.owner_id, ownerName: t.owner_name, ownerVerified: t.owner_verified,
+  title: t.title, body: t.body, replyCount: t.reply_count, lastReplyAt: t.last_reply_at,
+  status: t.status, createdAt: t.created_at,
+});
+const rowToReply = (r) => ({
+  id: r.id, threadId: r.thread_id, ownerId: r.owner_id, ownerName: r.owner_name,
+  ownerVerified: r.owner_verified, body: r.body, createdAt: r.created_at,
+});
+export async function fetchThreads() {
+  const { data, error } = await supabase.from("mola_threads").select("*").eq("status", "aktif").order("last_reply_at", { ascending: false });
+  if (error) throw error;
+  return (data || []).map(rowToThread);
+}
+export async function addThread(ownerId, t) {
+  const row = { owner_id: ownerId, owner_name: t.ownerName || "", owner_verified: t.ownerVerified === true, title: t.title, body: t.body || "" };
+  const { data, error } = await supabase.from("mola_threads").insert(row).select("*").single();
+  if (error) throw error;
+  return rowToThread(data);
+}
+export async function removeThread(id) {
+  const { error } = await supabase.from("mola_threads").delete().eq("id", id);
+  if (error) throw error;
+}
+export async function fetchReplies(threadId) {
+  const { data, error } = await supabase.from("mola_replies").select("*").eq("thread_id", threadId).order("created_at", { ascending: true });
+  if (error) throw error;
+  return (data || []).map(rowToReply);
+}
+export async function addReply(ownerId, r) {
+  const row = { thread_id: r.threadId, owner_id: ownerId, owner_name: r.ownerName || "", owner_verified: r.ownerVerified === true, body: r.body };
+  const { data, error } = await supabase.from("mola_replies").insert(row).select("*").single();
+  if (error) throw error;
+  return rowToReply(data);
+}
+export async function removeReply(id) {
+  const { error } = await supabase.from("mola_replies").delete().eq("id", id);
+  if (error) throw error;
+}

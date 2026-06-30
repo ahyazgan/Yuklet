@@ -60,6 +60,11 @@ export const saveNotifPrefs = (v) => save("hamted_notif_prefs", v);
 //            price, il, phone, status, createdAt }
 export const loadMolaPosts = () => load("hamted_mola_posts", []);
 export const saveMolaPosts = (v) => save("hamted_mola_posts", v);
+// Mola Forum — başlıklar + yorumlar (Faz 2).
+export const loadMolaThreads = () => load("hamted_mola_threads", []);
+export const saveMolaThreads = (v) => save("hamted_mola_threads", v);
+export const loadMolaReplies = () => load("hamted_mola_replies", []);
+export const saveMolaReplies = (v) => save("hamted_mola_replies", v);
 // Filo — nakliyecinin araç + şoför kayıtları (çoklu araç yönetimi).
 // Araç: { id, ownerId, plate, cat, vehicle, capacity, driverName, driverPhone, note, active, createdAt }
 export const loadFleet = () => load("hamted_fleet", []);

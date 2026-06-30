@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Coffee, Plus, MapPin, Phone, MessageCircle, ShieldCheck, Trash2, Lock } from "lucide-react";
+import { Coffee, Plus, MapPin, Phone, MessageCircle, ShieldCheck, Trash2, Lock, MessageSquare, ChevronRight } from "lucide-react";
 import { useToast } from "../components/Toast";
 import SEO from "../components/SEO";
 import Logo from "../components/Logo";
@@ -27,9 +27,24 @@ function fmtDate(iso) {
   catch { return ""; }
 }
 
-export default function MolaYeriPage({ user, posts = [], onRemovePost, onRequireAuth }) {
+// Son aktivite tarihini "3 sa önce / dün / 5 Tem" gibi göster.
+function fmtRel(iso) {
+  try {
+    const d = new Date(iso); const diff = Date.now() - d.getTime();
+    const h = Math.floor(diff / 3600000);
+    if (h < 1) return "az önce";
+    if (h < 24) return `${h} sa önce`;
+    const g = Math.floor(h / 24);
+    if (g === 1) return "dün";
+    if (g < 7) return `${g} gün önce`;
+    return d.toLocaleDateString("tr-TR", { day: "numeric", month: "short" });
+  } catch { return ""; }
+}
+
+export default function MolaYeriPage({ user, posts = [], threads = [], onRemovePost, onRequireAuth }) {
   const navigate = useNavigate();
   const toast = useToast();
+  const [view, setView] = useState("pano");   // pano | forum
   const [cat, setCat] = useState("all");
   const [confirmDel, setConfirmDel] = useState(null);
 
@@ -104,6 +119,26 @@ export default function MolaYeriPage({ user, posts = [], onRemovePost, onRequire
         </div>
       </div>
       <div style={{ height: 8, backgroundImage: HAZARD }} />
+
+      {/* Pano | Forum iç-sekmesi */}
+      <div style={{ display: "flex", gap: 8, padding: "14px 16px 0" }}>
+        {[
+          { id: "pano", label: "Pano", Icon: Coffee },
+          { id: "forum", label: "Forum", Icon: MessageSquare },
+        ].map((s) => {
+          const active = view === s.id;
+          const Icon = s.Icon;
+          return (
+            <button key={s.id} onClick={() => setView(s.id)}
+              style={{ flex: 1, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7, border: `2px solid ${C.ink}`, background: active ? C.ink : C.card, color: active ? C.yellow : C.ink, borderRadius: 6, padding: "11px", fontFamily: ARCHIVO, fontSize: 13, fontWeight: 800, textTransform: "uppercase", letterSpacing: "-0.01em", cursor: "pointer", boxShadow: active ? "3px 3px 0 rgba(10,10,10,.18)" : "none" }}>
+              <Icon size={16} strokeWidth={2.4} /> {s.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ══ PANO görünümü (Faz 1) ══ */}
+      {view === "pano" && <>
 
       {/* Onaylı değilse uyarı bandı */}
       {!canPost && (
@@ -214,12 +249,62 @@ export default function MolaYeriPage({ user, posts = [], onRemovePost, onRequire
           })
         )}
       </div>
+      </>}
 
-      {/* Paylaş FAB — sabit, sağ alt (tab bar üstünde) */}
-      <button onClick={tryShare} aria-label="Paylaş"
-        style={{ position: "fixed", bottom: 86, left: "50%", transform: "translateX(calc(230px - 100% - 16px))", zIndex: 40, display: "inline-flex", alignItems: "center", gap: 7, background: canPost ? C.yellow : C.stone, color: C.ink, border: `2px solid ${C.ink}`, borderRadius: 8, padding: "12px 16px", fontFamily: ARCHIVO, fontSize: 13, fontWeight: 800, textTransform: "uppercase", cursor: "pointer", boxShadow: "3px 3px 0 #0A0A0A" }}>
-        {canPost ? <Plus size={18} strokeWidth={2.6} /> : <Lock size={16} strokeWidth={2.4} />} Paylaş
-      </button>
+      {/* ══ FORUM görünümü (Faz 2) ══ */}
+      {view === "forum" && (
+        <div style={{ flex: 1, padding: "14px 16px 120px", display: "flex", flexDirection: "column", gap: 11 }}>
+          {!canPost && (
+            <div style={{ padding: "11px 13px", background: "#FEF9E7", border: `2px solid ${C.ink}`, borderRadius: 6, fontFamily: MONO, fontSize: 11, color: "#92600A", fontWeight: 700, lineHeight: 1.45 }}>
+              Yorum yazmak herkese açık; <b>başlık açmak</b> için belge onayı gerekir.
+            </div>
+          )}
+          {threads.length === 0 ? (
+            <div style={{ ...cardSt, textAlign: "center", padding: "36px 20px", marginTop: 4 }}>
+              <div style={{ width: 56, height: 56, margin: "0 auto 14px", borderRadius: 8, background: C.stone, border: `2px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <MessageSquare size={28} strokeWidth={2} color={C.muted} />
+              </div>
+              <h3 style={{ fontFamily: ARCHIVO, fontSize: 15, fontWeight: 800, textTransform: "uppercase", color: C.ink, margin: 0 }}>Henüz başlık yok</h3>
+              <p style={{ fontFamily: MONO, fontSize: 11.5, color: C.sub, margin: "8px 0 0", lineHeight: 1.5 }}>
+                {canPost ? "İlk başlığı sen aç — bir soru sor ya da konu başlat." : "Onaylı nakliyeciler başlık açabilir."}
+              </p>
+            </div>
+          ) : (
+            threads.map((t) => (
+              <motion.button key={t.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                onClick={() => { navigate(`/mola/forum/${t.id}`); window.scrollTo(0, 0); }}
+                style={{ ...cardSt, textAlign: "left", cursor: "pointer", display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <h3 style={{ fontFamily: ARCHIVO, fontSize: 14.5, fontWeight: 800, color: C.ink, textTransform: "uppercase", letterSpacing: "-0.01em", margin: 0, lineHeight: 1.25 }}>{t.title}</h3>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 8, flexWrap: "wrap" }}>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontFamily: MONO, fontSize: 11, color: C.ink, fontWeight: 700 }}>
+                      {t.ownerName}{t.ownerVerified && <ShieldCheck size={12} strokeWidth={2.4} color={C.green} />}
+                    </span>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontFamily: MONO, fontSize: 11, color: C.sub }}>
+                      <MessageSquare size={12} strokeWidth={2.2} color={C.muted} /> {t.replyCount || 0}
+                    </span>
+                    <span style={{ fontFamily: MONO, fontSize: 10, color: C.faint }}>{fmtRel(t.lastReplyAt)}</span>
+                  </div>
+                </div>
+                <ChevronRight size={18} color={C.ink} strokeWidth={2.2} style={{ flexShrink: 0 }} />
+              </motion.button>
+            ))
+          )}
+        </div>
+      )}
+
+      {/* FAB — Pano'da "Paylaş", Forum'da "Başlık Aç" */}
+      {view === "pano" ? (
+        <button onClick={tryShare} aria-label="Paylaş"
+          style={{ position: "fixed", bottom: 86, left: "50%", transform: "translateX(calc(230px - 100% - 16px))", zIndex: 40, display: "inline-flex", alignItems: "center", gap: 7, background: canPost ? C.yellow : C.stone, color: C.ink, border: `2px solid ${C.ink}`, borderRadius: 8, padding: "12px 16px", fontFamily: ARCHIVO, fontSize: 13, fontWeight: 800, textTransform: "uppercase", cursor: "pointer", boxShadow: "3px 3px 0 #0A0A0A" }}>
+          {canPost ? <Plus size={18} strokeWidth={2.6} /> : <Lock size={16} strokeWidth={2.4} />} Paylaş
+        </button>
+      ) : (
+        <button onClick={() => { if (!canPost) { toast("Başlık açmak için belge onayı gerekir", "error"); return; } navigate("/mola/baslik-ac"); }} aria-label="Başlık Aç"
+          style={{ position: "fixed", bottom: 86, left: "50%", transform: "translateX(calc(230px - 100% - 16px))", zIndex: 40, display: "inline-flex", alignItems: "center", gap: 7, background: canPost ? C.yellow : C.stone, color: C.ink, border: `2px solid ${C.ink}`, borderRadius: 8, padding: "12px 16px", fontFamily: ARCHIVO, fontSize: 13, fontWeight: 800, textTransform: "uppercase", cursor: "pointer", boxShadow: "3px 3px 0 #0A0A0A" }}>
+          {canPost ? <Plus size={18} strokeWidth={2.6} /> : <Lock size={16} strokeWidth={2.4} />} Başlık Aç
+        </button>
+      )}
     </div>
   );
 }
