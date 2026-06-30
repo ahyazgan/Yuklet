@@ -9,7 +9,7 @@
 
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ChevronLeft, Share2, Heart, Star, BadgeCheck, ArrowRight, X, Send, AlertTriangle, Truck, TrendingUp, TrendingDown, Boxes, Check, Info, ChevronDown, ShieldCheck, RotateCw } from "lucide-react";
+import { ChevronLeft, Share2, Heart, Star, BadgeCheck, ArrowRight, X, Send, AlertTriangle, Truck, TrendingUp, TrendingDown, Boxes, Check, Info, ChevronDown, ShieldCheck, RotateCw, Navigation } from "lucide-react";
 import { LISTINGS } from "../data/listings";
 import { CATS } from "../data/categories";
 import { computeReliability, reliabilityTier } from "../utils/reliability";
@@ -19,6 +19,7 @@ import { loadPricingConfig, loadFleet } from "../utils/storage";
 import { newId, nowIso } from "../utils/id";
 import { useToast } from "../components/Toast";
 import { shareUrl } from "../native/share";
+import { openInMaps, openIosMap } from "../native/maps";
 import { hapticTap, hapticSuccess } from "../native/haptics";
 import useFavorites from "../hooks/useFavorites";
 import ReportModal from "../components/ReportModal";
@@ -141,6 +142,7 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
   const [showAcceptConfirm, setShowAcceptConfirm] = useState(false); // doğrudan kabul onayı
   const [accepting, setAccepting] = useState(false);
   const [pickedVehicleId, setPickedVehicleId] = useState(null); // kabulde atanan filo aracı
+  const [iosMap, setIosMap] = useState(null); // iOS harita seçimi: { urls } | null
 
   const l = listings.find((x) => String(x.id) === String(id));
 
@@ -202,6 +204,17 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
   // route endpoints (mono labels)
   const fromPlace = `${l.il || "—"}${l.ilce ? ", " + l.ilce : ""}`;
   const toPlace = isVehicle ? (l.il || "—") : (l.varisIl || l.bosaltma || "—");
+
+  // ── Yol tarifi: koordinat varsa onu, yoksa metni harita uygulamasında aç.
+  //    Yükleme noktası önceliklidir (malın asıl bulunduğu yer); yoksa il/ilçe.
+  const mapTarget = Array.isArray(l.pickup) ? l.pickup
+    : (l.yukleme || (l.il ? `${l.il}${l.ilce ? " " + l.ilce : ""}` : null));
+  const mapLabel = l.title || l.yukleme || l.il || "Konum";
+  const openMaps = () => {
+    hapticTap();
+    const res = openInMaps(mapTarget, mapLabel);
+    if (res && res.ios) setIosMap(res.urls); // iOS → seçim sayfası
+  };
 
   // lowest offer for the sticky bar
   const offerPrices = listingOffers.map((o) => o.price).filter((p) => p != null);
@@ -458,6 +471,20 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
           <DetailRow label="KAPASİTE" value={l.capacity} />
           {l.recurring && <DetailRow label="TEKRAR" value={l.recurringText} />}
         </div>
+
+        {/* ── Yol tarifi: konumu harita uygulamasında aç (WhatsApp gibi) ── */}
+        {mapTarget && (
+          <button
+            onClick={openMaps}
+            style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", background: C.card, border: `2px solid ${C.ink}`, borderRadius: 8, padding: "13px 14px", fontFamily: HEAD, fontSize: 13, fontWeight: 800, textTransform: "uppercase", letterSpacing: "-0.01em", color: C.ink, cursor: "pointer", boxShadow: "3px 3px 0 rgba(10,10,10,0.1)" }}
+          >
+            <Navigation size={16} strokeWidth={2.5} color={C.green} />
+            Yol Tarifi Al
+            {!Array.isArray(l.pickup) && (
+              <span style={{ fontFamily: MONO, fontSize: 8.5, fontWeight: 700, color: C.muted }}>(YAKLAŞIK)</span>
+            )}
+          </button>
+        )}
 
         {/* description */}
         {l.desc && (
@@ -869,6 +896,33 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
                 </button>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ── iOS HARİTA SEÇİMİ (Apple / Google) ───────────────────── */}
+      {iosMap && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 270, display: "flex", alignItems: "flex-end", justifyContent: "center", background: "rgba(10,10,10,.6)" }} onClick={() => setIosMap(null)}>
+          <div style={{ width: "100%", maxWidth: 460, background: "#fff", borderTopLeftRadius: 16, borderTopRightRadius: 16, border: `2px solid ${C.ink}`, borderBottom: "none", padding: "18px 16px 24px" }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+              <Navigation size={16} strokeWidth={2.5} color={C.green} />
+              <span style={{ fontFamily: HEAD, fontSize: 14, fontWeight: 800, textTransform: "uppercase", letterSpacing: "-0.01em", color: C.ink }}>Hangi harita ile açayım?</span>
+            </div>
+            {[
+              { key: "apple", label: "Apple Haritalar" },
+              { key: "google", label: "Google Maps" },
+            ].map((opt) => (
+              <button key={opt.key}
+                onClick={() => { openIosMap(iosMap, opt.key); setIosMap(null); }}
+                style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", background: C.card, border: `2px solid ${C.ink}`, borderRadius: 8, padding: "14px 16px", marginBottom: 10, fontFamily: HEAD, fontSize: 14, fontWeight: 800, color: C.ink, cursor: "pointer" }}>
+                {opt.label}
+                <ArrowRight size={17} strokeWidth={2.5} color={C.muted} />
+              </button>
+            ))}
+            <button onClick={() => setIosMap(null)}
+              style={{ width: "100%", background: "transparent", border: "none", padding: "8px", fontFamily: MONO, fontSize: 12, fontWeight: 700, color: C.muted, cursor: "pointer" }}>
+              Vazgeç
+            </button>
           </div>
         </div>
       )}

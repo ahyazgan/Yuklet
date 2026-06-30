@@ -599,9 +599,28 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
               </div>
             )}
 
-            <Suspense fallback={<div style={{ height: 280, borderRadius: 6, border: `2px solid ${C.ink}`, background: C.stone, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: MONO, fontSize: 11, color: C.muted }}>Harita yükleniyor…</div>}>
-              <TripMap pickup={Array.isArray(l.pickup) ? l.pickup : null} dropoff={liveDropoff} vehicle={vehicle} trail={trip?.trail || []} routeCoords={route?.coords || null} />
-            </Suspense>
+            {(() => {
+              // Konum verisi var mı? (araç noktası veya geçmiş iz)
+              const hasLive = Boolean(vehicle) || (trip?.trail?.length > 0);
+              // Sürücü kendi haritasını her zaman görür (konum paylaşacağı yer).
+              // Karşı taraf (iş sahibi) için konum gelmemişse dürüst boş-durum göster.
+              if (!hasLive && !isNakliyeci) {
+                return (
+                  <div style={{ height: 220, borderRadius: 6, border: `2px dashed ${C.muted}`, background: C.stone, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, textAlign: "center", padding: "0 24px" }}>
+                    <Navigation size={28} strokeWidth={1.8} color={C.muted} />
+                    <div style={{ fontFamily: ARCH, fontSize: 15, fontWeight: 800, textTransform: "uppercase", letterSpacing: "-0.01em", color: C.ink }}>Canlı konum yakında</div>
+                    <div style={{ fontFamily: MONO, fontSize: 10.5, color: C.muted, lineHeight: 1.6, maxWidth: 260 }}>
+                      Sürücü yola çıkıp konum paylaşımını açtığında aracın canlı konumu burada görünecek.
+                    </div>
+                  </div>
+                );
+              }
+              return (
+                <Suspense fallback={<div style={{ height: 280, borderRadius: 6, border: `2px solid ${C.ink}`, background: C.stone, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: MONO, fontSize: 11, color: C.muted }}>Harita yükleniyor…</div>}>
+                  <TripMap pickup={Array.isArray(l.pickup) ? l.pickup : null} dropoff={liveDropoff} vehicle={vehicle} trail={trip?.trail || []} routeCoords={route?.coords || null} />
+                </Suspense>
+              );
+            })()}
 
             {isNakliyeci && (
               <div style={{ marginTop: 8, fontFamily: MONO, fontSize: 9.5, color: C.muted, lineHeight: 1.5 }}>

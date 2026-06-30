@@ -18,9 +18,10 @@ import SEO from "../components/SEO";
 import Logo from "../components/Logo";
 import { shareUrl } from "../native/share";
 import { hapticTap, hapticSuccess } from "../native/haptics";
+import { getCurrentPosition } from "../native/geo";
 import {
   ChevronLeft, ArrowRight, Truck, Package, Boxes, Check, CheckCircle2,
-  MapPin, Plus, Share2, Pencil, ChevronDown,
+  MapPin, Plus, Share2, Pencil, ChevronDown, Navigation,
 } from "lucide-react";
 
 const LocationPicker = lazy(() => import("../components/LocationPicker"));
@@ -173,6 +174,18 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers
   const [pickup, setPickup] = useState(editListing?.pickup || null);
   const [dropoff, setDropoff] = useState(editListing?.dropoff || null);
   const [showMap, setShowMap] = useState(false);
+  const [locating, setLocating] = useState(""); // "" | "loading" | "ok" | "denied" | "error"
+
+  // Cihaz GPS'i ile yükleme noktasını doldur (opsiyonel — kesin konum).
+  const useMyLocation = async () => {
+    hapticTap();
+    setLocating("loading");
+    const p = await getCurrentPosition();
+    if (!p) { setLocating("denied"); return; }
+    setPickup([p.lat, p.lng]);
+    setShowMap(true);
+    setLocating("ok");
+  };
   // step: 1 = kategori+tür+yük, 2 = güzergah+detay, 3 = yayınlandı
   const [step, setStep] = useState(1);
   const [published, setPublished] = useState(null);
@@ -754,6 +767,13 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers
                 </button>
                 {showMap && (
                   <div style={{ marginTop: 10 }}>
+                    {/* GPS ile kesin yükleme noktası (opsiyonel) */}
+                    <button type="button" onClick={useMyLocation} disabled={locating === "loading"}
+                      style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 7, background: locating === "ok" ? "#E6F4EA" : C.card, border: `2px solid ${locating === "ok" ? C.green : C.ink}`, borderRadius: 6, padding: "10px 12px", marginBottom: 8, fontFamily: ARCH, fontSize: 12.5, fontWeight: 800, textTransform: "uppercase", letterSpacing: "-0.01em", color: locating === "ok" ? C.green : C.ink, cursor: locating === "loading" ? "wait" : "pointer" }}>
+                      <Navigation size={15} strokeWidth={2.5} color={locating === "ok" ? C.green : C.green} />
+                      {locating === "loading" ? "Konum alınıyor…" : locating === "ok" ? "Yükleme noktası bulundu" : "Konumumu kullan (yükleme)"}
+                    </button>
+                    {locating === "denied" && <p style={{ margin: "0 0 8px", fontFamily: MONO, fontSize: 10.5, color: "#DC2626" }}>Konum izni verilmedi. Haritadan elle işaretleyebilirsin.</p>}
                     <p style={{ margin: "0 0 8px", fontSize: 11, color: C.sub }}>
                       Önce <b style={{ color: C.green }}>yükleme</b>, sonra <b style={{ color: "#DC2626" }}>boşaltma</b> noktasına tıkla. Gerçek mesafe fiyat tahminine yansır.
                     </p>
