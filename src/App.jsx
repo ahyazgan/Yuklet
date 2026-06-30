@@ -463,18 +463,18 @@ function AppShell() {
   // e-postasi aciksa needsConfirm doner (modal mesaj gosterir, kapanmaz). Rol
   // e-postadan da gelmez -> needsRole akisi RoleSelectModal'i acar.
   // localStorage modu: sahte hesap acar (gelistirme/onizleme).
-  const emailAuth = async ({ mode, name, email, password }) => {
+  const emailAuth = async ({ mode, name, email, password, role }) => {
     if (SB) {
       const res = mode === "register"
-        ? await api.signUp({ name, email, password })
+        ? await api.signUp({ name, email, password, role })   // rol kayıt formundan gelir
         : await api.signIn({ email, password });
       if (!res.ok) return res;
       if (res.needsConfirm) return res; // modal acik kalir, onay bekler
       setShowAuth(false);               // oturum kuruldu -> onAuthChange hydrate eder
       return res;
     }
-    // localStorage modu: sahte hesap (rol henuz yok -> rol secim modali)
-    const fake = { id: Date.now(), name: name || email, email, role: "", provider: "email", verified: false, rating: 5.0 };
+    // localStorage modu: rol kayıt formundan gelir (gelmezse boş -> rol modali)
+    const fake = { id: Date.now(), name: name || email, email, role: role || "", provider: "email", verified: false, rating: 5.0 };
     setUsers(prev => prev.some(u => u.email === email) ? prev : [...prev, fake]);
     setUser(fake);
     setShowAuth(false);

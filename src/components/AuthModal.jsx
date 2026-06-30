@@ -18,6 +18,13 @@ const ARCH = "'Archivo',system-ui,sans-serif";
 const HAZARD = "repeating-linear-gradient(45deg,#0A0A0A 0 9px,#FACC15 9px 18px)";
 const FRAME = `2px solid ${C.ink}`;
 
+// Kayıt rolleri (CLAUDE.md sözleşmesi) — kayıt olurken seçilir.
+const ROLES = [
+  { key: "isveren", label: "Alıcı", desc: "İş ilanı açarım" },
+  { key: "tedarikci", label: "Satıcı", desc: "Ocak / santral" },
+  { key: "nakliyeci", label: "Nakliyeci", desc: "Araç / taşıma" },
+];
+
 // Google "G" çok renkli logosu
 function GoogleIcon() {
   return (
@@ -45,6 +52,7 @@ export default function AuthModal({ onClose, onProvider, onEmailAuth, onReset })
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState("");          // "" | "isveren" | "tedarikci" | "nakliyeci"
 
   const go = async (provider) => {
     setBusy(provider); setError(""); setInfo("");
@@ -78,10 +86,11 @@ export default function AuthModal({ onClose, onProvider, onEmailAuth, onReset })
 
     if (!password) { setError("Şifre gerekli."); return; }
     if (mode === "register" && !name.trim()) { setError("Ad Soyad gerekli."); return; }
+    if (mode === "register" && !role) { setError("Nasıl üye olacağını seç (Alıcı / Satıcı / Nakliyeci)."); return; }
     if (password.length < 6) { setError("Şifre en az 6 karakter olmalı."); return; }
     setBusy("email");
     try {
-      const res = await onEmailAuth({ mode, name: name.trim(), email: email.trim(), password });
+      const res = await onEmailAuth({ mode, name: name.trim(), email: email.trim(), password, role });
       if (res && res.ok === false) { setError(res.error || "İşlem başarısız."); setBusy(""); return; }
       // Onay e-postası gerekiyorsa modal açık kalır, bilgi mesajı gösterilir.
       if (res && res.needsConfirm) { setInfo(res.message || "E-postanı kontrol et: onay bağlantısı gönderdik."); setBusy(""); return; }
@@ -157,6 +166,38 @@ export default function AuthModal({ onClose, onProvider, onEmailAuth, onReset })
                 className="px-3 py-3 text-[14px] outline-none disabled:opacity-60"
                 style={{ border: FRAME, borderRadius: 6, color: C.ink, fontFamily: MONO }}
               />
+            )}
+            {/* Rol seçimi — kayıt olurken hangi rolde üye olunacağı sorulur */}
+            {mode === "register" && (
+              <div>
+                <div className="mb-1.5 text-[11px] font-bold uppercase" style={{ color: C.sub, fontFamily: MONO, letterSpacing: "0.03em" }}>
+                  Nasıl üye olacaksın?
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {ROLES.map((r) => {
+                    const active = role === r.key;
+                    return (
+                      <button
+                        key={r.key}
+                        type="button"
+                        onClick={() => setRole(r.key)}
+                        disabled={Boolean(busy)}
+                        className="flex flex-col items-center gap-0.5 px-1.5 py-2.5 text-center transition disabled:opacity-60"
+                        style={{
+                          border: `2px solid ${active ? C.ink : "#D8D2C6"}`,
+                          background: active ? C.yellow : C.card,
+                          borderRadius: 6,
+                          boxShadow: active ? "2px 2px 0 #0A0A0A" : "none",
+                          cursor: "pointer",
+                        }}
+                      >
+                        <span className="text-[12.5px] font-extrabold uppercase" style={{ color: C.ink, fontFamily: ARCH, letterSpacing: "-0.01em" }}>{r.label}</span>
+                        <span className="text-[8.5px] font-bold uppercase leading-tight" style={{ color: active ? C.ink : C.sub, fontFamily: MONO }}>{r.desc}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             )}
             <input
               type="email"

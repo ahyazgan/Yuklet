@@ -79,9 +79,11 @@ const rowToProfile = (r) => r && ({
 
 // ── Auth ────────────────────────────────────────────────────
 export async function signUp({ name, email, password, role, phone }) {
+  // Rol KASTEN boş bırakılır: kayıtta rol seçtirilmez, ilk girişte RoleSelectModal
+  // ile sorulur (OAuth ile aynı akış). Boş rol → needsRole → modal açılır.
   const { data, error } = await supabase.auth.signUp({
     email, password,
-    options: { data: { name, role: role || "isveren", phone: phone || "" } },
+    options: { data: { name, role: role || "", phone: phone || "" } },
   });
   if (error) return { ok: false, error: error.message };
   // E-posta onayi aciksa session gelmez -> kullanici onaylamadan giremez.
