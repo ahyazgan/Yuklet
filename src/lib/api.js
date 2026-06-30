@@ -79,6 +79,9 @@ const rowToProfile = (r) => r && ({
   tesisTuru: r.tesis_turu || "", sehir: r.sehir || "", ilce: r.ilce || "",
   hakkinda: r.hakkinda || "", calismaSaatleri: r.calisma_saatleri || "",
   malzemeler: Array.isArray(r.malzemeler) ? r.malzemeler : [],
+  // Alıcı (işveren) profil alanları — sehir/ilce/hakkinda yukarıdan paylaşılır.
+  firmaTuru: r.firma_turu || "", web: r.web || "", vergiNo: r.vergi_no || "",
+  faaliyetAlani: Array.isArray(r.faaliyet_alani) ? r.faaliyet_alani : [],
 });
 
 // ── Auth ────────────────────────────────────────────────────
@@ -237,6 +240,11 @@ export async function updateProfile(userId, patch) {
   if (patch.hakkinda != null) row.hakkinda = patch.hakkinda;
   if (patch.calismaSaatleri != null) row.calisma_saatleri = patch.calismaSaatleri;
   if (patch.malzemeler != null) row.malzemeler = patch.malzemeler;
+  // Alıcı (işveren) profil alanları
+  if (patch.firmaTuru != null) row.firma_turu = patch.firmaTuru;
+  if (patch.web != null) row.web = patch.web;
+  if (patch.vergiNo != null) row.vergi_no = patch.vergiNo;
+  if (patch.faaliyetAlani != null) row.faaliyet_alani = patch.faaliyetAlani;
   const { data, error } = await supabase.from("profiles").update(row).eq("id", userId).select("*").single();
   if (error) return { ok: false, error: error.message };
   return { ok: true, profile: rowToProfile(data) };

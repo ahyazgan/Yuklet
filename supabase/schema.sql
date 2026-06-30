@@ -25,6 +25,11 @@ alter table public.profiles add column if not exists ilce             text defau
 alter table public.profiles add column if not exists hakkinda         text default '';
 alter table public.profiles add column if not exists calisma_saatleri text default '';
 alter table public.profiles add column if not exists malzemeler       text[] default '{}';
+-- Alıcı (işveren) profil alanları — herkese açık firma vitrini (/alici/:id) besler.
+alter table public.profiles add column if not exists firma_turu       text default '';
+alter table public.profiles add column if not exists web              text default '';
+alter table public.profiles add column if not exists vergi_no         text default '';
+alter table public.profiles add column if not exists faaliyet_alani   text[] default '{}';
 
 -- ──────────────────────────────────────────────
 -- 2) LISTINGS  (is / arac ilanlari)

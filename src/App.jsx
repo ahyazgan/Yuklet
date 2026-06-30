@@ -50,6 +50,7 @@ const TekliflerimPage = lazy(() => import("./pages/TekliflerimPage"));
 const MesajlarPage = lazy(() => import("./pages/MesajlarPage"));
 const ProfilPage = lazy(() => import("./pages/ProfilPage"));
 const SaticiProfilPage = lazy(() => import("./pages/SaticiProfilPage"));
+const AliciProfilPage = lazy(() => import("./pages/AliciProfilPage"));
 const AdminPage = lazy(() => import("./pages/AdminPage"));
 const DashboardPage = lazy(() => import("./pages/DashboardPage"));
 const MuteahhitPage = lazy(() => import("./pages/MuteahhitPage"));
@@ -656,6 +657,7 @@ function AppShell() {
                 <Route path="/muteahhit" element={<PageTransition><MuteahhitPage /></PageTransition>} />
                 <Route path="/tedarikci" element={<PageTransition><TedarikciPage /></PageTransition>} />
                 <Route path="/satici/:id" element={<PageTransition><SaticiProfilPage user={user} users={users} listings={listings} reviews={reviews} getUserRating={getUserRating} /></PageTransition>} />
+                <Route path="/alici/:id" element={<PageTransition><AliciProfilPage user={user} users={users} listings={listings} reviews={reviews} getUserRating={getUserRating} /></PageTransition>} />
                 <Route path="/nakliyeci" element={<PageTransition><NakliyeciPage /></PageTransition>} />
                 <Route path="/nasil-calisir" element={<PageTransition><NasilCalisirPage /></PageTransition>} />
                 <Route path="/hakkimizda" element={<PageTransition><HakkimizdaPage /></PageTransition>} />

@@ -45,6 +45,30 @@ const TESIS_TURLERI = [
 // Satıcının satabileceği malzemeler — iki kategori birleşimi (çoklu seçim).
 const SATICI_MALZEMELERI = [...HAFRIYAT_MATERIALS, ...SILOBAS_MATERIALS];
 
+// Alıcı (işveren) firma türleri — iş ilanı açan taraf.
+const FIRMA_TURLERI = [
+  "İnşaat şirketi",
+  "Müteahhit / yüklenici",
+  "Belediye / kamu kurumu",
+  "Fabrika / sanayi tesisi",
+  "Altyapı / yol firması",
+  "Emlak / gayrimenkul geliştirici",
+  "Bireysel",
+  "Diğer",
+];
+// Alıcının faaliyet alanları — çoklu seçim.
+const FAALIYET_ALANLARI = [
+  "Konut inşaatı",
+  "Ticari / ofis inşaatı",
+  "Altyapı / yol",
+  "Hafriyat işleri",
+  "Sanayi tesisi",
+  "Köprü / viyadük",
+  "Peyzaj / çevre düzenleme",
+  "Yıkım / kentsel dönüşüm",
+  "Maden / enerji",
+];
+
 // Role label shown in the dark identity header.
 const ROLE_BADGE = {
   isveren: "ALICI",
@@ -165,6 +189,11 @@ export default function ProfilPage({ user, onUpdateProfile, onRequireAuth, onLog
     hakkinda: user?.hakkinda || "",
     malzemeler: Array.isArray(user?.malzemeler) ? user.malzemeler : [],
     calismaSaatleri: user?.calismaSaatleri || "",
+    // Alıcı (işveren) profil alanları — yalnızca isveren rolünde kullanılır.
+    firmaTuru: user?.firmaTuru || "",
+    web: user?.web || "",
+    vergiNo: user?.vergiNo || "",
+    faaliyetAlani: Array.isArray(user?.faaliyetAlani) ? user.faaliyetAlani : [],
   });
 
   const onFile = (e) => {
@@ -212,6 +241,15 @@ export default function ProfilPage({ user, onUpdateProfile, onRequireAuth, onLog
         : [...f.malzemeler, m],
     }));
 
+  // Bir faaliyet alanını alıcının listesine ekle/çıkar (toggle).
+  const toggleFaaliyet = (m) =>
+    setForm((f) => ({
+      ...f,
+      faaliyetAlani: f.faaliyetAlani.includes(m)
+        ? f.faaliyetAlani.filter((x) => x !== m)
+        : [...f.faaliyetAlani, m],
+    }));
+
   const save = async () => {
     if (!form.name.trim()) { toast("Ad / firma zorunludur", "error"); return; }
     const patch = { name: form.name.trim(), phone: form.phone.trim(), role: form.role };
@@ -223,6 +261,16 @@ export default function ProfilPage({ user, onUpdateProfile, onRequireAuth, onLog
       patch.hakkinda = form.hakkinda.trim();
       patch.malzemeler = form.malzemeler;
       patch.calismaSaatleri = form.calismaSaatleri.trim();
+    }
+    // Alıcı rolündeyse firma/konum/faaliyet alanlarını kaydet.
+    if (user.role === "isveren") {
+      patch.firmaTuru = form.firmaTuru;
+      patch.sehir = form.sehir;
+      patch.ilce = form.ilce.trim();
+      patch.hakkinda = form.hakkinda.trim();
+      patch.faaliyetAlani = form.faaliyetAlani;
+      patch.web = form.web.trim();
+      patch.vergiNo = form.vergiNo.trim();
     }
     const res = await onUpdateProfile?.(patch);
     if (res && res.ok === false) { toast(res.error || "Profil güncellenemedi", "error"); return; }
@@ -456,6 +504,94 @@ export default function ProfilPage({ user, onUpdateProfile, onRequireAuth, onLog
             <button type="button" onClick={save}
               style={{ width: "100%", marginTop: 18, background: C.yellow, color: C.ink, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "14px", fontFamily: ARCHIVO, fontSize: 14, fontWeight: 800, textTransform: "uppercase", letterSpacing: "-0.01em", cursor: "pointer", boxShadow: "3px 3px 0 #0A0A0A" }}>
               Satıcı bilgilerini kaydet
+            </button>
+          </section>
+        )}
+
+        {/* Firma bilgileri — yalnızca alıcı (işveren) rolünde görünür.
+            Herkese açık alıcı vitrini (/alici/:id) bu alanlardan beslenir. */}
+        {role === "isveren" && (
+          <section style={cardSt}>
+            <h2 style={{ ...sectionTitle, display: "flex", alignItems: "center", gap: 7 }}>
+              <Building2 size={16} strokeWidth={2.4} color={C.ink} /> Firma bilgileri
+            </h2>
+            <p style={{ fontFamily: MONO, fontSize: 10, color: C.faint, margin: "0 0 14px", lineHeight: 1.5 }}>
+              Bu bilgiler herkese açık firma profilinde görünür. Nakliyeciler seni böyle tanır.
+            </p>
+
+            {/* Firma türü */}
+            <div style={{ marginBottom: 14 }}>
+              <label style={labelSt}>Firma türü</label>
+              <select value={form.firmaTuru} onChange={(e) => set("firmaTuru", e.target.value)}
+                style={{ ...inputSt, fontWeight: 700, fontSize: 13 }}>
+                <option value="">Seçiniz…</option>
+                {FIRMA_TURLERI.map((t) => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+
+            {/* Konum: il + ilçe */}
+            <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <label style={labelSt}>İl</label>
+                <select value={form.sehir} onChange={(e) => set("sehir", e.target.value)}
+                  style={{ ...inputSt, fontWeight: 700, fontSize: 13 }}>
+                  <option value="">Seçiniz…</option>
+                  {IL_LIST.map((il) => <option key={il} value={il}>{il}</option>)}
+                </select>
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <label style={labelSt}>İlçe</label>
+                <input style={inputSt} value={form.ilce} onChange={(e) => set("ilce", e.target.value)} placeholder="Ümraniye" />
+              </div>
+            </div>
+
+            {/* Hakkında / tanıtım */}
+            <div style={{ marginBottom: 14 }}>
+              <label style={labelSt}>Hakkında</label>
+              <textarea value={form.hakkinda} onChange={(e) => set("hakkinda", e.target.value)}
+                rows={3} maxLength={400} placeholder="Firmanı, çalıştığın bölgeyi ve iş hacmini kısaca anlat."
+                style={{ ...inputSt, resize: "vertical", lineHeight: 1.5, minHeight: 70 }} />
+              <div style={{ marginTop: 5, fontFamily: MONO, fontSize: 9, color: C.faint, textAlign: "right" }}>{form.hakkinda.length}/400</div>
+            </div>
+
+            {/* Web + Vergi no */}
+            <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <label style={labelSt}>Web sitesi</label>
+                <input style={inputSt} value={form.web} onChange={(e) => set("web", e.target.value)} placeholder="ornekfirma.com" />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <label style={labelSt}>Vergi no</label>
+                <input style={inputSt} value={form.vergiNo} onChange={(e) => set("vergiNo", e.target.value)} placeholder="1234567890" />
+              </div>
+            </div>
+
+            {/* Faaliyet alanı — çoklu seçim chip'leri */}
+            <div>
+              <label style={labelSt}>Faaliyet alanı</label>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginTop: 2 }}>
+                {FAALIYET_ALANLARI.map((m) => {
+                  const active = form.faaliyetAlani.includes(m);
+                  return (
+                    <button type="button" key={m} onClick={() => toggleFaaliyet(m)}
+                      style={{
+                        fontFamily: MONO, fontSize: 10, fontWeight: 700, padding: "6px 10px", borderRadius: 6, cursor: "pointer",
+                        border: `2px solid ${C.ink}`, background: active ? C.yellow : C.card, color: C.ink,
+                        boxShadow: active ? "2px 2px 0 #0A0A0A" : "none",
+                      }}>
+                      {m}
+                    </button>
+                  );
+                })}
+              </div>
+              {form.faaliyetAlani.length > 0 && (
+                <div style={{ marginTop: 9, fontFamily: MONO, fontSize: 10, color: C.sub }}>{form.faaliyetAlani.length} alan seçili</div>
+              )}
+            </div>
+
+            <button type="button" onClick={save}
+              style={{ width: "100%", marginTop: 18, background: C.yellow, color: C.ink, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "14px", fontFamily: ARCHIVO, fontSize: 14, fontWeight: 800, textTransform: "uppercase", letterSpacing: "-0.01em", cursor: "pointer", boxShadow: "3px 3px 0 #0A0A0A" }}>
+              Firma bilgilerini kaydet
             </button>
           </section>
         )}

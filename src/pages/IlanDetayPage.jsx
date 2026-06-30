@@ -504,13 +504,17 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
             <span style={headLabel}>İLAN SAHİBİ</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            {/* İlan ürün ilanıysa satıcı, ownerId varsa herkese açık profile gider. */}
+            {/* İlan sahibinin herkese açık profili: ürün → satıcı, iş → alıcı (firma). */}
             {(() => {
-              const canVisit = l.type === "urun" && l.ownerId != null;
+              const profilePath = l.ownerId == null ? null
+                : l.type === "urun" ? `/satici/${l.ownerId}`
+                : l.type === "is" ? `/alici/${l.ownerId}`
+                : null;
+              const canVisit = profilePath != null;
               const Tag = canVisit ? "button" : "div";
               return (
                 <Tag
-                  {...(canVisit ? { onClick: () => { navigate(`/satici/${l.ownerId}`); window.scrollTo(0, 0); }, type: "button", "aria-label": `${l.owner} satıcı profilini gör` } : {})}
+                  {...(canVisit ? { onClick: () => { navigate(profilePath); window.scrollTo(0, 0); }, type: "button", "aria-label": `${l.owner} profilini gör` } : {})}
                   style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0, flex: 1, background: "none", border: "none", padding: 0, textAlign: "left", cursor: canVisit ? "pointer" : "default" }}
                 >
                   <div style={{ width: 44, height: 44, borderRadius: 6, background: C.ink, color: C.yellow, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: HEAD, fontWeight: 900, fontSize: 19, flexShrink: 0 }}>
