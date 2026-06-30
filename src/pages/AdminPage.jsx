@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Shield, Lock, Ban, Flag, FileText, FileCheck2, Trash2, Eye, CheckCircle2, X, Check, Smartphone, Fuel, Scale, AlertTriangle, ScrollText } from "lucide-react";
 import { loadPricingConfig, savePricingConfig } from "../utils/storage";
@@ -81,6 +81,13 @@ export default function AdminPage({ user, reports = [], docs = [], users = [], l
   const saveFuel = (v, log) => { setFuelIndex(v); savePricingConfig({ ...loadPricingConfig(), fuelIndex: v }); setFuelSaved(true); setTimeout(() => setFuelSaved(false), 1500); if (log) onLog?.("config", `Yakıt endeksi → ×${v.toFixed(2)}`); };
   const saveFee = (v, log) => { setFeeRate(v); savePricingConfig({ ...loadPricingConfig(), feeRate: v }); setFuelSaved(true); setTimeout(() => setFuelSaved(false), 1500); if (log) onLog?.("config", `Komisyon → %${Math.round(v * 100)}`); };
 
+  // Admin olmayan giriş yapmış kullanıcı: panelin varlığını ifşa etmeden
+  // sessizce ana sayfaya yönlendir (kilit ekranı gösterme).
+  const blocked = Boolean(user) && !isAdmin(user);
+  useEffect(() => {
+    if (blocked) navigate("/", { replace: true });
+  }, [blocked, navigate]);
+
   // ── Gate: giriş yok ──
   if (!user) {
     return (
@@ -95,20 +102,8 @@ export default function AdminPage({ user, reports = [], docs = [], users = [], l
     );
   }
 
-  // ── Gate: yetki yok ──
-  if (!isAdmin(user)) {
-    return (
-      <div style={{ ...shell, alignItems: "center", justifyContent: "center", padding: "48px 20px", gap: 14, textAlign: "center" }}>
-        <SEO title="Yönetim" />
-        <div style={{ width: 66, height: 66, borderRadius: 6, background: C.red, border: `2px solid ${C.ink}`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "3px 3px 0 #0A0A0A" }}>
-          <Ban size={28} color="#fff" strokeWidth={2.4} />
-        </div>
-        <h1 style={{ fontFamily: HEAD, fontSize: 21, fontWeight: 900, textTransform: "uppercase", letterSpacing: "-0.02em", color: C.ink, lineHeight: 1.15, margin: 0 }}>Bu alana erişiminiz yok</h1>
-        <p style={{ fontFamily: BODY, fontSize: 13.5, color: C.sub, margin: 0, maxWidth: 300 }}>Yönetim paneli yalnızca platform yöneticilerine açıktır.</p>
-        <button onClick={() => navigate("/")} style={{ ...btnBase, background: C.yellow, fontSize: 13, padding: "11px 18px", marginTop: 4, boxShadow: "3px 3px 0 #0A0A0A" }}>Ana sayfa</button>
-      </div>
-    );
-  }
+  // ── Gate: yetki yok → kilit ekranı gösterme, sessizce yönlendir (yukarıdaki effect) ──
+  if (blocked) return null;
 
   const openReports = reports.filter((r) => r.status !== "kapali").length;
   const pendingDocs = docs.filter((d) => (d.status || "beklemede") === "beklemede").length;
