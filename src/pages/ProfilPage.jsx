@@ -7,6 +7,7 @@ import { StarsDisplay } from "../components/Stars";
 import SEO from "../components/SEO";
 import Logo from "../components/Logo";
 import { DEFAULT_NOTIF_PREFS } from "../utils/storage";
+import { IL_LIST, HAFRIYAT_MATERIALS, SILOBAS_MATERIALS } from "../data/categories";
 import { visibleReviewsFor } from "../utils/reviewGate";
 import { isAdmin } from "../utils/admin";
 import { computeReliability, reliabilityTier } from "../utils/reliability";
@@ -30,6 +31,19 @@ const ROLES = [
   { id: "tedarikci", label: "Satıcı", desc: "Malzeme satar: ocak, beton, kum" },
   { id: "nakliyeci", label: "Nakliyeci / Taşıyıcı", desc: "Araç ilanı açar, yük taşır" },
 ];
+
+// Satıcı (tedarikçi) tesis türleri — ocak/santral profili için.
+const TESIS_TURLERI = [
+  "Kırma ocağı (taş/mıcır)",
+  "Kum ocağı",
+  "Beton santrali (hazır beton)",
+  "Çimento fabrikası / bayi",
+  "Agrega tesisi",
+  "Maden ocağı",
+  "Diğer tesis",
+];
+// Satıcının satabileceği malzemeler — iki kategori birleşimi (çoklu seçim).
+const SATICI_MALZEMELERI = [...HAFRIYAT_MATERIALS, ...SILOBAS_MATERIALS];
 
 // Role label shown in the dark identity header.
 const ROLE_BADGE = {
@@ -144,6 +158,13 @@ export default function ProfilPage({ user, onUpdateProfile, onRequireAuth, onLog
     name: user?.name || "",
     phone: user?.phone || "",
     role: user?.role || "isveren",
+    // Satıcı (tedarikçi) profil alanları — yalnızca tedarikçi rolünde kullanılır.
+    tesisTuru: user?.tesisTuru || "",
+    sehir: user?.sehir || "",
+    ilce: user?.ilce || "",
+    hakkinda: user?.hakkinda || "",
+    malzemeler: Array.isArray(user?.malzemeler) ? user.malzemeler : [],
+    calismaSaatleri: user?.calismaSaatleri || "",
   });
 
   const onFile = (e) => {
@@ -182,9 +203,28 @@ export default function ProfilPage({ user, onUpdateProfile, onRequireAuth, onLog
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
+  // Bir malzemeyi satıcının listesine ekle/çıkar (toggle).
+  const toggleMalzeme = (m) =>
+    setForm((f) => ({
+      ...f,
+      malzemeler: f.malzemeler.includes(m)
+        ? f.malzemeler.filter((x) => x !== m)
+        : [...f.malzemeler, m],
+    }));
+
   const save = async () => {
     if (!form.name.trim()) { toast("Ad / firma zorunludur", "error"); return; }
-    const res = await onUpdateProfile?.({ name: form.name.trim(), phone: form.phone.trim(), role: form.role });
+    const patch = { name: form.name.trim(), phone: form.phone.trim(), role: form.role };
+    // Satıcı rolündeyse tesis/konum/ürün alanlarını da kaydet.
+    if (user.role === "tedarikci") {
+      patch.tesisTuru = form.tesisTuru;
+      patch.sehir = form.sehir;
+      patch.ilce = form.ilce.trim();
+      patch.hakkinda = form.hakkinda.trim();
+      patch.malzemeler = form.malzemeler;
+      patch.calismaSaatleri = form.calismaSaatleri.trim();
+    }
+    const res = await onUpdateProfile?.(patch);
     if (res && res.ok === false) { toast(res.error || "Profil güncellenemedi", "error"); return; }
     toast("Profil güncellendi", "success");
   };
@@ -337,6 +377,88 @@ export default function ProfilPage({ user, onUpdateProfile, onRequireAuth, onLog
             Değişiklikleri kaydet
           </button>
         </motion.section>
+
+        {/* Satıcı bilgileri — yalnızca tedarikçi (satıcı) rolünde görünür.
+            Herkese açık satıcı vitrini (/satici/:id) bu alanlardan beslenir. */}
+        {role === "tedarikci" && (
+          <section style={cardSt}>
+            <h2 style={{ ...sectionTitle, display: "flex", alignItems: "center", gap: 7 }}>
+              <Building2 size={16} strokeWidth={2.4} color={C.ink} /> Satıcı bilgileri
+            </h2>
+            <p style={{ fontFamily: MONO, fontSize: 10, color: C.faint, margin: "0 0 14px", lineHeight: 1.5 }}>
+              Bu bilgiler herkese açık satıcı profilinde görünür. Alıcılar seni böyle bulur.
+            </p>
+
+            {/* Tesis türü */}
+            <div style={{ marginBottom: 14 }}>
+              <label style={labelSt}>Tesis türü</label>
+              <select value={form.tesisTuru} onChange={(e) => set("tesisTuru", e.target.value)}
+                style={{ ...inputSt, fontWeight: 700, fontSize: 13 }}>
+                <option value="">Seçiniz…</option>
+                {TESIS_TURLERI.map((t) => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+
+            {/* Konum: il + ilçe */}
+            <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <label style={labelSt}>İl</label>
+                <select value={form.sehir} onChange={(e) => set("sehir", e.target.value)}
+                  style={{ ...inputSt, fontWeight: 700, fontSize: 13 }}>
+                  <option value="">Seçiniz…</option>
+                  {IL_LIST.map((il) => <option key={il} value={il}>{il}</option>)}
+                </select>
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <label style={labelSt}>İlçe</label>
+                <input style={inputSt} value={form.ilce} onChange={(e) => set("ilce", e.target.value)} placeholder="Gebze" />
+              </div>
+            </div>
+
+            {/* Hakkında / tanıtım */}
+            <div style={{ marginBottom: 14 }}>
+              <label style={labelSt}>Hakkında</label>
+              <textarea value={form.hakkinda} onChange={(e) => set("hakkinda", e.target.value)}
+                rows={3} maxLength={400} placeholder="Tesisini, kapasiteni ve hizmet bölgeni kısaca anlat."
+                style={{ ...inputSt, resize: "vertical", lineHeight: 1.5, minHeight: 70 }} />
+              <div style={{ marginTop: 5, fontFamily: MONO, fontSize: 9, color: C.faint, textAlign: "right" }}>{form.hakkinda.length}/400</div>
+            </div>
+
+            {/* Çalışma saatleri */}
+            <div style={{ marginBottom: 14 }}>
+              <label style={labelSt}>Çalışma saatleri</label>
+              <input style={inputSt} value={form.calismaSaatleri} onChange={(e) => set("calismaSaatleri", e.target.value)} placeholder="Hafta içi 08:00–18:00, Cmt 08:00–13:00" />
+            </div>
+
+            {/* Sattığın malzemeler — çoklu seçim chip'leri */}
+            <div>
+              <label style={labelSt}>Sattığın malzemeler</label>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginTop: 2 }}>
+                {SATICI_MALZEMELERI.map((m) => {
+                  const active = form.malzemeler.includes(m);
+                  return (
+                    <button type="button" key={m} onClick={() => toggleMalzeme(m)}
+                      style={{
+                        fontFamily: MONO, fontSize: 10, fontWeight: 700, padding: "6px 10px", borderRadius: 6, cursor: "pointer",
+                        border: `2px solid ${C.ink}`, background: active ? C.yellow : C.card, color: C.ink,
+                        boxShadow: active ? "2px 2px 0 #0A0A0A" : "none",
+                      }}>
+                      {m}
+                    </button>
+                  );
+                })}
+              </div>
+              {form.malzemeler.length > 0 && (
+                <div style={{ marginTop: 9, fontFamily: MONO, fontSize: 10, color: C.sub }}>{form.malzemeler.length} malzeme seçili</div>
+              )}
+            </div>
+
+            <button type="button" onClick={save}
+              style={{ width: "100%", marginTop: 18, background: C.yellow, color: C.ink, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "14px", fontFamily: ARCHIVO, fontSize: 14, fontWeight: 800, textTransform: "uppercase", letterSpacing: "-0.01em", cursor: "pointer", boxShadow: "3px 3px 0 #0A0A0A" }}>
+              Satıcı bilgilerini kaydet
+            </button>
+          </section>
+        )}
 
         {/* Bildirim tercihleri — hangi bildirimleri alacağını seç */}
         <section style={cardSt}>

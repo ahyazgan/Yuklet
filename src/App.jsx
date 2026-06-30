@@ -35,7 +35,7 @@ import InstallPrompt from "./components/InstallPrompt";
 import OfflineBanner from "./components/OfflineBanner";
 import UpdateBanner from "./components/UpdateBanner";
 
-import { LISTINGS } from "./data/listings";
+import { LISTINGS, DEMO_SELLER } from "./data/listings";
 
 // Lazy loaded pages
 const NakliyeHome = lazy(() => import("./pages/NakliyeHome"));
@@ -49,6 +49,7 @@ const IlanlarimPage = lazy(() => import("./pages/IlanlarimPage"));
 const TekliflerimPage = lazy(() => import("./pages/TekliflerimPage"));
 const MesajlarPage = lazy(() => import("./pages/MesajlarPage"));
 const ProfilPage = lazy(() => import("./pages/ProfilPage"));
+const SaticiProfilPage = lazy(() => import("./pages/SaticiProfilPage"));
 const AdminPage = lazy(() => import("./pages/AdminPage"));
 const DashboardPage = lazy(() => import("./pages/DashboardPage"));
 const MuteahhitPage = lazy(() => import("./pages/MuteahhitPage"));
@@ -108,7 +109,12 @@ function AppShell() {
   const [userListings, setUserListings] = useState(() => (SB ? [] : loadListings()));
   useEffect(() => { if (!SB) saveListings(userListings); }, [userListings, SB]);
   // Kullanicilar + denetim kaydi (banli filtreleme listings'ten once gerektigi icin burada)
-  const [users, setUsers] = useState(() => loadUsers());            // sadece localStorage modunda kullanilir
+  const [users, setUsers] = useState(() => {                        // sadece localStorage modunda kullanilir
+    const stored = loadUsers();
+    if (SB) return stored;
+    // Demo satici hesabini seed et (vitrin /satici/:id dolu gozuksun) — yoksa ekle.
+    return stored.some((u) => String(u.id) === String(DEMO_SELLER.id)) ? stored : [...stored, DEMO_SELLER];
+  });
   useEffect(() => { if (!SB) saveUsers(users); }, [users, SB]);
   const [audit, setAudit] = useState(() => loadAuditLog());
   const [announcement, setAnnouncement] = useState(() => loadAnnouncement());
@@ -649,6 +655,7 @@ function AppShell() {
                 <Route path="/admin" element={<PageTransition><AdminPage user={user} reports={reports} docs={docs} users={users} listings={allListings} offers={offers} audit={audit} onRequireAuth={requireAuth} onSetReportStatus={setReportStatus} onReviewDoc={reviewDoc} onUpdateUser={updateUserAdmin} onResolveDispute={resolveDispute} onLog={logAdmin} onUpdateListing={updateListing} announcement={announcement} onSaveAnnouncement={saveAnnouncementAdmin} /></PageTransition>} />
                 <Route path="/muteahhit" element={<PageTransition><MuteahhitPage /></PageTransition>} />
                 <Route path="/tedarikci" element={<PageTransition><TedarikciPage /></PageTransition>} />
+                <Route path="/satici/:id" element={<PageTransition><SaticiProfilPage user={user} users={users} listings={listings} reviews={reviews} getUserRating={getUserRating} /></PageTransition>} />
                 <Route path="/nakliyeci" element={<PageTransition><NakliyeciPage /></PageTransition>} />
                 <Route path="/nasil-calisir" element={<PageTransition><NasilCalisirPage /></PageTransition>} />
                 <Route path="/hakkimizda" element={<PageTransition><HakkimizdaPage /></PageTransition>} />

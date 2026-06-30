@@ -504,32 +504,44 @@ export default function IlanDetayPage({ listings = LISTINGS, user, onRequireAuth
             <span style={headLabel}>İLAN SAHİBİ</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <div style={{ width: 44, height: 44, borderRadius: 6, background: C.ink, color: C.yellow, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: HEAD, fontWeight: 900, fontSize: 19, flexShrink: 0 }}>
-              {String(l.owner || "?").charAt(0).toUpperCase()}
-            </div>
-            <div style={{ minWidth: 0, flex: 1 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={{ fontFamily: HEAD, fontSize: 15, fontWeight: 800, color: C.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{l.owner || "—"}</span>
-                {l.ownerVerified && (
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontFamily: MONO, fontSize: 9, fontWeight: 700, color: C.green }}>
-                    <BadgeCheck size={13} strokeWidth={2.6} color={C.green} /> ● ONAYLI
-                  </span>
-                )}
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 4, flexWrap: "wrap" }}>
-                {l.ownerRating != null && (
-                  <div style={{ fontFamily: MONO, fontSize: 11, fontWeight: 700, color: C.sub, display: "flex", alignItems: "center", gap: 4 }}>
-                    <Star size={12} strokeWidth={2.4} color={C.yellowDeep} fill={C.yellow} />
-                    {l.ownerRating}{l.ownerJobs != null ? ` · ${l.ownerJobs} İŞ` : ""}
+            {/* İlan ürün ilanıysa satıcı, ownerId varsa herkese açık profile gider. */}
+            {(() => {
+              const canVisit = l.type === "urun" && l.ownerId != null;
+              const Tag = canVisit ? "button" : "div";
+              return (
+                <Tag
+                  {...(canVisit ? { onClick: () => { navigate(`/satici/${l.ownerId}`); window.scrollTo(0, 0); }, type: "button", "aria-label": `${l.owner} satıcı profilini gör` } : {})}
+                  style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0, flex: 1, background: "none", border: "none", padding: 0, textAlign: "left", cursor: canVisit ? "pointer" : "default" }}
+                >
+                  <div style={{ width: 44, height: 44, borderRadius: 6, background: C.ink, color: C.yellow, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: HEAD, fontWeight: 900, fontSize: 19, flexShrink: 0 }}>
+                    {String(l.owner || "?").charAt(0).toUpperCase()}
                   </div>
-                )}
-                {ownerRel?.score != null && (
-                  <div title={`Güvenilirlik %${ownerRel.score} · ${ownerRel.jobsDone} tamamlanan iş`} style={{ fontFamily: MONO, fontSize: 11, fontWeight: 700, color: reliabilityTier(ownerRel.score).color, display: "flex", alignItems: "center", gap: 4 }}>
-                    <ShieldCheck size={12} strokeWidth={2.5} /> %{ownerRel.score} · {reliabilityTier(ownerRel.score).label}
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{ fontFamily: HEAD, fontSize: 15, fontWeight: 800, color: C.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textDecoration: canVisit ? "underline" : "none" }}>{l.owner || "—"}</span>
+                      {l.ownerVerified && (
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontFamily: MONO, fontSize: 9, fontWeight: 700, color: C.green }}>
+                          <BadgeCheck size={13} strokeWidth={2.6} color={C.green} /> ● ONAYLI
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 4, flexWrap: "wrap" }}>
+                      {l.ownerRating != null && (
+                        <div style={{ fontFamily: MONO, fontSize: 11, fontWeight: 700, color: C.sub, display: "flex", alignItems: "center", gap: 4 }}>
+                          <Star size={12} strokeWidth={2.4} color={C.yellowDeep} fill={C.yellow} />
+                          {l.ownerRating}{l.ownerJobs != null ? ` · ${l.ownerJobs} İŞ` : ""}
+                        </div>
+                      )}
+                      {ownerRel?.score != null && (
+                        <div title={`Güvenilirlik %${ownerRel.score} · ${ownerRel.jobsDone} tamamlanan iş`} style={{ fontFamily: MONO, fontSize: 11, fontWeight: 700, color: reliabilityTier(ownerRel.score).color, display: "flex", alignItems: "center", gap: 4 }}>
+                          <ShieldCheck size={12} strokeWidth={2.5} /> %{ownerRel.score} · {reliabilityTier(ownerRel.score).label}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                )}
-              </div>
-            </div>
+                </Tag>
+              );
+            })()}
             <button onClick={() => navigate("/mesajlar")}
               style={{ display: "flex", alignItems: "center", gap: 6, border: `2px solid ${C.ink}`, borderRadius: 6, background: C.yellow, padding: "9px 12px", fontFamily: HEAD, fontWeight: 800, fontSize: 12, textTransform: "uppercase", flexShrink: 0, cursor: "pointer" }}>
               Mesaj

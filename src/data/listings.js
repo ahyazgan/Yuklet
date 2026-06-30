@@ -88,5 +88,66 @@ export const LISTINGS = [
   },
 ];
 
+// ── DEMO SATICI (tedarikci) ──────────────────────────────────────────
+// Herkese acik satici vitrinini (/satici/:id) dolu gostermek icin ornek
+// satici hesabi. localStorage modunda users'a seed edilir (App.jsx).
+// Stabil id: profil linkleri ve ilan ownerId eslesmesi icin sabit.
+export const DEMO_SELLER = {
+  id: "demo-satici-1",
+  name: "Akdağ Kırma Ocağı",
+  email: "satici@demo.yuklet.co",
+  role: "tedarikci",
+  provider: "demo",
+  verified: true,
+  rating: 4.8,
+  phone: "0532 000 00 00",
+  tesisTuru: "Kırma ocağı (taş/mıcır)",
+  sehir: "Kocaeli",
+  ilce: "Gebze",
+  hakkinda: "Marmara bölgesinde 20 yıldır faaliyet gösteren kırma taş ocağı. Mıcır, çakıl ve agrega üretimi. Nakliyeli teslim mümkün, kapasite raporu ve TSE belgelerimiz mevcuttur.",
+  calismaSaatleri: "Hafta içi 07:30–18:30, Cmt 08:00–14:00",
+  malzemeler: ["Mıcır (8–16 mm)", "Mıcır (16–32 mm)", "Çakıl (3–8 mm)", "Kırma taş (agrega)", "Kum (0–3 mm)"],
+};
+
+// Demo saticinin urun ilanlari — vitrindeki "Ürün ilanları" bolumunu doldurur.
+export const DEMO_SELLER_LISTINGS = [
+  {
+    id: "demo-urun-1", type: "urun", cat: "silobas",
+    title: "Mıcır (16–32 mm) — ocak teslim / nakliyeli",
+    il: "Kocaeli", ilce: "Gebze",
+    material: "Mıcır (16–32 mm)", amount: 500, unit: "ton",
+    stock: "bol",
+    priceType: "sabit", price: 480,
+    desc: "Yıkanmış 16–32 mm mıcır. Ocak teslim fiyatıdır, nakliye platformdan ayarlanır. Büyük tonajda fiyat görüşülür.",
+    owner: "Akdağ Kırma Ocağı", ownerId: "demo-satici-1", ownerVerified: true, ownerRating: 4.8,
+    status: "aktif", offers: 4, createdText: "1 gün önce",
+  },
+  {
+    id: "demo-urun-2", type: "urun", cat: "silobas",
+    title: "Çakıl (3–8 mm) — beton agregası",
+    il: "Kocaeli", ilce: "Gebze",
+    material: "Çakıl (3–8 mm)", amount: 300, unit: "ton",
+    stock: "orta",
+    priceType: "sabit", price: 520,
+    desc: "Beton santralleri için elenmiş çakıl. Sürekli alımda anlaşmalı fiyat.",
+    owner: "Akdağ Kırma Ocağı", ownerId: "demo-satici-1", ownerVerified: true, ownerRating: 4.8,
+    status: "aktif", offers: 2, createdText: "3 gün önce",
+  },
+  {
+    id: "demo-urun-3", type: "urun", cat: "silobas",
+    title: "Yıkanmış kum (0–3 mm)",
+    il: "Kocaeli", ilce: "Gebze",
+    material: "Kum (0–3 mm)", amount: 200, unit: "ton",
+    stock: "az",
+    priceType: "teklif", price: null,
+    desc: "İnşaat ve sıva kumu. Stok sınırlı, fiyat için teklif verin.",
+    owner: "Akdağ Kırma Ocağı", ownerId: "demo-satici-1", ownerVerified: true, ownerRating: 4.8,
+    status: "aktif", offers: 1, createdText: "5 gün önce",
+  },
+];
+
+// Demo urun ilanlarini ana listeye dahil et (localStorage modu).
+LISTINGS.push(...DEMO_SELLER_LISTINGS);
+
 // IL_LIST artik categories.js'te — geri donuk uyumluluk icin re-export
 export { IL_LIST } from "./categories";
