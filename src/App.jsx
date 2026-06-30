@@ -358,6 +358,8 @@ function AppShell() {
   const saveAnnouncementAdmin = (next) => { setAnnouncement(next); saveAnnouncement(next); logAdmin("duyuru", next.active ? `Yayında: "${next.text}"` : "Kapatıldı"); };
   // Admin: herhangi bir kullaniciyi guncelle (ban/askiya al/rol/manuel onay).
   const updateUserAdmin = async (userId, patch) => {
+    // SB modunda önce DB'ye yaz; başarısızsa yerel state'i HİÇ değiştirme
+    // (aksi halde UI "banlandı" gösterir ama DB değişmez — yanıltıcı).
     if (SB) { try { await api.adminUpdateProfile(userId, patch); } catch (e) { console.error(e); return { ok: false, error: e?.message }; } }
     setUsers((prev) => prev.map((u) => String(u.id) === String(userId) ? { ...u, ...patch } : u));
     setUser((cur) => (cur && String(cur.id) === String(userId) ? { ...cur, ...patch } : cur));

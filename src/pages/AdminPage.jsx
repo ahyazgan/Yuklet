@@ -5,6 +5,7 @@ import { loadPricingConfig, savePricingConfig } from "../utils/storage";
 import { seasonFactor } from "../utils/priceEstimate";
 import { fmtTL } from "../utils/payments";
 import SEO from "../components/SEO";
+import { useToast } from "../components/Toast";
 import { isSupabaseConfigured } from "../lib/supabase";
 import { isAdmin } from "../utils/admin";
 import { PAYMENTS_ENABLED } from "../config/features";
@@ -69,6 +70,13 @@ const btnBase = {
 
 export default function AdminPage({ user, reports = [], docs = [], users = [], listings = [], offers = [], onRequireAuth, onSetReportStatus, onReviewDoc, onUpdateUser, onResolveDispute, audit = [], onLog, onUpdateListing, announcement, onSaveAnnouncement }) {
   const navigate = useNavigate();
+  const toast = useToast();
+  // Admin kullanıcı işlemi sarmalayıcı: sonucu kontrol et, hatayı toast ile göster.
+  const doUserAction = async (userId, patch, okMsg) => {
+    const res = await onUpdateUser?.(userId, patch);
+    if (res && res.ok === false) { toast?.(res.error || "İşlem başarısız", "error"); return; }
+    toast?.(okMsg, "success");
+  };
   const [tab, setTab] = useState("reports");
   const [fuelIndex, setFuelIndex] = useState(() => loadPricingConfig().fuelIndex || 1.0);
   const [feeRate, setFeeRate] = useState(() => loadPricingConfig().feeRate ?? 0.10);
@@ -460,13 +468,13 @@ export default function AdminPage({ user, reports = [], docs = [], users = [], l
                   </div>
                   {/* admin aksiyonları */}
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginTop: 12, paddingTop: 11, borderTop: `1.5px solid ${C.border}` }}>
-                    <button onClick={() => onUpdateUser?.(u.id, { verified: !u.verified })} style={{ ...btnBase, background: u.verified ? C.stone : C.card }}>
+                    <button onClick={() => doUserAction(u.id, { verified: !u.verified }, u.verified ? "Onay kaldırıldı" : "Onaylandı")} style={{ ...btnBase, background: u.verified ? C.stone : C.card }}>
                       <Check size={12} strokeWidth={2.6} /> {u.verified ? "Onayı kaldır" : "Onayla"}
                     </button>
-                    <button onClick={() => onUpdateUser?.(u.id, { role: nextRole[u.role] || "isveren" })} style={{ ...btnBase }}>
+                    <button onClick={() => doUserAction(u.id, { role: nextRole[u.role] || "isveren" }, `Rol → ${nextRole[u.role] || "isveren"}`)} style={{ ...btnBase }}>
                       Rol: {u.role}
                     </button>
-                    <button onClick={() => onUpdateUser?.(u.id, { status: banned ? "aktif" : "banli" })}
+                    <button onClick={() => doUserAction(u.id, { status: banned ? "aktif" : "banli" }, banned ? "Ban kaldırıldı" : "Banlandı")}
                       style={{ ...btnBase, background: banned ? C.green : C.red, color: "#fff", border: `2px solid ${C.ink}` }}>
                       <Ban size={12} strokeWidth={2.6} /> {banned ? "Banı kaldır" : "Banla"}
                     </button>

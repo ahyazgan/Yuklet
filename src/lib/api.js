@@ -424,8 +424,13 @@ export async function adminUpdateProfile(userId, patch) {
   if (patch.status != null) row.status = patch.status;
   if (patch.role != null) row.role = patch.role;
   if (patch.verified != null) row.verified = patch.verified;
-  const { error } = await supabase.from("profiles").update(row).eq("id", userId);
+  // .select() ile dönen satırı al: RLS update'i engellerse hata fırlatmaz,
+  // sessizce 0 satır döner. Etkilenen satır yoksa AÇIK hata ver (UI'da görünsün).
+  const { data, error } = await supabase.from("profiles").update(row).eq("id", userId).select("id");
   if (error) throw error;
+  if (!data || data.length === 0) {
+    throw new Error("Yetki yok ya da kayıt güncellenemedi (RLS). Admin oturumunu kontrol et.");
+  }
 }
 export async function updateDocStatus(docId, status) {
   const { error } = await supabase.from("docs").update({ status }).eq("id", docId);
