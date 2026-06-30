@@ -18,6 +18,13 @@ create table if not exists public.profiles (
   created_at  timestamptz not null default now()
 );
 alter table public.profiles add column if not exists phone_verified boolean not null default false;
+-- Satıcı (tedarikçi) profil alanları — herkese açık vitrini (/satici/:id) besler.
+alter table public.profiles add column if not exists tesis_turu       text default '';
+alter table public.profiles add column if not exists sehir            text default '';
+alter table public.profiles add column if not exists ilce             text default '';
+alter table public.profiles add column if not exists hakkinda         text default '';
+alter table public.profiles add column if not exists calisma_saatleri text default '';
+alter table public.profiles add column if not exists malzemeler       text[] default '{}';
 
 -- ──────────────────────────────────────────────
 -- 2) LISTINGS  (is / arac ilanlari)

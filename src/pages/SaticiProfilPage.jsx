@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { BadgeCheck, Star, MapPin, Clock, Building2, Package, ShieldCheck, ArrowLeft, MessageCircle } from "lucide-react";
@@ -7,6 +7,8 @@ import Logo from "../components/Logo";
 import { StarsDisplay } from "../components/Stars";
 import { visibleReviewsFor } from "../utils/reviewGate";
 import { computeReliability } from "../utils/reliability";
+import { isSupabaseConfigured } from "../lib/supabase";
+import { getProfile } from "../lib/api";
 
 // ── SAHA herkese açık SATICI vitrini — alıcılar bir satıcıyı buradan görür.
 //    Salt-okunur: satıcı bilgileri (ProfilPage'te düzenlenir), aktif ürün
@@ -43,13 +45,30 @@ export default function SaticiProfilPage({ user, users = [], listings = [], revi
   const { id } = useParams();
   const navigate = useNavigate();
 
-  // Satıcıyı id ile çöz: önce kullanıcı listesinden, yoksa kendi profilimden.
-  const seller = useMemo(() => {
+  // Satıcıyı id ile çöz: önce kullanıcı listesinden / kendi profilimden.
+  const localSeller = useMemo(() => {
     const fromUsers = users.find((u) => String(u.id) === String(id));
     if (fromUsers) return fromUsers;
     if (user && String(user.id) === String(id)) return user;
     return null;
   }, [users, user, id]);
+
+  // Supabase modunda users state boş olur → profili DB'den çek.
+  // fetched.for = hangi id için çözüldüğü; id değişince eski sonuç yok sayılır.
+  const needsFetch = isSupabaseConfigured && !localSeller;
+  const [fetched, setFetched] = useState({ for: null, profile: null });
+  useEffect(() => {
+    if (!needsFetch) return;
+    let alive = true;
+    getProfile(id)
+      .then((p) => { if (alive) setFetched({ for: id, profile: p || null }); })
+      .catch(() => { if (alive) setFetched({ for: id, profile: null }); });
+    return () => { alive = false; };
+  }, [id, needsFetch]);
+
+  const resolved = String(fetched.for) === String(id);
+  const seller = localSeller || (resolved ? fetched.profile : null);
+  const loading = needsFetch && !resolved;
 
   // Satıcının kendi açtığı AKTİF ilanları (ürün/diğer).
   const sellerListings = useMemo(
@@ -61,6 +80,18 @@ export default function SaticiProfilPage({ user, users = [], listings = [], revi
   const sellerReviews = visibleReviewsFor(id, reviews).slice(0, 8);
   const rel = seller ? computeReliability(id, { listings, offers: [], reviews }) : null;
   const isMe = user && String(user.id) === String(id);
+
+  // ── Yükleniyor (SB profil çekimi) ──
+  if (loading) {
+    return (
+      <div style={shell}>
+        <SEO title="Satıcı" />
+        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+          <span style={{ fontFamily: MONO, fontSize: 12, color: C.muted, textTransform: "uppercase", letterSpacing: 1 }}>Yükleniyor…</span>
+        </div>
+      </div>
+    );
+  }
 
   // ── Satıcı bulunamadı ──
   if (!seller || seller.role !== "tedarikci") {

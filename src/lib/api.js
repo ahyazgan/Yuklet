@@ -75,6 +75,10 @@ const rowToProfile = (r) => r && ({
   id: r.id, name: r.name, email: r.email, role: r.role,
   phone: r.phone, phoneVerified: r.phone_verified, verified: r.verified, rating: r.rating,
   status: r.status || "aktif",
+  // Satıcı (tedarikçi) profil alanları — herkese açık vitrini besler.
+  tesisTuru: r.tesis_turu || "", sehir: r.sehir || "", ilce: r.ilce || "",
+  hakkinda: r.hakkinda || "", calismaSaatleri: r.calisma_saatleri || "",
+  malzemeler: Array.isArray(r.malzemeler) ? r.malzemeler : [],
 });
 
 // ── Auth ────────────────────────────────────────────────────
@@ -226,6 +230,13 @@ export async function updateProfile(userId, patch) {
   if (patch.phone != null) row.phone = patch.phone;
   if (patch.role != null) row.role = patch.role;
   if (patch.phoneVerified != null) row.phone_verified = patch.phoneVerified;
+  // Satıcı (tedarikçi) profil alanları
+  if (patch.tesisTuru != null) row.tesis_turu = patch.tesisTuru;
+  if (patch.sehir != null) row.sehir = patch.sehir;
+  if (patch.ilce != null) row.ilce = patch.ilce;
+  if (patch.hakkinda != null) row.hakkinda = patch.hakkinda;
+  if (patch.calismaSaatleri != null) row.calisma_saatleri = patch.calismaSaatleri;
+  if (patch.malzemeler != null) row.malzemeler = patch.malzemeler;
   const { data, error } = await supabase.from("profiles").update(row).eq("id", userId).select("*").single();
   if (error) return { ok: false, error: error.message };
   return { ok: true, profile: rowToProfile(data) };
