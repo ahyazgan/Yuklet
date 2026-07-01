@@ -10,13 +10,22 @@ Bu adımlar **bir kez** yapılır. Tahmini süre: ~10 dakika. Sadece senin yapab
 ## 2) Şemayı yükle
 1. Sol menü → **SQL Editor** → **New query**
 2. Bu repodaki [`supabase/schema.sql`](supabase/schema.sql) dosyasının **tamamını** yapıştır → **Run**
-3. "Success" görmelisin. (Tablolar, güvenlik kuralları, demo ilanlar oluştu.)
+3. "Success" görmelisin. (Tablolar, güvenlik kuralları, RPC'ler, demo ilanlar oluştu.)
 
-> **Tekrar çalıştırmak güvenli (idempotent):** Projeyi önceden kurduysan da dosyayı
-> yeniden Run'layabilirsin — `add column if not exists` ile yeni alanlar (teslim kanıtı,
-> mekik dönüşü, varış, hızlı ödeme, canlı konum tablosu `trip_locations`, mesaj
-> **okundu bilgisi** `messages.read_at`) eklenir, mevcut veriyi bozmaz. Bu oturumdaki
-> lojistik + okundu özellikleri için şemayı **bir kez daha çalıştır**.
+> **`schema.sql` artık TEK DOSYA + STANDALONE.** İçine şunlar da katıldı (ayrıca
+> çalıştırmana gerek YOK): `accept_job`/`accept_offer` RPC'leri + `assigned_vehicle`,
+> Mola Yeri/Forum tabloları (`mola_posts`/`mola_threads`/`mola_replies`) +
+> `is_nakliyeci`/`is_verified_nakliyeci`, admin moderasyon policy'leri
+> (`admin-moderation.sql` içeriği), mesaj **okundu bilgisi** `messages.read_at`.
+>
+> **Tekrar çalıştırmak GÜVENLİ (idempotent):** `create ... if not exists` /
+> `create or replace` / koşullu seed sayesinde yeniden Run'lamak mevcut veriyi
+> bozmaz **ve artık mükerrer demo ilan EKLEMEZ** (eski hali her Run'da 6 ilan
+> çoğaltıyordu — düzeltildi). Kod güncellemesinden sonra şemayı bir kez daha Run et.
+>
+> Not: `supabase/` altındaki ayrı migration/rpc dosyaları artık **arşiv/referans**;
+> `schema.sql` hepsini kapsıyor. (Tek istisna: demo `nakliyeci@demo.yuklet.co`
+> hesabına bağlı Mola demo gönderileri yalnız ilgili migration dosyalarında.)
 
 ## 3) Anahtarları al
 1. Sol menü → **Project Settings** → **API**

@@ -232,6 +232,25 @@ function AppShell() {
     setOffers(prev => prev.map(o => o.id === id ? { ...o, ...patch, ...(patch.status ? { updatedAt: new Date().toISOString() } : {}) } : o));
     return { ok: true };
   };
+  // İlan-sahibi teklif kabul — ATOMİK (SB: accept_offer RPC; teklif 'kabul' + kardeşler
+  // 'ret' + ilan 'eslesti' tek transaction). Eski iki-adımlı akış yarı-kalıp çift-kabule
+  // yol açabiliyordu. Yerel modda sıralı ama tek cihaz olduğu için yaris yok.
+  const acceptOffer = async (offer, listing) => {
+    if (SB) {
+      try {
+        await api.acceptOfferRpc(offer.id);
+        await Promise.all([reloadOffers(), reloadListings()]);
+        return { ok: true };
+      } catch (e) { console.error(e); return { ok: false, error: e?.message || "Teklif kabul edilemedi." }; }
+    }
+    const now = new Date().toISOString();
+    setOffers(prev => prev.map(o =>
+      o.id === offer.id ? { ...o, status: "kabul", updatedAt: now }
+      : (String(o.listingId) === String(listing.id) && o.status === "beklemede") ? { ...o, status: "ret", updatedAt: now }
+      : o));
+    setUserListings(prev => prev.map(l => String(l.id) === String(listing.id) ? { ...l, status: "eslesti", acceptedById: offer.fromUserId } : l));
+    return { ok: true };
+  };
   // ── Doğrudan kabul ── (sabit fiyatlı iş ilanı): nakliyeci teklif vermeden işi
   // sabit fiyattan alır. Sonuç durum teklif-kabul ile birebir aynı: offer
   // status "kabul" + listing status "eslesti".
@@ -429,7 +448,10 @@ function AppShell() {
       try {
         const saved = await api.addReply(cur.id, { threadId, body, ...ownerMeta() });
         setMolaReplies(prev => [...prev, saved]);
-        setMolaThreads(prev => prev.map(t => t.id === threadId ? { ...t, replyCount: (t.replyCount || 0) + 1, lastReplyAt: saved.createdAt } : t));
+        // SB modunda reply_count'u DB TRIGGER'ı artırır (mola-forum.sql). Burada elle
+        // +1 yaparsak ÇİFT sayılır (2 artar). Sadece lastReplyAt'i güncelle; gerçek
+        // sayı sonraki fetchThreads ile gelir. (Yerel modda trigger yok → elle artırılır.)
+        setMolaThreads(prev => prev.map(t => t.id === threadId ? { ...t, lastReplyAt: saved.createdAt } : t));
         return { ok: true, reply: saved };
       } catch (e) { console.error(e); return { ok: false, error: e?.message || "Yorum gönderilemedi." }; }
     }
@@ -439,7 +461,12 @@ function AppShell() {
     return { ok: true, reply: rec };
   };
   const removeReply = async (id, threadId) => {
-    if (SB) { try { await api.removeReply(id); } catch (e) { console.error(e); return { ok: false, error: e?.message || "Yorum silinemedi." }; } }
+    if (SB) {
+      // SB: reply_count'u DB trigger'ı azaltır → burada elle azaltma (çift olur).
+      try { await api.removeReply(id); } catch (e) { console.error(e); return { ok: false, error: e?.message || "Yorum silinemedi." }; }
+      setMolaReplies(prev => prev.filter(r => r.id !== id));
+      return { ok: true };
+    }
     setMolaReplies(prev => prev.filter(r => r.id !== id));
     setMolaThreads(prev => prev.map(t => t.id === threadId ? { ...t, replyCount: Math.max(0, (t.replyCount || 0) - 1) } : t));
     return { ok: true };
@@ -809,7 +836,7 @@ function AppShell() {
                 )}
                 <Route path="/ilan-ver" element={<PageTransition><IlanVerPage onPublish={publishListing} onUpdate={updateListing} listings={listings} offers={offers} reviews={reviews} user={user} fleet={myFleet} onRequireAuth={requireAuth} /></PageTransition>} />
                 <Route path="/ilan-duzenle/:id" element={<PageTransition><IlanVerPage onPublish={publishListing} onUpdate={updateListing} listings={listings} offers={offers} reviews={reviews} user={user} fleet={myFleet} onRequireAuth={requireAuth} /></PageTransition>} />
-                <Route path="/ilanlarim" element={<PageTransition><IlanlarimPage listings={listings} user={user} offers={offers} reviews={reviews} onUpdateOffer={updateOffer} onUpdateListing={updateListing} onDeleteListing={removeListing} onRequireAuth={requireAuth} getContact={getContact} /></PageTransition>} />
+                <Route path="/ilanlarim" element={<PageTransition><IlanlarimPage listings={listings} user={user} offers={offers} reviews={reviews} onUpdateOffer={updateOffer} onAcceptOffer={acceptOffer} onUpdateListing={updateListing} onDeleteListing={removeListing} onRequireAuth={requireAuth} getContact={getContact} /></PageTransition>} />
                 <Route path="/tekliflerim" element={<PageTransition><TekliflerimPage listings={listings} user={user} offers={offers} onRequireAuth={requireAuth} /></PageTransition>} />
                 <Route path="/mesajlar" element={<PageTransition><MesajlarPage user={user} listings={listings} offers={offers} messages={messages} onSendMessage={addMessage} onRequireAuth={requireAuth} onSeen={markMessagesSeen} onMarkThreadRead={markThreadRead} getContact={getContact} msgSeen={msgSeen} blockedIds={myBlocked} /></PageTransition>} />
                 <Route path="/profil" element={<PageTransition><ProfilPage user={user} onUpdateProfile={updateProfile} onRequireAuth={requireAuth} onLogout={logout} onDeleteAccount={deleteAccount} reviews={reviews} getUserRating={getUserRating} listings={listings} offers={offers} docs={docs.filter(d => user && String(d.ownerId) === String(user.id))} onAddDoc={addDoc} onRemoveDoc={removeDoc} notifPrefs={notifPrefs} onUpdateNotifPrefs={updateNotifPrefs} /></PageTransition>} />

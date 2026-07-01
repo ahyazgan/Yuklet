@@ -76,7 +76,7 @@ function initial(name) {
   return String(name || "?").trim().charAt(0).toUpperCase() || "?";
 }
 
-export default function IlanlarimPage({ listings = [], user, offers = [], reviews = [], onUpdateOffer, onUpdateListing, onDeleteListing, onRequireAuth, getContact }) {
+export default function IlanlarimPage({ listings = [], user, offers = [], reviews = [], onUpdateOffer, onAcceptOffer, onUpdateListing, onDeleteListing, onRequireAuth, getContact }) {
   const navigate = useNavigate();
   const toast = useToast();
   const [tab, setTab] = useState("aktif");
@@ -106,10 +106,10 @@ export default function IlanlarimPage({ listings = [], user, offers = [], review
 
   // ── Actions (functionality preserved 1:1) ──
   const accept = async (listing, offer) => {
-    const r1 = await onUpdateOffer?.(offer.id, { status: "kabul" });
-    if (r1 && r1.ok === false) { toast(r1.error || "Teklif kabul edilemedi", "error"); return; }
-    const r2 = await onUpdateListing?.(listing.id, { status: "eslesti" });
-    if (r2 && r2.ok === false) { toast(r2.error || "İlan eşleştirilemedi", "error"); return; }
+    // ATOMİK: tek çağrı — teklif 'kabul' + kardeşler 'ret' + ilan 'eslesti'. Eski iki
+    // ayrı çağrı araya hata girince yarı-kalıp çift-kabule yol açabiliyordu.
+    const res = await onAcceptOffer?.(offer, listing);
+    if (res && res.ok === false) { toast(res.error || "Teklif kabul edilemedi", "error"); return; }
     hapticSuccess();
     toast("Teklif kabul edildi, ilan eşleşti", "success");
   };

@@ -350,6 +350,14 @@ export async function updateOffer(id, patch) {
   if (error) throw error;
 }
 
+// İlan-sahibi bir teklifi ATOMİK kabul eder (teklif 'kabul' + kardeşler 'ret' +
+// ilan 'eslesti', tek transaction). İki ayrı UPDATE yerine yaris/çift-kabul önlenir.
+export async function acceptOfferRpc(offerId) {
+  const { data, error } = await supabase.rpc("accept_offer", { p_offer_id: offerId });
+  if (error) throw error;
+  return data ? rowToListing(data) : null;
+}
+
 // Doğrudan iş kabul — sunucu RPC'si (RLS'i güvenli aşar, atomik).
 // Teklifi 'kabul' oluşturur + ilanı 'eslesti' + accepted_by_id + assigned_vehicle yazar.
 export async function acceptJobRpc({ listingId, price, vehicle }) {

@@ -209,19 +209,27 @@ revoke all on function public.delete_my_account() from public;
 grant execute on function public.delete_my_account() to authenticated;
 
 -- ──────────────────────────────────────────────
--- 6) TRIGGER: teklif eklenince ilanin offers_count'u artsin
+-- 6) TRIGGER: ilanin offers_count'u = BEKLEMEDE teklif sayisi.
+--    Eski hali sadece +1 (insert) idi; ret/sil azaltmiyordu ve accept_job'in
+--    yarattigi 'kabul' teklif sayaci sisiriyordu → "6 teklif" ama detayda 0/yanlis.
+--    Simdi yalniz 'beklemede' sayilir; insert/delete/status-degisiminde guncellenir.
 -- ──────────────────────────────────────────────
-create or replace function public.bump_offers_count()
+create or replace function public.sync_offers_count()
 returns trigger language plpgsql security definer set search_path = public as $$
+declare v_listing bigint;
 begin
-  update public.listings set offers_count = offers_count + 1 where id = new.listing_id;
-  return new;
+  v_listing := coalesce(new.listing_id, old.listing_id);
+  update public.listings l
+     set offers_count = (select count(*) from public.offers o
+                          where o.listing_id = v_listing and o.status = 'beklemede')
+   where l.id = v_listing;
+  return coalesce(new, old);
 end; $$;
-
 drop trigger if exists on_offer_created on public.offers;
-create trigger on_offer_created
-  after insert on public.offers
-  for each row execute function public.bump_offers_count();
+drop trigger if exists on_offer_count_sync on public.offers;
+create trigger on_offer_count_sync
+  after insert or delete or update of status on public.offers
+  for each row execute function public.sync_offers_count();
 
 -- ──────────────────────────────────────────────
 -- 7) RLS — Row Level Security
@@ -255,6 +263,19 @@ returns boolean language sql security definer set search_path = public as $$
 $$;
 grant execute on function public.is_admin() to authenticated;
 
+-- İlan sahibi VEYA kabul edilmiş teklifin sürücüsü ise true (trip_locations RLS +
+-- messages_insert taraf kontrolü kullanır). BURADA tanımlı olmalı — messages_insert
+-- policy'si bunu CREATE anında çözer; sonra tanımlansa schema.sql en baştan patlardı.
+create or replace function public.is_trip_party(p_listing_id bigint, p_uid uuid)
+returns boolean language sql security definer set search_path = public as $$
+  select exists (
+    select 1 from public.listings l where l.id = p_listing_id and l.owner_id = p_uid
+  ) or exists (
+    select 1 from public.offers o
+    where o.listing_id = p_listing_id and o.status = 'kabul' and o.from_user_id = p_uid
+  );
+$$;
+
 -- GÜVENLİK: profiles_update kolon kısıtı içermez → kullanıcı kendi
 -- role/verified/status'ünü değiştirip ayrıcalık yükseltebilir. BEFORE UPDATE
 -- trigger korunan kolonları sabitler (yalnız admin değiştirir; role ilk atamada
@@ -263,6 +284,13 @@ create or replace function public.guard_profile_update()
 returns trigger language plpgsql security definer set search_path = public as $$
 begin
   if public.is_admin() then return new; end if;
+  if tg_op = 'INSERT' then
+    -- Savunma derinligi: kullanici INSERT ile verified=true / status enjekte edemesin.
+    -- (Normalde handle_new_user profili onceden yaratir; bu ek koruma.)
+    new.verified := false;
+    new.status   := 'aktif';
+    return new;
+  end if;
   new.verified := old.verified;
   new.status   := old.status;
   if old.role is not null and old.role <> '' then new.role := old.role; end if;
@@ -270,8 +298,15 @@ begin
 end; $$;
 drop trigger if exists on_profile_update_guard on public.profiles;
 create trigger on_profile_update_guard
-  before update on public.profiles
+  before insert or update on public.profiles
   for each row execute function public.guard_profile_update();
+
+-- ADMIN: tum profilleri gorur + gunceller (ban/rol/onay). profiles_read zaten
+-- herkese acik ama admin update icin ayrica gerek; guard trigger is_admin()'e
+-- return new veriyor. (schema.sql standalone kalsin diye burada.)
+drop policy if exists profiles_admin_all on public.profiles;
+create policy profiles_admin_all on public.profiles
+  for all using (public.is_admin()) with check (public.is_admin());
 
 -- listings: herkes bakar; sadece sahibi ekler/gunceller/siler
 drop policy if exists listings_read   on public.listings;
@@ -282,6 +317,9 @@ create policy listings_read   on public.listings for select using (true);
 create policy listings_insert on public.listings for insert with check (auth.uid() = owner_id);
 create policy listings_update on public.listings for update using (auth.uid() = owner_id);
 create policy listings_delete on public.listings for delete using (auth.uid() = owner_id);
+-- ADMIN: banli kullanicinin ilanini da yonetebilsin (moderasyon).
+drop policy if exists listings_admin_update on public.listings;
+create policy listings_admin_update on public.listings for update using (public.is_admin()) with check (public.is_admin());
 
 -- offers: teklifi veren VEYA ilan sahibi gorur; teklifi veren ekler; ilan sahibi durum gunceller
 drop policy if exists offers_read   on public.offers;
@@ -295,6 +333,25 @@ create policy offers_insert on public.offers for insert with check (auth.uid() =
 create policy offers_update on public.offers for update using (
   auth.uid() = (select owner_id from public.listings l where l.id = listing_id)
 );
+-- GÜVENLİK: offers_update kolon kısıtı içermez → ilan sahibi teklifin price/
+-- from_user_id/message'ını çarpıtabilir (from_user_id'yi kurbana çevirip onu
+-- trip'e taraf yapmak GPS sızıntısına yol açar). Trigger yalnız status/updated_at'i
+-- serbest bırakır; diğer kolonları old değerine sabitler.
+create or replace function public.guard_offer_update()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if public.is_admin() then return new; end if;
+  new.id := old.id; new.listing_id := old.listing_id;
+  new.from_user_id := old.from_user_id; new.from_user_name := old.from_user_name;
+  new.price := old.price; new.message := old.message;
+  new.qty := old.qty; new.unit := old.unit; new.kind := old.kind;
+  new.created_at := old.created_at;
+  return new;   -- yalnız status + updated_at serbest
+end; $$;
+drop trigger if exists on_offer_update_guard on public.offers;
+create trigger on_offer_update_guard
+  before update on public.offers
+  for each row execute function public.guard_offer_update();
 
 -- messages: sadece sohbetin taraflari okur/yazar
 -- Okundu bilgisi: alici (to_id) kendine gelen mesaja read_at yazar (detay:
@@ -306,7 +363,15 @@ drop policy if exists messages_update on public.messages;
 create policy messages_read on public.messages for select using (
   auth.uid() = from_id or auth.uid() = to_id
 );
-create policy messages_insert on public.messages for insert with check (auth.uid() = from_id);
+-- Gonderen kendisi olmali VE sohbetin tarafi olmali: ilan sahibi veya kabul edilmis
+-- teklifi veren. Aksi halde saldirgan herhangi birine spam/phishing mesaji enjekte
+-- edebiliyordu. to_id de karsi taraf olmali (kendine/ucuncu kisiye yazamaz).
+create policy messages_insert on public.messages for insert with check (
+  auth.uid() = from_id
+  and public.is_trip_party(listing_id, from_id)   -- gonderen ise tarafi
+  and public.is_trip_party(listing_id, to_id)     -- alici da ise tarafi
+  and from_id <> to_id
+);
 -- Alici yalnizca kendine gelen mesaji guncelleyebilir (read_at icin).
 create policy messages_update on public.messages
   for update using (auth.uid() = to_id) with check (auth.uid() = to_id);
@@ -339,11 +404,28 @@ create table if not exists public.reviews (
   created_at   timestamptz not null default now()
 );
 create index if not exists reviews_to_idx on public.reviews(to_id);
+-- Ayni is icin ayni kisiye tek yorum (spam/puan sisirme engeli). Idempotent.
+create unique index if not exists reviews_unique_idx on public.reviews(listing_id, from_id, to_id);
 alter table public.reviews enable row level security;
 drop policy if exists reviews_read on public.reviews;
 drop policy if exists reviews_insert on public.reviews;
 create policy reviews_read   on public.reviews for select using (true);          -- puanlar herkese acik
-create policy reviews_insert on public.reviews for insert with check (auth.uid() = from_id);
+-- Yorum yalniz: kendisi (from_id) + kendine degil (from<>to) + ARALARINDA gercekten
+-- eslesmis/tamamlanmis bir is olmali. Eski hali sadece from_id kontrol edip herkesin
+-- herkese sinirsiz sahte puan atmasina izin veriyordu.
+create policy reviews_insert on public.reviews for insert with check (
+  auth.uid() = from_id
+  and from_id <> to_id
+  and exists (
+    select 1 from public.listings l
+    join public.offers o on o.listing_id = l.id and o.status = 'kabul'
+    where l.id = reviews.listing_id
+      and (l.status in ('eslesti','kapali') or l.phase = 'teslim')
+      -- ikili: (ilan sahibi <-> kabul edilen nakliyeci) her iki yon de gecerli
+      and ((l.owner_id = from_id and o.from_user_id = to_id)
+        or (l.owner_id = to_id   and o.from_user_id = from_id))
+  )
+);
 
 -- ──────────────────────────────────────────────
 -- 7c) SIKAYET / UYUSMAZLIK  (reports)
@@ -363,8 +445,17 @@ create table if not exists public.reports (
 alter table public.reports enable row level security;
 drop policy if exists reports_insert on public.reports;
 drop policy if exists reports_read on public.reports;
-create policy reports_insert on public.reports for insert with check (true);     -- giris yapmamis da bildirebilir
-create policy reports_read   on public.reports for select using (auth.uid() = from_id);  -- sadece kendi bildirimini gorur (admin servis rolu ayri)
+-- Giris yapmamis bildirebilir (from_id null) AMA giris yapmissa from_id KENDISI olmali
+-- (baskasinin adina sahte sikayet/iftira engeli). Eski hali 'with check (true)' spoof'a aciktı.
+create policy reports_insert on public.reports for insert
+  with check (from_id is null or from_id = auth.uid());
+create policy reports_read   on public.reports for select using (auth.uid() = from_id);  -- sadece kendi bildirimini gorur
+-- ADMIN: tum sikayetleri gorur + durum gunceller (schema.sql standalone kalsin diye
+-- burada; detay admin-moderation.sql). is_admin() yukarida tanimli.
+drop policy if exists reports_admin_read   on public.reports;
+drop policy if exists reports_admin_update on public.reports;
+create policy reports_admin_read   on public.reports for select using (public.is_admin());
+create policy reports_admin_update on public.reports for update using (public.is_admin()) with check (public.is_admin());
 
 -- ──────────────────────────────────────────────
 -- 7d) BELGELER  (docs) — ileride dosyalar Supabase Storage'a tasinir
@@ -386,6 +477,11 @@ drop policy if exists docs_delete on public.docs;
 create policy docs_read   on public.docs for select using (auth.uid() = owner_id);
 create policy docs_write  on public.docs for insert with check (auth.uid() = owner_id);
 create policy docs_delete on public.docs for delete using (auth.uid() = owner_id);
+-- ADMIN: belge dogrulama — tum belgeleri gorur + durum (dogrulandi/red) gunceller.
+drop policy if exists docs_admin_read   on public.docs;
+drop policy if exists docs_admin_update on public.docs;
+create policy docs_admin_read   on public.docs for select using (public.is_admin());
+create policy docs_admin_update on public.docs for update using (public.is_admin()) with check (public.is_admin());
 
 -- ──────────────────────────────────────────────
 -- 7e) FİLO  (fleet) — nakliyecinin araç + şoför kayıtları (sahibi-özel)
@@ -415,20 +511,175 @@ create policy fleet_update on public.fleet for update using (auth.uid() = owner_
 create policy fleet_delete on public.fleet for delete using (auth.uid() = owner_id);
 
 -- ──────────────────────────────────────────────
+-- 7f) RPC: DOGRUDAN IS KABUL (accept_job) — sabit fiyatli isi nakliyeci kabul eder.
+--    schema.sql standalone kalsin diye burada (detay: rpc-accept-job.sql). SECURITY
+--    DEFINER; guard'lar SUNUCUDA (whitelist: type='is' + price_type='sabit' + aktif).
+-- ──────────────────────────────────────────────
+alter table public.listings add column if not exists assigned_vehicle jsonb;
+create or replace function public.accept_job(
+  p_listing_id bigint, p_price numeric default null, p_vehicle jsonb default null
+) returns public.listings language plpgsql security definer set search_path = public as $$
+declare
+  v_uid uuid := auth.uid(); v_listing public.listings; v_name text; v_status text;
+begin
+  if v_uid is null then raise exception 'Giriş gerekli.'; end if;
+  select coalesce(name,''), coalesce(status,'aktif') into v_name, v_status
+    from public.profiles where id = v_uid;
+  if v_status = 'banli' then raise exception 'Hesabın askıya alındı.'; end if;
+  select * into v_listing from public.listings where id = p_listing_id for update;
+  if not found then raise exception 'İlan bulunamadı.'; end if;
+  if v_listing.owner_id = v_uid then raise exception 'Kendi ilanını kabul edemezsin.'; end if;
+  -- 'is' (iş) VE 'arac' (araç kiralama) sabit fiyatlı doğrudan-kabul edilebilir; ürün ilanı hariç.
+  if v_listing.type not in ('is','arac') then raise exception 'Bu ilan doğrudan kabul edilemez.'; end if;
+  if coalesce(v_listing.price_type,'') <> 'sabit' then raise exception 'Yalnızca sabit fiyatlı ilanlar doğrudan kabul edilir.'; end if;
+  if v_listing.status <> 'aktif' then raise exception 'Bu ilan artık uygun değil.'; end if;
+  insert into public.offers (listing_id, from_user_id, from_user_name, price, message, status)
+  values (p_listing_id, v_uid, v_name, v_listing.price, 'İş sabit fiyattan kabul edildi.', 'kabul');
+  update public.listings set status = 'eslesti', accepted_by_id = v_uid, assigned_vehicle = p_vehicle
+   where id = p_listing_id returning * into v_listing;
+  return v_listing;
+end; $$;
+grant execute on function public.accept_job(bigint, numeric, jsonb) to authenticated;
+
+-- İlan-sahibi bir teklifi ATOMİK kabul eder: teklifi 'kabul', kardeşleri 'ret',
+-- ilanı 'eslesti' — tek transaction. Eski akış (IlanlarimPage) iki ayrı UPDATE'ti;
+-- araya hata girerse offer 'kabul' ama ilan 'aktif' kalıp çift-kabul mümkündü.
+create or replace function public.accept_offer(p_offer_id bigint)
+returns public.listings language plpgsql security definer set search_path = public as $$
+declare
+  v_uid uuid := auth.uid(); v_offer public.offers; v_listing public.listings;
+begin
+  if v_uid is null then raise exception 'Giriş gerekli.'; end if;
+  select * into v_offer from public.offers where id = p_offer_id for update;
+  if not found then raise exception 'Teklif bulunamadı.'; end if;
+  select * into v_listing from public.listings where id = v_offer.listing_id for update;
+  if not found then raise exception 'İlan bulunamadı.'; end if;
+  if v_listing.owner_id <> v_uid then raise exception 'Yalnızca ilan sahibi kabul edebilir.'; end if;
+  if v_listing.status in ('eslesti','kapali') then raise exception 'Bu ilan artık uygun değil.'; end if;
+  update public.offers set status = 'ret', updated_at = now()
+    where listing_id = v_offer.listing_id and id <> p_offer_id and status = 'beklemede';
+  update public.offers set status = 'kabul', updated_at = now() where id = p_offer_id;
+  update public.listings set status = 'eslesti', accepted_by_id = v_offer.from_user_id
+    where id = v_offer.listing_id returning * into v_listing;
+  return v_listing;
+end; $$;
+grant execute on function public.accept_offer(bigint) to authenticated;
+
+-- ──────────────────────────────────────────────
+-- 7g) MOLA YERI + FORUM (nakliyeci topluluk panosu + basliklar/yorumlar)
+--    schema.sql standalone kalsin diye burada (detay: migration-2026-07-mola-*.sql).
+--    is_nakliyeci/is_verified_nakliyeci helper'lari + RLS + reply_count trigger'lari.
+-- ──────────────────────────────────────────────
+create or replace function public.is_nakliyeci()
+returns boolean language sql security definer set search_path = public as $$
+  select exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'nakliyeci');
+$$;
+grant execute on function public.is_nakliyeci() to authenticated;
+create or replace function public.is_verified_nakliyeci()
+returns boolean language sql security definer set search_path = public as $$
+  select exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'nakliyeci' and p.verified = true);
+$$;
+grant execute on function public.is_verified_nakliyeci() to authenticated;
+
+create table if not exists public.mola_posts (
+  id             bigint generated always as identity primary key,
+  owner_id       uuid not null references public.profiles(id) on delete cascade,
+  owner_name     text not null default '',
+  owner_verified boolean not null default false,
+  category       text not null, title text not null, body text default '',
+  price          numeric, il text default '', phone text default '',
+  status         text not null default 'aktif',
+  created_at     timestamptz not null default now()
+);
+create index if not exists mola_owner_idx on public.mola_posts(owner_id);
+create index if not exists mola_cat_idx   on public.mola_posts(category);
+alter table public.mola_posts enable row level security;
+drop policy if exists mola_read   on public.mola_posts;
+drop policy if exists mola_insert on public.mola_posts;
+drop policy if exists mola_update on public.mola_posts;
+drop policy if exists mola_delete on public.mola_posts;
+create policy mola_read   on public.mola_posts for select using (public.is_nakliyeci() or public.is_admin());
+create policy mola_insert on public.mola_posts for insert with check (auth.uid() = owner_id and public.is_verified_nakliyeci());
+create policy mola_update on public.mola_posts for update using (auth.uid() = owner_id or public.is_admin());
+create policy mola_delete on public.mola_posts for delete using (auth.uid() = owner_id or public.is_admin());
+
+create table if not exists public.mola_threads (
+  id             bigint generated always as identity primary key,
+  owner_id       uuid not null references public.profiles(id) on delete cascade,
+  owner_name     text not null default '', owner_verified boolean not null default false,
+  title          text not null, body text default '',
+  reply_count    integer not null default 0,
+  last_reply_at  timestamptz not null default now(),
+  status         text not null default 'aktif',
+  created_at     timestamptz not null default now()
+);
+create index if not exists mola_thread_activity_idx on public.mola_threads(last_reply_at desc);
+create table if not exists public.mola_replies (
+  id             bigint generated always as identity primary key,
+  thread_id      bigint not null references public.mola_threads(id) on delete cascade,
+  owner_id       uuid not null references public.profiles(id) on delete cascade,
+  owner_name     text not null default '', owner_verified boolean not null default false,
+  body           text not null,
+  created_at     timestamptz not null default now()
+);
+create index if not exists mola_reply_thread_idx on public.mola_replies(thread_id, created_at);
+alter table public.mola_threads enable row level security;
+alter table public.mola_replies enable row level security;
+drop policy if exists mola_thread_read   on public.mola_threads;
+drop policy if exists mola_thread_insert on public.mola_threads;
+drop policy if exists mola_thread_update on public.mola_threads;
+drop policy if exists mola_thread_delete on public.mola_threads;
+create policy mola_thread_read   on public.mola_threads for select using (public.is_nakliyeci() or public.is_admin());
+create policy mola_thread_insert on public.mola_threads for insert with check (auth.uid() = owner_id and public.is_verified_nakliyeci());
+create policy mola_thread_update on public.mola_threads for update using (auth.uid() = owner_id or public.is_admin());
+create policy mola_thread_delete on public.mola_threads for delete using (auth.uid() = owner_id or public.is_admin());
+drop policy if exists mola_reply_read   on public.mola_replies;
+drop policy if exists mola_reply_insert on public.mola_replies;
+drop policy if exists mola_reply_delete on public.mola_replies;
+create policy mola_reply_read   on public.mola_replies for select using (public.is_nakliyeci() or public.is_admin());
+create policy mola_reply_insert on public.mola_replies for insert with check (auth.uid() = owner_id and public.is_nakliyeci());
+create policy mola_reply_delete on public.mola_replies for delete using (auth.uid() = owner_id or public.is_admin());
+-- reply_count + last_reply_at trigger (yorum ekl/sil). App SB modunda ELLE artırmaz.
+create or replace function public.bump_thread_activity()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  update public.mola_threads set reply_count = reply_count + 1, last_reply_at = new.created_at
+   where id = new.thread_id;
+  return new;
+end; $$;
+drop trigger if exists on_mola_reply_created on public.mola_replies;
+create trigger on_mola_reply_created after insert on public.mola_replies
+  for each row execute function public.bump_thread_activity();
+create or replace function public.drop_thread_count()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  update public.mola_threads set reply_count = greatest(0, reply_count - 1)
+   where id = old.thread_id;
+  return old;
+end; $$;
+drop trigger if exists on_mola_reply_deleted on public.mola_replies;
+create trigger on_mola_reply_deleted after delete on public.mola_replies
+  for each row execute function public.drop_thread_count();
+
+-- ──────────────────────────────────────────────
 -- 8) DEMO SEED  (owner_id null = sistem ilani; herkes gorur, kimse duzenleyemez)
+-- İDEMPOTENT: yalnız hiç demo ilan (owner_id null) yokken ekle. Eski hali hedefsiz
+-- `on conflict do nothing` idi → her Run 6 mükerrer ilan eklerdi (identity id çakışmaz).
+-- offers_count = 0: gerçek offer satırı yok, aksi halde kart "6 teklif" der ama detayda 0 çıkar.
 -- ──────────────────────────────────────────────
 insert into public.listings
   (owner_name, owner_verified, owner_rating, type, cat, title, il, ilce, yukleme, bosaltma,
    material, amount, unit, date_text, recurring, recurring_text, vehicle, capacity,
    price_type, price, description, status, offers_count, created_text)
-values
-  ('Yildizlar Insaat', true, 4.7, 'is','hafriyat','Dudullu santiye hafriyat tasima','Istanbul','Umraniye','Dudullu OSB, blok C insaati','Samandira dokum sahasi','Hafriyat',1200,'ton','8-12 Haziran',true,'5 gun, gunde ~20 sefer',null,null,'teklif',null,'Bina kazisi cikan hafriyat. Yukleme makinesi sahada mevcut. Tasima mesafesi ~14 km.','aktif',6,'2 saat once'),
-  ('Cayirova Yapi', true, 4.5, 'is','silobas','Cimento fabrikasindan santiyeye dokme cimento','Kocaeli','Gebze','Nuh Cimento fabrika','Cayirova konut projesi','Cimento',28,'ton','3 Haziran (acil)',false,'',null,null,'sabit',4500,'Tek sefer dokme cimento tasima. Silobas zorunlu. Bosaltma sahada silo var.','aktif',3,'5 saat once'),
-  ('Murat K.', false, 4.9, 'arac','hafriyat','Damperli kamyon bos - Anadolu yakasi','Istanbul','Pendik','','','',18,'ton','Bugun-yarin musait',false,'','Damperli kamyon','18 ton','teklif',null,'Anadolu yakasi hafriyat/moloz isleri icin bos aracim var. Sefer veya gunluk calisirim.','aktif',2,'1 saat once'),
-  ('Demir Nakliyat', true, 4.8, 'arac','silobas','Silobas (cimento) - Marmara bolgesi','Bursa','Nilufer','','','',30,'ton','5 Haziran sonrasi',true,'Haftalik duzenli is alabilir','Silobas (cimento)','30 ton','teklif',null,'Marmara geneli dokme cimento tasirim. Belgelerim tam, duzenli is tercihim.','aktif',4,'dun'),
-  ('Baskent Altyapi', true, 4.6, 'is','hafriyat','Yol genisletme - kazi fazlasi tasima','Ankara','Etimesgut','Eryaman yol calismasi','Belediye dokum alani','Toprak',800,'m³','10-15 Haziran',true,'Yaklasik 1 hafta',null,null,'teklif',null,'Yol genisletmeden cikan toprak. Birden fazla araca ihtiyac var.','aktif',9,'3 saat once'),
-  ('Ege Lojistik', true, 4.4, 'is','silobas','Limandan fabrikaya dokme micir','Izmir','Aliaga','Aliaga limani','Kemalpasa sanayi','Micir',120,'ton','7-9 Haziran',false,'',null,null,'teklif',null,'Limandan bosaltilan micir, fabrikaya tasinacak. Dokme yuk dorse uygun.','aktif',5,'6 saat once')
-on conflict do nothing;
+select * from (values
+  ('Yildizlar Insaat', true, 4.7::numeric, 'is','hafriyat','Dudullu santiye hafriyat tasima','Istanbul','Umraniye','Dudullu OSB, blok C insaati','Samandira dokum sahasi','Hafriyat',1200::numeric,'ton','8-12 Haziran',true,'5 gun, gunde ~20 sefer',null::text,null::text,'teklif',null::numeric,'Bina kazisi cikan hafriyat. Yukleme makinesi sahada mevcut. Tasima mesafesi ~14 km.','aktif',0,'2 saat once'),
+  ('Cayirova Yapi', true, 4.5, 'is','silobas','Cimento fabrikasindan santiyeye dokme cimento','Kocaeli','Gebze','Nuh Cimento fabrika','Cayirova konut projesi','Cimento',28,'ton','3 Haziran (acil)',false,'',null,null,'sabit',4500,'Tek sefer dokme cimento tasima. Silobas zorunlu. Bosaltma sahada silo var.','aktif',0,'5 saat once'),
+  ('Murat K.', false, 4.9, 'arac','hafriyat','Damperli kamyon bos - Anadolu yakasi','Istanbul','Pendik','','','',18,'ton','Bugun-yarin musait',false,'','Damperli kamyon','18 ton','teklif',null,'Anadolu yakasi hafriyat/moloz isleri icin bos aracim var. Sefer veya gunluk calisirim.','aktif',0,'1 saat once'),
+  ('Demir Nakliyat', true, 4.8, 'arac','silobas','Silobas (cimento) - Marmara bolgesi','Bursa','Nilufer','','','',30,'ton','5 Haziran sonrasi',true,'Haftalik duzenli is alabilir','Silobas (cimento)','30 ton','teklif',null,'Marmara geneli dokme cimento tasirim. Belgelerim tam, duzenli is tercihim.','aktif',0,'dun'),
+  ('Baskent Altyapi', true, 4.6, 'is','hafriyat','Yol genisletme - kazi fazlasi tasima','Ankara','Etimesgut','Eryaman yol calismasi','Belediye dokum alani','Toprak',800,'m³','10-15 Haziran',true,'Yaklasik 1 hafta',null,null,'teklif',null,'Yol genisletmeden cikan toprak. Birden fazla araca ihtiyac var.','aktif',0,'3 saat once'),
+  ('Ege Lojistik', true, 4.4, 'is','silobas','Limandan fabrikaya dokme micir','Izmir','Aliaga','Aliaga limani','Kemalpasa sanayi','Micir',120,'ton','7-9 Haziran',false,'',null,null,'teklif',null,'Limandan bosaltilan micir, fabrikaya tasinacak. Dokme yuk dorse uygun.','aktif',0,'6 saat once')
+) as v
+where not exists (select 1 from public.listings where owner_id is null);
 
 -- ──────────────────────────────────────────────
 -- 9) TRIP_LOCATIONS  (canli sefer konumu — cok-cihaz gercek zamanli takip)
@@ -446,17 +697,6 @@ create table if not exists public.trip_locations (
   updated_at  timestamptz not null default now()
 );
 create index if not exists trip_locations_updated_idx on public.trip_locations(updated_at);
-
--- İlan sahibi VEYA kabul edilmiş teklifin sürücüsü ise true (RLS taraf kontrolü).
-create or replace function public.is_trip_party(p_listing_id bigint, p_uid uuid)
-returns boolean language sql security definer set search_path = public as $$
-  select exists (
-    select 1 from public.listings l where l.id = p_listing_id and l.owner_id = p_uid
-  ) or exists (
-    select 1 from public.offers o
-    where o.listing_id = p_listing_id and o.status = 'kabul' and o.from_user_id = p_uid
-  );
-$$;
 
 alter table public.trip_locations enable row level security;
 drop policy if exists trip_loc_read   on public.trip_locations;
