@@ -239,6 +239,24 @@ create policy profiles_read   on public.profiles for select using (true);
 create policy profiles_insert on public.profiles for insert with check (auth.uid() = id);
 create policy profiles_update on public.profiles for update using (auth.uid() = id);
 
+-- GÜVENLİK: profiles_update kolon kısıtı içermez → kullanıcı kendi
+-- role/verified/status'ünü değiştirip ayrıcalık yükseltebilir. BEFORE UPDATE
+-- trigger korunan kolonları sabitler (yalnız admin değiştirir; role ilk atamada
+-- boştan doluya serbest). Detay: migration-2026-07-profil-guvenlik.sql
+create or replace function public.guard_profile_update()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if public.is_admin() then return new; end if;
+  new.verified := old.verified;
+  new.status   := old.status;
+  if old.role is not null and old.role <> '' then new.role := old.role; end if;
+  return new;
+end; $$;
+drop trigger if exists on_profile_update_guard on public.profiles;
+create trigger on_profile_update_guard
+  before update on public.profiles
+  for each row execute function public.guard_profile_update();
+
 -- listings: herkes bakar; sadece sahibi ekler/gunceller/siler
 drop policy if exists listings_read   on public.listings;
 drop policy if exists listings_insert on public.listings;

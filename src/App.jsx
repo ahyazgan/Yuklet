@@ -321,6 +321,7 @@ function AppShell() {
   // Sadece kendi araçlarım (her iki modda da owner filtresi).
   const myFleet = fleet.filter((v) => user && String(v.ownerId) === String(user.id));
   const addVehicle = async (v) => {
+    if (user?.status === "banli") return { ok: false, error: "Hesabın askıya alındı." };
     if (SB) {
       try { const saved = await api.addFleetVehicle(user.id, v); setFleet(prev => [saved, ...prev]); return { ok: true, vehicle: saved }; }
       catch (e) { console.error(e); return { ok: false, error: e?.message || "Araç eklenemedi." }; }
@@ -350,6 +351,7 @@ function AppShell() {
   useEffect(() => { if (!SB) saveMolaPosts(molaPosts); }, [molaPosts, SB]);
   const addMolaPost = async (p) => {
     const cur = profile || user;
+    if (cur?.status === "banli") return { ok: false, error: "Hesabın askıya alındı." };
     const meta = { ownerName: cur?.name || "", ownerVerified: Boolean(cur?.verified) };
     if (SB) {
       try { const saved = await api.addMolaPost(cur.id, { ...p, ...meta }); setMolaPosts(prev => [saved, ...prev]); return { ok: true, post: saved }; }
@@ -376,6 +378,7 @@ function AppShell() {
   // Başlık aç (yalnız onaylı nakliyeci — UI + RLS korur).
   const addThread = async (t) => {
     const cur = profile || user;
+    if (cur?.status === "banli") return { ok: false, error: "Hesabın askıya alındı." };
     if (SB) {
       try { const saved = await api.addThread(cur.id, { ...t, ...ownerMeta() }); setMolaThreads(prev => [saved, ...prev]); return { ok: true, thread: saved }; }
       catch (e) { console.error(e); return { ok: false, error: e?.message || "Başlık açılamadı." }; }
@@ -393,6 +396,7 @@ function AppShell() {
   // Yorum yaz (tüm nakliyeci).
   const addReply = async (threadId, body) => {
     const cur = profile || user;
+    if (cur?.status === "banli") return { ok: false, error: "Hesabın askıya alındı." };
     if (SB) {
       try {
         const saved = await api.addReply(cur.id, { threadId, body, ...ownerMeta() });
