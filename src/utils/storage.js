@@ -51,8 +51,9 @@ export const loadBlocked = () => load("hamted_blocked", {});
 export const saveBlocked = (v) => save("hamted_blocked", v);
 // Bildirim tercihleri — hangi bildirim türü açık/kapalı (kullanıcı yönetir).
 // Türler: offers (gelen teklif), accepts (teklif sonucu), messages (mesaj),
-// reviews (değerlendirme hatırlatması), savedSearch (kayıtlı arama eşleşmesi).
-export const DEFAULT_NOTIF_PREFS = { offers: true, accepts: true, messages: true, reviews: true, savedSearch: true };
+// reviews (değerlendirme hatırlatması), savedSearch (kayıtlı arama eşleşmesi),
+// mola (Mola Yeri forum yorumu — yalnız nakliyeci).
+export const DEFAULT_NOTIF_PREFS = { offers: true, accepts: true, messages: true, reviews: true, savedSearch: true, mola: true };
 export const loadNotifPrefs = () => ({ ...DEFAULT_NOTIF_PREFS, ...load("hamted_notif_prefs", {}) });
 export const saveNotifPrefs = (v) => save("hamted_notif_prefs", v);
 // Mola Yeri — nakliyeci topluluk ilan panosu (satılık dorse, eleman vb.).

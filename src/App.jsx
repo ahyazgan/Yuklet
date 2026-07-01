@@ -737,7 +737,7 @@ function AppShell() {
     : 0;
 
   const notifSeenIso = user ? (notifSeen[user.id] || null) : null;
-  const notif = buildNotifications(user, { listings, offers, messages, reviews, savedSearches: loadSavedSearches() }, notifSeenIso, notifPrefs);
+  const notif = buildNotifications(user, { listings, offers, messages, reviews, savedSearches: loadSavedSearches(), molaThreads, molaReplies }, notifSeenIso, notifPrefs);
 
   // Yeni teklif/mesaj/kabul gelince tarayıcı bildirimi göster (giriş yapılmışsa).
   usePushNotifications(notif.items, Boolean(user));

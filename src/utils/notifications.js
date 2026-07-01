@@ -17,10 +17,11 @@ function prefKeyForId(id) {
   if (id.startsWith("msg-")) return "messages";
   if (id.startsWith("rev-")) return "reviews";
   if (id.startsWith("find-")) return "savedSearch";
+  if (id.startsWith("mola-")) return "mola";
   return null;
 }
 
-export function buildNotifications(user, { listings = [], offers = [], messages = [], reviews = [], savedSearches = [] }, seenIso, prefs = null) {
+export function buildNotifications(user, { listings = [], offers = [], messages = [], reviews = [], savedSearches = [], molaThreads = [], molaReplies = [] }, seenIso, prefs = null) {
   if (!user) return { items: [], unread: 0 };
   const uid = String(user.id);
   const myListingIds = new Set(listings.filter((l) => String(l.ownerId) === uid).map((l) => String(l.id)));
@@ -100,6 +101,41 @@ export function buildNotifications(user, { listings = [], offers = [], messages 
         id: `find-${l.id}`, icon: "📨",
         text: `"${hit.label || "kayıtlı arama"}" aramana uygun yeni ilan: ${l.title}`,
         time: l.createdAt, link: `/ilan/${l.id}`,
+      });
+    }
+  }
+
+  // Mola Yeri forum: kendi açtığın VEYA daha önce yorum yaptığın başlığa
+  // yeni yorum gelince haber ver (kendi yorumların hariç). Başlık başına en
+  // yeni yabancı yorumdan tek bildirim (spam olmasın).
+  if (molaThreads.length && molaReplies.length) {
+    // İlgilendiğim başlıklar: sahibi olduklarım + yorum yaptıklarım.
+    const myThreadIds = new Set(
+      molaThreads.filter((t) => String(t.ownerId) === uid).map((t) => String(t.id))
+    );
+    for (const r of molaReplies) {
+      if (String(r.ownerId) === uid) myThreadIds.add(String(r.threadId));
+    }
+    const threadById = new Map(molaThreads.map((t) => [String(t.id), t]));
+    // Başlık başına: bana ait olmayan en yeni yorum.
+    const latestForeign = new Map();
+    for (const r of molaReplies) {
+      const tid = String(r.threadId);
+      if (!myThreadIds.has(tid)) continue;      // ilgilenmediğim başlık
+      if (String(r.ownerId) === uid) continue;  // kendi yorumum
+      const cur = latestForeign.get(tid);
+      if (!cur || (r.createdAt || "") > (cur.createdAt || "")) latestForeign.set(tid, r);
+    }
+    for (const [tid, r] of latestForeign) {
+      const t = threadById.get(tid);
+      if (!t) continue;
+      const owns = String(t.ownerId) === uid;
+      items.push({
+        id: `mola-${tid}`, icon: "💬",
+        text: owns
+          ? `${r.ownerName}, başlığına yorum yaptı: "${t.title.slice(0, 40)}${t.title.length > 40 ? "…" : ""}"`
+          : `Katıldığın "${t.title.slice(0, 40)}${t.title.length > 40 ? "…" : ""}" başlığında yeni yorum`,
+        time: r.createdAt, link: `/mola/forum/${tid}`,
       });
     }
   }

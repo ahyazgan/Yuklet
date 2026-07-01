@@ -724,6 +724,8 @@ export default function ProfilPage({ user, onUpdateProfile, onRequireAuth, onLog
             { key: "messages", label: "Mesajlar", desc: "Yeni mesaj geldiğinde" },
             { key: "reviews", label: "Değerlendirme hatırlatması", desc: "Tamamlanan işi puanlamak için" },
             { key: "savedSearch", label: "Kayıtlı arama eşleşmesi", desc: "Aramana uygun yeni ilan çıkınca" },
+            // Mola Yeri forum bildirimi — yalnız nakliyeci rolünde göster.
+            ...(role === "nakliyeci" ? [{ key: "mola", label: "Mola Yeri yorumları", desc: "Başlığına veya katıldığın başlığa yorum gelince" }] : []),
           ].map((row, i) => {
             const on = notifPrefs[row.key] !== false;
             return (
