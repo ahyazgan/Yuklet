@@ -365,8 +365,8 @@ function AppShell() {
   // ── Filo (fleet) — nakliyecinin araçları. SB: DB, yerel: localStorage ──
   const [fleet, setFleet] = useState(() => (SB ? [] : loadFleet()));
   useEffect(() => { if (!SB) saveFleet(fleet); }, [fleet, SB]);
-  // Sadece kendi araçlarım (her iki modda da owner filtresi).
-  const myFleet = fleet.filter((v) => user && String(v.ownerId) === String(user.id));
+  // NOT: myFleet burada HESAPLANAMAZ — `user` state'i aşağıda (TDZ hatası: "Cannot
+  // access 'user' before initialization" → siyah ekran). user tanımından SONRA hesaplanır.
   const addVehicle = async (v) => {
     if (user?.status === "banli") return { ok: false, error: "Hesabın askıya alındı." };
     if (SB) {
@@ -536,6 +536,8 @@ function AppShell() {
   const [user, setUser] = useState(() => (SB ? null : loadUser()));  // localStorage'da kayitli kullanici
   const [profile, setProfile] = useState(null);                     // SB modunda profiles satiri
   useEffect(() => { if (!SB) saveUser(user); }, [user, SB]);
+  // Sadece kendi araçlarım (fleet yukarıda tanımlı; user burada tanımlandığı için burada hesaplanır).
+  const myFleet = fleet.filter((v) => user && String(v.ownerId) === String(user.id));
   const [authReady, setAuthReady] = useState(!SB);                  // SB modunda oturum yuklenince hazir
   const [showAuth, setShowAuth] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false); // sifre sifirlama: yeni sifre modali
