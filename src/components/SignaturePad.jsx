@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect } from "react";
 
 // ── Parmakla imza alanı (canvas) — teslim kanıtı için.
 // Çizim bitince onChange(dataUrl) çağrılır; "Temizle" sıfırlar.
@@ -9,22 +9,37 @@ export default function SignaturePad({ onChange, height = 150 }) {
   const canvasRef = useRef(null);
   const drawing = useRef(false);
   const last = useRef(null);
-  const [hasInk, setHasInk] = useState(false);
+  const hasInkRef = useRef(false);       // end()'te güncel değeri okumak için (state gecikir)
 
-  // Canvas'ı kapsayıcı genişliğine göre ölçekle (retina net).
+  // Canvas'ı kapsayıcı genişliğine göre ölçekle (retina net) + resize/rotate'te
+  // yeniden ölçekle. Aksi halde döndürünce backing-store eski genişlikte kalır ve
+  // çizim koordinatları kayar. Mevcut çizimi koruyarak yeniden boyutlandır.
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ratio = window.devicePixelRatio || 1;
-    const w = canvas.clientWidth;
-    canvas.width = w * ratio;
-    canvas.height = height * ratio;
-    const ctx = canvas.getContext("2d");
-    ctx.scale(ratio, ratio);
-    ctx.lineWidth = 2.5;
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    ctx.strokeStyle = INK;
+    const setup = () => {
+      const ratio = window.devicePixelRatio || 1;
+      const w = canvas.clientWidth;
+      // Önce mevcut çizimi sakla (boyut değişince canvas temizlenir).
+      let prev = null;
+      if (canvas.width && canvas.height && hasInkRef.current) {
+        try { prev = canvas.toDataURL("image/png"); } catch { /* noop */ }
+      }
+      canvas.width = w * ratio;
+      canvas.height = height * ratio;
+      const ctx = canvas.getContext("2d");
+      ctx.scale(ratio, ratio);
+      ctx.lineWidth = 2.5;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.strokeStyle = INK;
+      if (prev) { const img = new Image(); img.onload = () => ctx.drawImage(img, 0, 0, w, height); img.src = prev; }
+    };
+    setup();
+    let ro = null;
+    if (typeof ResizeObserver !== "undefined") { ro = new ResizeObserver(setup); ro.observe(canvas); }
+    window.addEventListener("orientationchange", setup);
+    return () => { if (ro) ro.disconnect(); window.removeEventListener("orientationchange", setup); };
   }, [height]);
 
   const pos = (e) => {
@@ -40,17 +55,19 @@ export default function SignaturePad({ onChange, height = 150 }) {
     const p = pos(e);
     ctx.beginPath(); ctx.moveTo(last.current.x, last.current.y); ctx.lineTo(p.x, p.y); ctx.stroke();
     last.current = p;
-    if (!hasInk) setHasInk(true);
+    if (!hasInkRef.current) hasInkRef.current = true;
   };
   const end = () => {
     if (!drawing.current) return;
     drawing.current = false;
-    if (hasInk) onChange?.(canvasRef.current.toDataURL("image/png"));
+    // hasInkRef (state değil) — tek hızlı vuruşta state henüz güncellenmemiş olur,
+    // aksi halde imza çizili görünür ama onChange hiç tetiklenmezdi.
+    if (hasInkRef.current) onChange?.(canvasRef.current.toDataURL("image/png"));
   };
   const clear = () => {
     const canvas = canvasRef.current;
     canvas.getContext("2d").clearRect(0, 0, canvas.width, canvas.height);
-    setHasInk(false);
+    hasInkRef.current = false;
     onChange?.(null);
   };
 

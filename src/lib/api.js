@@ -21,6 +21,7 @@ const rowToListing = (r) => ({
   paymentStatus: r.payment_status, paymentAmount: r.payment_amount, paymentFee: r.payment_fee, paymentRef: r.payment_ref,
   deliveryProof: r.delivery_proof, cycleStage: r.cycle_stage, arrivedAt: r.arrived_at,
   earlyPaid: r.early_paid, earlyPayFee: r.early_pay_fee, acceptedById: r.accepted_by_id,
+  assignedVehicle: r.assigned_vehicle,   // accept_job RPC'sinin yazdığı atanan araç+şoför (aksi halde Takip'te görünmez)
   // urun (tedarikci) ilan alanlari
   stock: r.stock, stockText: r.stock_text, deliveryIncluded: r.delivery_included,
   priceUnit: r.price_unit, delivered: r.delivered,
@@ -49,6 +50,7 @@ const LISTING_KEYMAP = {
   paymentStatus: "payment_status", paymentAmount: "payment_amount", paymentFee: "payment_fee", paymentRef: "payment_ref",
   deliveryProof: "delivery_proof", cycleStage: "cycle_stage", arrivedAt: "arrived_at",
   earlyPaid: "early_paid", earlyPayFee: "early_pay_fee", acceptedById: "accepted_by_id",
+  assignedVehicle: "assigned_vehicle",
   stock: "stock", stockText: "stock_text", deliveryIncluded: "delivery_included",
   priceUnit: "price_unit", delivered: "delivered",
 };
@@ -443,6 +445,14 @@ export async function fetchDocs(ownerId) {
   if (error) throw error;
   return (data || []).map((d) => ({ id: d.id, ownerId: d.owner_id, type: d.type, name: d.name, url: d.url, status: d.status, createdAt: d.created_at }));
 }
+// Admin: TÜM belgeleri çek (RLS docs_admin_read yalnızca is_admin() için döndürür).
+// Admin panelinin "Belge" sekmesi + belge doğrulama akışı bunu kullanır; aksi halde
+// admin yalnızca KENDİ belgelerini görür ve başka kullanıcıyı doğrulayamaz.
+export async function fetchAllDocs() {
+  const { data, error } = await supabase.from("docs").select("*").order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data || []).map((d) => ({ id: d.id, ownerId: d.owner_id, type: d.type, name: d.name, url: d.url, status: d.status, createdAt: d.created_at }));
+}
 export async function addDoc({ ownerId, type, name, url }) {
   const { data, error } = await supabase.from("docs").insert({ owner_id: ownerId, type, name, url }).select("*").single();
   if (error) throw error;
@@ -533,6 +543,13 @@ export async function fetchThreads() {
   const { data, error } = await supabase.from("mola_threads").select("*").eq("status", "aktif").order("last_reply_at", { ascending: false });
   if (error) throw error;
   return (data || []).map(rowToThread);
+}
+// Tek başlığı id ile çek — deep link / cold-launch'ta liste henüz boşken
+// "Başlık bulunamadı" sahte ekranını önler.
+export async function fetchThread(id) {
+  const { data, error } = await supabase.from("mola_threads").select("*").eq("id", id).maybeSingle();
+  if (error) throw error;
+  return data ? rowToThread(data) : null;
 }
 export async function addThread(ownerId, t) {
   const row = { owner_id: ownerId, owner_name: t.ownerName || "", owner_verified: t.ownerVerified === true, title: t.title, body: t.body || "" };

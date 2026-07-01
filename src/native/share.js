@@ -6,6 +6,22 @@
 
 import { Capacitor } from "@capacitor/core";
 
+// Paylaşılan/açık web adresinin kök adresi. Native kabukta window.location.origin
+// "https://localhost" (Android) / "capacitor://localhost" (iOS) olur — bu adres
+// başka cihazda AÇILMAZ. Bu yüzden native'de sabit public domain kullan.
+const PUBLIC_BASE = "https://yuklet.co";
+export function publicBase() {
+  if (Capacitor.isNativePlatform()) return PUBLIC_BASE;
+  if (typeof window !== "undefined" && /^https?:$/.test(window.location.protocol)) {
+    return window.location.origin;
+  }
+  return PUBLIC_BASE;
+}
+// Bir ilanın paylaşılabilir public linki.
+export function listingShareUrl(id) {
+  return `${publicBase()}/ilan/${id}`;
+}
+
 // Sonuç: "shared" | "copied" | "failed"
 export async function shareUrl({ title = "YÜKLET", text = "", url = "" } = {}) {
   // 1) Native (iOS/Android) → Capacitor Share (her iki platformda çalışır)

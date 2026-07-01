@@ -5,6 +5,10 @@
 -- Bu fonksiyon sunucuda atomik çalışır: teklifi 'kabul' oluşturur, ilanı eşleştirir.
 -- Supabase Dashboard -> SQL Editor -> yapıştır -> Run.
 
+-- ÖN KOŞUL: assigned_vehicle kolonu (migration-2026-06-eksik-sutunlar.sql'de de var).
+-- Bu dosya TEK BAŞINA çalıştırılınca kolon yoksa aşağıdaki UPDATE patlar → idempotent ekle.
+alter table public.listings add column if not exists assigned_vehicle jsonb;
+
 create or replace function public.accept_job(
   p_listing_id   bigint,
   p_price        numeric default null,

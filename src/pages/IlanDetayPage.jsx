@@ -18,7 +18,7 @@ import { estimatePrice, fmtTL, priceSignal } from "../utils/priceEstimate";
 import { loadPricingConfig } from "../utils/storage";
 import { newId, nowIso } from "../utils/id";
 import { useToast } from "../components/Toast";
-import { shareUrl } from "../native/share";
+import { shareUrl, listingShareUrl } from "../native/share";
 import { openInMaps, openIosMap } from "../native/maps";
 import { hapticTap, hapticSuccess } from "../native/haptics";
 import useFavorites from "../hooks/useFavorites";
@@ -286,7 +286,8 @@ export default function IlanDetayPage({ listings = LISTINGS, user, fleet = [], o
   // Paylaş — native paylaşım sayfası (iOS/Android), web'de Web Share / panoya kopyala.
   const onShare = async () => {
     hapticTap();
-    const url = typeof window !== "undefined" ? window.location.href : "";
+    // Native'de location.href "localhost" olur → public link kur (başka cihazda açılsın).
+    const url = listingShareUrl(l.id);
     const res = await shareUrl({ title: l.title, text: `${l.title} — YÜKLET`, url });
     if (res === "copied") toast("Bağlantı kopyalandı", "success");
   };

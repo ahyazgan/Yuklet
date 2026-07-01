@@ -152,7 +152,14 @@ function AppShell() {
   };
   const removeListing = async (id) => {
     if (SB) {
-      try { await api.deleteListing(id); setUserListings(prev => prev.filter(l => l.id !== id)); return { ok: true }; }
+      try {
+        await api.deleteListing(id);
+        // DB cascade teklifleri de siler; yerel state'ten de düş (yoksa ~15sn boyunca
+        // silinen ilana bağlı öksüz teklifler kalır — yerel modla tutarsız).
+        setUserListings(prev => prev.filter(l => l.id !== id));
+        setOffers(prev => prev.filter(o => String(o.listingId) !== String(id)));
+        return { ok: true };
+      }
       catch (e) { console.error(e); return { ok: false, error: e?.message || "Silme başarısız." }; }
     }
     setUserListings(prev => prev.filter(l => l.id !== id)); setOffers(prev => prev.filter(o => String(o.listingId) !== String(id)));
@@ -247,7 +254,9 @@ function AppShell() {
     } else {
       const offer = { id: newId(), ...base, fromUser: me.name, fromUserId: me.id, status: "kabul", direct: true, createdAt: nowIso(), updatedAt: nowIso() };
       setOffers(prev => [offer, ...prev]);
-      setUserListings(prev => prev.map(l => String(l.id) === String(listing.id) ? { ...l, status: "eslesti", ...(av ? { assignedVehicle: av } : {}) } : l));
+      // acceptedById: SB'deki accept_job RPC'si bunu yazar; yerel modda da yaz ki
+      // erken ödeme/hakediş (payoutTo: acceptedById || ownerId) doğru tarafa gitsin.
+      setUserListings(prev => prev.map(l => String(l.id) === String(listing.id) ? { ...l, status: "eslesti", acceptedById: me.id, ...(av ? { assignedVehicle: av } : {}) } : l));
     }
     return { ok: true };
   };
@@ -298,6 +307,10 @@ function AppShell() {
   // Belgeler (K belgesi, ruhsat, vergi levhasi)
   const [docs, setDocs] = useState(() => (SB ? [] : loadDocs()));
   useEffect(() => { if (!SB) saveDocs(docs); }, [docs, SB]);
+  // SB modunda admin panelinin gördüğü TÜM belgeler (herkesinki). Yerel modda docs
+  // zaten herkesi içerir, o yüzden adminDocs = docs.
+  const [adminDocs, setAdminDocs] = useState([]);
+  const allDocs = SB ? adminDocs : docs;
   const addDoc = async (d) => {
     if (SB) {
       try { const saved = await api.addDoc({ ...d, ownerId: (profile || user)?.id }); setDocs(prev => [{ ...d, ...saved, ownerId: (profile || user)?.id }, ...prev]); return { ok: true }; }
@@ -443,13 +456,16 @@ function AppShell() {
   };
   const reviewDoc = async (docId, decision) => {
     // decision: "dogrulandi" | "red". Onaylanırsa belge sahibini verified yap.
-    const d = docs.find(x => x.id === docId);
+    // NOT: allDocs kullan — SB modunda docs yalnız admin'in KENDİ belgelerini tutar,
+    // başka kullanıcının belgesi orada bulunamaz (o zaman sahibi doğrulanamazdı).
+    const d = allDocs.find(x => x.id === docId);
     if (SB) {
       try {
         await api.updateDocStatus(docId, decision);
         if (decision === "dogrulandi" && d) await api.adminUpdateProfile(d.ownerId, { verified: true });
       } catch (e) { console.error(e); return { ok: false, error: e?.message }; }
     }
+    setAdminDocs(prev => prev.map(x => x.id === docId ? { ...x, status: decision } : x));
     setDocs(prev => prev.map(x => x.id === docId ? { ...x, status: decision } : x));
     if (decision === "dogrulandi" && d) {
       setUsers(prev => prev.map(u => String(u.id) === String(d.ownerId) ? { ...u, verified: true } : u));
@@ -541,6 +557,8 @@ function AppShell() {
     if (!SB || !isAdmin(user)) return;
     api.fetchAllProfiles().then(setUsers).catch((e) => console.error(e));
     api.fetchAllReports().then(setReports).catch((e) => console.error(e));
+    // Admin belge doğrulaması: TÜM kullanıcıların belgeleri (kendi docs state'i yetmez).
+    api.fetchAllDocs().then(setAdminDocs).catch((e) => console.error(e));
     // user yerine id+email yeterli (isAdmin yalnizca bunlara bakar).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [SB, user?.id, user?.email]);
@@ -641,7 +659,15 @@ function AppShell() {
       setMessages((prev) => prev.filter((m) => String(m.fromId) !== uid && String(m.toId) !== uid));
       setDocs((prev) => prev.filter((d) => String(d.ownerId) !== uid));
       setReviews((prev) => prev.filter((r) => String(r.fromId) !== uid));
+      // SB modunda delete_my_account cascade ile hepsi gider; yerel modda da temizle
+      // (yoksa filo + Mola gönderi/başlık/yorumları silinen kullanıcı adıyla görünür kalır).
+      setFleet((prev) => prev.filter((v) => String(v.ownerId) !== uid));
+      setMolaPosts((prev) => prev.filter((p) => String(p.ownerId) !== uid));
+      setMolaThreads((prev) => prev.filter((t) => String(t.ownerId) !== uid));
+      setMolaReplies((prev) => prev.filter((r) => String(r.ownerId) !== uid));
+      setReports((prev) => prev.filter((r) => String(r.fromId) !== uid));
       setUsers((prev) => prev.filter((u) => String(u.id) !== uid));
+      if (blocked[uid]) { const nb = { ...blocked }; delete nb[uid]; setBlocked(nb); saveBlocked(nb); }
     }
     setUser(null);
     setProfile(null);
@@ -773,16 +799,16 @@ function AppShell() {
                 <Route path="/mesajlar" element={<PageTransition><MesajlarPage user={user} listings={listings} offers={offers} messages={messages} onSendMessage={addMessage} onRequireAuth={requireAuth} onSeen={markMessagesSeen} getContact={getContact} msgSeen={msgSeen} blockedIds={myBlocked} /></PageTransition>} />
                 <Route path="/profil" element={<PageTransition><ProfilPage user={user} onUpdateProfile={updateProfile} onRequireAuth={requireAuth} onLogout={logout} onDeleteAccount={deleteAccount} reviews={reviews} getUserRating={getUserRating} listings={listings} offers={offers} docs={docs.filter(d => user && String(d.ownerId) === String(user.id))} onAddDoc={addDoc} onRemoveDoc={removeDoc} notifPrefs={notifPrefs} onUpdateNotifPrefs={updateNotifPrefs} /></PageTransition>} />
                 <Route path="/panel" element={<PageTransition><DashboardPage user={user} listings={listings} offers={offers} messages={messages} onRequireAuth={requireAuth} /></PageTransition>} />
-                <Route path="/admin" element={<PageTransition><AdminPage user={user} reports={reports} docs={docs} users={users} listings={allListings} offers={offers} audit={audit} onRequireAuth={requireAuth} onSetReportStatus={setReportStatus} onReviewDoc={reviewDoc} onUpdateUser={updateUserAdmin} onResolveDispute={resolveDispute} onLog={logAdmin} onUpdateListing={updateListing} announcement={announcement} onSaveAnnouncement={saveAnnouncementAdmin} /></PageTransition>} />
+                <Route path="/admin" element={<PageTransition><AdminPage user={user} reports={reports} docs={allDocs} users={users} listings={allListings} offers={offers} audit={audit} onRequireAuth={requireAuth} onSetReportStatus={setReportStatus} onReviewDoc={reviewDoc} onUpdateUser={updateUserAdmin} onResolveDispute={resolveDispute} onLog={logAdmin} onUpdateListing={updateListing} announcement={announcement} onSaveAnnouncement={saveAnnouncementAdmin} /></PageTransition>} />
                 <Route path="/muteahhit" element={<PageTransition><MuteahhitPage /></PageTransition>} />
                 <Route path="/tedarikci" element={<PageTransition><TedarikciPage /></PageTransition>} />
-                <Route path="/satici/:id" element={<PageTransition><SaticiProfilPage user={user} users={users} listings={listings} reviews={reviews} getUserRating={getUserRating} /></PageTransition>} />
-                <Route path="/alici/:id" element={<PageTransition><AliciProfilPage user={user} users={users} listings={listings} reviews={reviews} getUserRating={getUserRating} /></PageTransition>} />
-                <Route path="/nakliyeci-profil/:id" element={<PageTransition><NakliyeciProfilPage user={user} users={users} listings={listings} reviews={reviews} getUserRating={getUserRating} /></PageTransition>} />
+                <Route path="/satici/:id" element={<PageTransition><SaticiProfilPage user={user} users={users} listings={listings} offers={offers} reviews={reviews} getUserRating={getUserRating} /></PageTransition>} />
+                <Route path="/alici/:id" element={<PageTransition><AliciProfilPage user={user} users={users} listings={listings} offers={offers} reviews={reviews} getUserRating={getUserRating} /></PageTransition>} />
+                <Route path="/nakliyeci-profil/:id" element={<PageTransition><NakliyeciProfilPage user={user} users={users} listings={listings} offers={offers} reviews={reviews} getUserRating={getUserRating} /></PageTransition>} />
                 <Route path="/mola" element={<PageTransition><MolaYeriPage user={user} posts={molaPosts} threads={molaThreads} onRemovePost={removeMolaPost} onRequireAuth={requireAuth} /></PageTransition>} />
                 <Route path="/mola-paylas" element={<PageTransition><MolaPaylasPage user={user} onAddPost={addMolaPost} onRequireAuth={requireAuth} /></PageTransition>} />
                 <Route path="/mola/baslik-ac" element={<PageTransition><MolaBaslikAcPage user={user} onAddThread={addThread} onRequireAuth={requireAuth} /></PageTransition>} />
-                <Route path="/mola/forum/:id" element={<PageTransition><MolaThreadPage user={user} threads={molaThreads} replies={molaReplies} onFetchReplies={SB ? api.fetchReplies : undefined} onAddReply={addReply} onRemoveReply={removeReply} onRemoveThread={removeThread} onRequireAuth={requireAuth} /></PageTransition>} />
+                <Route path="/mola/forum/:id" element={<PageTransition><MolaThreadPage user={user} threads={molaThreads} replies={molaReplies} onFetchReplies={SB ? api.fetchReplies : undefined} onFetchThread={SB ? api.fetchThread : undefined} onAddReply={addReply} onRemoveReply={removeReply} onRemoveThread={removeThread} onRequireAuth={requireAuth} /></PageTransition>} />
                 <Route path="/nakliyeci" element={<PageTransition><NakliyeciPage /></PageTransition>} />
                 <Route path="/nasil-calisir" element={<PageTransition><NasilCalisirPage /></PageTransition>} />
                 <Route path="/hakkimizda" element={<PageTransition><HakkimizdaPage /></PageTransition>} />

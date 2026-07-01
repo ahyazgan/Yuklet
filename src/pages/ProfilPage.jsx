@@ -869,9 +869,14 @@ export default function ProfilPage({ user, onUpdateProfile, onRequireAuth, onLog
             <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
               {docs.map((d) => (
                 <div key={d.id} style={{ display: "flex", alignItems: "center", gap: 12, border: `2px solid ${C.ink}`, borderRadius: 6, padding: 10 }}>
-                  {String(d.dataUrl).startsWith("data:image")
-                    ? <img src={d.dataUrl} alt="" style={{ width: 40, height: 40, flexShrink: 0, borderRadius: 5, border: `2px solid ${C.ink}`, objectFit: "cover" }} />
-                    : <span style={{ width: 40, height: 40, flexShrink: 0, borderRadius: 5, background: C.stone, border: `2px solid ${C.ink}`, display: "flex", alignItems: "center", justifyContent: "center" }}><FileText size={18} color={C.ink} strokeWidth={2} /></span>}
+                  {(() => {
+                    // SB modunda belge dataUrl değil url ile gelir; resimse ikisinden birini göster.
+                    const src = d.dataUrl || d.url || "";
+                    const isImg = src.startsWith("data:image") || /\.(png|jpe?g|webp|gif)(\?|$)/i.test(src);
+                    return isImg
+                      ? <img src={src} alt="" style={{ width: 40, height: 40, flexShrink: 0, borderRadius: 5, border: `2px solid ${C.ink}`, objectFit: "cover" }} />
+                      : <span style={{ width: 40, height: 40, flexShrink: 0, borderRadius: 5, background: C.stone, border: `2px solid ${C.ink}`, display: "flex", alignItems: "center", justifyContent: "center" }}><FileText size={18} color={C.ink} strokeWidth={2} /></span>;
+                  })()}
                   <div style={{ minWidth: 0, flex: 1 }}>
                     <div style={{ fontFamily: ARCHIVO, fontSize: 12, fontWeight: 800, color: C.ink, textTransform: "uppercase", letterSpacing: "-0.02em" }}>{d.type}</div>
                     <div style={{ fontFamily: MONO, fontSize: 10, color: C.faint, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.name}</div>

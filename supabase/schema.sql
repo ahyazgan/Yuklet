@@ -239,6 +239,22 @@ create policy profiles_read   on public.profiles for select using (true);
 create policy profiles_insert on public.profiles for insert with check (auth.uid() = id);
 create policy profiles_update on public.profiles for update using (auth.uid() = id);
 
+-- ÖN KOŞUL (schema.sql standalone çalışsın): guard_profile_update hem
+-- public.is_admin() fonksiyonuna hem profiles.status kolonuna dayanır. Bunlar
+-- admin-moderation.sql'de de tanımlı ama bu dosya TEK BAŞINA çalıştırılınca
+-- (SUPABASE.md böyle söylüyor) trigger onlar olmadan patlar. İkisi de idempotent
+-- (create or replace / add column if not exists) — admin-moderation.sql sonradan
+-- çalışsa da güvenle üzerine yazar.
+alter table public.profiles add column if not exists status text not null default 'aktif';
+create or replace function public.is_admin()
+returns boolean language sql security definer set search_path = public as $$
+  select coalesce(
+    (select lower(email) = 'a.hakan_@hotmail.com' from auth.users where id = auth.uid()),
+    false
+  );
+$$;
+grant execute on function public.is_admin() to authenticated;
+
 -- GÜVENLİK: profiles_update kolon kısıtı içermez → kullanıcı kendi
 -- role/verified/status'ünü değiştirip ayrıcalık yükseltebilir. BEFORE UPDATE
 -- trigger korunan kolonları sabitler (yalnız admin değiştirir; role ilk atamada
@@ -394,41 +410,51 @@ values
 on conflict do nothing;
 
 -- ──────────────────────────────────────────────
--- 9) TRIP_LOCATIONS  (canli sefer konumu — realtime takip cutover'ina hazir)
---    Su an uygulama localStorage "kanal"i kullanir (src/utils/tripChannel.js);
---    gercek cok-cihaz takip icin bu tabloya + Supabase Realtime'a baglanir.
+-- 9) TRIP_LOCATIONS  (canli sefer konumu — cok-cihaz gercek zamanli takip)
+--    ÖNEMLİ: Şekil src/utils/tripChannel.js ile BİREBİR aynı olmalı — kod
+--    { listing_id, last(jsonb), trail(jsonb), active } upsert eder; ayrı bir
+--    driver_id/lat/lng kolonu YAZMAZ. Eski şema discrete lat/lng + driver_id
+--    kullanıyordu ve "last" kolonu olmadığı için canlı konum sessizce çalışmıyordu
+--    (dbUpsert hatayı yutuyor). Bu blok migration-2026-07-canli-konum.sql ile aynıdır.
 -- ──────────────────────────────────────────────
 create table if not exists public.trip_locations (
   listing_id  bigint primary key references public.listings(id) on delete cascade,
-  driver_id   uuid references public.profiles(id) on delete set null,
-  lat         double precision,
-  lng         double precision,
-  speed       double precision,            -- m/s
-  heading     double precision,            -- derece
-  accuracy    double precision,            -- m
-  trail       jsonb default '[]'::jsonb,    -- son N nokta
-  active      boolean not null default true,
+  last        jsonb,                              -- { lat, lng, speed, heading, accuracy, at }
+  trail       jsonb not null default '[]'::jsonb, -- son N nokta (dizi)
+  active      boolean not null default true,      -- sefer canlı mı
   updated_at  timestamptz not null default now()
 );
-create index if not exists trip_loc_driver_idx on public.trip_locations(driver_id);
+create index if not exists trip_locations_updated_idx on public.trip_locations(updated_at);
+
+-- İlan sahibi VEYA kabul edilmiş teklifin sürücüsü ise true (RLS taraf kontrolü).
+create or replace function public.is_trip_party(p_listing_id bigint, p_uid uuid)
+returns boolean language sql security definer set search_path = public as $$
+  select exists (
+    select 1 from public.listings l where l.id = p_listing_id and l.owner_id = p_uid
+  ) or exists (
+    select 1 from public.offers o
+    where o.listing_id = p_listing_id and o.status = 'kabul' and o.from_user_id = p_uid
+  );
+$$;
+
 alter table public.trip_locations enable row level security;
 drop policy if exists trip_loc_read   on public.trip_locations;
+drop policy if exists trip_loc_insert on public.trip_locations;
 drop policy if exists trip_loc_write  on public.trip_locations;
 drop policy if exists trip_loc_update on public.trip_locations;
--- Okuma: islin taraflari (ilan sahibi veya kabul edilen nakliyeci).
-create policy trip_loc_read on public.trip_locations for select using (
-  exists (
-    select 1 from public.listings l where l.id = listing_id and (
-      l.owner_id = auth.uid()
-      or exists (select 1 from public.offers o where o.listing_id = l.id and o.status = 'kabul' and o.from_user_id = auth.uid())
-    )
-  )
-);
--- Yazma/guncelleme: yalnizca surucu kendi konumunu.
-create policy trip_loc_write  on public.trip_locations for insert with check (auth.uid() = driver_id);
-create policy trip_loc_update on public.trip_locations for update using (auth.uid() = driver_id);
+create policy trip_loc_read on public.trip_locations
+  for select using (public.is_trip_party(listing_id, auth.uid()));
+create policy trip_loc_insert on public.trip_locations
+  for insert with check (public.is_trip_party(listing_id, auth.uid()));
+create policy trip_loc_update on public.trip_locations
+  for update using (public.is_trip_party(listing_id, auth.uid()));
 
--- Realtime yayinina ekle (varsa hata vermez).
+-- Realtime yayinina ekle (zaten ekliyse tekrar eklemez).
 do $$ begin
-  alter publication supabase_realtime add table public.trip_locations;
-exception when others then null; end $$;
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'trip_locations'
+  ) then
+    alter publication supabase_realtime add table public.trip_locations;
+  end if;
+end $$;

@@ -32,7 +32,7 @@ function fmtDateTime(iso) {
   catch { return ""; }
 }
 
-export default function MolaThreadPage({ user, threads = [], replies = [], onFetchReplies, onAddReply, onRemoveReply, onRemoveThread, onRequireAuth }) {
+export default function MolaThreadPage({ user, threads = [], replies = [], onFetchReplies, onFetchThread, onAddReply, onRemoveReply, onRemoveThread, onRequireAuth }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
@@ -41,7 +41,19 @@ export default function MolaThreadPage({ user, threads = [], replies = [], onFet
   const [confirmDelThread, setConfirmDelThread] = useState(false);
   const [confirmDelReply, setConfirmDelReply] = useState(null);
 
-  const thread = useMemo(() => threads.find((t) => String(t.id) === String(id)), [threads, id]);
+  const listThread = useMemo(() => threads.find((t) => String(t.id) === String(id)), [threads, id]);
+  // Cold-launch/deep link: liste henüz boşsa başlığı id ile tek tek çek — aksi halde
+  // "Başlık bulunamadı" sahte ekranı görünürdü (liste async yüklenene kadar).
+  const [fetchedThread, setFetchedThread] = useState(undefined); // undefined=yükleniyor, null=yok
+  useEffect(() => {
+    if (listThread || !onFetchThread) return;   // listede var ya da yerel mod
+    let alive = true;
+    onFetchThread(id).then((t) => { if (alive) setFetchedThread(t || null); }).catch(() => { if (alive) setFetchedThread(null); });
+    return () => { alive = false; };
+  }, [id, listThread, onFetchThread]);
+  const thread = listThread || fetchedThread || null;
+  // SB modunda başlık ne listede ne de fetch ile geldi mi henüz belli değil → yükleniyor.
+  const threadLoading = !listThread && onFetchThread && fetchedThread === undefined;
 
   // SB modunda yorumları DB'den çek; yereldeyse App'ten gelen replies'i filtrele.
   const [fetched, setFetched] = useState(null);
@@ -70,6 +82,20 @@ export default function MolaThreadPage({ user, threads = [], replies = [], onFet
           <Logo size="lg" />
           <h1 style={{ fontFamily: ARCHIVO, fontSize: 20, fontWeight: 800, color: C.ink, textTransform: "uppercase", letterSpacing: "-0.02em", margin: 0 }}>Giriş gerekli</h1>
           <button onClick={() => onRequireAuth?.()} style={{ marginTop: 4, background: C.ink, color: C.yellow, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "13px 22px", fontFamily: ARCHIVO, fontSize: 14, fontWeight: 800, textTransform: "uppercase", cursor: "pointer", boxShadow: "3px 3px 0 #0A0A0A" }}>Giriş yap</button>
+        </div>
+      </div>
+    );
+  }
+  // Başlık henüz yükleniyorsa (cold-launch/deep link) not-found gösterme, bekle.
+  if (user.role === "nakliyeci" && threadLoading) {
+    return (
+      <div style={shell}>
+        <SEO title="Mola — Forum" />
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, padding: "0 24px", textAlign: "center" }}>
+          <div style={{ width: 64, height: 64, borderRadius: 8, background: C.ink, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Coffee size={30} color={C.yellow} strokeWidth={2.2} />
+          </div>
+          <p style={{ fontFamily: ARCHIVO, fontSize: 14, fontWeight: 700, color: C.sub, margin: 0 }}>Başlık yükleniyor…</p>
         </div>
       </div>
     );

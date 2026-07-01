@@ -83,9 +83,14 @@ export async function initDeepLinks(navigate) {
     const routeFromUrl = (url) => {
       if (!url) return;
       try {
-        // Hem custom scheme hem https: pathname'i çıkar.
         const u = new URL(url);
-        const path = (u.pathname || "/") + (u.search || "");
+        // ÖNEMLİ: custom scheme'de (com.yuklet.app://ilan/123) URL, "ilan"ı HOST,
+        // "/123"ü pathname olarak ayrıştırır → sadece pathname alınsa "/123"e gider
+        // ve 404 olur. http(s) dışı şemalarda rotayı host+pathname'den kur.
+        const isHttp = u.protocol === "http:" || u.protocol === "https:";
+        const path = isHttp
+          ? (u.pathname || "/") + (u.search || "")
+          : "/" + [u.host, (u.pathname || "").replace(/^\/+/, "")].filter(Boolean).join("/") + (u.search || "");
         if (path && path !== "/") navigate(path);
       } catch {
         // URL ayrıştırılamazsa: "scheme://ilan/123" → "/ilan/123"

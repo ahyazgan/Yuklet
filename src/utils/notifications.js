@@ -146,9 +146,12 @@ export function buildNotifications(user, { listings = [], offers = [], messages 
     : items;
 
   filtered.sort((a, b) => (b.time || "").localeCompare(a.time || ""));
+  // Okunmamış sayısını TÜM filtered üzerinden hesapla — slice(0,25)'ten SONRA
+  // sayılırsa >25 okunmamışta rozet eksik gösterir (en eskiler kaybolur).
+  const isUnread = (n) => (seenIso ? (n.time || "") > seenIso : true);
+  const unread = filtered.filter(isUnread).length;
   const withRead = filtered.slice(0, 25).map((n) => ({
-    ...n, read: seenIso ? (n.time || "") <= seenIso : false, fmtTime: fmt(n.time),
+    ...n, read: !isUnread(n), fmtTime: fmt(n.time),
   }));
-  const unread = withRead.filter((n) => !n.read).length;
   return { items: withRead, unread };
 }

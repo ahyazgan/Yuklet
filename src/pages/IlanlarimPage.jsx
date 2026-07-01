@@ -5,7 +5,7 @@ import { CATS, STOCK_LEVELS } from "../data/categories";
 import CategoryIcon from "../components/CategoryIcon";
 import { computeReliability, reliabilityTier } from "../utils/reliability";
 import { useToast } from "../components/Toast";
-import { shareUrl } from "../native/share";
+import { shareUrl, listingShareUrl } from "../native/share";
 import { hapticTap, hapticSuccess, hapticWarn } from "../native/haptics";
 import SEO from "../components/SEO";
 import Logo from "../components/Logo";
@@ -140,7 +140,7 @@ export default function IlanlarimPage({ listings = [], user, offers = [], review
 
   const share = async (l) => {
     hapticTap();
-    const url = `${window.location.origin}/ilan/${l.id}`;
+    const url = listingShareUrl(l.id);
     const res = await shareUrl({ title: l.title, text: `${l.title} — YÜKLET`, url });
     if (res === "copied") toast("İlan bağlantısı kopyalandı", "info");
   };

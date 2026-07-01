@@ -206,7 +206,7 @@ export default function MesajlarPage({ user, listings = [], offers = [], message
   const sendImage = (e) => {
     const f = e.target.files?.[0];
     if (!f || !active) return;
-    if (f.size > 1_800_000) { e.target.value = ""; return; } // ~1.8MB limit
+    if (f.size > 1_800_000) { e.target.value = ""; toast("Görsel çok büyük (en fazla ~1.8MB)", "error"); return; } // sessiz reddetme yerine bildir
     const reader = new FileReader();
     reader.onload = () => sendImageDataUrl(reader.result);
     reader.readAsDataURL(f);

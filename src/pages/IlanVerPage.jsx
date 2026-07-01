@@ -16,7 +16,7 @@ import { newId } from "../utils/id";
 import { pendingReviews } from "../utils/reviewGate";
 import SEO from "../components/SEO";
 import Logo from "../components/Logo";
-import { shareUrl } from "../native/share";
+import { shareUrl, listingShareUrl } from "../native/share";
 import { hapticTap, hapticSuccess } from "../native/haptics";
 import { getCurrentPosition } from "../native/geo";
 import {
@@ -250,7 +250,9 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers
     const listing = {
       id: newId(),
       ...data,
-      date: "", recurring: false, recurringText: "",
+      // NOT: recurring/recurringText SIFIRLANMAZ — data'daki gerçek seçim korunur
+      // (aksi halde "Düzenli iş" seçimi yayında düşerdi; düzenleme akışıyla tutarlı).
+      date: "",
       owner: user?.name || form.owner.trim(),
       ownerId: user?.id,
       ownerVerified: user?.verified || false,
@@ -391,7 +393,7 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers
         ? "₺" + published.price.toLocaleString("tr-TR") : "Teklife açık";
     const shareListing = async () => {
       hapticTap();
-      const url = `${window.location.origin}/ilan/${published.id}`;
+      const url = listingShareUrl(published.id);
       await shareUrl({ title: published.title, text: `${published.title} — YÜKLET`, url });
     };
     return (

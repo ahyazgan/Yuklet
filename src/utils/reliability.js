@@ -4,6 +4,8 @@
 // ║  Saf fonksiyon; listings/offers/reviews'ten hesaplar.              ║
 // ╚══════════════════════════════════════════════════════════════════╝
 
+import { visibleReviewsFor } from "./reviewGate";
+
 // Dönüş: { score(0-100|null), jobsDone, approvalRate(0-1|null), avgRating,
 //          ratingCount, totalTrips, disputes }
 export function computeReliability(userId, { listings = [], offers = [], reviews = [] }) {
@@ -22,7 +24,10 @@ export function computeReliability(userId, { listings = [], offers = [], reviews
   const disputed = withProof.filter((l) => l.deliveryProof.status === "itiraz").length;
   const totalTrips = involved.reduce((s, l) => s + (l.tripsDone || 0), 0);
 
-  const rs = reviews.filter((r) => String(r.toId) === uid);
+  // ÇİFT-KÖR: yalnız GÖRÜNÜR yorumları hesaba kat — aksi halde karşı taraf henüz
+  // puanlamadan (ve süre dolmadan) gizli olması gereken puan skora sızar ve
+  // kullanıcı kendi profilinde skor düşüşünden karşı tarafın kötü puanladığını anlar.
+  const rs = visibleReviewsFor(uid, reviews);
   const avgRating = rs.length ? rs.reduce((s, r) => s + r.rating, 0) / rs.length : null;
 
   const jobsDone = done.length;
