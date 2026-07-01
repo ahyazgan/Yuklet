@@ -54,6 +54,7 @@ const SaticiProfilPage = lazy(() => import("./pages/SaticiProfilPage"));
 const AliciProfilPage = lazy(() => import("./pages/AliciProfilPage"));
 const NakliyeciProfilPage = lazy(() => import("./pages/NakliyeciProfilPage"));
 const MolaYeriPage = lazy(() => import("./pages/MolaYeriPage"));
+const MolaDetayPage = lazy(() => import("./pages/MolaDetayPage"));
 const MolaPaylasPage = lazy(() => import("./pages/MolaPaylasPage"));
 const MolaThreadPage = lazy(() => import("./pages/MolaThreadPage"));
 const MolaBaslikAcPage = lazy(() => import("./pages/MolaBaslikAcPage"));
@@ -400,11 +401,18 @@ function AppShell() {
     const cur = profile || user;
     if (cur?.status === "banli") return { ok: false, error: "Hesabın askıya alındı." };
     const meta = { ownerName: cur?.name || "", ownerVerified: Boolean(cur?.verified) };
+    const { photos, ...rest } = p;   // photos: dataURL dizisi
     if (SB) {
-      try { const saved = await api.addMolaPost(cur.id, { ...p, ...meta }); setMolaPosts(prev => [saved, ...prev]); return { ok: true, post: saved }; }
-      catch (e) { console.error(e); return { ok: false, error: e?.message || "Gönderi paylaşılamadı." }; }
+      try {
+        // Fotoğrafları Storage'a yükle → public URL dizisi; sonra ilanı kaydet.
+        const images = (photos && photos.length) ? await api.uploadMolaImages(cur.id, photos) : [];
+        const saved = await api.addMolaPost(cur.id, { ...rest, ...meta, images });
+        setMolaPosts(prev => [saved, ...prev]);
+        return { ok: true, post: saved };
+      } catch (e) { console.error(e); return { ok: false, error: e?.message || "Gönderi paylaşılamadı." }; }
     }
-    const rec = { id: Date.now(), ownerId: cur.id, ...meta, ...p, status: "aktif", createdAt: new Date().toISOString() };
+    // Yerel mod: base64 dataURL'leri doğrudan sakla (Storage yok).
+    const rec = { id: Date.now(), ownerId: cur.id, ...meta, ...rest, images: photos || [], status: "aktif", createdAt: new Date().toISOString() };
     setMolaPosts(prev => [rec, ...prev]);
     return { ok: true, post: rec };
   };
@@ -850,6 +858,7 @@ function AppShell() {
                 <Route path="/alici/:id" element={<PageTransition><AliciProfilPage user={user} users={users} listings={listings} offers={offers} reviews={reviews} getUserRating={getUserRating} /></PageTransition>} />
                 <Route path="/nakliyeci-profil/:id" element={<PageTransition><NakliyeciProfilPage user={user} users={users} listings={listings} offers={offers} reviews={reviews} getUserRating={getUserRating} /></PageTransition>} />
                 <Route path="/mola" element={<PageTransition><MolaYeriPage user={user} posts={molaPosts} threads={molaThreads} onRemovePost={removeMolaPost} onRequireAuth={requireAuth} /></PageTransition>} />
+                <Route path="/mola/:id" element={<PageTransition><MolaDetayPage user={user} posts={molaPosts} onFetchPost={SB ? api.fetchMolaPost : undefined} onRemovePost={removeMolaPost} onRequireAuth={requireAuth} /></PageTransition>} />
                 <Route path="/mola-paylas" element={<PageTransition><MolaPaylasPage user={user} onAddPost={addMolaPost} onRequireAuth={requireAuth} /></PageTransition>} />
                 <Route path="/mola/baslik-ac" element={<PageTransition><MolaBaslikAcPage user={user} onAddThread={addThread} onRequireAuth={requireAuth} /></PageTransition>} />
                 <Route path="/mola/forum/:id" element={<PageTransition><MolaThreadPage user={user} threads={molaThreads} replies={molaReplies} onFetchReplies={SB ? api.fetchReplies : undefined} onFetchThread={SB ? api.fetchThread : undefined} onAddReply={addReply} onRemoveReply={removeReply} onRemoveThread={removeThread} onRequireAuth={requireAuth} /></PageTransition>} />

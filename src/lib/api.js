@@ -526,22 +526,50 @@ export async function removeFleetVehicle(id) {
 const rowToMolaPost = (m) => ({
   id: m.id, ownerId: m.owner_id, ownerName: m.owner_name, ownerVerified: m.owner_verified,
   category: m.category, title: m.title, body: m.body, price: m.price, il: m.il,
-  phone: m.phone, status: m.status, createdAt: m.created_at,
+  phone: m.phone, images: Array.isArray(m.images) ? m.images : [], status: m.status, createdAt: m.created_at,
 });
 export async function fetchMolaPosts() {
   const { data, error } = await supabase.from("mola_posts").select("*").eq("status", "aktif").order("created_at", { ascending: false });
   if (error) throw error;
   return (data || []).map(rowToMolaPost);
 }
+// Tek gönderi (detay sayfası / cold-launch deep link — liste boşken de gelsin).
+export async function fetchMolaPost(id) {
+  const { data, error } = await supabase.from("mola_posts").select("*").eq("id", id).maybeSingle();
+  if (error) throw error;
+  return data ? rowToMolaPost(data) : null;
+}
 export async function addMolaPost(ownerId, p) {
   const row = {
     owner_id: ownerId, owner_name: p.ownerName || "", owner_verified: p.ownerVerified === true,
     category: p.category, title: p.title, body: p.body || "",
     price: p.price ?? null, il: p.il || "", phone: p.phone || "",
+    images: Array.isArray(p.images) ? p.images : [],
   };
   const { data, error } = await supabase.from("mola_posts").insert(row).select("*").single();
   if (error) throw error;
   return rowToMolaPost(data);
+}
+
+// ── Supabase Storage: Mola ilan fotoğrafları ("mola" bucket, herkese açık okuma) ──
+// dataUrl (base64) -> blob -> upload -> public URL. Sahip klasörü: <ownerId>/<zaman>-<i>.jpg
+export async function uploadMolaImages(ownerId, dataUrls = []) {
+  const urls = [];
+  for (let i = 0; i < dataUrls.length; i++) {
+    const du = dataUrls[i];
+    if (!du || typeof du !== "string") continue;
+    if (!du.startsWith("data:")) { urls.push(du); continue; } // zaten URL ise dokunma
+    const blob = await (await fetch(du)).blob();
+    const ext = (blob.type.split("/")[1] || "jpg").split("+")[0];
+    const path = `${ownerId}/${Date.now()}-${i}.${ext}`;
+    const { error } = await supabase.storage.from("mola").upload(path, blob, {
+      contentType: blob.type || "image/jpeg", upsert: false,
+    });
+    if (error) throw error;
+    const { data } = supabase.storage.from("mola").getPublicUrl(path);
+    if (data?.publicUrl) urls.push(data.publicUrl);
+  }
+  return urls;
 }
 export async function removeMolaPost(id) {
   const { error } = await supabase.from("mola_posts").delete().eq("id", id);

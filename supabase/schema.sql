@@ -588,11 +588,13 @@ create table if not exists public.mola_posts (
   owner_verified boolean not null default false,
   category       text not null, title text not null, body text default '',
   price          numeric, il text default '', phone text default '',
+  images         jsonb not null default '[]'::jsonb,   -- fotoğraf public URL dizisi (Storage "mola" bucket)
   status         text not null default 'aktif',
   created_at     timestamptz not null default now()
 );
 create index if not exists mola_owner_idx on public.mola_posts(owner_id);
 create index if not exists mola_cat_idx   on public.mola_posts(category);
+alter table public.mola_posts add column if not exists images jsonb not null default '[]'::jsonb;  -- idempotent (mevcut DB)
 alter table public.mola_posts enable row level security;
 drop policy if exists mola_read   on public.mola_posts;
 drop policy if exists mola_insert on public.mola_posts;

@@ -184,65 +184,79 @@ export default function MolaYeriPage({ user, posts = [], threads = [], onRemoveP
             const c = catOf(p.category);
             const Icon = c.Icon;
             const mine = String(p.ownerId) === String(user.id);
+            const cover = Array.isArray(p.images) && p.images[0];
+            const extra = Array.isArray(p.images) ? p.images.length - 1 : 0;
+            const goDetail = () => { navigate(`/mola/${p.id}`); window.scrollTo(0, 0); };
             return (
-              <motion.div key={p.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} style={cardSt}>
-                {/* Üst: kategori + tarih */}
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 9 }}>
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontFamily: MONO, fontSize: 9.5, fontWeight: 700, padding: "4px 8px", borderRadius: 5, border: `2px solid ${C.ink}`, background: C.stone, color: C.ink, textTransform: "uppercase" }}>
-                    <Icon size={12} strokeWidth={2.4} /> {c.short}
-                  </span>
-                  <span style={{ fontFamily: MONO, fontSize: 10, color: C.faint }}>{fmtDate(p.createdAt)}</span>
-                </div>
+              <motion.div key={p.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} style={{ ...cardSt, padding: 0, overflow: "hidden" }}>
+                {/* Kapak foto (varsa) — tıklanınca detaya git */}
+                {cover && (
+                  <button onClick={goDetail} aria-label={`${p.title} detay`} style={{ display: "block", width: "100%", padding: 0, border: "none", borderBottom: `2px solid ${C.ink}`, cursor: "pointer", background: C.stone, position: "relative" }}>
+                    <img src={cover} alt={p.title} style={{ width: "100%", height: 168, objectFit: "cover", display: "block" }} />
+                    {extra > 0 && (
+                      <span style={{ position: "absolute", bottom: 8, right: 8, fontFamily: MONO, fontSize: 10, fontWeight: 700, color: "#fff", background: "rgba(10,10,10,.7)", borderRadius: 4, padding: "3px 7px" }}>+{extra} foto</span>
+                    )}
+                  </button>
+                )}
 
-                {/* Başlık + fiyat */}
-                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
-                  <h3 style={{ fontFamily: ARCHIVO, fontSize: 15, fontWeight: 800, color: C.ink, textTransform: "uppercase", letterSpacing: "-0.01em", margin: 0, lineHeight: 1.2 }}>{p.title}</h3>
-                  {p.price != null && (
-                    <span style={{ flexShrink: 0, fontFamily: MONO, fontSize: 14, fontWeight: 700, color: C.green }}>{Number(p.price).toLocaleString("tr-TR")} ₺</span>
-                  )}
-                </div>
-
-                {/* Açıklama */}
-                {p.body && <p style={{ fontSize: 13, color: C.sub, margin: "8px 0 0", lineHeight: 1.5 }}>{p.body}</p>}
-
-                {/* Künye: il + sahip */}
-                <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 11, flexWrap: "wrap" }}>
-                  {p.il && (
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontFamily: MONO, fontSize: 11, color: C.sub }}>
-                      <MapPin size={13} strokeWidth={2.2} color={C.muted} /> {p.il}
-                    </span>
-                  )}
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontFamily: MONO, fontSize: 11, color: C.ink, fontWeight: 700 }}>
-                    {p.ownerName}
-                    {p.ownerVerified && <ShieldCheck size={13} strokeWidth={2.4} color={C.green} />}
-                  </span>
-                </div>
-
-                {/* Aksiyonlar */}
-                <div style={{ display: "flex", gap: 8, marginTop: 12, paddingTop: 11, borderTop: `1.5px solid ${C.line}` }}>
-                  {mine ? (
-                    confirmDel === p.id ? (
-                      <>
-                        <button onClick={() => setConfirmDel(null)} style={{ flex: 1, background: C.card, color: C.ink, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "9px", fontFamily: MONO, fontSize: 11, fontWeight: 700, textTransform: "uppercase", cursor: "pointer" }}>Vazgeç</button>
-                        <button onClick={() => doRemove(p.id)} style={{ flex: 1, background: C.red, color: "#fff", border: `2px solid ${C.red}`, borderRadius: 6, padding: "9px", fontFamily: MONO, fontSize: 11, fontWeight: 700, textTransform: "uppercase", cursor: "pointer" }}>Sil</button>
-                      </>
-                    ) : (
-                      <button onClick={() => setConfirmDel(p.id)} style={{ flex: 1, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, background: C.card, color: C.red, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "9px", fontFamily: MONO, fontSize: 11, fontWeight: 700, textTransform: "uppercase", cursor: "pointer" }}>
-                        <Trash2 size={13} strokeWidth={2.4} /> Gönderimi sil
-                      </button>
-                    )
-                  ) : (
-                    <>
-                      <button onClick={() => navigate("/mesajlar")} style={{ flex: 1, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, background: C.yellow, color: C.ink, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "10px", fontFamily: ARCHIVO, fontSize: 12, fontWeight: 800, textTransform: "uppercase", cursor: "pointer" }}>
-                        <MessageCircle size={15} strokeWidth={2.4} /> Mesaj
-                      </button>
-                      {p.phone && (
-                        <a href={`tel:${p.phone}`} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, background: C.card, color: C.green, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "10px 14px", fontFamily: ARCHIVO, fontSize: 12, fontWeight: 800, textTransform: "uppercase", textDecoration: "none" }}>
-                          <Phone size={15} strokeWidth={2.4} /> Ara
-                        </a>
+                <div style={{ padding: 14 }}>
+                  {/* Üst: kategori + tarih (tıklanınca detay) */}
+                  <button onClick={goDetail} style={{ width: "100%", padding: 0, border: "none", background: "none", cursor: "pointer", textAlign: "left" }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 9 }}>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontFamily: MONO, fontSize: 9.5, fontWeight: 700, padding: "4px 8px", borderRadius: 5, border: `2px solid ${C.ink}`, background: C.stone, color: C.ink, textTransform: "uppercase" }}>
+                        <Icon size={12} strokeWidth={2.4} /> {c.short}
+                      </span>
+                      <span style={{ fontFamily: MONO, fontSize: 10, color: C.faint }}>{fmtDate(p.createdAt)}</span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
+                      <h3 style={{ fontFamily: ARCHIVO, fontSize: 15, fontWeight: 800, color: C.ink, textTransform: "uppercase", letterSpacing: "-0.01em", margin: 0, lineHeight: 1.2 }}>{p.title}</h3>
+                      {p.price != null && (
+                        <span style={{ flexShrink: 0, fontFamily: MONO, fontSize: 14, fontWeight: 700, color: C.green }}>{Number(p.price).toLocaleString("tr-TR")} ₺</span>
                       )}
-                    </>
-                  )}
+                    </div>
+                    {p.body && <p style={{ fontSize: 13, color: C.sub, margin: "8px 0 0", lineHeight: 1.5, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{p.body}</p>}
+                    <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 11, flexWrap: "wrap" }}>
+                      {p.il && (
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontFamily: MONO, fontSize: 11, color: C.sub }}>
+                          <MapPin size={13} strokeWidth={2.2} color={C.muted} /> {p.il}
+                        </span>
+                      )}
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontFamily: MONO, fontSize: 11, color: C.ink, fontWeight: 700 }}>
+                        {p.ownerName}
+                        {p.ownerVerified && <ShieldCheck size={13} strokeWidth={2.4} color={C.green} />}
+                      </span>
+                      <span style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 3, fontFamily: MONO, fontSize: 10, color: C.ink, fontWeight: 700, textTransform: "uppercase" }}>
+                        Detay <ChevronRight size={13} strokeWidth={2.6} />
+                      </span>
+                    </div>
+                  </button>
+
+                  {/* Aksiyonlar */}
+                  <div style={{ display: "flex", gap: 8, marginTop: 12, paddingTop: 11, borderTop: `1.5px solid ${C.line}` }}>
+                    {mine ? (
+                      confirmDel === p.id ? (
+                        <>
+                          <button onClick={() => setConfirmDel(null)} style={{ flex: 1, background: C.card, color: C.ink, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "9px", fontFamily: MONO, fontSize: 11, fontWeight: 700, textTransform: "uppercase", cursor: "pointer" }}>Vazgeç</button>
+                          <button onClick={() => doRemove(p.id)} style={{ flex: 1, background: C.red, color: "#fff", border: `2px solid ${C.red}`, borderRadius: 6, padding: "9px", fontFamily: MONO, fontSize: 11, fontWeight: 700, textTransform: "uppercase", cursor: "pointer" }}>Sil</button>
+                        </>
+                      ) : (
+                        <button onClick={() => setConfirmDel(p.id)} style={{ flex: 1, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, background: C.card, color: C.red, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "9px", fontFamily: MONO, fontSize: 11, fontWeight: 700, textTransform: "uppercase", cursor: "pointer" }}>
+                          <Trash2 size={13} strokeWidth={2.4} /> Gönderimi sil
+                        </button>
+                      )
+                    ) : (
+                      <>
+                        <button onClick={() => navigate("/mesajlar")} style={{ flex: 1, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, background: C.yellow, color: C.ink, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "10px", fontFamily: ARCHIVO, fontSize: 12, fontWeight: 800, textTransform: "uppercase", cursor: "pointer" }}>
+                          <MessageCircle size={15} strokeWidth={2.4} /> Mesaj
+                        </button>
+                        {p.phone && (
+                          <a href={`tel:${p.phone}`} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, background: C.card, color: C.green, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "10px 14px", fontFamily: ARCHIVO, fontSize: 12, fontWeight: 800, textTransform: "uppercase", textDecoration: "none" }}>
+                            <Phone size={15} strokeWidth={2.4} /> Ara
+                          </a>
+                        )}
+                      </>
+                    )}
+                  </div>
                 </div>
               </motion.div>
             );

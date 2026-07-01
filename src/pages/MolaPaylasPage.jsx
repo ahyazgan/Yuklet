@@ -1,11 +1,14 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ChevronLeft, Coffee } from "lucide-react";
+import { ChevronLeft, Coffee, Camera, X, Plus } from "lucide-react";
 import { useToast } from "../components/Toast";
 import SEO from "../components/SEO";
 import { IL_LIST } from "../data/categories";
 import { MOLA_CATS } from "../data/molaCats";
+import { pickPhoto, cameraNative } from "../native/camera";
+
+const MAX_PHOTOS = 5;
 
 // ── SAHA "Mola Yeri" paylaşım formu — yalnız ONAYLI nakliyeci erişir.
 
@@ -26,8 +29,30 @@ export default function MolaPaylasPage({ user, onAddPost, onRequireAuth }) {
   const navigate = useNavigate();
   const toast = useToast();
   const [form, setForm] = useState({ category: "dorse", title: "", body: "", price: "", il: "", phone: "", showPhone: false });
+  const [photos, setPhotos] = useState([]);   // dataURL dizisi (yükleme submit'te)
   const [busy, setBusy] = useState(false);
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+
+  // Native: kamera/galeri aç. Web: <input type=file> label ile açılır (onWebFile).
+  const addPhotoNative = async () => {
+    if (photos.length >= MAX_PHOTOS) { toast(`En fazla ${MAX_PHOTOS} fotoğraf`, "error"); return; }
+    const r = await pickPhoto({ quality: 60 });
+    if (r?.denied) { toast("Kamera/galeri izni kapalı. Ayarlar’dan izin ver.", "error"); return; }
+    if (r?.dataUrl) setPhotos((p) => [...p, r.dataUrl].slice(0, MAX_PHOTOS));
+  };
+  const onWebFile = (e) => {
+    const files = Array.from(e.target.files || []);
+    e.target.value = "";
+    const room = MAX_PHOTOS - photos.length;
+    if (room <= 0) { toast(`En fazla ${MAX_PHOTOS} fotoğraf`, "error"); return; }
+    files.slice(0, room).forEach((f) => {
+      if (f.size > 4_000_000) { toast(`"${f.name}" çok büyük (~4MB sınırı)`, "error"); return; }
+      const reader = new FileReader();
+      reader.onload = () => setPhotos((p) => (p.length >= MAX_PHOTOS ? p : [...p, reader.result]));
+      reader.readAsDataURL(f);
+    });
+  };
+  const removePhoto = (i) => setPhotos((p) => p.filter((_, idx) => idx !== i));
 
   // ── Gate: giriş / rol / onay ──
   const blocked = !user || user.role !== "nakliyeci" || !user.verified;
@@ -67,6 +92,7 @@ export default function MolaPaylasPage({ user, onAddPost, onRequireAuth }) {
       price: priceNum,
       il: form.il,
       phone: form.showPhone ? form.phone.trim() : "",
+      photos,   // dataURL dizisi — App.jsx SB modunda Storage'a yükler
     });
     setBusy(false);
     if (res && res.ok === false) { toast(res.error || "Paylaşılamadı", "error"); return; }
@@ -107,6 +133,41 @@ export default function MolaPaylasPage({ user, onAddPost, onRequireAuth }) {
               );
             })}
           </div>
+        </div>
+
+        {/* Fotoğraflar (çoklu galeri, max 5) */}
+        <div>
+          <label style={labelSt}>Fotoğraflar (en fazla {MAX_PHOTOS})</label>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {photos.map((src, i) => (
+              <div key={i} style={{ position: "relative", width: 78, height: 78, borderRadius: 6, border: `2px solid ${C.ink}`, overflow: "hidden", flexShrink: 0 }}>
+                <img src={src} alt={`Foto ${i + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                <button type="button" onClick={() => removePhoto(i)} aria-label="Fotoğrafı kaldır"
+                  style={{ position: "absolute", top: 2, right: 2, width: 20, height: 20, borderRadius: 4, background: C.red, border: `1.5px solid ${C.ink}`, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", padding: 0 }}>
+                  <X size={12} strokeWidth={3} />
+                </button>
+                {i === 0 && (
+                  <span style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: C.ink, color: C.yellow, fontFamily: MONO, fontSize: 8, fontWeight: 700, textAlign: "center", padding: "1px 0", textTransform: "uppercase" }}>Kapak</span>
+                )}
+              </div>
+            ))}
+            {photos.length < MAX_PHOTOS && (
+              cameraNative() ? (
+                <button type="button" onClick={addPhotoNative}
+                  style={{ width: 78, height: 78, borderRadius: 6, border: `2px dashed ${C.ink}`, background: C.stone, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, cursor: "pointer", flexShrink: 0 }}>
+                  <Camera size={22} strokeWidth={2.2} color={C.ink} />
+                  <span style={{ fontFamily: MONO, fontSize: 8.5, fontWeight: 700, color: C.sub, textTransform: "uppercase" }}>Ekle</span>
+                </button>
+              ) : (
+                <label style={{ width: 78, height: 78, borderRadius: 6, border: `2px dashed ${C.ink}`, background: C.stone, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, cursor: "pointer", flexShrink: 0 }}>
+                  <Plus size={22} strokeWidth={2.4} color={C.ink} />
+                  <span style={{ fontFamily: MONO, fontSize: 8.5, fontWeight: 700, color: C.sub, textTransform: "uppercase" }}>Ekle</span>
+                  <input type="file" accept="image/*" multiple onChange={onWebFile} style={{ display: "none" }} />
+                </label>
+              )
+            )}
+          </div>
+          <div style={{ marginTop: 5, fontFamily: MONO, fontSize: 9, color: C.faint }}>İlk fotoğraf kapak olur. İlanına göz atmak isteyenler için önemli.</div>
         </div>
 
         {/* Başlık */}
