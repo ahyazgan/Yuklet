@@ -6,6 +6,7 @@ import { CATS } from "../data/categories";
 import { StarsDisplay } from "../components/Stars";
 import ReportModal from "../components/ReportModal";
 import SEO from "../components/SEO";
+import { useToast } from "../components/Toast";
 import { splitAmount, payableAmount, fmtTL, PAYMENT_LABEL, earlyPayout, EARLY_PAY_FEE_RATE } from "../utils/payments";
 import { newId, nowIso } from "../utils/id";
 import { haversineKm } from "../utils/priceEstimate";
@@ -13,7 +14,7 @@ import { watchPosition, distanceKm, getCurrentPosition } from "../native/geo";
 import { getRoute } from "../utils/routing";
 import { startTrip, publishLocation, endTrip, subscribeTrip } from "../utils/tripChannel";
 import { hapticTap, hapticSuccess } from "../native/haptics";
-import { pickPhotoDataUrl, cameraNative } from "../native/camera";
+import { pickPhoto, cameraNative } from "../native/camera";
 import { computeReliability } from "../utils/reliability";
 import ReliabilityBadge from "../components/ReliabilityBadge";
 import { readWeighTicket } from "../utils/ocr";
@@ -71,6 +72,7 @@ const shell = {
 export default function TakipPage({ listings = LISTINGS, user, offers = [], getContact, reviews = [], onAddReview, getUserRating, onUpdateListing, onReport, onPayToEscrow, onReleasePayment, onRefundPayment, onEarlyPayout }) {
   const { id } = useParams();
   const navigate = useNavigate();
+  const toast = useToast();
   const [rateVal, setRateVal] = useState(0);
   const [rateComment, setRateComment] = useState("");
   const [rateTags, setRateTags] = useState([]);
@@ -215,7 +217,12 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
     setTracking(true);
     watchStopRef.current = await watchPosition(
       (pt) => publishLocation(l.id, pt),
-      () => { setTracking(false); }
+      (err) => {
+        setTracking(false);
+        endTrip(l.id);   // yarım kalan seferi kapat (aksi halde "canlı" görünürdü)
+        const denied = err === "denied" || err?.code === 1 || /denied|permission/i.test(String(err?.message || err));
+        toast(denied ? "Konum izni kapalı. Canlı takip için Ayarlar’dan izin ver." : "Konum alınamadı. Bağlantını kontrol et.", "error");
+      }
     );
   };
   const stopTracking = () => {
@@ -256,8 +263,9 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
   const pickProofPhoto = async (e) => {
     if (cameraNative()) {
       e?.preventDefault?.();
-      const dataUrl = await pickPhotoDataUrl();
-      if (dataUrl) setProofForm((f) => ({ ...f, photo: dataUrl }));
+      const r = await pickPhoto();
+      if (r?.denied) { toast("Kamera/galeri izni kapalı. Ayarlar’dan izin verebilirsin.", "error"); return; }
+      if (r?.dataUrl) setProofForm((f) => ({ ...f, photo: r.dataUrl }));
     }
   };
   const onProofFile = (e) => {

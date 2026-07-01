@@ -70,7 +70,7 @@ const rowToOffer = (r) => ({
 const rowToMessage = (r) => ({
   id: r.id, listingId: r.listing_id, offerId: r.offer_id,
   fromId: r.from_id, fromName: r.from_name, toId: r.to_id, toName: r.to_name,
-  text: r.text, image: r.image, createdAt: r.created_at,
+  text: r.text, image: r.image, createdAt: r.created_at, readAt: r.read_at,
 });
 
 const rowToProfile = (r) => r && ({
@@ -377,6 +377,17 @@ export async function sendMessage({ listingId, offerId, fromId, fromName, toId, 
   const { data, error } = await supabase.from("messages").insert(row).select("*").single();
   if (error) throw error;
   return rowToMessage(data);
+}
+
+// Okundu: BANA gelen (to_id = me), bu sohbetteki, henüz okunmamış mesajlara read_at damgala.
+// Karşı taraf bunu "çift-tik (Okundu)" + "son görülme" olarak görür. Etkilenen satırları döndürür.
+export async function markMessagesRead({ listingId, offerId, myId, at }) {
+  let q = supabase.from("messages").update({ read_at: at || new Date().toISOString() })
+    .eq("to_id", myId).eq("listing_id", listingId).is("read_at", null);
+  q = offerId == null ? q.is("offer_id", null) : q.eq("offer_id", offerId);
+  const { data, error } = await q.select("*");
+  if (error) throw error;
+  return (data || []).map(rowToMessage);
 }
 
 // ── Reviews (puanlama/yorum) ────────────────────────────────

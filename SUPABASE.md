@@ -14,9 +14,9 @@ Bu adımlar **bir kez** yapılır. Tahmini süre: ~10 dakika. Sadece senin yapab
 
 > **Tekrar çalıştırmak güvenli (idempotent):** Projeyi önceden kurduysan da dosyayı
 > yeniden Run'layabilirsin — `add column if not exists` ile yeni alanlar (teslim kanıtı,
-> mekik dönüşü, varış, hızlı ödeme, canlı konum tablosu `trip_locations`) eklenir, mevcut
-> veriyi bozmaz. Bu oturumdaki lojistik özellikleri (POD, geofence, sefer takibi) için
-> şemayı **bir kez daha çalıştır**.
+> mekik dönüşü, varış, hızlı ödeme, canlı konum tablosu `trip_locations`, mesaj
+> **okundu bilgisi** `messages.read_at`) eklenir, mevcut veriyi bozmaz. Bu oturumdaki
+> lojistik + okundu özellikleri için şemayı **bir kez daha çalıştır**.
 
 ## 3) Anahtarları al
 1. Sol menü → **Project Settings** → **API**

@@ -297,12 +297,33 @@ create policy offers_update on public.offers for update using (
 );
 
 -- messages: sadece sohbetin taraflari okur/yazar
+-- Okundu bilgisi: alici (to_id) kendine gelen mesaja read_at yazar (detay:
+-- migration-2026-07-okundu-read-receipts.sql). schema.sql standalone kalsin diye burada.
+alter table public.messages add column if not exists read_at timestamptz;
 drop policy if exists messages_read   on public.messages;
 drop policy if exists messages_insert on public.messages;
+drop policy if exists messages_update on public.messages;
 create policy messages_read on public.messages for select using (
   auth.uid() = from_id or auth.uid() = to_id
 );
 create policy messages_insert on public.messages for insert with check (auth.uid() = from_id);
+-- Alici yalnizca kendine gelen mesaji guncelleyebilir (read_at icin).
+create policy messages_update on public.messages
+  for update using (auth.uid() = to_id) with check (auth.uid() = to_id);
+-- GUVENLIK: alici yalniz read_at'i degistirsin; diger kolonlar sabit.
+create or replace function public.guard_message_update()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  new.id := old.id; new.listing_id := old.listing_id; new.offer_id := old.offer_id;
+  new.from_id := old.from_id; new.from_name := old.from_name;
+  new.to_id := old.to_id; new.to_name := old.to_name;
+  new.text := old.text; new.image := old.image; new.created_at := old.created_at;
+  return new;
+end; $$;
+drop trigger if exists on_message_update_guard on public.messages;
+create trigger on_message_update_guard
+  before update on public.messages
+  for each row execute function public.guard_message_update();
 
 -- ──────────────────────────────────────────────
 -- 7b) PUANLAMA / YORUM  (reviews)

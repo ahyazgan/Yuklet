@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { ChevronLeft, BadgeCheck, Phone, Plus, Send, CheckCircle2, Check, CheckCheck } from "lucide-react";
 import { newId, nowIso } from "../utils/id";
 import { setTyping, isTyping } from "../utils/typing";
-import { pickPhotoDataUrl, cameraNative } from "../native/camera";
+import { pickPhoto, cameraNative } from "../native/camera";
 import SEO from "../components/SEO";
 import Logo from "../components/Logo";
 import { useToast } from "../components/Toast";
@@ -80,7 +80,7 @@ function listingCode(id) {
   return `HMT-${n}`;
 }
 
-export default function MesajlarPage({ user, listings = [], offers = [], messages = [], onSendMessage, onRequireAuth, onSeen, getContact, msgSeen = {}, blockedIds = [] }) {
+export default function MesajlarPage({ user, listings = [], offers = [], messages = [], onSendMessage, onRequireAuth, onSeen, onMarkThreadRead, getContact, msgSeen = {}, blockedIds = [] }) {
   const navigate = useNavigate();
   const toast = useToast();
   const [selectedKey, setSelectedKey] = useState(null);
@@ -111,8 +111,17 @@ export default function MesajlarPage({ user, listings = [], offers = [], message
 
   const active = conversations.find((c) => c.key === selectedKey) || null;
   const otherPhone = active && getContact ? getContact(active.other.id)?.phone : null;
-  // Karşı tarafın son "gördüm" zamanı — bizim mesajlarımız için okundu (çift tik) hesabı.
-  const otherSeenIso = active ? (msgSeen[active.other.id] || null) : null;
+  // Karşı tarafın son "gördüm" zamanı — BİZİM gönderdiğimiz, karşı tarafın okuduğu
+  // (readAt dolu) mesajların en yeni readAt'i. Böylece okundu/çift-tik + "son görülme"
+  // karşı tarafın GERÇEK okumasından türetilir (eski msgSeen ölü koddu; artık yedek).
+  const otherSeenIso = active
+    ? (messages
+        .filter((m) => String(m.fromId) === String(user.id) && String(m.listingId) === String(active.listingId)
+          && String(m.offerId ?? "") === String(active.offerId ?? "") && m.readAt)
+        .map((m) => m.readAt)
+        .sort((a, b) => new Date(a) - new Date(b))   // Date ile: SB "…+00:00" vs "…Z" karışımına dayanıklı
+        .pop() || msgSeen[active.other.id] || null)
+    : null;
   const activeListing = active ? listings.find((l) => String(l.id) === String(active.listingId)) : null;
 
   // "Yazıyor…" — karşı tarafın sinyalini izle (sekmeler arası localStorage simülasyonu).
@@ -148,6 +157,16 @@ export default function MesajlarPage({ user, listings = [], offers = [], message
       if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     });
   }, [active?.key, threadMessages.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Sohbet açıkken bana gelen okunmamış mesajları "okundu" işaretle (karşı taraf
+  // çift-tik + son görülme görsün). Açılışta ve yeni mesaj gelince tetiklenir.
+  const unreadIncoming = active
+    ? threadMessages.filter((m) => String(m.toId) === String(user.id) && !m.readAt).length
+    : 0;
+  useEffect(() => {
+    if (!active || unreadIncoming === 0) return;
+    onMarkThreadRead?.({ listingId: active.listingId, offerId: active.offerId });
+  }, [active?.key, unreadIncoming]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Not authenticated ── (after all hooks)
   if (!user) {
@@ -217,8 +236,9 @@ export default function MesajlarPage({ user, listings = [], offers = [], message
   const onPhotoButton = async (e) => {
     if (!cameraNative()) return; // web → <input type=file> devreye girer
     e.preventDefault();
-    const dataUrl = await pickPhotoDataUrl();
-    if (dataUrl) sendImageDataUrl(dataUrl);
+    const r = await pickPhoto();
+    if (r?.denied) { toast("Kamera/galeri izni kapalı. Ayarlar’dan izin verebilirsin.", "error"); return; }
+    if (r?.dataUrl) sendImageDataUrl(r.dataUrl);
   };
 
   // ── Thread view (active conversation) ──
@@ -329,7 +349,9 @@ export default function MesajlarPage({ user, listings = [], offers = [], message
                     <div style={{ marginTop: 3, display: "flex", alignItems: "center", gap: 4, fontFamily: MONO, fontSize: 9.5, color: C.faint, letterSpacing: "0.02em" }}>
                       {fmtTime(m.createdAt)}
                       {mine && (
-                        otherSeenIso && m.createdAt <= otherSeenIso
+                        // Date ile karşılaştır (string değil): SB "…+00:00", optimistik "…Z" verir;
+                        // ham string kıyası bu iki formatta kayabilir. Kod tabanının geri kalanıyla tutarlı.
+                        otherSeenIso && new Date(m.createdAt) <= new Date(otherSeenIso)
                           ? <CheckCheck size={13} color={C.green} strokeWidth={2.6} aria-label="Okundu" />
                           : <Check size={13} color={C.faint} strokeWidth={2.6} aria-label="İletildi" />
                       )}

@@ -273,6 +273,21 @@ function AppShell() {
     setMessages(prev => [...prev, msg]);
     return { ok: true };
   };
+  // Okundu: bir sohbeti açınca BANA gelen mesajlara read_at yaz. Karşı taraf bunu
+  // "çift-tik (Okundu)" + "son görülme" olarak görür. Her iki modda per-mesaj readAt işler.
+  const markThreadRead = async ({ listingId, offerId }) => {
+    const me = profile || user;
+    if (!me) return;
+    const mine = (m) => String(m.toId) === String(me.id) && String(m.listingId) === String(listingId)
+      && String(m.offerId ?? "") === String(offerId ?? "") && !m.readAt;
+    if (!messages.some(mine)) return;   // okunacak yeni mesaj yok
+    const at = new Date().toISOString();
+    if (SB) {
+      try { await api.markMessagesRead({ listingId, offerId, myId: me.id, at }); }
+      catch (e) { console.error(e); return; }
+    }
+    setMessages(prev => prev.map(m => mine(m) ? { ...m, readAt: at } : m));
+  };
   // "Goruldu" ve bildirim okundu durumu — yerel tercih, her modda localStorage'da kalir
   const [msgSeen, setMsgSeen] = useState(() => loadMsgSeen());
   useEffect(() => { saveMsgSeen(msgSeen); }, [msgSeen]);
@@ -796,7 +811,7 @@ function AppShell() {
                 <Route path="/ilan-duzenle/:id" element={<PageTransition><IlanVerPage onPublish={publishListing} onUpdate={updateListing} listings={listings} offers={offers} reviews={reviews} user={user} fleet={myFleet} onRequireAuth={requireAuth} /></PageTransition>} />
                 <Route path="/ilanlarim" element={<PageTransition><IlanlarimPage listings={listings} user={user} offers={offers} reviews={reviews} onUpdateOffer={updateOffer} onUpdateListing={updateListing} onDeleteListing={removeListing} onRequireAuth={requireAuth} getContact={getContact} /></PageTransition>} />
                 <Route path="/tekliflerim" element={<PageTransition><TekliflerimPage listings={listings} user={user} offers={offers} onRequireAuth={requireAuth} /></PageTransition>} />
-                <Route path="/mesajlar" element={<PageTransition><MesajlarPage user={user} listings={listings} offers={offers} messages={messages} onSendMessage={addMessage} onRequireAuth={requireAuth} onSeen={markMessagesSeen} getContact={getContact} msgSeen={msgSeen} blockedIds={myBlocked} /></PageTransition>} />
+                <Route path="/mesajlar" element={<PageTransition><MesajlarPage user={user} listings={listings} offers={offers} messages={messages} onSendMessage={addMessage} onRequireAuth={requireAuth} onSeen={markMessagesSeen} onMarkThreadRead={markThreadRead} getContact={getContact} msgSeen={msgSeen} blockedIds={myBlocked} /></PageTransition>} />
                 <Route path="/profil" element={<PageTransition><ProfilPage user={user} onUpdateProfile={updateProfile} onRequireAuth={requireAuth} onLogout={logout} onDeleteAccount={deleteAccount} reviews={reviews} getUserRating={getUserRating} listings={listings} offers={offers} docs={docs.filter(d => user && String(d.ownerId) === String(user.id))} onAddDoc={addDoc} onRemoveDoc={removeDoc} notifPrefs={notifPrefs} onUpdateNotifPrefs={updateNotifPrefs} /></PageTransition>} />
                 <Route path="/panel" element={<PageTransition><DashboardPage user={user} listings={listings} offers={offers} messages={messages} onRequireAuth={requireAuth} /></PageTransition>} />
                 <Route path="/admin" element={<PageTransition><AdminPage user={user} reports={reports} docs={allDocs} users={users} listings={allListings} offers={offers} audit={audit} onRequireAuth={requireAuth} onSetReportStatus={setReportStatus} onReviewDoc={reviewDoc} onUpdateUser={updateUserAdmin} onResolveDispute={resolveDispute} onLog={logAdmin} onUpdateListing={updateListing} announcement={announcement} onSaveAnnouncement={saveAnnouncementAdmin} /></PageTransition>} />
