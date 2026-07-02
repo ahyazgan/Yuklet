@@ -24,7 +24,7 @@ const ROLES = [
 const STEPS = [
   { n: "1", title: "İlanını aç", desc: "İş, araç veya ürün ilanını dakikalar içinde yayınla." },
   { n: "2", title: "Teklif al / ver", desc: "Nakliyeciler teklif verir; en uygununu seç." },
-  { n: "3", title: "Anlaş, taşı", desc: "Güvenli iletişim, emanet ödeme, değerlendirme." },
+  { n: "3", title: "Anlaş, taşı", desc: "Güvenli iletişim, canlı takip, teslim kanıtı, değerlendirme." },
 ];
 
 export default function OnboardingModal({ onClose }) {

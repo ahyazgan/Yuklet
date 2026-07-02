@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Check, X, MessageSquare, FileText, Phone, RotateCw, Pencil, Lock, Share2, Trash2, ArrowRight, ShieldCheck } from "lucide-react";
+import { Plus, Check, X, MessageSquare, FileText, Phone, RotateCw, Pencil, Lock, Share2, Trash2, ArrowRight, ShieldCheck, Flag } from "lucide-react";
 import { CATS, STOCK_LEVELS } from "../data/categories";
 import CategoryIcon from "../components/CategoryIcon";
+import ReportModal from "../components/ReportModal";
 import { computeReliability, reliabilityTier } from "../utils/reliability";
 import { useToast } from "../components/Toast";
 import { shareUrl, listingShareUrl } from "../native/share";
@@ -76,11 +77,12 @@ function initial(name) {
   return String(name || "?").trim().charAt(0).toUpperCase() || "?";
 }
 
-export default function IlanlarimPage({ listings = [], user, offers = [], reviews = [], onUpdateOffer, onAcceptOffer, onUpdateListing, onDeleteListing, onRequireAuth, getContact }) {
+export default function IlanlarimPage({ listings = [], user, offers = [], reviews = [], onUpdateOffer, onAcceptOffer, onUpdateListing, onDeleteListing, onRequireAuth, getContact, onReport }) {
   const navigate = useNavigate();
   const toast = useToast();
   const [tab, setTab] = useState("aktif");
   const [expanded, setExpanded] = useState({}); // listingId -> bool
+  const [reportOffer, setReportOffer] = useState(null); // şikayet edilen teklif
 
   if (!user) {
     return (
@@ -379,6 +381,16 @@ export default function IlanlarimPage({ listings = [], user, offers = [], review
                                       {isLowest && <div style={{ fontFamily: MONO, fontSize: 10, fontWeight: 700, color: C.green, marginTop: 1 }}>En düşük</div>}
                                     </div>
                                   )}
+                                  {onReport && (
+                                    <button
+                                      onClick={() => setReportOffer(o)}
+                                      aria-label="Teklifi şikayet et"
+                                      title="Teklifi şikayet et"
+                                      style={{ flexShrink: 0, alignSelf: "flex-start", background: "none", border: "none", padding: 2, cursor: "pointer" }}
+                                    >
+                                      <Flag size={14} color={C.muted} strokeWidth={2.4} />
+                                    </button>
+                                  )}
                                 </div>
 
                                 {o.qty != null && (
@@ -447,6 +459,22 @@ export default function IlanlarimPage({ listings = [], user, offers = [], review
           })
         )}
       </main>
+
+      {/* ── TEKLİF ŞİKAYETİ — bekleyen/reddedilen teklif mesajı da UGC'dir ── */}
+      {reportOffer && (
+        <ReportModal
+          targetLabel={`Teklif: ${reportOffer.fromUser}`}
+          onClose={() => setReportOffer(null)}
+          onSubmit={(p) => {
+            onReport?.({
+              type: "user", targetId: reportOffer.fromUserId, listingId: reportOffer.listingId,
+              fromId: user?.id || null, fromName: user?.name || "misafir",
+              ...p,
+              desc: (p.desc ? p.desc + " — " : "") + (reportOffer.message ? `Şikayet edilen teklif mesajı: "${String(reportOffer.message).slice(0, 200)}"` : `Teklif no: ${reportOffer.id}`),
+            });
+          }}
+        />
+      )}
     </div>
   );
 }

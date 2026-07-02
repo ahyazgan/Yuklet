@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, BadgeCheck, Phone, Plus, Send, CheckCircle2, Check, CheckCheck } from "lucide-react";
+import { ChevronLeft, BadgeCheck, Phone, Plus, Send, CheckCircle2, Check, CheckCheck, MoreVertical, AlertTriangle, Ban } from "lucide-react";
 import { newId, nowIso } from "../utils/id";
 import { setTyping, isTyping } from "../utils/typing";
 import { pickPhoto, cameraNative } from "../native/camera";
 import SEO from "../components/SEO";
 import Logo from "../components/Logo";
+import ReportModal from "../components/ReportModal";
 import { useToast } from "../components/Toast";
 
 // ── SAHA messages view — sharp industrial language: 2px ink borders, Archivo
@@ -80,12 +81,15 @@ function listingCode(id) {
   return `HMT-${n}`;
 }
 
-export default function MesajlarPage({ user, listings = [], offers = [], messages = [], onSendMessage, onRequireAuth, onSeen, onMarkThreadRead, getContact, msgSeen = {}, blockedIds = [] }) {
+export default function MesajlarPage({ user, listings = [], offers = [], messages = [], onSendMessage, onRequireAuth, onSeen, onMarkThreadRead, getContact, msgSeen = {}, blockedIds = [], onReport, onToggleBlock }) {
   const navigate = useNavigate();
   const toast = useToast();
   const [selectedKey, setSelectedKey] = useState(null);
   const [text, setText] = useState("");
   const [othersTyping, setOthersTyping] = useState(false);
+  const [showActions, setShowActions] = useState(false); // ⋮ menüsü (şikayet / engelle)
+  const [showReport, setShowReport] = useState(false);
+  const [confirmBlock, setConfirmBlock] = useState(false); // engelleme onay adımı
   const scrollRef = useRef(null);
   const endRef = useRef(null);
   const lastTypingRef = useRef(0);
@@ -157,6 +161,24 @@ export default function MesajlarPage({ user, listings = [], offers = [], message
       if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     });
   }, [active?.key, threadMessages.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Sohbet seçimi değişirken açık kalmış menü/modalları kapat (olay anında —
+  // effect içinde setState lint'e takılır ve gereksiz ekstra render üretir).
+  const selectConversation = (key) => {
+    setShowActions(false); setShowReport(false); setConfirmBlock(false);
+    setSelectedKey(key);
+  };
+
+  // Karşı tarafı engelle (onay adımından sonra): sohbet listeden düşer,
+  // liste görünümüne dönülür. Engel, Profil > Engellenen kullanıcılar'dan kaldırılır.
+  const blockOther = () => {
+    if (!active) return;
+    onToggleBlock?.(active.other.id);
+    setConfirmBlock(false);
+    setShowActions(false);
+    setSelectedKey(null);
+    toast("Kullanıcı engellendi. Engeli profilinden kaldırabilirsin.", "info");
+  };
 
   // Sohbet açıkken bana gelen okunmamış mesajları "okundu" işaretle (karşı taraf
   // çift-tik + son görülme görsün). Açılışta ve yeni mesaj gelince tetiklenir.
@@ -250,7 +272,7 @@ export default function MesajlarPage({ user, listings = [], offers = [], message
         {/* Header */}
         <div style={{ background: C.header, padding: "12px 14px", display: "flex", alignItems: "center", gap: 10, borderBottom: `2px solid ${C.ink}` }}>
           <button
-            onClick={() => setSelectedKey(null)}
+            onClick={() => selectConversation(null)}
             aria-label="Geri"
             style={{ flexShrink: 0, width: 38, height: 38, borderRadius: 6, border: `2px solid ${C.ink}`, background: C.card, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
           >
@@ -283,6 +305,16 @@ export default function MesajlarPage({ user, listings = [], offers = [], message
             >
               <Phone size={17} color={C.ink} strokeWidth={2.4} />
             </a>
+          )}
+
+          {(onReport || onToggleBlock) && (
+            <button
+              onClick={() => setShowActions(true)}
+              aria-label="Diğer işlemler"
+              style={{ flexShrink: 0, width: 38, height: 38, borderRadius: 6, border: `2px solid ${C.ink}`, background: C.card, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+            >
+              <MoreVertical size={18} color={C.ink} strokeWidth={2.4} />
+            </button>
           )}
         </div>
 
@@ -404,6 +436,80 @@ export default function MesajlarPage({ user, listings = [], offers = [], message
             </button>
           </div>
         </div>
+
+        {/* ── İŞLEM MENÜSÜ (şikayet / engelle) — alt sayfa, SAHA stili ── */}
+        {showActions && (
+          <div
+            style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", alignItems: "flex-end", justifyContent: "center", background: "rgba(10,10,10,.7)", padding: 16 }}
+            onClick={() => { setShowActions(false); setConfirmBlock(false); }}
+          >
+            <div
+              style={{ width: "100%", maxWidth: 420, background: C.card, border: `2px solid ${C.ink}`, borderRadius: 6, padding: 14, boxShadow: "6px 6px 0 rgba(10,10,10,.3)" }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div style={{ fontFamily: MONO, fontSize: 10, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>
+                {active.other.name}
+              </div>
+              {confirmBlock ? (
+                <>
+                  {/* Onay adımı — engel geri alınması zor bir eylem: sohbet gizlenir,
+                      ilanları listeden düşer; kaldırma yolu Profil > Engellenenler. */}
+                  <p style={{ fontSize: 13, color: C.sub, lineHeight: 1.55, margin: "0 0 12px" }}>
+                    <b style={{ color: C.ink }}>{active.other.name}</b> engellenecek. Sohbet gizlenir, ilanları listelerde görünmez. Engeli <b style={{ color: C.ink }}>Profil &gt; Engellenen kullanıcılar</b>'dan kaldırabilirsin.
+                  </p>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button
+                      onClick={() => setConfirmBlock(false)}
+                      style={{ flex: 1, background: C.stone, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "13px 0", fontFamily: ARCHIVO, fontSize: 13, fontWeight: 800, textTransform: "uppercase", color: C.ink, cursor: "pointer" }}
+                    >
+                      Vazgeç
+                    </button>
+                    <button
+                      onClick={blockOther}
+                      style={{ flex: 1, background: C.ink, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "13px 0", fontFamily: ARCHIVO, fontSize: 13, fontWeight: 800, textTransform: "uppercase", color: C.yellow, cursor: "pointer" }}
+                    >
+                      Engelle
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {onReport && (
+                    <button
+                      onClick={() => { setShowActions(false); setShowReport(true); }}
+                      style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", background: C.card, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "13px 14px", marginBottom: 8, fontFamily: ARCHIVO, fontSize: 13, fontWeight: 800, textTransform: "uppercase", letterSpacing: "-0.01em", color: C.red, cursor: "pointer", textAlign: "left" }}
+                    >
+                      <AlertTriangle size={16} color={C.red} strokeWidth={2.4} /> Şikayet et
+                    </button>
+                  )}
+                  {onToggleBlock && (
+                    <button
+                      onClick={() => setConfirmBlock(true)}
+                      style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", background: C.card, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "13px 14px", fontFamily: ARCHIVO, fontSize: 13, fontWeight: 800, textTransform: "uppercase", letterSpacing: "-0.01em", color: C.ink, cursor: "pointer", textAlign: "left" }}
+                    >
+                      <Ban size={16} color={C.ink} strokeWidth={2.4} /> Engelle
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setShowActions(false)}
+                    style={{ width: "100%", background: "transparent", border: "none", padding: "10px 0 2px", fontFamily: MONO, fontSize: 12, fontWeight: 700, color: C.muted, cursor: "pointer" }}
+                  >
+                    Vazgeç
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ── ŞİKAYET MODALI — karşı tarafı bildir ── */}
+        {showReport && (
+          <ReportModal
+            targetLabel={`Kullanıcı: ${active.other.name}`}
+            onClose={() => setShowReport(false)}
+            onSubmit={(p) => { onReport?.({ type: "user", targetId: active.other.id, listingId: active.listingId, fromId: user?.id || null, fromName: user?.name || "misafir", ...p }); }}
+          />
+        )}
       </div>
     );
   }
@@ -447,7 +553,7 @@ export default function MesajlarPage({ user, listings = [], offers = [], message
             return (
               <button
                 key={c.key}
-                onClick={() => setSelectedKey(c.key)}
+                onClick={() => selectConversation(c.key)}
                 style={{ display: "flex", alignItems: "center", gap: 11, width: "100%", textAlign: "left", border: `2px solid ${C.ink}`, cursor: "pointer", background: C.card, borderRadius: 6, padding: 11 }}
               >
                 <div style={{ flexShrink: 0, width: 46, height: 46, borderRadius: 6, background: stoneTile ? C.stone : C.ink, color: stoneTile ? C.ink : C.yellow, border: `2px solid ${C.ink}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 700, fontFamily: ARCHIVO }}>

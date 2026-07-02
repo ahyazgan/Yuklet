@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Settings, BadgeCheck, Truck, Package, Lock, Building2, HelpCircle, LogOut, ChevronRight, ShieldCheck, Upload, FileText, Star, Heart, Navigation, History, Inbox, Bell } from "lucide-react";
+import { Settings, BadgeCheck, Truck, Package, Lock, Building2, HelpCircle, LogOut, ChevronRight, ShieldCheck, Upload, FileText, Star, Heart, Navigation, History, Inbox, Bell, Flag, Ban } from "lucide-react";
 import { useToast } from "../components/Toast";
 import { StarsDisplay } from "../components/Stars";
 import SEO from "../components/SEO";
 import Logo from "../components/Logo";
+import ReportModal from "../components/ReportModal";
 import { DEFAULT_NOTIF_PREFS } from "../utils/storage";
 import { IL_LIST, HAFRIYAT_MATERIALS, SILOBAS_MATERIALS } from "../data/categories";
 import { visibleReviewsFor } from "../utils/reviewGate";
@@ -169,11 +170,13 @@ const sectionTitle = { fontFamily: ARCHIVO, fontSize: 13, fontWeight: 800, color
 const labelSt = { display: "block", marginBottom: 6, fontFamily: MONO, fontSize: 10, fontWeight: 700, color: C.sub, letterSpacing: 0.4, textTransform: "uppercase" };
 const inputSt = { width: "100%", boxSizing: "border-box", background: C.card, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "11px 13px", fontSize: 14, color: C.ink, outline: "none", fontFamily: MONO };
 
-export default function ProfilPage({ user, onUpdateProfile, onRequireAuth, onLogout, onDeleteAccount, reviews = [], getUserRating, listings = [], offers = [], docs = [], onAddDoc, onRemoveDoc, notifPrefs = DEFAULT_NOTIF_PREFS, onUpdateNotifPrefs }) {
+export default function ProfilPage({ user, onUpdateProfile, onRequireAuth, onLogout, onDeleteAccount, reviews = [], getUserRating, listings = [], offers = [], docs = [], onAddDoc, onRemoveDoc, notifPrefs = DEFAULT_NOTIF_PREFS, onUpdateNotifPrefs, onReport, blockedIds = [], onToggleBlock, getContact }) {
   const toast = useToast();
   const navigate = useNavigate();
   const [docType, setDocType] = useState("K Belgesi");
   const [confirmDelete, setConfirmDelete] = useState(false); // hesap silme iki adımlı onay
+  const [reportTarget, setReportTarget] = useState(null); // şikayet edilecek yorum nesnesi
+  const [showBlocked, setShowBlocked] = useState(false); // engellenen kullanıcılar listesi
 
   // Hesabı kalıcı sil (App Store/Play zorunlu): verileri temizle, çıkış yap, ana sayfaya dön.
   const handleDeleteAccount = async () => {
@@ -907,7 +910,13 @@ export default function ProfilPage({ user, onUpdateProfile, onRequireAuth, onLog
                   <div key={r.id} style={{ border: `2px solid ${C.ink}`, borderRadius: 6, padding: 12 }}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 4 }}>
                       <span style={{ fontFamily: ARCHIVO, fontSize: 13, fontWeight: 800, color: C.ink, textTransform: "uppercase", letterSpacing: "-0.02em" }}>{r.fromName}</span>
-                      <StarsDisplay value={r.rating} className="text-xs" />
+                      <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <StarsDisplay value={r.rating} className="text-xs" />
+                        <button type="button" onClick={() => setReportTarget(r)} aria-label="Yorumu şikayet et"
+                          style={{ background: "none", border: "none", padding: 2, cursor: "pointer", lineHeight: 0 }}>
+                          <Flag size={14} color={C.muted} strokeWidth={2} />
+                        </button>
+                      </span>
                     </div>
                     {r.comment && <p style={{ fontSize: 13, color: C.sub, margin: 0 }}>{r.comment}</p>}
                     <p style={{ fontFamily: MONO, fontSize: 10, color: C.faint, margin: "4px 0 0" }}>{fmtRev(r.createdAt)}</p>
@@ -927,11 +936,12 @@ export default function ProfilPage({ user, onUpdateProfile, onRequireAuth, onLog
               { icon: Building2, label: "Ödeme & hesap", desc: "Banka / IBAN bilgileri", to: "/cuzdan" },
             ] : []),
             ...(isAdmin(user) ? [{ icon: ShieldCheck, label: "Yönetim Paneli", desc: "Şikayet, belge ve moderasyon", to: "/admin" }] : []),
+            { icon: Ban, label: "Engellenen kullanıcılar", desc: blockedIds.length ? `${blockedIds.length} kullanıcı engelli` : "Engellediğin kimse yok", onClick: () => setShowBlocked(true) },
             { icon: HelpCircle, label: "Yardım & destek", desc: "Sık sorulan sorular ve iletişim", to: "/iletisim" },
           ].map((m, i, arr) => {
             const Icon = m.icon;
             return (
-              <button key={m.label} onClick={() => navigate(m.to)}
+              <button key={m.label} onClick={() => (m.onClick ? m.onClick() : navigate(m.to))}
                 style={{ width: "100%", display: "flex", alignItems: "center", gap: 14, padding: "14px 14px", background: "none", border: "none", borderBottom: i < arr.length - 1 ? `1.5px solid ${C.ink}` : "none", textAlign: "left", cursor: "pointer" }}>
                 <span style={{ width: 38, height: 38, flexShrink: 0, borderRadius: 6, background: C.stone, border: `2px solid ${C.ink}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <Icon size={18} color={C.ink} strokeWidth={2} />
@@ -977,6 +987,69 @@ export default function ProfilPage({ user, onUpdateProfile, onRequireAuth, onLog
         )}
       </div>
 
+      {/* Yorum şikayet modali — hakaret/uygunsuz içerik bildirimi (App Store 1.2) */}
+      {reportTarget && (
+        <ReportModal
+          targetLabel={`Yorum: ${reportTarget.fromName}`}
+          onClose={() => setReportTarget(null)}
+          onSubmit={(p) => {
+            onReport?.({
+              type: "user",
+              targetId: reportTarget.fromId,
+              listingId: null,
+              fromId: user?.id || null,
+              fromName: user?.name || "misafir",
+              ...p,
+              desc: (p.desc ? p.desc + " — " : "") + `Şikayet edilen yorum: "${(reportTarget.comment || "").slice(0, 200)}"`,
+            });
+          }}
+        />
+      )}
+
+      {/* Engellenen kullanıcılar — engel buradan kaldırılır (Mesajlar'daki engelin geri dönüş yolu) */}
+      {showBlocked && (
+        <div
+          style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 16, background: "rgba(10,10,10,.7)" }}
+          onClick={() => setShowBlocked(false)}
+        >
+          <div
+            style={{ width: "100%", maxWidth: 420, maxHeight: "70vh", overflowY: "auto", background: "#fff", border: `2px solid ${C.ink}`, borderRadius: 6, padding: 18, boxShadow: "6px 6px 0 rgba(10,10,10,.3)" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 style={{ fontFamily: ARCHIVO, fontSize: 17, fontWeight: 800, textTransform: "uppercase", letterSpacing: "-0.02em", color: C.ink, margin: "0 0 12px" }}>Engellenen Kullanıcılar</h2>
+            {blockedIds.length === 0 ? (
+              <p style={{ fontFamily: MONO, fontSize: 12, color: C.sub, margin: 0, lineHeight: 1.55 }}>
+                Engellediğin kimse yok. Bir kullanıcıyı ilan detayından veya mesajlardaki ⋮ menüsünden engelleyebilirsin.
+              </p>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {blockedIds.map((id) => {
+                  const name = getContact?.(id)?.name || "Kullanıcı";
+                  return (
+                    <div key={id} style={{ display: "flex", alignItems: "center", gap: 10, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "10px 12px" }}>
+                      <span style={{ minWidth: 0, flex: 1, fontFamily: ARCHIVO, fontSize: 13.5, fontWeight: 800, textTransform: "uppercase", letterSpacing: "-0.01em", color: C.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {name}
+                      </span>
+                      <button
+                        onClick={() => { onToggleBlock?.(id); toast?.("Engel kaldırıldı", "success"); }}
+                        style={{ flexShrink: 0, background: C.stone, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "8px 12px", fontFamily: MONO, fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em", color: C.ink, cursor: "pointer" }}
+                      >
+                        Engeli kaldır
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            <button
+              onClick={() => setShowBlocked(false)}
+              style={{ width: "100%", marginTop: 14, background: C.ink, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "12px 0", fontFamily: ARCHIVO, fontSize: 13, fontWeight: 800, textTransform: "uppercase", color: C.yellow, cursor: "pointer" }}
+            >
+              Kapat
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

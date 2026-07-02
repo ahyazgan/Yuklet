@@ -318,13 +318,13 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
       ? { deliveryProof: { ...proof, status: "onay", reviewedAt: nowIso() }, phase: "teslim", status: "kapali" }
       : { deliveryProof: { ...proof, status: "itiraz", reviewedAt: nowIso() } });
     if (res && res.ok === false) { setPayMsg(res.error || "İşlem kaydedilemedi. Tekrar dene."); return; }
-    setPayMsg(ok ? "Teslim onaylandı. Ödemeyi serbest bırakabilirsin." : "Teslim kanıtına itiraz edildi. Anlaşmazlık çözümü açıldı.");
+    setPayMsg(ok ? (PAYMENTS_ENABLED ? "Teslim onaylandı. Ödemeyi serbest bırakabilirsin." : "Teslim onaylandı. İş tamamlandı.") : "Teslim kanıtına itiraz edildi. Anlaşmazlık çözümü açıldı.");
   };
   // ── Anlaşmazlık çözümü (teslim itirazı sonrası) ──
   const acceptAfterDispute = async () => {     // müteahhit yine de teslimi kabul eder
     const res = await onUpdateListing?.(l.id, { deliveryProof: { ...proof, status: "onay", reviewedAt: nowIso() }, phase: "teslim", status: "kapali" });
     if (res && res.ok === false) { setPayMsg(res.error || "İşlem kaydedilemedi. Tekrar dene."); return; }
-    setPayMsg("Teslim kabul edildi. Ödemeyi serbest bırakabilirsin.");
+    setPayMsg(PAYMENTS_ENABLED ? "Teslim kabul edildi. Ödemeyi serbest bırakabilirsin." : "Teslim kabul edildi. İş tamamlandı.");
   };
   const resubmitProof = async () => {          // nakliyeci düzeltilmiş kanıt için sıfırlar
     const res = await onUpdateListing?.(l.id, { deliveryProof: null });
@@ -641,7 +641,7 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
             {isNakliyeci ? (
               tracking ? (
                 <button onClick={stopTracking}
-                  style={{ width: "100%", marginTop: 12, background: C.red, color: "#fff", border: `2px solid ${C.ink}`, borderRadius: 6, padding: "12px", fontFamily: ARCH, fontSize: 13, fontWeight: 900, textTransform: "uppercase", letterSpacing: "-0.01em", cursor: "pointer", boxShadow: `3px 3px 0 ${C.ink}` }}>
+                  style={{ width: "100%", marginTop: 12, background: C.rose, color: "#fff", border: `2px solid ${C.ink}`, borderRadius: 6, padding: "12px", fontFamily: ARCH, fontSize: 13, fontWeight: 900, textTransform: "uppercase", letterSpacing: "-0.01em", cursor: "pointer", boxShadow: `3px 3px 0 ${C.ink}` }}>
                   ● Konum paylaşımını durdur
                 </button>
               ) : (
@@ -826,10 +826,13 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
               </p>
             )}
 
-            {payMsg && (
-              <div style={{ marginTop: 12, background: C.stone, border: `2px solid ${C.border}`, borderRadius: 6, padding: "10px 14px", fontSize: 12, fontWeight: 600, color: C.ink }}>{payMsg}</div>
-            )}
           </div>
+        )}
+
+        {/* İşlem geri bildirimi — teslim kanıtı/itiraz akışı da payMsg'e yazar;
+            escrow kartı PAYMENTS_ENABLED ile gizliyken de görünmek zorunda. */}
+        {payMsg && (
+          <div style={{ background: C.stone, border: `2px solid ${C.border}`, borderRadius: 6, padding: "10px 14px", fontSize: 12, fontWeight: 600, color: C.ink }}>{payMsg}</div>
         )}
 
         {/* TESLİM KANITI (kantar fişi) — güven kilidi */}
@@ -852,7 +855,7 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
             {!proof && canSubmitProof && (
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 <p style={{ fontSize: 12, lineHeight: 1.6, color: C.sub, margin: 0 }}>
-                  Yükü teslim ettin mi? <b style={{ color: C.ink }}>Kantar fişini</b> gir. Alıcı onaylayınca ödemen serbest kalır.
+                  Yükü teslim ettin mi? <b style={{ color: C.ink }}>Kantar fişini</b> gir. {PAYMENTS_ENABLED ? "Alıcı onaylayınca ödemen serbest kalır." : "Alıcı onaylayınca teslimat kesinleşir."}
                 </p>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                   <div>
@@ -914,7 +917,7 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
             {/* Kanıt yok — müteahhit bekliyor */}
             {!proof && !canSubmitProof && (
               <p style={{ fontSize: 12, lineHeight: 1.6, color: C.sub, margin: 0 }}>
-                Nakliyeci yükü teslim edip <b style={{ color: C.ink }}>kantar fişini</b> girince burada görünecek. Onayınla ödeme serbest kalır.
+                Nakliyeci yükü teslim edip <b style={{ color: C.ink }}>kantar fişini</b> girince burada görünecek. {PAYMENTS_ENABLED ? "Onayınla ödeme serbest kalır." : "Onayınla teslimat kesinleşir."}
               </p>
             )}
 
@@ -997,21 +1000,27 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
                       <AlertTriangle size={16} /> Anlaşmazlık açık
                     </div>
                     <p style={{ fontSize: 12, lineHeight: 1.6, color: C.sub, margin: "8px 0 12px" }}>
-                      Teslim kanıtına itiraz edildi. Para <b style={{ color: C.ink }}>emanette güvende</b>. Taraflar anlaşana kadar serbest bırakılmaz.
+                      Teslim kanıtına itiraz edildi. {PAYMENTS_ENABLED
+                        ? <>Para <b style={{ color: C.ink }}>emanette güvende</b>. Taraflar anlaşana kadar serbest bırakılmaz.</>
+                        : "Taraflar anlaşana kadar iş tamamlanmış sayılmaz."}
                     </p>
                     {isOwner && (
                       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                         <div style={{ display: "flex", gap: 10 }}>
-                          <button onClick={doRefund} disabled={payBusy}
-                            style={{ flex: 1, background: C.card, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "12px 0", fontFamily: ARCH, fontSize: 12.5, fontWeight: 800, textTransform: "uppercase", color: C.ink, cursor: payBusy ? "default" : "pointer", opacity: payBusy ? 0.6 : 1 }}>
-                            {payBusy ? "İŞLENİYOR…" : "İadeyi Başlat"}
-                          </button>
+                          {PAYMENTS_ENABLED && (
+                            <button onClick={doRefund} disabled={payBusy}
+                              style={{ flex: 1, background: C.card, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "12px 0", fontFamily: ARCH, fontSize: 12.5, fontWeight: 800, textTransform: "uppercase", color: C.ink, cursor: payBusy ? "default" : "pointer", opacity: payBusy ? 0.6 : 1 }}>
+                              {payBusy ? "İŞLENİYOR…" : "İadeyi Başlat"}
+                            </button>
+                          )}
                           <button onClick={acceptAfterDispute}
                             style={{ flex: 1, background: C.green, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "12px 0", fontFamily: ARCH, fontSize: 12.5, fontWeight: 800, textTransform: "uppercase", color: "#fff", cursor: "pointer", boxShadow: `3px 3px 0 ${C.ink}` }}>
                             Yine de Onayla
                           </button>
                         </div>
-                        <p style={{ fontFamily: MONO, fontSize: 10, color: C.muted, margin: 0 }}>İade = para sana döner · Onayla = nakliyeciye ödenir.</p>
+                        <p style={{ fontFamily: MONO, fontSize: 10, color: C.muted, margin: 0 }}>
+                          {PAYMENTS_ENABLED ? "İade = para sana döner · Onayla = nakliyeciye ödenir." : "Onayla = teslim kabul edilir, iş tamamlanır."}
+                        </p>
                       </div>
                     )}
                     {isNakliyeci && (

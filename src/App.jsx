@@ -484,11 +484,15 @@ function AppShell() {
   const [reports, setReports] = useState(() => (SB ? [] : loadReports()));
   useEffect(() => { if (!SB) saveReports(reports); }, [reports, SB]);
   const addReport = async (r) => {
+    // ReportModal `desc` verir; DB kolonu ve AdminPage `description` bekler —
+    // burada normalize edilmezse şikayet açıklaması sessizce boş kalıyordu.
+    const rec = { ...r, description: r.description ?? r.desc ?? "" };
+    delete rec.desc;
     if (SB) {
-      try { await api.addReport({ ...r, fromId: (profile || user)?.id, fromName: (profile || user)?.name }); return { ok: true }; }
+      try { await api.addReport({ ...rec, fromId: (profile || user)?.id, fromName: (profile || user)?.name }); return { ok: true }; }
       catch (e) { console.error(e); return { ok: false, error: e?.message || "Şikayet gönderilemedi." }; }
     }
-    setReports(prev => [{ ...r, id: newId(), createdAt: nowIso(), status: "acik" }, ...prev]);
+    setReports(prev => [{ ...rec, id: newId(), createdAt: nowIso(), status: "acik" }, ...prev]);
     return { ok: true };
   };
   // Çift-kör: karşı taraf da puanlamadan (ya da süre dolmadan) yorum gizli kalır.
@@ -846,22 +850,22 @@ function AppShell() {
                 )}
                 <Route path="/ilan-ver" element={<PageTransition><IlanVerPage onPublish={publishListing} onUpdate={updateListing} listings={listings} offers={offers} reviews={reviews} user={user} fleet={myFleet} onRequireAuth={requireAuth} /></PageTransition>} />
                 <Route path="/ilan-duzenle/:id" element={<PageTransition><IlanVerPage onPublish={publishListing} onUpdate={updateListing} listings={listings} offers={offers} reviews={reviews} user={user} fleet={myFleet} onRequireAuth={requireAuth} /></PageTransition>} />
-                <Route path="/ilanlarim" element={<PageTransition><IlanlarimPage listings={listings} user={user} offers={offers} reviews={reviews} onUpdateOffer={updateOffer} onAcceptOffer={acceptOffer} onUpdateListing={updateListing} onDeleteListing={removeListing} onRequireAuth={requireAuth} getContact={getContact} /></PageTransition>} />
+                <Route path="/ilanlarim" element={<PageTransition><IlanlarimPage listings={listings} user={user} offers={offers} reviews={reviews} onUpdateOffer={updateOffer} onAcceptOffer={acceptOffer} onUpdateListing={updateListing} onDeleteListing={removeListing} onRequireAuth={requireAuth} getContact={getContact} onReport={addReport} /></PageTransition>} />
                 <Route path="/tekliflerim" element={<PageTransition><TekliflerimPage listings={listings} user={user} offers={offers} onRequireAuth={requireAuth} /></PageTransition>} />
-                <Route path="/mesajlar" element={<PageTransition><MesajlarPage user={user} listings={listings} offers={offers} messages={messages} onSendMessage={addMessage} onRequireAuth={requireAuth} onSeen={markMessagesSeen} onMarkThreadRead={markThreadRead} getContact={getContact} msgSeen={msgSeen} blockedIds={myBlocked} /></PageTransition>} />
-                <Route path="/profil" element={<PageTransition><ProfilPage user={user} onUpdateProfile={updateProfile} onRequireAuth={requireAuth} onLogout={logout} onDeleteAccount={deleteAccount} reviews={reviews} getUserRating={getUserRating} listings={listings} offers={offers} docs={docs.filter(d => user && String(d.ownerId) === String(user.id))} onAddDoc={addDoc} onRemoveDoc={removeDoc} notifPrefs={notifPrefs} onUpdateNotifPrefs={updateNotifPrefs} /></PageTransition>} />
+                <Route path="/mesajlar" element={<PageTransition><MesajlarPage user={user} listings={listings} offers={offers} messages={messages} onSendMessage={addMessage} onRequireAuth={requireAuth} onSeen={markMessagesSeen} onMarkThreadRead={markThreadRead} getContact={getContact} msgSeen={msgSeen} blockedIds={myBlocked} onReport={addReport} onToggleBlock={toggleBlock} /></PageTransition>} />
+                <Route path="/profil" element={<PageTransition><ProfilPage user={user} onUpdateProfile={updateProfile} onRequireAuth={requireAuth} onLogout={logout} onDeleteAccount={deleteAccount} reviews={reviews} getUserRating={getUserRating} listings={listings} offers={offers} docs={docs.filter(d => user && String(d.ownerId) === String(user.id))} onAddDoc={addDoc} onRemoveDoc={removeDoc} notifPrefs={notifPrefs} onUpdateNotifPrefs={updateNotifPrefs} onReport={addReport} blockedIds={myBlocked} onToggleBlock={toggleBlock} getContact={getContact} /></PageTransition>} />
                 <Route path="/panel" element={<PageTransition><DashboardPage user={user} listings={listings} offers={offers} messages={messages} onRequireAuth={requireAuth} /></PageTransition>} />
                 <Route path="/admin" element={<PageTransition><AdminPage user={user} reports={reports} docs={allDocs} users={users} listings={allListings} offers={offers} audit={audit} onRequireAuth={requireAuth} onSetReportStatus={setReportStatus} onReviewDoc={reviewDoc} onUpdateUser={updateUserAdmin} onResolveDispute={resolveDispute} onLog={logAdmin} onUpdateListing={updateListing} announcement={announcement} onSaveAnnouncement={saveAnnouncementAdmin} /></PageTransition>} />
                 <Route path="/muteahhit" element={<PageTransition><MuteahhitPage /></PageTransition>} />
                 <Route path="/tedarikci" element={<PageTransition><TedarikciPage /></PageTransition>} />
-                <Route path="/satici/:id" element={<PageTransition><SaticiProfilPage user={user} users={users} listings={listings} offers={offers} reviews={reviews} getUserRating={getUserRating} /></PageTransition>} />
-                <Route path="/alici/:id" element={<PageTransition><AliciProfilPage user={user} users={users} listings={listings} offers={offers} reviews={reviews} getUserRating={getUserRating} /></PageTransition>} />
-                <Route path="/nakliyeci-profil/:id" element={<PageTransition><NakliyeciProfilPage user={user} users={users} listings={listings} offers={offers} reviews={reviews} getUserRating={getUserRating} /></PageTransition>} />
+                <Route path="/satici/:id" element={<PageTransition><SaticiProfilPage user={user} users={users} listings={listings} offers={offers} reviews={reviews} getUserRating={getUserRating} onReport={addReport} /></PageTransition>} />
+                <Route path="/alici/:id" element={<PageTransition><AliciProfilPage user={user} users={users} listings={listings} offers={offers} reviews={reviews} getUserRating={getUserRating} onReport={addReport} /></PageTransition>} />
+                <Route path="/nakliyeci-profil/:id" element={<PageTransition><NakliyeciProfilPage user={user} users={users} listings={listings} offers={offers} reviews={reviews} getUserRating={getUserRating} onReport={addReport} /></PageTransition>} />
                 <Route path="/mola" element={<PageTransition><MolaYeriPage user={user} posts={molaPosts} threads={molaThreads} onRemovePost={removeMolaPost} onRequireAuth={requireAuth} /></PageTransition>} />
-                <Route path="/mola/:id" element={<PageTransition><MolaDetayPage user={user} posts={molaPosts} onFetchPost={SB ? api.fetchMolaPost : undefined} onRemovePost={removeMolaPost} onRequireAuth={requireAuth} /></PageTransition>} />
+                <Route path="/mola/:id" element={<PageTransition><MolaDetayPage user={user} posts={molaPosts} onFetchPost={SB ? api.fetchMolaPost : undefined} onRemovePost={removeMolaPost} onRequireAuth={requireAuth} onReport={addReport} /></PageTransition>} />
                 <Route path="/mola-paylas" element={<PageTransition><MolaPaylasPage user={user} onAddPost={addMolaPost} onRequireAuth={requireAuth} /></PageTransition>} />
                 <Route path="/mola/baslik-ac" element={<PageTransition><MolaBaslikAcPage user={user} onAddThread={addThread} onRequireAuth={requireAuth} /></PageTransition>} />
-                <Route path="/mola/forum/:id" element={<PageTransition><MolaThreadPage user={user} threads={molaThreads} replies={molaReplies} onFetchReplies={SB ? api.fetchReplies : undefined} onFetchThread={SB ? api.fetchThread : undefined} onAddReply={addReply} onRemoveReply={removeReply} onRemoveThread={removeThread} onRequireAuth={requireAuth} /></PageTransition>} />
+                <Route path="/mola/forum/:id" element={<PageTransition><MolaThreadPage user={user} threads={molaThreads} replies={molaReplies} onFetchReplies={SB ? api.fetchReplies : undefined} onFetchThread={SB ? api.fetchThread : undefined} onAddReply={addReply} onRemoveReply={removeReply} onRemoveThread={removeThread} onRequireAuth={requireAuth} onReport={addReport} /></PageTransition>} />
                 <Route path="/nakliyeci" element={<PageTransition><NakliyeciPage /></PageTransition>} />
                 <Route path="/nasil-calisir" element={<PageTransition><NasilCalisirPage /></PageTransition>} />
                 <Route path="/hakkimizda" element={<PageTransition><HakkimizdaPage /></PageTransition>} />

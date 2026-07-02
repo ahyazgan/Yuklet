@@ -1,10 +1,11 @@
 import { useMemo, useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ChevronLeft, ShieldCheck, MessageSquare, Trash2, Send, Coffee } from "lucide-react";
+import { ChevronLeft, ShieldCheck, MessageSquare, Trash2, Send, Coffee, AlertTriangle } from "lucide-react";
 import { useToast } from "../components/Toast";
 import SEO from "../components/SEO";
 import Logo from "../components/Logo";
+import ReportModal from "../components/ReportModal";
 
 // ── SAHA Mola Forum — başlık detayı + yorumlar + yorum yazma.
 //    Tüm nakliyeciler yorum yazar; başlık sahibi/admin siler.
@@ -32,7 +33,7 @@ function fmtDateTime(iso) {
   catch { return ""; }
 }
 
-export default function MolaThreadPage({ user, threads = [], replies = [], onFetchReplies, onFetchThread, onAddReply, onRemoveReply, onRemoveThread, onRequireAuth }) {
+export default function MolaThreadPage({ user, threads = [], replies = [], onFetchReplies, onFetchThread, onAddReply, onRemoveReply, onRemoveThread, onReport, onRequireAuth }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
@@ -40,6 +41,7 @@ export default function MolaThreadPage({ user, threads = [], replies = [], onFet
   const [busy, setBusy] = useState(false);
   const [confirmDelThread, setConfirmDelThread] = useState(false);
   const [confirmDelReply, setConfirmDelReply] = useState(null);
+  const [showReport, setShowReport] = useState(false);
 
   const listThread = useMemo(() => threads.find((t) => String(t.id) === String(id)), [threads, id]);
   // Cold-launch/deep link: liste henüz boşsa başlığı id ile tek tek çek — aksi halde
@@ -217,6 +219,14 @@ export default function MolaThreadPage({ user, threads = [], replies = [], onFet
             );
           })
         )}
+
+        {/* ── Şikayet et ── */}
+        {!isOwner && (
+          <button onClick={() => setShowReport(true)}
+            style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", marginTop: 4, background: C.card, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "12px", fontFamily: MONO, fontSize: 11, fontWeight: 700, color: C.red, letterSpacing: "0.06em", textTransform: "uppercase", cursor: "pointer" }}>
+            <AlertTriangle size={15} strokeWidth={2.4} color={C.red} /> Şikayet et
+          </button>
+        )}
       </div>
 
       {/* Yorum yazma kutusu — sabit alt (tab bar üstünde) */}
@@ -228,6 +238,15 @@ export default function MolaThreadPage({ user, threads = [], replies = [], onFet
           <Send size={18} strokeWidth={2.4} />
         </button>
       </div>
+
+      {/* ── REPORT MODAL ── */}
+      {showReport && (
+        <ReportModal
+          targetLabel={`Forum: ${thread.title}`}
+          onClose={() => setShowReport(false)}
+          onSubmit={(p) => { onReport?.({ type: "forum", targetId: thread.id, listingId: null, fromId: user?.id || null, fromName: user?.name || "misafir", ...p }); }}
+        />
+      )}
     </div>
   );
 }

@@ -1,9 +1,10 @@
 import { useMemo, useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { BadgeCheck, Star, MapPin, Clock, Building2, Package, ShieldCheck, ArrowLeft, MessageCircle } from "lucide-react";
+import { BadgeCheck, Star, MapPin, Clock, Building2, Package, ShieldCheck, ArrowLeft, MessageCircle, AlertTriangle } from "lucide-react";
 import SEO from "../components/SEO";
 import Logo from "../components/Logo";
+import ReportModal from "../components/ReportModal";
 import { StarsDisplay } from "../components/Stars";
 import { visibleReviewsFor } from "../utils/reviewGate";
 import { computeReliability } from "../utils/reliability";
@@ -41,7 +42,7 @@ function fmtRev(iso) {
   catch { return ""; }
 }
 
-export default function SaticiProfilPage({ user, users = [], listings = [], reviews = [], getUserRating }) {
+export default function SaticiProfilPage({ user, users = [], listings = [], reviews = [], getUserRating, onReport }) {
   const { id } = useParams();
   const navigate = useNavigate();
 
@@ -80,6 +81,7 @@ export default function SaticiProfilPage({ user, users = [], listings = [], revi
   const sellerReviews = visibleReviewsFor(id, reviews).slice(0, 8);
   const rel = seller ? computeReliability(id, { listings, offers: [], reviews }) : null;
   const isMe = user && String(user.id) === String(id);
+  const [showReport, setShowReport] = useState(false);
 
   // ── Yükleniyor (SB profil çekimi) ──
   if (loading) {
@@ -281,7 +283,24 @@ export default function SaticiProfilPage({ user, users = [], listings = [], revi
             <MessageCircle size={18} strokeWidth={2.4} /> Satıcıya mesaj gönder
           </button>
         )}
+
+        {/* Şikayet et (kendi profilimde gizli) */}
+        {!isMe && (
+          <button type="button" onClick={() => setShowReport(true)}
+            style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, background: C.card, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "12px", fontFamily: MONO, fontSize: 11, fontWeight: 700, color: C.red, letterSpacing: "0.06em", textTransform: "uppercase", cursor: "pointer" }}>
+            <AlertTriangle size={15} strokeWidth={2.4} color={C.red} /> Şikayet et
+          </button>
+        )}
       </div>
+
+      {/* ── REPORT MODAL ── */}
+      {showReport && (
+        <ReportModal
+          targetLabel={`Kullanıcı: ${seller.name}`}
+          onClose={() => setShowReport(false)}
+          onSubmit={(p) => { onReport?.({ type: "user", targetId: id, listingId: null, fromId: user?.id || null, fromName: user?.name || "misafir", ...p }); }}
+        />
+      )}
     </div>
   );
 }

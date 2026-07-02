@@ -227,7 +227,7 @@ export default function DashboardPage({ user, listings = [], offers = [], messag
   if (isNakliyeci) {
     tiles = [
       { label: "Eşleşen İş / Hafta", value: `${thisWeekMatches}`, sub: `${totalTrips} sefer` },
-      { label: "Toplam Hakediş", value: totalEarnings > 0 ? compactTry(totalEarnings) : "—", accent: C.green },
+      { label: "Anlaşılan Tutar", value: totalEarnings > 0 ? compactTry(totalEarnings) : "—", accent: C.green },
       { label: "Açık Araç İlanı", value: String(activeVehicles) },
       { label: "Ort. Eşleşme Süresi", value: avgMatchDays != null ? `${avgMatchDays.toFixed(1)}g` : "—" },
     ];
@@ -243,7 +243,7 @@ export default function DashboardPage({ user, listings = [], offers = [], messag
     // Müteahhit / Alıcı: iş ilanı + teklif odaklı.
     tiles = [
       { label: "Eşleşen İş / Hafta", value: `${thisWeekMatches}`, sub: `${matchedListings} toplam` },
-      { label: "Toplam Hakediş", value: totalEarnings > 0 ? compactTry(totalEarnings) : (totalVolume > 0 ? `${totalVolume.toLocaleString("tr-TR")}t` : "—"), accent: totalEarnings > 0 ? C.green : C.ink },
+      { label: "Anlaşılan Tutar", value: totalEarnings > 0 ? compactTry(totalEarnings) : (totalVolume > 0 ? `${totalVolume.toLocaleString("tr-TR")}t` : "—"), accent: totalEarnings > 0 ? C.green : C.ink },
       { label: pendingOffers > 0 ? "Bekleyen Teklif" : "Açık İş İlanı", value: pendingOffers > 0 ? String(pendingOffers) : String(activeListings), accent: pendingOffers > 0 ? C.yellow : C.ink },
       { label: "Ort. Eşleşme Süresi", value: avgMatchDays != null ? `${avgMatchDays.toFixed(1)}g` : "—" },
     ];
@@ -256,7 +256,7 @@ export default function DashboardPage({ user, listings = [], offers = [], messag
 
   return (
     <div style={shell}>
-      <SEO title="Panelim" description="Kazanç özeti, eşleşme istatistikleri ve son hareketler." />
+      <SEO title="Panelim" description="Anlaşma özeti, eşleşme istatistikleri ve son hareketler." />
 
       {/* App bar */}
       <div

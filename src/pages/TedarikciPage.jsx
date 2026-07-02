@@ -41,7 +41,7 @@ const HOW = [
 const BENEFITS = [
   { t: "Geniş müşteri erişimi", d: "Yüzlerce alıcı ve yapı şirketine ulaş. Sabit ağının ötesine geç." },
   { t: "Nakliye çözümü dahil", d: "Ürünü satan sen, taşıyanı platform bulsun. Müşterine kapıya teslim." },
-  { t: "Dijital fatura & sipariş", d: "Kağıt irsaliye yok. Sipariş, fatura ve ödeme durumu tek panelde." },
+  { t: "Dijital belge & sipariş", d: "Kağıt irsaliye yok. Sipariş, sözleşme ve irsaliye taslağı tek panelde." },
   { t: "Ürün kataloğu", d: "Çimento, kum, mıcır, çakıl — tümünü fiyatla yayınla, güncellemesi saniyeler." },
 ];
 

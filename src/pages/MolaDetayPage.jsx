@@ -1,9 +1,10 @@
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ChevronLeft, Coffee, MapPin, Phone, MessageCircle, ShieldCheck, Trash2, ChevronRight, ChevronLeft as ChevLeft, User } from "lucide-react";
+import { ChevronLeft, Coffee, MapPin, Phone, MessageCircle, ShieldCheck, Trash2, ChevronRight, ChevronLeft as ChevLeft, User, AlertTriangle } from "lucide-react";
 import { useToast } from "../components/Toast";
 import SEO from "../components/SEO";
+import ReportModal from "../components/ReportModal";
 import { catOf } from "../data/molaCats";
 
 // ── Mola ilan DETAY sayfası — galeri + tüm bilgiler + sahip künyesi (profile git) +
@@ -27,12 +28,13 @@ function fmtDate(iso) {
 }
 function initials(n) { return (n || "?").trim().split(/\s+/).map((w) => w[0]).slice(0, 2).join("").toUpperCase() || "?"; }
 
-export default function MolaDetayPage({ user, posts = [], onFetchPost, onRemovePost, onRequireAuth }) {
+export default function MolaDetayPage({ user, posts = [], onFetchPost, onRemovePost, onReport, onRequireAuth }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
   const [idx, setIdx] = useState(0);          // galeri aktif foto
   const [confirmDel, setConfirmDel] = useState(false);
+  const [showReport, setShowReport] = useState(false);
 
   // Listeden bul; yoksa (cold-launch/deep link) id ile tek tek çek.
   const listPost = useMemo(() => posts.find((p) => String(p.id) === String(id)), [posts, id]);
@@ -226,6 +228,14 @@ export default function MolaDetayPage({ user, posts = [], onFetchPost, onRemoveP
           </div>
         )}
 
+        {/* ── Şikayet et ── */}
+        {!mine && (
+          <button onClick={() => setShowReport(true)}
+            style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", background: C.card, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "12px", fontFamily: MONO, fontSize: 11, fontWeight: 700, color: C.red, letterSpacing: "0.06em", textTransform: "uppercase", cursor: "pointer" }}>
+            <AlertTriangle size={15} strokeWidth={2.4} color={C.red} /> Şikayet et
+          </button>
+        )}
+
         {/* ── Sahibinin diğer ilanları ── */}
         {otherPosts.length > 0 && (
           <div style={{ marginTop: 4 }}>
@@ -255,6 +265,15 @@ export default function MolaDetayPage({ user, posts = [], onFetchPost, onRemoveP
           </div>
         )}
       </motion.div>
+
+      {/* ── REPORT MODAL ── */}
+      {showReport && (
+        <ReportModal
+          targetLabel={`Mola ilanı: ${post.title}`}
+          onClose={() => setShowReport(false)}
+          onSubmit={(p) => { onReport?.({ type: "mola", targetId: post.id, listingId: null, fromId: user?.id || null, fromName: user?.name || "misafir", ...p }); }}
+        />
+      )}
     </div>
   );
 }

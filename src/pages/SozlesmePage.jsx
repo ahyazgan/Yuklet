@@ -8,6 +8,7 @@ import Logo from "../components/Logo";
 import { buildEIrsaliye, buildEFatura, KDV_RATE } from "../utils/eDocs";
 import { sendToGib, isEInvoiceConfigured } from "../lib/eInvoiceProvider";
 import { fmtTL } from "../utils/payments";
+import { PAYMENTS_ENABLED } from "../config/features";
 
 // ── "SAHA" dijital taşıma sözleşmesi / sevk irsaliyesi (yazdırılabilir).
 //    2px ink çerçeve, hazard şeridi, koyu tutar bloğu, Archivo uppercase + Space Mono.
@@ -183,7 +184,7 @@ export default function SozlesmePage({ listings = LISTINGS, offers = [], getCont
                   Taşıma<br />Sözleşmesi
                 </div>
                 <div style={{ fontFamily: MONO, fontSize: 9.5, color: C.sub, marginTop: 6 }}>
-                  e-İrsaliye uyumlu · GİB onaylı
+                  e-İrsaliye uyumlu dijital belge
                 </div>
               </div>
               <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
@@ -260,7 +261,7 @@ export default function SozlesmePage({ listings = LISTINGS, offers = [], getCont
           {/* Alt onay şeridi */}
           <div style={{ borderTop: `2px solid ${C.ink}`, padding: "10px 16px", background: C.stone, textAlign: "center" }}>
             <span style={{ fontFamily: MONO, fontSize: 10, fontWeight: 700, color: gibOnayli ? C.green : C.muted }}>
-              {gibOnayli ? "✓ e-İrsaliye GİB'e iletildi · ONAYLI" : "e-İrsaliye taslak — aşağıdan GİB'e gönderin"}
+              {gibOnayli ? "✓ e-İrsaliye GİB'e iletildi · ONAYLI" : isEInvoiceConfigured ? "e-İrsaliye taslak — aşağıdan GİB'e gönderin" : "e-İrsaliye taslak — yazdırılabilir belge"}
             </span>
           </div>
         </div>
@@ -319,8 +320,12 @@ export default function SozlesmePage({ listings = LISTINGS, offers = [], getCont
                 ["Matrah (hizmet bedeli)", fmtTL(fat.matrah)],
                 [`KDV (%${Math.round(KDV_RATE * 100)})`, fmtTL(fat.kdv)],
                 ["Genel toplam", fmtTL(fat.toplam), true],
-                ["Platform komisyonu", "−" + fmtTL(fat.komisyon)],
-                ["Nakliyeci net hakediş", fmtTL(fat.netNakliyeci)],
+                // Komisyon kesintisi yalnız ödeme altyapısı açıkken — v1'de para taraflar arasında,
+                // "%0 komisyon" vaadiyle çelişen döküm gösterilmez.
+                ...(PAYMENTS_ENABLED ? [
+                  ["Platform komisyonu", "−" + fmtTL(fat.komisyon)],
+                  ["Nakliyeci net hakediş", fmtTL(fat.netNakliyeci)],
+                ] : []),
               ]}
             />
           )}
@@ -387,7 +392,9 @@ function EDocCard({ doc, status, busy, onSend, rows = [], totals = [] }) {
       )}
 
       <div style={{ padding: "0 14px 14px", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-        {!onayli && (
+        {/* Gerçek entegratör bağlı değilken gönderim gizli — mock "GİB ONAYLI" rozeti
+            resmî onay izlenimi verir (Apple 2.1 + yasal risk). Taslak/yazdır yeterli. */}
+        {!onayli && isEInvoiceConfigured && (
           <button
             onClick={onSend}
             disabled={busy}
