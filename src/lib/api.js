@@ -143,27 +143,59 @@ export async function signInWithProvider(provider) {
 // ── Native Google girisi (mobil app — Capacitor) ─────────────
 // Cihazin kendi Google hesap secicisini acar (web redirect ekrani GORUNMEZ).
 // Akis: plugin -> idToken -> Supabase signInWithIdToken -> onAuthChange tetiklenir.
-// webClientId = Google Cloud "Web application" client ID (Android client'i ayni
-// projede SHA-1 ile tanimli olmali; plugin Android'de strings.xml'deki
-// server_client_id'yi de kullanir). VITE_GOOGLE_WEB_CLIENT_ID ile gelir.
+// Platform basina client ID (capgo v8 dokumantasyonu, KURULUM-GIRIS.md):
+//   iOS     -> iOSClientId (VITE_GOOGLE_IOS_CLIENT_ID) + Info.plist'te reversed-ID semasi
+//   Android -> webClientId (VITE_GOOGLE_WEB_CLIENT_ID); ayrica Google Cloud'da paket
+//              adi + SHA-1'li Android client TANIMLI olmali (initialize'a yazilmaz).
+// Supabase Google provider'inda HEM iOS HEM Web client ID "Client IDs" listesinde olmali
+// (token'in aud degeri iOS'ta iOSClientId, Android'de webClientId olur).
 let _socialLoginInited = false;
+
+const _randomNonce = () => {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+};
+const _sha256Hex = async (input) => {
+  const hash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(input));
+  return Array.from(new Uint8Array(hash), (b) => b.toString(16).padStart(2, "0")).join("");
+};
+// idToken payload'inda nonce claim'i var mi? (Platform iletmediyse Supabase'e nonce gonderilmez.)
+const _jwtHasNonce = (idToken) => {
+  try {
+    const payload = JSON.parse(atob(String(idToken).split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+    return payload?.nonce != null;
+  } catch { return false; }
+};
+
 export async function signInWithGoogleNative() {
   // Plugin yalnizca native ortamda calisir; web'de signInWithProvider kullanilir.
   const { SocialLogin } = await import("@capgo/capacitor-social-login");
+  const { Capacitor } = await import("@capacitor/core");
   const webClientId = import.meta.env.VITE_GOOGLE_WEB_CLIENT_ID;
-  if (!webClientId) return { ok: false, error: "VITE_GOOGLE_WEB_CLIENT_ID tanimli degil (.env.local)." };
+  const iOSClientId = import.meta.env.VITE_GOOGLE_IOS_CLIENT_ID;
+  const isIOS = Capacitor.getPlatform() === "ios";
+  if (isIOS && !iOSClientId) return { ok: false, error: "VITE_GOOGLE_IOS_CLIENT_ID tanimli degil (.env.local)." };
+  if (!isIOS && !webClientId) return { ok: false, error: "VITE_GOOGLE_WEB_CLIENT_ID tanimli degil (.env.local)." };
 
   if (!_socialLoginInited) {
-    await SocialLogin.initialize({ google: { webClientId, mode: "online" } });
+    await SocialLogin.initialize({ google: { webClientId, iOSClientId, mode: "online" } });
     _socialLoginInited = true;
   }
+
+  // Nonce (replay korumasi, resmi ornek deseni): rawNonce -> SHA-256 digest login'e;
+  // WebCrypto yoksa (beklenmez) nonce'suz devam edilir, giris yine calisir.
+  let rawNonce = null, nonceDigest = null;
+  try {
+    if (crypto?.subtle) { rawNonce = _randomNonce(); nonceDigest = await _sha256Hex(rawNonce); }
+  } catch { rawNonce = null; nonceDigest = null; }
 
   let idToken;
   try {
     // scopes GONDERME: email/profile online idToken girisinde varsayilan gelir.
-    // Scope vermek plugin'de MainActivity modifikasyonu ZORUNLU kilar ("You CANNOT
-    // use scopes without modifying the main activity") — gereksiz, bu yuzden bos.
-    const res = await SocialLogin.login({ provider: "google", options: {} });
+    // Scope vermek yerine MainActivity yine de plugin arayuzunu implement ediyor
+    // (authorize() sonucu onActivityResult'tan doner — MainActivity.java).
+    const res = await SocialLogin.login({ provider: "google", options: nonceDigest ? { nonce: nonceDigest } : {} });
     idToken = res?.result?.idToken;
   } catch (e) {
     return { ok: false, error: e?.message || "Google girisi iptal edildi." };
@@ -171,7 +203,11 @@ export async function signInWithGoogleNative() {
   if (!idToken) return { ok: false, error: "Google kimlik token'i alinamadi." };
 
   // Supabase'e Google idToken ile giris — oturum kurulur, onAuthChange doner.
-  const { error } = await supabase.auth.signInWithIdToken({ provider: "google", token: idToken });
+  // rawNonce yalnizca token'da nonce claim'i varsa gonderilir (platform bazen dusurur).
+  const { error } = await supabase.auth.signInWithIdToken({
+    provider: "google", token: idToken,
+    ...(rawNonce && _jwtHasNonce(idToken) ? { nonce: rawNonce } : {}),
+  });
   if (error) return { ok: false, error: error.message };
   return { ok: true };
 }

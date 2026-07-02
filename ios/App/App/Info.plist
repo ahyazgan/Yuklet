@@ -65,6 +65,17 @@
 				<string>com.yuklet.app</string>
 			</array>
 		</dict>
+		<!-- Google native girişi: iOS OAuth client'ının REVERSED CLIENT ID'si.
+		     Google Cloud'da iOS client oluşturunca çıkan "iOS URL scheme" değeriyle
+		     değiştirin (KURULUM-GIRIS.md, adım 3). Değiştirilmeden Google girişi çalışmaz. -->
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>google-signin</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.REVERSED-CLIENT-ID-DEGISTIR</string>
+			</array>
+		</dict>
 	</array>
 </dict>
 </plist>
