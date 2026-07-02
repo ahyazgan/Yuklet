@@ -21,7 +21,7 @@ import { hapticTap, hapticSuccess } from "../native/haptics";
 import { getCurrentPosition } from "../native/geo";
 import {
   ChevronLeft, ArrowRight, Truck, Package, Boxes, Check, CheckCircle2,
-  MapPin, Plus, Share2, Pencil, ChevronDown, Navigation,
+  MapPin, Share2, Pencil, ChevronDown, Navigation,
 } from "lucide-react";
 
 const LocationPicker = lazy(() => import("../components/LocationPicker"));
@@ -910,15 +910,9 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers
             <Field label="Açıklama">
               <textarea style={{ ...fieldBox, minHeight: 92, resize: "vertical" }} value={form.desc} onChange={(e) => set("desc", e.target.value)} placeholder="İş/araç detayları, mesafe, özel koşullar..." />
             </Field>
-            {/* foto ekle (görsel placeholder) */}
-            <Field label="Fotoğraf">
-              <button type="button"
-                style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, background: C.stone, border: `2px dashed ${C.ink}`, borderRadius: 6, padding: "20px 0", cursor: "pointer", color: C.sub }}>
-                <Plus size={22} color={C.ink} />
-                <span style={{ fontFamily: ARCH, fontSize: 12, fontWeight: 800, textTransform: "uppercase", color: C.ink }}>Fotoğraf ekle</span>
-                <span style={{ fontFamily: MONO, fontSize: 10, color: C.muted }}>Yakında</span>
-              </button>
-            </Field>
+            {/* İlan fotoğrafı v1'de yok — ölü "Fotoğraf ekle (Yakında)" placeholder'ı
+                mağaza sürümünden kaldırıldı (Apple 2.1: çalışmayan/vaat eden UI).
+                Eklenecekse Mola'daki çoklu foto deseni kullanılabilir. */}
             <Field label="Ad / Firma *">
               <input style={fieldBox} value={form.owner} onChange={(e) => set("owner", e.target.value)} placeholder="Örn: Yıldızlar İnşaat" />
             </Field>

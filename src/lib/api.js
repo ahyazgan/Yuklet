@@ -114,14 +114,16 @@ export async function signIn({ email, password }) {
 export async function signOut() { await supabase.auth.signOut(); }
 
 // ── Sifre sifirlama (sifremi unuttum) ────────────────────────
-// Kullaniciya sifirlama baglantili e-posta gonderir. Mobilde deep-link
-// gerektirmemek icin redirectTo VERILMEZ; kullanici maildeki baglantiya
-// tiklayinca Supabase'in barindirdigi sayfada yeni sifresini belirler.
-// NOT: Mail teslimi icin Supabase'de gercek SMTP (Resend vb.) bagli olmali —
-// dahili mail uretim icin guvenilir degil/spam'e duser.
+// Maildeki baglanti yuklet.co/sifre-yenile.html'e gider (statik sayfa; recovery
+// oturumunu isleyip updateUser ile yeni sifreyi kaydeder). Supabase panelinde bu
+// URL "Redirect URLs" listesine EKLI OLMALI (Auth > URL Configuration) — yoksa
+// Supabase Site URL'e yonlendirir ve baglanti cikmaz sokaga donusur.
+// NOT: Mail teslimi icin Supabase'de gercek SMTP (Resend) bagli olmali.
 export async function resetPassword({ email }) {
   if (!email) return { ok: false, error: "E-posta gerekli." };
-  const { error } = await supabase.auth.resetPasswordForEmail(email);
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: "https://yuklet.co/sifre-yenile.html",
+  });
   if (error) return { ok: false, error: error.message };
   return { ok: true, message: "Sifre sifirlama baglantisi e-postana gonderildi. Gelen kutusu/spam klasorunu kontrol et." };
 }
@@ -348,8 +350,11 @@ export async function createListing(data, profile) {
 }
 
 export async function updateListing(id, patch) {
-  const { error } = await supabase.from("listings").update(mapPatch(patch, LISTING_KEYMAP)).eq("id", id);
+  // .select ile guncellenen satiri iste: RLS izin vermezse Supabase HATA DONDURMEZ,
+  // sadece 0 satir gunceller — bu sessiz kayip daha once teslim kanitini yutuyordu.
+  const { data, error } = await supabase.from("listings").update(mapPatch(patch, LISTING_KEYMAP)).eq("id", id).select("id");
   if (error) throw error;
+  if (!data || data.length === 0) throw new Error("Güncelleme kaydedilemedi (yetki). Lütfen tekrar deneyin.");
 }
 
 export async function deleteListing(id) {

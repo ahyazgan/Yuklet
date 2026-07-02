@@ -235,13 +235,16 @@ export default function MesajlarPage({ user, listings = [], offers = [], message
   const send = () => sendText();
 
   // Görseli (dataURL) mesaj olarak gönder — hem dosya seçici hem native kamera kullanır.
-  const sendImageDataUrl = (dataUrl) => {
+  const sendImageDataUrl = async (dataUrl) => {
     if (!dataUrl || !active) return;
-    onSendMessage?.({
+    // Boyut koruması dataURL seviyesinde: native kamera yolu dosya sınırından geçmiyordu.
+    if (dataUrl.length > 2_600_000) { toast("Görsel çok büyük, daha küçük bir fotoğraf deneyin", "error"); return; }
+    const res = await onSendMessage?.({
       id: newId(), listingId: active.listingId, offerId: active.offerId,
       fromId: user.id, fromName: user.name, toId: active.other.id, toName: active.other.name,
       text: "", image: dataUrl, createdAt: nowIso(),
     });
+    if (res && res.ok === false) toast(res.error || "Görsel gönderilemedi", "error");
   };
 
   const sendImage = (e) => {
@@ -507,7 +510,7 @@ export default function MesajlarPage({ user, listings = [], offers = [], message
           <ReportModal
             targetLabel={`Kullanıcı: ${active.other.name}`}
             onClose={() => setShowReport(false)}
-            onSubmit={(p) => { onReport?.({ type: "user", targetId: active.other.id, listingId: active.listingId, fromId: user?.id || null, fromName: user?.name || "misafir", ...p }); }}
+            onSubmit={(p) => onReport?.({ type: "user", targetId: active.other.id, listingId: active.listingId, fromId: user?.id || null, fromName: user?.name || "misafir", ...p })}
           />
         )}
       </div>

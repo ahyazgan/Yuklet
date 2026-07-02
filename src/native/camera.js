@@ -28,6 +28,9 @@ export async function pickPhoto({ quality = 65 } = {}) {
     const { Camera, CameraResultType, CameraSource } = await import("@capacitor/camera");
     const photo = await Camera.getPhoto({
       quality,
+      // Boyut sınırı: tam çözünürlüklü 12-48MP fotoğraflar base64 olarak DB satırına
+      // yazılıyordu. Native taraf en-boy oranını koruyarak 1280px'e küçültür.
+      width: 1280,
       resultType: CameraResultType.DataUrl,
       source: CameraSource.Prompt, // "Kamera" veya "Galeri" seçtir
       promptLabelHeader: "Fotoğraf",

@@ -676,7 +676,7 @@ export default function IlanDetayPage({ listings = LISTINGS, user, fleet = [], o
           </button>
           {!isOwner && onToggleBlock && l.ownerId && (
             <button
-              onClick={() => { const willBlock = !blocked; onToggleBlock(l.ownerId); toast(willBlock ? "Kullanıcı engellendi" : "Engel kaldırıldı", willBlock ? "info" : "success"); if (willBlock) navigate("/ilanlar"); }}
+              onClick={() => { if (!user) { onRequireAuth?.(); return; } const willBlock = !blocked; onToggleBlock(l.ownerId); toast(willBlock ? "Kullanıcı engellendi" : "Engel kaldırıldı", willBlock ? "info" : "success"); if (willBlock) navigate("/ilanlar"); }}
               style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, flex: 1, background: blocked ? C.ink : C.card, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "12px", fontFamily: MONO, fontSize: 11, fontWeight: 700, color: blocked ? C.yellow : C.ink, letterSpacing: "0.06em", textTransform: "uppercase", cursor: "pointer" }}>
               <X size={15} strokeWidth={2.6} color={blocked ? C.yellow : C.ink} /> {blocked ? "Engeli kaldır" : "Engelle"}
             </button>
@@ -950,7 +950,7 @@ export default function IlanDetayPage({ listings = LISTINGS, user, fleet = [], o
         <ReportModal
           targetLabel={`İlan: ${l.title}`}
           onClose={() => setShowReport(false)}
-          onSubmit={(p) => { onReport?.({ type: "listing", targetId: l.id, listingId: l.id, fromId: user?.id || null, fromName: user?.name || "misafir", ...p }); }}
+          onSubmit={(p) => onReport?.({ type: "listing", targetId: l.id, listingId: l.id, fromId: user?.id || null, fromName: user?.name || "misafir", ...p })}
         />
       )}
 

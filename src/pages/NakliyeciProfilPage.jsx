@@ -294,7 +294,7 @@ export default function NakliyeciProfilPage({ user, users = [], listings = [], r
         <ReportModal
           targetLabel={`Kullanıcı: ${carrier.name}`}
           onClose={() => setShowReport(false)}
-          onSubmit={(p) => { onReport?.({ type: "user", targetId: id, listingId: null, fromId: user?.id || null, fromName: user?.name || "misafir", ...p }); }}
+          onSubmit={(p) => onReport?.({ type: "user", targetId: id, listingId: null, fromId: user?.id || null, fromName: user?.name || "misafir", ...p })}
         />
       )}
     </div>

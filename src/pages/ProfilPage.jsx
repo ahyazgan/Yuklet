@@ -992,7 +992,7 @@ export default function ProfilPage({ user, onUpdateProfile, onRequireAuth, onLog
         <ReportModal
           targetLabel={`Yorum: ${reportTarget.fromName}`}
           onClose={() => setReportTarget(null)}
-          onSubmit={(p) => {
+          onSubmit={(p) =>
             onReport?.({
               type: "user",
               targetId: reportTarget.fromId,
@@ -1001,8 +1001,8 @@ export default function ProfilPage({ user, onUpdateProfile, onRequireAuth, onLog
               fromName: user?.name || "misafir",
               ...p,
               desc: (p.desc ? p.desc + " — " : "") + `Şikayet edilen yorum: "${(reportTarget.comment || "").slice(0, 200)}"`,
-            });
-          }}
+            })
+          }
         />
       )}
 

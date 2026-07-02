@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>YÜKLET — Uygulamada Aç</title>
+<meta name="robots" content="noindex" />
+<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="hazard"></div>
+<header class="site">
+  <div class="bar">
+    <a class="brand" href="/"><span>YÜKLET</span></a>
+  </div>
+</header>
+
+<div class="hero">
+  <h1>Bu içerik<br />uygulamada</h1>
+  <p class="lead">Paylaşılan ilanlar ve içerikler YÜKLET mobil uygulamasında görüntülenir.</p>
+  <p><a class="btn" href="#" id="appAc">Uygulamada Aç</a></p>
+  <div class="badges" style="margin-top:18px">
+    <span>Yakında App Store'da</span>
+    <span>Yakında Google Play'de</span>
+  </div>
+</div>
+
+<footer class="site">
+  <p>© 2026 YÜKLET · <a href="/">Ana sayfa</a> · <a href="/destek.html">Destek</a> · <a href="/gizlilik.html">Gizlilik</a></p>
+</footer>
+
+<script>
+// Paylaşılan yol (örn. /ilan/123) uygulamanın özel şemasına aktarılır;
+// uygulama kuruluysa açılır, değilse kullanıcı bu sayfada kalır.
+document.getElementById("appAc").addEventListener("click", function (e) {
+  e.preventDefault();
+  window.location.href = "com.yuklet.app:/" + (location.pathname || "/");
+});
+</script>
+</body>
+</html>

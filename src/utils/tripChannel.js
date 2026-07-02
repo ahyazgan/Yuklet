@@ -1,8 +1,11 @@
 // ╔══════════════════════════════════════════════════════════════════╗
 // ║  Sefer kanalı — canlı konum yayını/aboneliği. Transport soyutlaması.║
 // ║  Çift modlu:                                                        ║
-// ║   · Supabase varsa → Realtime (broadcast anlık + DB upsert kalıcı).║
+// ║   · Supabase varsa → trip_locations upsert + postgres_changes.     ║
 // ║     Cihazlar arası GERÇEK takip; sadece işin tarafları görür (RLS).║
+// ║     NOT: Realtime BROADCAST bilerek KULLANILMIYOR — public kanal    ║
+// ║     herkese açıktı (kanal adını bilen GPS izleyebiliyordu, RLS      ║
+// ║     yalnız tabloyu korur). postgres_changes RLS'e tabidir.          ║
 // ║   · Supabase yoksa → localStorage (aynı cihaz / demo).             ║
 // ║  Dışa açılan arayüz iki modda da aynı: startTrip / publishLocation ║
 // ║  / endTrip / getTrip / subscribeTrip.                              ║
@@ -13,8 +16,7 @@ import { supabase, isSupabaseConfigured } from "../lib/supabase";
 const KEY = "hamted_trip_loc";
 const TRAIL_MAX = 80;       // saklanan iz noktası sayısı
 const STALE_MS = 45000;     // bu süre güncellenmezse "aktif değil"
-const DB_THROTTLE_MS = 12000;  // DB'ye en sık bu aralıkla yaz
-const CAST_THROTTLE_MS = 1500; // broadcast'i en sık bu aralıkla gönder (realtime kota dostu)
+const DB_THROTTLE_MS = 5000;   // DB'ye en sık bu aralıkla yaz (tek aktarım yolu — akıcılık/kota dengesi)
 
 /* ════════════════════════════════════════════════════════════════════
    ORTAK: bir konum noktasını iz dizisine ekle, son N tut.
@@ -68,33 +70,14 @@ const LS = {
 };
 
 /* ════════════════════════════════════════════════════════════════════
-   Supabase MOD — Realtime broadcast (anlık) + DB upsert (kalıcı).
-   Yayıncı tarafı bellekte iz tutar; DB'ye seyrek yazar. Abone hem
-   broadcast'i (anlık) hem DB'yi (ilk yük + geç katılan) dinler.
+   Supabase MOD — trip_locations upsert (yayıncı) + postgres_changes (abone).
+   Yayıncı bellekte iz tutar, DB'ye throttle'lı yazar; abone DB değişimini
+   RLS süzgecinden (is_trip_party) dinler — taraf olmayan hiçbir şey almaz.
    ════════════════════════════════════════════════════════════════════ */
 const channelName = (listingId) => `trip:${listingId}`;
 
 // Yayıncı tarafı bellek durumu (sürücünün cihazında) — listingId → state
 const pubState = new Map();
-// Yayıncı kanalları — broadcast göndermek için subscribe edilmiş kalıcı kanal.
-const pubChannels = new Map();
-
-function pubChannel(listingId) {
-  if (!supabase) return null;
-  let ch = pubChannels.get(listingId);
-  if (!ch) {
-    ch = supabase.channel(channelName(listingId), { config: { broadcast: { self: true } } });
-    ch.subscribe();
-    pubChannels.set(listingId, ch);
-  }
-  return ch;
-}
-
-function closePubChannel(listingId) {
-  const ch = pubChannels.get(listingId);
-  if (ch && supabase) { try { supabase.removeChannel(ch); } catch { /* noop */ } }
-  pubChannels.delete(listingId);
-}
 
 function snapToTrip(row) {
   if (!row) return null;
@@ -124,7 +107,6 @@ async function dbFetch(listingId) {
 const SB = {
   startTrip(listingId) {
     pubState.set(listingId, { active: true, last: null, trail: [], startedAt: Date.now(), lastDbAt: 0 });
-    pubChannel(listingId); // kanalı şimdiden aç (subscribe gecikmesini bitir)
     dbUpsert(listingId, { last: null, trail: [], active: true });
   },
 
@@ -134,15 +116,9 @@ const SB = {
     const next = { ...cur, active: true, last: point, trail };
     pubState.set(listingId, next);
 
+    // Tek aktarım yolu: throttle'lı DB upsert — abone postgres_changes ile
+    // (RLS süzgecinden) alır. Public broadcast bilerek yok (gizlilik).
     const now = Date.now();
-    // 1) Broadcast — abonelere hemen ulaşır (DB yazmadan); hafif throttle.
-    if (now - (cur.lastCastAt || 0) >= CAST_THROTTLE_MS) {
-      next.lastCastAt = now;
-      pubState.set(listingId, next);
-      const ch = pubChannel(listingId);
-      if (ch) ch.send({ type: "broadcast", event: "loc", payload: { last: point, active: true } }).catch(() => {});
-    }
-    // 2) Seyrek DB upsert — geç katılan / sayfa yenileyen son konumu görsün.
     if (now - (cur.lastDbAt || 0) >= DB_THROTTLE_MS) {
       next.lastDbAt = now;
       pubState.set(listingId, next);
@@ -153,9 +129,7 @@ const SB = {
   endTrip(listingId) {
     const cur = pubState.get(listingId);
     if (cur) pubState.set(listingId, { ...cur, active: false });
-    const ch = pubChannel(listingId);
-    if (ch) ch.send({ type: "broadcast", event: "loc", payload: { last: cur?.last || null, active: false } }).catch(() => {});
-    dbUpsert(listingId, { last: cur?.last || null, trail: cur?.trail || [], active: false }).finally(() => closePubChannel(listingId));
+    dbUpsert(listingId, { last: cur?.last || null, trail: cur?.trail || [], active: false });
   },
 
   // Senkron snapshot yok; DispatchPage polling için son bilinen DB değerini
@@ -176,18 +150,11 @@ const SB = {
 
     if (!supabase) { return () => { live = false; }; }
 
-    // Anlık broadcast + DB değişimi (geç gelen kalıcı güncellemeler).
-    // self:true → yayıncı (sürücü) kendi konumunu da kendi ekranında görür.
+    // DB değişimini dinle — postgres_changes RLS'e tabidir: yalnız işin
+    // tarafları (is_trip_party) satırı görebildiği için konum sızmaz.
     let local = null;
     const ch = supabase
-      .channel(channelName(listingId), { config: { broadcast: { self: true } } })
-      .on("broadcast", { event: "loc" }, ({ payload }) => {
-        if (!live || !payload) return;
-        const trail = payload.last ? pushTrail(local?.trail || [], payload.last) : (local?.trail || []);
-        local = { last: payload.last || local?.last || null, trail, active: payload.active !== false, updatedAt: payload.last?.at || Date.now() };
-        const stale = Date.now() - local.updatedAt > STALE_MS;
-        cb({ ...local, live: local.active && !stale });
-      })
+      .channel(channelName(listingId))
       .on("postgres_changes", { event: "*", schema: "public", table: "trip_locations", filter: `listing_id=eq.${listingId}` },
         ({ new: row }) => { if (live && row) { local = snapToTrip(row); cb(local); } })
       .subscribe();

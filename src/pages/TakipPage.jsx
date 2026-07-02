@@ -265,7 +265,11 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
       e?.preventDefault?.();
       const r = await pickPhoto();
       if (r?.denied) { toast("Kamera/galeri izni kapalı. Ayarlar’dan izin verebilirsin.", "error"); return; }
-      if (r?.dataUrl) setProofForm((f) => ({ ...f, photo: r.dataUrl }));
+      if (r?.dataUrl) {
+        // 2.5MB dosya sınırının base64 karşılığı — native yol dosya sınırından geçmiyordu.
+        if (r.dataUrl.length > 3_400_000) { setPayMsg("Fotoğraf çok büyük, tekrar dene."); return; }
+        setProofForm((f) => ({ ...f, photo: r.dataUrl }));
+      }
     }
   };
   const onProofFile = (e) => {
@@ -361,14 +365,19 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
 
   const toggleTag = (t) => setRateTags((prev) => prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]);
 
-  const submitReview = () => {
+  const submitReview = async () => {
     if (!counterpart || !rateVal) return;
     const tagSuffix = rateTags.length ? ` [${rateTags.join(", ")}]` : "";
-    onAddReview?.({
+    const res = await onAddReview?.({
       id: newId(), listingId: l.id, offerId: accepted?.id,
       fromId: user.id, fromName: user.name, toId: counterpart.id, toName: counterpart.name,
       rating: rateVal, comment: (rateComment.trim() + tagSuffix).trim(), createdAt: nowIso(),
     });
+    if (res && res.ok === false) {
+      const dup = String(res.error || "").toLowerCase().includes("duplicate");
+      toast(dup ? "Bu işi zaten değerlendirdin" : (res.error || "Değerlendirme gönderilemedi"), "error");
+      return;
+    }
     setRateVal(0); setRateComment(""); setRateTags([]); setShowRate(false);
   };
 
@@ -1218,7 +1227,7 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
         <ReportModal
           targetLabel={counterpart ? `${counterpart.role}: ${counterpart.name}` : `İlan: ${l.title}`}
           onClose={() => setShowReport(false)}
-          onSubmit={(p) => { onReport?.({ type: counterpart ? "user" : "listing", targetId: counterpart?.id || l.id, listingId: l.id, fromId: user?.id || null, fromName: user?.name || "misafir", ...p }); }}
+          onSubmit={(p) => onReport?.({ type: counterpart ? "user" : "listing", targetId: counterpart?.id || l.id, listingId: l.id, fromId: user?.id || null, fromName: user?.name || "misafir", ...p })}
         />
       )}
     </div>

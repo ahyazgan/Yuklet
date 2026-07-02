@@ -96,5 +96,17 @@ Sonra: `npm run build && npx cap sync` ve Xcode/Android Studio'dan cihaza yükle
       Sign-In & Security > Sign in with Apple listesinde tutar; silinen hesapla yeniden giriş test et)
 
 ## Bilinen sınırlar (v1 kararı)
-- Web tarayıcıda Apple girişi yapılandırılmadı (mobil-only ürün).
+- Web tarayıcıda Apple girişi yapılandırılmadı (mobil-only ürün; Apple butonu yalnız iOS'ta görünür).
 - Google girişi Android emülatörde Play Services ister; gerçek cihazda test et.
+
+---
+
+## 5) Supabase ek adımları (yayın öncesi tarama sonrası — 2026-07-03)
+
+1. **SQL (KRİTİK):** `supabase/migration-2026-07-surucu-update.sql` dosyasını SQL Editor'de
+   bir kez çalıştır. Bu olmadan nakliyecinin teslim kanıtı / sefer ilerletme güncellemeleri
+   RLS'e takılır (artık sessiz değil — kullanıcıya hata görünür, ama işlem yine de kaydolmaz).
+2. **Şifre sıfırlama yönlendirmesi:** Supabase → Authentication → URL Configuration →
+   **Redirect URLs** listesine `https://yuklet.co/sifre-yenile.html` ekle
+   (Site URL'i de `https://yuklet.co` yap). Maildeki bağlantı artık bu statik sayfaya
+   gidiyor ve yeni şifre orada belirleniyor.

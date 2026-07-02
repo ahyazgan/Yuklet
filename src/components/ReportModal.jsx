@@ -17,8 +17,20 @@ export default function ReportModal({ targetLabel, onSubmit, onClose }) {
   const [reason, setReason] = useState(REASONS[0]);
   const [desc, setDesc] = useState("");
   const [done, setDone] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
 
-  const submit = () => { onSubmit?.({ reason, desc: desc.trim() }); setDone(true); };
+  const submit = async () => {
+    setBusy(true);
+    setError("");
+    const res = await onSubmit?.({ reason, desc: desc.trim() });
+    setBusy(false);
+    if (res && res.ok === false) {
+      setError(res.error || "Gönderilemedi. Bağlantını kontrol edip tekrar dene.");
+      return;
+    }
+    setDone(true);
+  };
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4" style={{ background: "rgba(10,10,10,.7)" }} onClick={onClose}>
@@ -69,6 +81,10 @@ export default function ReportModal({ targetLabel, onSubmit, onClose }) {
               style={{ ...FRAME, color: INK, minHeight: 84, resize: "vertical" }}
             />
 
+            {error && (
+              <div className="mt-3 text-xs font-bold" style={{ fontSize: 12, color: "#DC2626" }}>{error}</div>
+            )}
+
             <div className="mt-5 flex gap-2.5">
               <button
                 onClick={onClose}
@@ -79,10 +95,11 @@ export default function ReportModal({ targetLabel, onSubmit, onClose }) {
               </button>
               <button
                 onClick={submit}
+                disabled={busy}
                 className="flex-1 py-3 text-sm"
-                style={{ ...ARCHIVO, fontSize: 13, background: YELLOW, color: INK, ...FRAME }}
+                style={{ ...ARCHIVO, fontSize: 13, background: YELLOW, color: INK, ...FRAME, opacity: busy ? 0.6 : 1 }}
               >
-                Gönder
+                {busy ? "Gönderiliyor…" : "Gönder"}
               </button>
             </div>
           </>

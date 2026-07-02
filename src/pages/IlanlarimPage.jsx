@@ -465,14 +465,14 @@ export default function IlanlarimPage({ listings = [], user, offers = [], review
         <ReportModal
           targetLabel={`Teklif: ${reportOffer.fromUser}`}
           onClose={() => setReportOffer(null)}
-          onSubmit={(p) => {
+          onSubmit={(p) =>
             onReport?.({
               type: "user", targetId: reportOffer.fromUserId, listingId: reportOffer.listingId,
               fromId: user?.id || null, fromName: user?.name || "misafir",
               ...p,
               desc: (p.desc ? p.desc + " — " : "") + (reportOffer.message ? `Şikayet edilen teklif mesajı: "${String(reportOffer.message).slice(0, 200)}"` : `Teklif no: ${reportOffer.id}`),
-            });
-          }}
+            })
+          }
         />
       )}
     </div>

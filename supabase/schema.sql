@@ -321,6 +321,37 @@ create policy listings_delete on public.listings for delete using (auth.uid() = 
 drop policy if exists listings_admin_update on public.listings;
 create policy listings_admin_update on public.listings for update using (public.is_admin()) with check (public.is_admin());
 
+-- SURUCU (eslesen nakliyeci): sefer durumunu guncelleyebilir. listings_update yalniz
+-- sahibe izin veriyordu -> surucunun teslim kaniti / faz / sefer sayaci / geofence
+-- guncellemeleri RLS'e takilip SESSIZCE kayboluyordu (0 satir, hata yok; UI sahte
+-- basari gosterip ~15 sn sonra geri aliyordu). is_trip_party = sahip VEYA kabul
+-- edilmis teklifin sahibi.
+drop policy if exists listings_update_driver on public.listings;
+create policy listings_update_driver on public.listings for update
+  using (public.is_trip_party(id, auth.uid()))
+  with check (public.is_trip_party(id, auth.uid()));
+
+-- Guard: sahip olmayan surucu YALNIZ sefer kolonlarini degistirebilir —
+-- fiyat/baslik/sahip/miktar carpitamaz (kolon-duzeyi RLS olmadigi icin trigger ile).
+create or replace function public.guard_driver_listing_update()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare
+  allowed text[] := array['phase','status','cycle_stage','arrived_at','trips_done','delivery_proof'];
+begin
+  -- Sahip, admin ve dogrudan SQL (auth.uid() null) tam yetkili; yalniz surucu kisitlanir.
+  if auth.uid() is null or auth.uid() = old.owner_id or public.is_admin() then
+    return new;
+  end if;
+  if (to_jsonb(new) - allowed) is distinct from (to_jsonb(old) - allowed) then
+    raise exception 'Surucu yalniz sefer alanlarini guncelleyebilir';
+  end if;
+  return new;
+end; $$;
+drop trigger if exists on_listing_driver_guard on public.listings;
+create trigger on_listing_driver_guard
+  before update on public.listings
+  for each row execute function public.guard_driver_listing_update();
+
 -- offers: teklifi veren VEYA ilan sahibi gorur; teklifi veren ekler; ilan sahibi durum gunceller
 drop policy if exists offers_read   on public.offers;
 drop policy if exists offers_insert on public.offers;

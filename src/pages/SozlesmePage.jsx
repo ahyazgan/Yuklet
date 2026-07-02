@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ChevronLeft, Printer } from "lucide-react";
+import { Capacitor } from "@capacitor/core";
 import { LISTINGS } from "../data/listings";
 import { CATS } from "../data/categories";
 import SEO from "../components/SEO";
@@ -159,12 +160,16 @@ export default function SozlesmePage({ listings = LISTINGS, offers = [], getCont
             Sözleşme
           </div>
         </div>
-        <button
-          onClick={() => window.print()}
-          style={{ display: "flex", alignItems: "center", gap: 7, background: C.ink, color: C.yellow, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "9px 14px", fontFamily: ARCH, fontWeight: 800, fontSize: 12, textTransform: "uppercase", cursor: "pointer" }}
-        >
-          <Printer size={15} strokeWidth={2.5} /> Yazdır / PDF
-        </button>
+        {/* window.print() WKWebView'da no-op — native'de ölü buton göstermemek için
+            gizli (PDF/yazdırma için ileride printer plugin'i bağlanabilir). */}
+        {!Capacitor.isNativePlatform() && (
+          <button
+            onClick={() => window.print()}
+            style={{ display: "flex", alignItems: "center", gap: 7, background: C.ink, color: C.yellow, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "9px 14px", fontFamily: ARCH, fontWeight: 800, fontSize: 12, textTransform: "uppercase", cursor: "pointer" }}
+          >
+            <Printer size={15} strokeWidth={2.5} /> Yazdır / PDF
+          </button>
+        )}
       </header>
 
       <div style={{ padding: "16px 14px 32px" }}>

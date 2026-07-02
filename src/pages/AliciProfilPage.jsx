@@ -306,7 +306,7 @@ export default function AliciProfilPage({ user, users = [], listings = [], revie
         <ReportModal
           targetLabel={`Kullanıcı: ${buyer.name}`}
           onClose={() => setShowReport(false)}
-          onSubmit={(p) => { onReport?.({ type: "user", targetId: id, listingId: null, fromId: user?.id || null, fromName: user?.name || "misafir", ...p }); }}
+          onSubmit={(p) => onReport?.({ type: "user", targetId: id, listingId: null, fromId: user?.id || null, fromName: user?.name || "misafir", ...p })}
         />
       )}
     </div>

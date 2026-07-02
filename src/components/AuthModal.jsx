@@ -1,5 +1,11 @@
 import { useState } from "react";
+import { Capacitor } from "@capacitor/core";
 import Logo from "./Logo";
+
+// Apple girişi yalnız iOS'ta gösterilir: Android'de Apple provider yapılandırılmadan
+// buton HER ZAMAN hata verir; App Store 4.8 kuralı da yalnız iOS'u bağlar.
+// (Web'de de gizli — web Apple OAuth için Services ID yapılandırılmadı, ürün mobil-only.)
+const SHOW_APPLE = Capacitor.getPlatform() === "ios";
 
 // ── SAHA Giriş modal — E-POSTA/ŞİFRE + GOOGLE / APPLE. 2px ink çerçeve · hazard
 // şeridi · Archivo uppercase · Space Mono. E-posta ile giriş/kayıt arasında geçiş;
@@ -274,17 +280,19 @@ export default function AuthModal({ onClose, onProvider, onEmailAuth, onReset })
               {busy === "google" ? "Yönlendiriliyor…" : "Google ile Devam Et"}
             </button>
 
-            {/* Apple */}
-            <button
-              type="button"
-              onClick={() => go("apple")}
-              disabled={Boolean(busy)}
-              className="flex items-center justify-center gap-3 py-3.5 text-[14px] font-extrabold uppercase transition disabled:opacity-60"
-              style={{ background: C.ink, color: C.card, border: FRAME, borderRadius: 6, fontFamily: ARCH, letterSpacing: "-0.01em", boxShadow: "3px 3px 0 rgba(10,10,10,.35)" }}
-            >
-              <AppleIcon />
-              {busy === "apple" ? "Yönlendiriliyor…" : "Apple ile Devam Et"}
-            </button>
+            {/* Apple — yalnız iOS (SHOW_APPLE) */}
+            {SHOW_APPLE && (
+              <button
+                type="button"
+                onClick={() => go("apple")}
+                disabled={Boolean(busy)}
+                className="flex items-center justify-center gap-3 py-3.5 text-[14px] font-extrabold uppercase transition disabled:opacity-60"
+                style={{ background: C.ink, color: C.card, border: FRAME, borderRadius: 6, fontFamily: ARCH, letterSpacing: "-0.01em", boxShadow: "3px 3px 0 rgba(10,10,10,.35)" }}
+              >
+                <AppleIcon />
+                {busy === "apple" ? "Yönlendiriliyor…" : "Apple ile Devam Et"}
+              </button>
+            )}
           </div>
 
           {/* yasal not */}

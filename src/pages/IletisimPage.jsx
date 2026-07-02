@@ -60,6 +60,11 @@ export default function IletisimPage() {
     const allFields = [...FIELDS, { key: "mesaj", type: "text", required: true }];
     const { valid, errors: errs } = validateForm(allFields, values);
     if (!valid) { setErrors(errs); return; }
+    // Form arka uca gitmiyor — mesajı kullanıcının e-posta uygulamasıyla iletiyoruz
+    // (eski hali "Gönderildi" deyip mesajı hiçbir yere iletmiyordu — sahte başarı).
+    const subject = encodeURIComponent(`[YÜKLET] ${values.konu || "İletişim formu"}`);
+    const body = encodeURIComponent(`Ad Soyad: ${values.name || ""}\nE-posta: ${values.email || ""}\n\n${values.mesaj || ""}`);
+    window.location.href = `mailto:info@yuklet.co?subject=${subject}&body=${body}`;
     setSent(true);
   };
 
@@ -114,8 +119,8 @@ export default function IletisimPage() {
                 <div style={{ margin: "0 auto 14px", width: 52, height: 52, borderRadius: 6, border: `2px solid ${C.ink}`, background: C.green, display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <Check size={26} strokeWidth={2.6} color="#FFFFFF" />
                 </div>
-                <div style={{ fontFamily: ARCHIVO, fontSize: 16, fontWeight: 900, textTransform: "uppercase", letterSpacing: "-0.01em", color: C.ink }}>Mesajınız Gönderildi</div>
-                <div style={{ marginTop: 6, fontFamily: BODY, fontSize: 13, color: C.sub }}>En kısa sürede size dönüş yapacağız.</div>
+                <div style={{ fontFamily: ARCHIVO, fontSize: 16, fontWeight: 900, textTransform: "uppercase", letterSpacing: "-0.01em", color: C.ink }}>E-posta Uygulamanız Açıldı</div>
+                <div style={{ marginTop: 6, fontFamily: BODY, fontSize: 13, color: C.sub }}>Mesajınız hazırlandı — göndermeyi e-posta uygulamanızdan tamamlayın. Açılmadıysa info@yuklet.co adresine yazabilirsiniz.</div>
               </div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>

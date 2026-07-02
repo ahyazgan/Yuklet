@@ -298,7 +298,7 @@ export default function SaticiProfilPage({ user, users = [], listings = [], revi
         <ReportModal
           targetLabel={`Kullanıcı: ${seller.name}`}
           onClose={() => setShowReport(false)}
-          onSubmit={(p) => { onReport?.({ type: "user", targetId: id, listingId: null, fromId: user?.id || null, fromName: user?.name || "misafir", ...p }); }}
+          onSubmit={(p) => onReport?.({ type: "user", targetId: id, listingId: null, fromId: user?.id || null, fromName: user?.name || "misafir", ...p })}
         />
       )}
     </div>

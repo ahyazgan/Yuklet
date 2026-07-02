@@ -271,7 +271,7 @@ export default function MolaDetayPage({ user, posts = [], onFetchPost, onRemoveP
         <ReportModal
           targetLabel={`Mola ilanı: ${post.title}`}
           onClose={() => setShowReport(false)}
-          onSubmit={(p) => { onReport?.({ type: "mola", targetId: post.id, listingId: null, fromId: user?.id || null, fromName: user?.name || "misafir", ...p }); }}
+          onSubmit={(p) => onReport?.({ type: "mola", targetId: post.id, listingId: null, fromId: user?.id || null, fromName: user?.name || "misafir", ...p })}
         />
       )}
     </div>

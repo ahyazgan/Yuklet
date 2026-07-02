@@ -244,7 +244,7 @@ export default function MolaThreadPage({ user, threads = [], replies = [], onFet
         <ReportModal
           targetLabel={`Forum: ${thread.title}`}
           onClose={() => setShowReport(false)}
-          onSubmit={(p) => { onReport?.({ type: "forum", targetId: thread.id, listingId: null, fromId: user?.id || null, fromName: user?.name || "misafir", ...p }); }}
+          onSubmit={(p) => onReport?.({ type: "forum", targetId: thread.id, listingId: null, fromId: user?.id || null, fromName: user?.name || "misafir", ...p })}
         />
       )}
     </div>
