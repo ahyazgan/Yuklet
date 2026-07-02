@@ -24,18 +24,19 @@ const HAZARD = "repeating-linear-gradient(45deg,#0A0A0A 0 9px,#FACC15 9px 18px)"
 const LEGAL_PAGES = {
   "gizlilik": {
     title: "Gizlilik Politikasi",
-    content: `YÜKLET Teknoloji A.Ş. ("YÜKLET") olarak, kullanicilarimizin gizliligine onem veriyoruz. Bu politika, kisisel verilerinizin nasil toplandigi, kullanildigi ve korundugu hakkinda bilgi vermektedir. YÜKLET, yuk sahibi ile nakliyeciyi bulusturan bir eslestirme platformudur.
+    content: `YÜKLET ("Platform") olarak, kullanicilarimizin gizliligine onem veriyoruz. Bu politika, kisisel verilerinizin nasil toplandigi, kullanildigi ve korundugu hakkinda bilgi vermektedir. YÜKLET, yuk sahibi ile nakliyeciyi bulusturan bir eslestirme platformudur.
 
 ## 1. Toplanan Veriler
 
 Platform uzerinden asagidaki kisisel veriler toplanabilir:
 
-- **Kimlik Bilgileri:** Ad, soyad, firma unvani, vergi numarasi
-- **Iletisim Bilgileri:** E-posta adresi, telefon numarasi, adres
+- **Kimlik Bilgileri:** Ad, soyad, firma unvani
+- **Iletisim Bilgileri:** E-posta adresi, telefon numarasi
 - **Ilan Bilgileri:** Yayinladiginiz is/arac ilanlari, yukleme ve bosaltma noktalari
 - **Teklif Bilgileri:** Verdiginiz veya aldiginiz teklifler, mesajlasma gecmisi
-- **Teknik Veriler:** IP adresi, tarayici bilgisi, cerez verileri
-- **Kullanim Verileri:** Platform icindeki etkilesimler, arama gecmisi
+- **Konum Verileri:** Yalnizca nakliyeci olarak canli sefer takibini KENDINIZ baslattiginizda, sefer suresince konumunuz alinir ve o isin sahibiyle paylasilir. Teslim kaniti gonderirken teslim noktasi kaydedilebilir. Konum izni vermezseniz diger tum ozellikler calismaya devam eder.
+- **Fotograf ve Belgeler:** Kamera/galeri izniyle yuklediginiz kantar fisi, belge ve mesaj gorselleri
+- **Teknik Veriler:** IP adresi, cihaz ve isletim sistemi bilgisi, hata kayitlari
 
 ## 2. Verilerin Kullanim Amaci
 
@@ -62,13 +63,9 @@ Kisisel verileriniz, asagidaki durumlar disinda ucuncu taraflarla paylasilmaz:
 - Erisim kontrolu ve yetkilendirme mekanizmalari
 - Duzenli guvenlik denetimleri
 
-## 5. Cerez Politikasi
+## 5. Cerezler ve Yerel Depolama
 
-Platform, kullanici deneyimini iyilestirmek icin cerezler kullanir:
-
-- **Zorunlu Cerezler:** Platform isleyisi icin gerekli
-- **Analitik Cerezler:** Kullanim istatistikleri (Google Analytics)
-- **Tercih Cerezleri:** Dil, tema gibi kullanici tercihleri
+Mobil uygulama cerez kullanmaz. Oturum bilgileriniz ve tercihleriniz (orn. engellediginiz kullanicilar) cihazinizin guvenli yerel depolamasinda tutulur. Uygulamada ucuncu taraf reklam veya analitik SDK'si yoktur.
 
 ## 6. Haklariniz
 
@@ -84,10 +81,9 @@ Basvurulariniz icin: kvkk@yuklet.co
 
 ## 7. Iletisim
 
-YÜKLET Teknoloji A.Ş.
-Buyukdere Cad. No:123 Kat:5, Levent, Istanbul
+Veri sorumlusu: YÜKLET (yuklet.co)
 E-posta: info@yuklet.co
-Telefon: +90 (212) 555 00 00`
+KVKK basvurulari: kvkk@yuklet.co`
   },
   "kullanim-kosullari": {
     title: "Kullanim Kosullari",
@@ -139,13 +135,12 @@ Telefon: +90 (212) 555 00 00`
   },
   "kvkk": {
     title: "KVKK Aydinlatma Metni",
-    content: `6698 Sayili Kisisel Verilerin Korunmasi Kanunu ("KVKK") uyarinca, YÜKLET Teknoloji A.Ş. olarak veri sorumlusu sifatiyla sizleri bilgilendirmek isteriz.
+    content: `6698 Sayili Kisisel Verilerin Korunmasi Kanunu ("KVKK") uyarinca, YÜKLET platformu isleticisi olarak veri sorumlusu sifatiyla sizleri bilgilendirmek isteriz.
 
 ## 1. Veri Sorumlusu
 
-YÜKLET Teknoloji A.Ş.
-Mersis No: 0123456789012345
-Adres: Buyukdere Cad. No:123 Kat:5, Levent, Istanbul
+YÜKLET (yuklet.co)
+Iletisim: kvkk@yuklet.co
 
 ## 2. Kisisel Verilerin Islenmesi
 
@@ -195,12 +190,10 @@ haklarina sahipsiniz.
 
 ## 6. Basvuru Yontemi
 
-Haklarinizi kullanmak icin:
+Haklarinizi kullanmak icin hesabiniza kayitli e-posta adresinizden yazin:
 - E-posta: kvkk@yuklet.co
-- Posta: Buyukdere Cad. No:123 Kat:5, Levent, Istanbul
-- KEP: yuklet@hs01.kep.tr
 
-Basvurular en gec 30 gun icinde sonuclandirilir.`
+Basvurular en gec 30 gun icinde ucretsiz sonuclandirilir. Hesabinizi ve tum verilerinizi ayrica uygulama icinden (Profil > Hesabimi kalici olarak sil) aninda silebilirsiniz.`
   },
   "hesap-silme": {
     title: "Hesap ve Veri Silme",
@@ -280,7 +273,7 @@ export default function LegalPage() {
 
   return (
     <div style={shell}>
-      <SEO title={page.title} description={page.title + " - YÜKLET Teknoloji A.Ş."} />
+      <SEO title={page.title} description={page.title + " - YÜKLET (yuklet.co)"} />
 
       {/* App bar */}
       <div
@@ -326,7 +319,7 @@ export default function LegalPage() {
           <div style={{ padding: 18 }}>
             <h2 style={{ margin: 0, fontFamily: ARCHIVO, fontSize: 20, fontWeight: 900, textTransform: "uppercase", letterSpacing: "-0.02em", color: C.ink }}>{page.title}</h2>
             <div style={{ marginTop: 6, fontFamily: MONO, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em", color: C.muted }}>
-              Son güncelleme: 1 Ocak 2026 · YÜKLET Teknoloji A.Ş.
+              Son güncelleme: 2 Temmuz 2026 · YÜKLET · yuklet.co
             </div>
 
             <div style={{ marginTop: 16, fontFamily: BODY, fontSize: 13, lineHeight: 1.6, color: C.sub }}>

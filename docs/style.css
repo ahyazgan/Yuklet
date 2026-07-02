@@ -1,0 +1,73 @@
+/* YÜKLET — yasal/destek statik sayfaları (SAHA dili: manila zemin, ink çerçeve, hazard sarısı) */
+:root {
+  --ink: #0A0A0A;
+  --yellow: #FACC15;
+  --bg: #F1EDE5;
+  --card: #FFFFFF;
+  --stone: #F4F1EA;
+  --sub: #5A5852;
+  --muted: #9A968D;
+  --header: #EAE3D6;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  line-height: 1.65;
+  -webkit-text-size-adjust: 100%;
+}
+.hazard { height: 8px; background: repeating-linear-gradient(45deg, #0A0A0A 0 9px, #FACC15 9px 18px); }
+.wrap { max-width: 760px; margin: 0 auto; padding: 0 18px 64px; }
+header.site {
+  background: var(--header);
+  border-bottom: 2px solid var(--ink);
+}
+header.site .bar {
+  max-width: 760px; margin: 0 auto; padding: 14px 18px;
+  display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+}
+.brand { font-weight: 900; font-size: 22px; letter-spacing: -0.02em; text-transform: uppercase; text-decoration: none; color: var(--ink); }
+.brand span { background: var(--yellow); padding: 0 6px; }
+nav.tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+nav.tabs a {
+  border: 2px solid var(--ink); border-radius: 5px; padding: 5px 10px;
+  font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em;
+  color: var(--ink); background: var(--card); text-decoration: none; white-space: nowrap;
+}
+nav.tabs a.active { background: var(--ink); color: var(--yellow); }
+main.card {
+  background: var(--card); border: 2px solid var(--ink); border-radius: 6px;
+  box-shadow: 4px 4px 0 rgba(10,10,10,.18); margin-top: 22px; overflow: hidden;
+}
+main.card .inner { padding: 26px 26px 34px; }
+h1 { font-size: 26px; font-weight: 900; text-transform: uppercase; letter-spacing: -0.02em; margin: 0 0 4px; }
+.meta { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 20px; }
+h2 { font-size: 16px; font-weight: 800; text-transform: uppercase; letter-spacing: -0.01em; margin: 26px 0 8px; border-bottom: 2px solid var(--stone); padding-bottom: 6px; }
+p, li { color: var(--sub); font-size: 15px; }
+li { margin-bottom: 5px; }
+strong { color: var(--ink); }
+a { color: var(--ink); }
+table { border-collapse: collapse; width: 100%; margin: 10px 0; }
+th, td { border: 2px solid var(--stone); padding: 8px 10px; font-size: 14px; text-align: left; color: var(--sub); }
+th { background: var(--stone); color: var(--ink); text-transform: uppercase; font-size: 12px; letter-spacing: 0.03em; }
+.note {
+  background: var(--stone); border: 2px solid var(--ink); border-radius: 6px;
+  padding: 12px 14px; font-size: 14px; color: var(--sub); margin: 14px 0;
+}
+footer.site { max-width: 760px; margin: 26px auto 0; padding: 0 18px; font-size: 13px; color: var(--muted); }
+footer.site a { color: var(--sub); }
+.btn {
+  display: inline-block; background: var(--yellow); color: var(--ink); border: 2px solid var(--ink);
+  border-radius: 6px; padding: 12px 22px; font-weight: 800; text-transform: uppercase;
+  text-decoration: none; box-shadow: 3px 3px 0 var(--ink); font-size: 14px;
+}
+.hero { text-align: center; padding: 56px 18px 30px; }
+.hero h1 { font-size: 40px; }
+.hero p.lead { font-size: 17px; color: var(--sub); max-width: 520px; margin: 10px auto 26px; }
+.badges { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 8px; }
+.badges span {
+  border: 2px solid var(--ink); border-radius: 5px; background: var(--card);
+  padding: 8px 14px; font-size: 12.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em;
+}

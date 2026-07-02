@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, Phone, Mail, MessageCircle, MapPin, Check } from "lucide-react";
+import { ChevronLeft, Mail, ShieldCheck, Globe, Check } from "lucide-react";
 import { validateForm } from "../utils/validation";
 import SEO from "../components/SEO";
 
@@ -31,11 +31,12 @@ const FIELDS = [
 ];
 
 // [icon, iconBg, iconColor, title, value, sub]
+// Yalnızca GERÇEK kanallar — sahte telefon/WhatsApp/adres mağaza incelemesinde
+// ve kullanıcıda güven kaybı yaratır; kanal açıldıkça buraya eklenir.
 const CONTACTS = [
-  [Phone, C.green, "#FFFFFF", "Telefon", "+90 (212) 555 00 00", "Pazartesi-Cuma 09:00-18:00"],
-  [Mail, C.ink, C.yellow, "E-posta", "info@yuklet.co", "En geç 2 saat içinde dönüş"],
-  [MessageCircle, C.yellow, C.ink, "WhatsApp", "+90 (555) 000 00 00", "7/24 hızlı destek"],
-  [MapPin, C.ink, "#FFFFFF", "Adres", "Levent, İstanbul", "Büyükdere Cad. No:123 Kat:5"],
+  [Mail, C.ink, C.yellow, "E-posta", "info@yuklet.co", "En geç 2 iş günü içinde dönüş"],
+  [ShieldCheck, C.green, "#FFFFFF", "KVKK Başvuruları", "kvkk@yuklet.co", "Veri hakları talepleri"],
+  [Globe, C.yellow, C.ink, "Web", "yuklet.co", "Yasal metinler ve destek sayfası"],
 ];
 
 const shell = { display: "flex", flexDirection: "column", minHeight: "100%", background: C.bg, fontFamily: BODY };
