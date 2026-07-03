@@ -126,10 +126,13 @@ function Header({ name, role, unread, onBell, onProfile, onSearch }) {
   const initial = (name || "D").trim().charAt(0).toUpperCase();
   return (
     <div className="px-[18px] pt-3">
-      {/* logo + isim + aksiyonlar */}
+      {/* logo — iki yanı hazard şeritli, ortalanmış marka kilidi */}
+      <div className="mb-2 flex justify-center">
+        <Logo size="lg" style={{ height: 72 }} />
+      </div>
+      {/* isim + aksiyonlar */}
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
-          <Logo size="lg" style={{ height: 72 }} />
           <div>
             <div className="text-[16px] font-extrabold uppercase leading-none" style={{ color: C.ink, fontFamily: ARCH, letterSpacing: "-0.01em" }}>
               Merhaba, {name}
