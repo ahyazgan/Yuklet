@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Şifre Yenile — YÜKLET</title>
+<meta name="robots" content="noindex" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div class="hazard"></div>
+<header class="site">
+  <div class="bar">
+    <a class="brand" href="./"><span>YÜKLET</span></a>
+  </div>
+</header>
+
+<div class="wrap">
+<main class="card"><div class="inner">
+<h1>Yeni Şifre Belirle</h1>
+<div class="meta">YÜKLET hesabın için</div>
+
+<div id="durum" class="note">Bağlantı doğrulanıyor…</div>
+
+<form id="form" style="display:none">
+  <p style="margin-top:0">Yeni şifreni gir (en az 6 karakter):</p>
+  <input id="p1" type="password" minlength="6" required placeholder="Yeni şifre"
+    style="width:100%;padding:12px 14px;border:2px solid var(--ink);border-radius:6px;font-size:15px;margin-bottom:10px;box-sizing:border-box" />
+  <input id="p2" type="password" minlength="6" required placeholder="Yeni şifre (tekrar)"
+    style="width:100%;padding:12px 14px;border:2px solid var(--ink);border-radius:6px;font-size:15px;margin-bottom:14px;box-sizing:border-box" />
+  <button type="submit" class="btn" id="kaydet">Şifreyi Kaydet</button>
+</form>
+
+<div id="bitti" style="display:none">
+  <p><strong>Şifren güncellendi.</strong> Artık YÜKLET uygulamasını açıp yeni şifrenle giriş yapabilirsin.</p>
+</div>
+</div></main>
+</div>
+
+<footer class="site">
+  <p>© 2026 YÜKLET · <a href="destek.html">Destek</a></p>
+</footer>
+
+<script type="module">
+// Supabase şifre sıfırlama bağlantısı bu sayfaya "type=recovery" oturumu ile gelir.
+// Anon (publishable) anahtar herkese açıktır — RLS korur; uygulama paketinde de aynı anahtar var.
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+const supabase = createClient(
+  "https://wxxufwizgjnpybpmppuw.supabase.co",
+  "sb_publishable_mLBFVMBK3FwKOqf8JVGteg_IZ2y9aH-"
+);
+
+const durum = document.getElementById("durum");
+const form = document.getElementById("form");
+const bitti = document.getElementById("bitti");
+
+function hazir() { durum.style.display = "none"; form.style.display = "block"; }
+function hata(msg) { durum.textContent = msg; durum.style.display = "block"; }
+
+// Recovery token URL hash'inde gelir; supabase-js otomatik işleyip oturum kurar.
+supabase.auth.onAuthStateChange((event, session) => {
+  if (event === "PASSWORD_RECOVERY" || (event === "SIGNED_IN" && session)) hazir();
+});
+// Sayfa doğrudan (bağlantısız) açıldıysa bilgi ver.
+setTimeout(async () => {
+  const { data } = await supabase.auth.getSession();
+  if (!data?.session && form.style.display === "none") {
+    hata("Bu sayfa yalnızca e-postandaki şifre sıfırlama bağlantısıyla çalışır. Bağlantının süresi dolduysa uygulamadan 'Şifremi unuttum' ile yeni bağlantı iste.");
+  }
+}, 2500);
+
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const p1 = document.getElementById("p1").value;
+  const p2 = document.getElementById("p2").value;
+  if (p1 !== p2) { alert("Şifreler eşleşmiyor."); return; }
+  const btn = document.getElementById("kaydet");
+  btn.disabled = true; btn.textContent = "Kaydediliyor…";
+  const { error } = await supabase.auth.updateUser({ password: p1 });
+  btn.disabled = false; btn.textContent = "Şifreyi Kaydet";
+  if (error) { alert("Şifre güncellenemedi: " + error.message); return; }
+  await supabase.auth.signOut().catch(() => {});
+  form.style.display = "none"; bitti.style.display = "block";
+});
+</script>
+</body>
+</html>
