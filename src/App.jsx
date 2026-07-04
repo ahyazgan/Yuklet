@@ -691,7 +691,9 @@ function AppShell() {
   };
   // Ilk giriste rol secimi -> profile yaz
   const chooseRole = async (role) => {
-    await updateProfile({ role });
+    const res = await updateProfile({ role });
+    // Basarisizsa modal ACIK kalir ve hatayi gosterir (throw -> RoleSelectModal catch).
+    if (!res.ok) throw new Error(res.error || "Rol kaydedilemedi, tekrar dene.");
     setShowRole(false);
   };
   const logout = async () => { if (SB) { await api.signOut().catch(() => {}); } setUser(null); setProfile(null); };

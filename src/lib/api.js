@@ -292,9 +292,22 @@ export async function updateProfile(userId, patch) {
   if (patch.tasimaTuru != null) row.tasima_turu = patch.tasimaTuru;
   if (patch.filoOzeti != null) row.filo_ozeti = patch.filoOzeti;
   if (patch.hizmetBolgeleri != null) row.hizmet_bolgeleri = patch.hizmetBolgeleri;
-  const { data, error } = await supabase.from("profiles").update(row).eq("id", userId).select("*").single();
+  const { data, error } = await supabase.from("profiles").update(row).eq("id", userId).select("*").maybeSingle();
   if (error) return { ok: false, error: error.message };
-  return { ok: true, profile: rowToProfile(data) };
+  if (data) return { ok: true, profile: rowToProfile(data) };
+  // Profil satiri yok (trigger oncesi acilmis hesap vb.) -> olustur.
+  // RLS profiles_insert (auth.uid()=id) buna izin verir.
+  const { data: session } = await supabase.auth.getUser();
+  const sbUser = session?.user;
+  const ins = {
+    id: userId,
+    email: sbUser?.email || "",
+    name: row.name ?? (sbUser?.user_metadata?.name || sbUser?.user_metadata?.full_name || sbUser?.email || ""),
+    ...row,
+  };
+  const { data: created, error: insErr } = await supabase.from("profiles").insert(ins).select("*").single();
+  if (insErr) return { ok: false, error: insErr.message };
+  return { ok: true, profile: rowToProfile(created) };
 }
 
 // Hesabi KALICI sil (App Store/Play zorunlu). delete_my_account RPC auth.users'i
