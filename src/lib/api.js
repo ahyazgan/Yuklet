@@ -243,7 +243,9 @@ export async function getSessionUser() {
 }
 
 export function onAuthChange(cb) {
-  const { data } = supabase.auth.onAuthStateChange((_e, session) => cb(session?.user || null));
+  // event tipini de gecir: hydrate, gecici null'da (TOKEN_REFRESHED vb.) oturumu
+  // silmesin; yalniz gercek SIGNED_OUT'ta temizlesin.
+  const { data } = supabase.auth.onAuthStateChange((event, session) => cb(session?.user || null, event));
   return () => data.subscription.unsubscribe();
 }
 
@@ -337,9 +339,12 @@ export async function updateProfile(userId, patch) {
 // RPC yoksa (migration kosulmamis) cagiran taraf updateProfile'a duser.
 export async function setMyRole(role) {
   const { data, error } = await supabase.rpc("set_my_role", { p_role: role });
+  console.log("[ROL] api.setMyRole RPC: gonderilen=", role, "hata=", error?.message, "code=", error?.code, "donen=", JSON.stringify(data));
   if (error) return { ok: false, error: error.message, code: error.code };
   const prof = rowToProfile(Array.isArray(data) ? data[0] : data);
-  if (!prof || prof.role !== role) return { ok: false, error: "Rol kaydedilemedi (sunucu farkli deger dondu)." };
+  if (!prof) return { ok: false, error: "Rol kaydedilemedi (sunucu bos dondu)." };
+  // RPC yalniz rol bos/isveren iken yazar; satirda ZATEN farkli gercek bir rol varsa
+  // (onceki secim) onu dondurur. Bu bir hata degil — mevcut rolu kabul et.
   return { ok: true, profile: prof };
 }
 

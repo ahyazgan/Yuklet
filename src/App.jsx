@@ -562,13 +562,14 @@ function AppShell() {
   // (TOKEN_REFRESHED/SIGNED_IN) tekrar tetikledigi hydrate gecici olarak bos rol
   // dondurse bile modali TEKRAR ACMA (yaris durumu -> sonsuz "sen kimsin" dongusu).
   const roleChosenRef = useRef(false);
+  const lastGoodProfileRef = useRef(null);  // en son bilinen DOLU-rollu profil (klobber korumasi)
   useEffect(() => {
     if (!authReady) return;
     const u = profile || user;
     console.log("[ROL] modal effect: authReady=", authReady, "u var mi=", !!u, "u.role=", JSON.stringify(u?.role), "roleChosenRef=", roleChosenRef.current);
     if (u && u.role) { roleChosenRef.current = true; setShowRole(false); return; }
-    if (!u) { roleChosenRef.current = false; setShowRole(false); return; }
-    // u var, rol yok:
+    // Kullanici yok VEYA rol bos: rol daha once secildiyse (ref) modali ACMA.
+    if (!u) { setShowRole(false); return; }
     console.log("[ROL] modal effect: ROL BOS -> modal", !roleChosenRef.current ? "ACILIYOR" : "acilmiyor (ref true)");
     setShowRole(!roleChosenRef.current);
   }, [authReady, user, profile]);
@@ -588,24 +589,41 @@ function AppShell() {
         api.fetchReviews().then(setReviews).catch(() => {})]);
     })();
     // Oturum: mevcut kullaniciyi al, sonra degisimleri dinle.
-    // ROL KORUMA: hydrate her auth olayinda (INITIAL_SESSION, SIGNED_IN,
-    // TOKEN_REFRESHED) calisir. Rol secildikten SONRA gec cozulen/tekrar tetiklenen
-    // bir hydrate, getProfile'i commit'i gec goren bir okumayla role='' dondururse,
-    // az once secilen dolu rolu EZERDI -> "sen kimsin" sonsuz dongusu. Bu yuzden:
-    // taze profil bos-rol donerken elimizde AYNI kullanicinin dolu-rollu profili
-    // varsa onu KORU (fonksiyonel updater ile bayat okuma klobber'ini engelle).
-    const hydrate = async (sbUser) => {
-      if (sbUser) {
-        const prof = await api.getProfile(sbUser.id).catch((e) => { console.log("[ROL] hydrate getProfile HATA:", e?.message); return null; });
-        console.log("[ROL] hydrate: uid=", sbUser.id, "email=", sbUser.email, "-> getProfile rol=", JSON.stringify(prof?.role), "prof var mi=", !!prof);
-        const keep = (prev) =>
-          (prev && prev.role && prof && !prof.role && String(prev.id) === String(prof.id)) ? prev : null;
-        setProfile((prev) => { const k = keep(prev); if (k) console.log("[ROL] hydrate: KLOBBER engellendi, eldeki dolu rol korundu:", prev.role); return k || prof; });
-        setUser((prev) => keep(prev) || prof || { id: sbUser.id, name: sbUser.email || "", role: "", phone: "" });
-      } else { setProfile(null); setUser(null); }
+    // SAGLAMLIK + ROL KORUMA:
+    // 1) hydrate her auth olayinda (INITIAL_SESSION, SIGNED_IN, TOKEN_REFRESHED)
+    //    calisir. Supabase bazen gecici olarak sbUser=null gecirir (token yenileme
+    //    penceresi vb.) -> eskiden bu, oturumu KOMPLE siliyordu ve ardindan gelen
+    //    okuma bos rolle geliyordu. Artik yalniz GERCEK SIGNED_OUT'ta temizliyoruz.
+    // 2) Taze profil bos-rol donerken en son bilinen DOLU rolu (lastGoodProfileRef)
+    //    KORU — boylece bayat/bos okuma secilmis rolu EZEMEZ.
+    const hydrate = async (sbUser, event) => {
+      if (!sbUser) {
+        // Gercekten cikis yapildiysa temizle; gecici null'i YOK SAY (oturumu koru).
+        if (event === "SIGNED_OUT") {
+          console.log("[ROL] hydrate: SIGNED_OUT -> oturum temizlendi");
+          lastGoodProfileRef.current = null; roleChosenRef.current = false;
+          setProfile(null); setUser(null);
+        } else {
+          console.log("[ROL] hydrate: gecici null (event=", event, ") -> YOK SAYILDI, oturum korunuyor");
+        }
+        setAuthReady(true);
+        return;
+      }
+      const prof = await api.getProfile(sbUser.id).catch((e) => { console.log("[ROL] hydrate getProfile HATA:", e?.message); return null; });
+      console.log("[ROL] hydrate: uid=", sbUser.id, "event=", event, "-> getProfile rol=", JSON.stringify(prof?.role), "prof var mi=", !!prof);
+      // Ayni kullanici icin en son bilinen dolu rolu koru (klobber engelle).
+      const good = lastGoodProfileRef.current;
+      const sameUser = good && String(good.id) === String(sbUser.id);
+      const useProf =
+        (prof && prof.role) ? prof                                   // taze profil dolu -> kullan
+        : (sameUser && good.role) ? good                             // taze bos ama eldeki dolu -> KORU
+        : (prof || { id: sbUser.id, name: sbUser.email || "", role: "", phone: "" });
+      if (useProf.role && (!prof || !prof.role)) console.log("[ROL] hydrate: KLOBBER engellendi, korunan rol=", useProf.role);
+      if (useProf.role) { lastGoodProfileRef.current = useProf; roleChosenRef.current = true; }
+      setProfile(useProf); setUser(useProf);
       setAuthReady(true);
     };
-    api.getSessionUser().then(hydrate).catch(() => setAuthReady(true));
+    api.getSessionUser().then((u) => hydrate(u, "INITIAL_SESSION")).catch(() => setAuthReady(true));
     const unsub = api.onAuthChange(hydrate);
     // Sifre sifirlama baglantisina tiklanip donulunce -> yeni sifre modali ac.
     const unsubPw = api.onPasswordRecovery(() => { setShowAuth(false); setShowNewPassword(true); });
@@ -729,13 +747,18 @@ function AppShell() {
     // Basarisizsa modal ACIK kalir ve hatayi gosterir (throw -> RoleSelectModal catch).
     if (!res.ok) { console.log("[ROL] chooseRole BASARISIZ:", res.error); throw new Error(res.error || "Rol kaydedilemedi, tekrar dene."); }
     console.log("[ROL] chooseRole BASARILI, rol yazildi:", res.profile?.role);
-    // Rol basariyla yazildi: bu oturumda modali BIR DAHA acma. hydrate rol-korumasi
-    // state ezilmesini engeller; bu ref de anlik bir bos-rol okumasi olsa bile modal
-    // effect'inin (App.jsx ustte) modali yeniden acmasini engeller.
+    // Rol basariyla yazildi: KLOBBER korumasini SILAHLA — lastGoodProfileRef'e dolu
+    // profili yaz + roleChosenRef=true. Boylece ardindan gelen herhangi bir bos-rol
+    // okumasi (bayat/yaris) ne state'i ezer ne de modali yeniden acar.
+    if (res.profile?.role) lastGoodProfileRef.current = res.profile;
     roleChosenRef.current = true;
     setShowRole(false);
   };
-  const logout = async () => { if (SB) { await api.signOut().catch(() => {}); } setUser(null); setProfile(null); };
+  const logout = async () => {
+    lastGoodProfileRef.current = null; roleChosenRef.current = false;
+    if (SB) { await api.signOut().catch(() => {}); }
+    setUser(null); setProfile(null);
+  };
 
   // ── Hesap silme (App Store & Google Play zorunlu) ──
   // Kullanicinin hesabini ve TUM verilerini kalici siler (App Store 5.1.1(v) &
