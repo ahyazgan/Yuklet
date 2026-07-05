@@ -49,8 +49,18 @@ workflows:
           cd ios/App
           agvtool new-version -all $(($(($BUILD_NUMBER)) + 1))
 
-      - name: iOS imzalama ayarını çek (otomatik)
+      - name: iOS imzalama dosyalarini olustur/cek
         script: |
+          keychain initialize
+          # Bundle ID icin App Store profilini + dagitim sertifikasini
+          # App Store Connect API uzerinden olustur/indir. --create:
+          # yoksa otomatik uret. Bu, "Sign In with Apple" gibi App ID'de
+          # acik olan capability'leri iceren dogru profili getirir.
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create
+          keychain add-certificates
+          # Indirilen profilleri Xcode projesine uygula
           xcode-project use-profiles
 
       - name: Xcode archive & imzala
