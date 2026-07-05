@@ -48,21 +48,8 @@ export default function MolaDetayPage({ user, posts = [], onFetchPost, onRemoveP
   const post = listPost || fetched || null;
   const loading = !listPost && onFetchPost && fetched === undefined;
 
-  // ── Gate: giriş yok ──
-  if (!user) {
-    return (
-      <div style={shell}>
-        <SEO title="Mola — İlan" />
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, padding: "0 24px", textAlign: "center" }}>
-          <div style={{ width: 64, height: 64, borderRadius: 8, background: C.ink, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <Coffee size={30} color={C.yellow} strokeWidth={2.2} />
-          </div>
-          <h1 style={{ fontFamily: ARCHIVO, fontSize: 20, fontWeight: 800, color: C.ink, textTransform: "uppercase", letterSpacing: "-0.02em", margin: 0 }}>Giriş gerekli</h1>
-          <button onClick={() => onRequireAuth?.()} style={{ marginTop: 4, background: C.ink, color: C.yellow, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "13px 22px", fontFamily: ARCHIVO, fontSize: 14, fontWeight: 800, textTransform: "uppercase", cursor: "pointer", boxShadow: "3px 3px 0 #0A0A0A" }}>Giriş yap</button>
-        </div>
-      </div>
-    );
-  }
+  // NOT: Bu detay sayfası PUBLIC — paylaşılan link (sosyal medya) girişsiz/herhangi
+  // bir rolde AÇILIR (salt-okunur). Mesaj/Ara gibi işlemler giriş ister.
 
   if (loading) {
     return (
@@ -75,8 +62,8 @@ export default function MolaDetayPage({ user, posts = [], onFetchPost, onRemoveP
     );
   }
 
-  // ── Not found / nakliyeci değil ──
-  if (user.role !== "nakliyeci" || !post) {
+  // ── İlan bulunamadı ──
+  if (!post) {
     return (
       <div style={shell}>
         <SEO title="Mola — İlan" />
@@ -84,7 +71,7 @@ export default function MolaDetayPage({ user, posts = [], onFetchPost, onRemoveP
           <div style={{ width: 64, height: 64, borderRadius: 8, background: C.ink, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <Coffee size={30} color={C.yellow} strokeWidth={2.2} />
           </div>
-          <h1 style={{ fontFamily: ARCHIVO, fontSize: 20, fontWeight: 800, color: C.ink, textTransform: "uppercase", letterSpacing: "-0.02em", margin: 0 }}>{user.role !== "nakliyeci" ? "Nakliyecilere özel" : "İlan bulunamadı"}</h1>
+          <h1 style={{ fontFamily: ARCHIVO, fontSize: 20, fontWeight: 800, color: C.ink, textTransform: "uppercase", letterSpacing: "-0.02em", margin: 0 }}>İlan bulunamadı</h1>
           <button onClick={() => navigate("/mola")} style={{ marginTop: 4, background: C.yellow, color: C.ink, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "12px 20px", fontFamily: ARCHIVO, fontSize: 13, fontWeight: 800, textTransform: "uppercase", cursor: "pointer", boxShadow: "3px 3px 0 #0A0A0A" }}>Mola Yeri</button>
         </div>
       </div>
@@ -94,7 +81,7 @@ export default function MolaDetayPage({ user, posts = [], onFetchPost, onRemoveP
   const c = catOf(post.category);
   const CatIcon = c.Icon;
   const images = Array.isArray(post.images) ? post.images : [];
-  const mine = String(post.ownerId) === String(user.id);
+  const mine = Boolean(user) && String(post.ownerId) === String(user.id);
   const activeIdx = Math.min(idx, Math.max(0, images.length - 1));
 
   // Sahibinin diğer aktif ilanları (bu hariç).
@@ -217,7 +204,7 @@ export default function MolaDetayPage({ user, posts = [], onFetchPost, onRemoveP
           )
         ) : (
           <div style={{ display: "flex", gap: 8 }}>
-            <button onClick={() => navigate("/mesajlar")} style={{ flex: 1, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, background: C.yellow, color: C.ink, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "13px", fontFamily: ARCHIVO, fontSize: 13, fontWeight: 800, textTransform: "uppercase", cursor: "pointer", boxShadow: "3px 3px 0 #0A0A0A" }}>
+            <button onClick={() => (user ? navigate("/mesajlar") : onRequireAuth?.())} style={{ flex: 1, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, background: C.yellow, color: C.ink, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "13px", fontFamily: ARCHIVO, fontSize: 13, fontWeight: 800, textTransform: "uppercase", cursor: "pointer", boxShadow: "3px 3px 0 #0A0A0A" }}>
               <MessageCircle size={16} strokeWidth={2.4} /> Mesaj
             </button>
             {post.phone && (
@@ -228,8 +215,8 @@ export default function MolaDetayPage({ user, posts = [], onFetchPost, onRemoveP
           </div>
         )}
 
-        {/* ── Şikayet et ── */}
-        {!mine && (
+        {/* ── Şikayet et (yalnız giriş yapmış, kendi ilanı olmayan) ── */}
+        {user && !mine && (
           <button onClick={() => setShowReport(true)}
             style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", background: C.card, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "12px", fontFamily: MONO, fontSize: 11, fontWeight: 700, color: C.red, letterSpacing: "0.06em", textTransform: "uppercase", cursor: "pointer" }}>
             <AlertTriangle size={15} strokeWidth={2.4} color={C.red} /> Şikayet et

@@ -658,7 +658,9 @@ drop policy if exists mola_read   on public.mola_posts;
 drop policy if exists mola_insert on public.mola_posts;
 drop policy if exists mola_update on public.mola_posts;
 drop policy if exists mola_delete on public.mola_posts;
-create policy mola_read   on public.mola_posts for select using (public.is_nakliyeci() or public.is_admin());
+-- Okuma PUBLIC: paylaşılan /mola/:id linki girişsiz de açılsın (salt-okunur).
+-- Yazma/güncelleme/silme yine nakliyeci/sahip ile korunur (aşağıdaki policy'ler).
+create policy mola_read   on public.mola_posts for select using (true);
 -- Paylaşım tüm nakliyecilere serbest (belge onayı GEREKMİYOR) -> is_nakliyeci.
 create policy mola_insert on public.mola_posts for insert with check (auth.uid() = owner_id and public.is_nakliyeci());
 create policy mola_update on public.mola_posts for update using (auth.uid() = owner_id or public.is_admin());
