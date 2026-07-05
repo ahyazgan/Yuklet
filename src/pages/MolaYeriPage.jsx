@@ -304,9 +304,9 @@ export default function MolaYeriPage({ user, posts = [], threads = [], onRemoveP
 
       {/* FAB — Pano'da "Paylaş", Forum'da "Başlık Aç" */}
       {view === "pano" ? (
-        <button onClick={tryShare} aria-label="Paylaş"
+        <button onClick={tryShare} aria-label="İlan Paylaş"
           style={{ position: "fixed", bottom: 86, left: "50%", transform: "translateX(-50%)", zIndex: 40, display: "inline-flex", alignItems: "center", gap: 7, background: C.yellow, color: C.ink, border: `2px solid ${C.ink}`, borderRadius: 8, padding: "12px 16px", fontFamily: ARCHIVO, fontSize: 13, fontWeight: 800, textTransform: "uppercase", cursor: "pointer", boxShadow: "3px 3px 0 #0A0A0A" }}>
-          <Plus size={18} strokeWidth={2.6} /> Paylaş
+          <Plus size={18} strokeWidth={2.6} /> İlan Paylaş
         </button>
       ) : (
         <button onClick={() => navigate("/mola/baslik-ac")} aria-label="Başlık Aç"
