@@ -270,8 +270,7 @@ export async function updatePassword({ password }) {
 export async function getProfile(userId) {
   // maybeSingle: satir yoksa hata firlatmaz (single 0 satirda PGRST116 doner).
   const { data, error } = await supabase.from("profiles").select("*").eq("id", userId).maybeSingle();
-  if (error) console.error("[getProfile] HATA:", error.message, "code=", error.code, "userId=", userId);
-  else console.log("[ROL] getProfile ham satir: id=", userId, "-> role=", JSON.stringify(data?.role), "satir var mi=", !!data);
+  if (error) console.error("[getProfile]", error.message);
   return rowToProfile(data);
 }
 
@@ -339,7 +338,6 @@ export async function updateProfile(userId, patch) {
 // RPC yoksa (migration kosulmamis) cagiran taraf updateProfile'a duser.
 export async function setMyRole(role) {
   const { data, error } = await supabase.rpc("set_my_role", { p_role: role });
-  console.log("[ROL] api.setMyRole RPC: gonderilen=", role, "hata=", error?.message, "code=", error?.code, "donen=", JSON.stringify(data));
   if (error) return { ok: false, error: error.message, code: error.code };
   const prof = rowToProfile(Array.isArray(data) ? data[0] : data);
   if (!prof) return { ok: false, error: "Rol kaydedilemedi (sunucu bos dondu)." };

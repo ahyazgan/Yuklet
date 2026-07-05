@@ -566,11 +566,9 @@ function AppShell() {
   useEffect(() => {
     if (!authReady) return;
     const u = profile || user;
-    console.log("[ROL] modal effect: authReady=", authReady, "u var mi=", !!u, "u.role=", JSON.stringify(u?.role), "roleChosenRef=", roleChosenRef.current);
     if (u && u.role) { roleChosenRef.current = true; setShowRole(false); return; }
     // Kullanici yok VEYA rol bos: rol daha once secildiyse (ref) modali ACMA.
     if (!u) { setShowRole(false); return; }
-    console.log("[ROL] modal effect: ROL BOS -> modal", !roleChosenRef.current ? "ACILIYOR" : "acilmiyor (ref true)");
     setShowRole(!roleChosenRef.current);
   }, [authReady, user, profile]);
 
@@ -600,17 +598,13 @@ function AppShell() {
       if (!sbUser) {
         // Gercekten cikis yapildiysa temizle; gecici null'i YOK SAY (oturumu koru).
         if (event === "SIGNED_OUT") {
-          console.log("[ROL] hydrate: SIGNED_OUT -> oturum temizlendi");
           lastGoodProfileRef.current = null; roleChosenRef.current = false;
           setProfile(null); setUser(null);
-        } else {
-          console.log("[ROL] hydrate: gecici null (event=", event, ") -> YOK SAYILDI, oturum korunuyor");
         }
         setAuthReady(true);
         return;
       }
-      const prof = await api.getProfile(sbUser.id).catch((e) => { console.log("[ROL] hydrate getProfile HATA:", e?.message); return null; });
-      console.log("[ROL] hydrate: uid=", sbUser.id, "event=", event, "-> getProfile rol=", JSON.stringify(prof?.role), "prof var mi=", !!prof);
+      const prof = await api.getProfile(sbUser.id).catch(() => null);
       // Ayni kullanici icin en son bilinen dolu rolu koru (klobber engelle).
       const good = lastGoodProfileRef.current;
       const sameUser = good && String(good.id) === String(sbUser.id);
@@ -618,7 +612,6 @@ function AppShell() {
         (prof && prof.role) ? prof                                   // taze profil dolu -> kullan
         : (sameUser && good.role) ? good                             // taze bos ama eldeki dolu -> KORU
         : (prof || { id: sbUser.id, name: sbUser.email || "", role: "", phone: "" });
-      if (useProf.role && (!prof || !prof.role)) console.log("[ROL] hydrate: KLOBBER engellendi, korunan rol=", useProf.role);
       if (useProf.role) { lastGoodProfileRef.current = useProf; roleChosenRef.current = true; }
       setProfile(useProf); setUser(useProf);
       setAuthReady(true);
@@ -727,17 +720,13 @@ function AppShell() {
   };
   // Ilk giriste rol secimi -> profile yaz
   const chooseRole = async (role) => {
-    console.log("[ROL] chooseRole basladi: secilen=", role, "SB=", SB, "user.id=", user?.id);
     let res;
     if (SB) {
       // Once atomik RPC (RLS/guard/yaris disi, sunucuda auth.uid()). Migration
       // kosulmamissa RPC bulunamaz (PGRST202/42883) -> updateProfile'a dus.
       res = await api.setMyRole(role);
-      console.log("[ROL] setMyRole RPC sonuc:", JSON.stringify(res));
       if (!res.ok && /PGRST202|42883|function .*set_my_role|could not find/i.test(res.code + " " + res.error)) {
-        console.log("[ROL] RPC bulunamadi -> updateProfile fallback");
         res = await updateProfile({ role });
-        console.log("[ROL] updateProfile fallback sonuc:", JSON.stringify(res));
       } else if (res.ok) {
         setProfile(res.profile); setUser(res.profile);
       }
@@ -745,8 +734,7 @@ function AppShell() {
       res = await updateProfile({ role });
     }
     // Basarisizsa modal ACIK kalir ve hatayi gosterir (throw -> RoleSelectModal catch).
-    if (!res.ok) { console.log("[ROL] chooseRole BASARISIZ:", res.error); throw new Error(res.error || "Rol kaydedilemedi, tekrar dene."); }
-    console.log("[ROL] chooseRole BASARILI, rol yazildi:", res.profile?.role);
+    if (!res.ok) throw new Error(res.error || "Rol kaydedilemedi, tekrar dene.");
     // Rol basariyla yazildi: KLOBBER korumasini SILAHLA — lastGoodProfileRef'e dolu
     // profili yaz + roleChosenRef=true. Boylece ardindan gelen herhangi bir bos-rol
     // okumasi (bayat/yaris) ne state'i ezer ne de modali yeniden acar.
