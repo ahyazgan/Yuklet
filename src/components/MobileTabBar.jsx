@@ -6,20 +6,19 @@ import { hapticTap } from "../native/haptics";
 // Beyaz zemin, üstte 2px siyah çizgi. Aktif sekmede üstte 18x3px sarı çizgi.
 // Ortada büyük sarı "+" butonu (48px, 2px ink çerçeve, radius 8px). Emoji DEĞİL — lucide stroke ikonlar.
 
-// Ortak sekmeler. Nakliyeciye ayrıca "Mola" eklenir (role-duyarlı).
+// Ortak sekmeler. Nakliyecide ortadaki büyük buton "İlan Ver" DEĞİL "Mola"dır.
 const HOME_TAB = { to: "/", label: "Ana", Icon: Home, match: (p) => p === "/" };
 const LISTINGS_TAB = { to: "/ilanlar", label: "İlanlar", Icon: List, match: (p) => p === "/ilanlar" || p.startsWith("/ilanlar?") || p.startsWith("/ilan/") };
 const ADD_TAB = { to: "/ilan-ver", label: "İlan Ver", Icon: Plus, center: true, match: (p) => p.startsWith("/ilan-ver") };
 const MESSAGES_TAB = { to: "/mesajlar", label: "Mesaj", Icon: MessageCircle, match: (p) => p.startsWith("/mesajlar") };
-const MOLA_TAB = { to: "/mola", label: "Mola", Icon: Coffee, match: (p) => p.startsWith("/mola") };
+// Nakliyecide ortadaki büyük buton: İlan Ver yerine Mola.
+const MOLA_CENTER_TAB = { to: "/mola", label: "Mola", Icon: Coffee, center: true, match: (p) => p.startsWith("/mola") };
 const PROFILE_TAB = { to: "/profil", label: "Profil", Icon: User, match: (p) => p.startsWith("/profil") || p.startsWith("/ilanlarim") || p.startsWith("/panel") };
 
-// Nakliyecide 6 sekme (Mola eklenir); diğer rollerde 5.
+// Nakliyecide ortada Mola (İlan Ver YOK); diğer rollerde ortada İlan Ver.
 function tabsForRole(role) {
-  if (role === "nakliyeci") {
-    return [HOME_TAB, LISTINGS_TAB, ADD_TAB, MOLA_TAB, MESSAGES_TAB, PROFILE_TAB];
-  }
-  return [HOME_TAB, LISTINGS_TAB, ADD_TAB, MESSAGES_TAB, PROFILE_TAB];
+  const center = role === "nakliyeci" ? MOLA_CENTER_TAB : ADD_TAB;
+  return [HOME_TAB, LISTINGS_TAB, center, MESSAGES_TAB, PROFILE_TAB];
 }
 
 const LABEL_STYLE = {
@@ -45,8 +44,9 @@ export default function MobileTabBar({ unreadCount = 0, role }) {
       {tabs.map((tab) => {
         const active = tab.match(pathname);
 
-        // Center "İlan Ver" — büyük sarı + butonu, yukarı taşar.
+        // Ortadaki büyük sarı buton (İlan Ver ya da nakliyecide Mola) — yukarı taşar.
         if (tab.center) {
+          const CenterIcon = tab.Icon;
           return (
             <Link key={tab.to} to={tab.to} onClick={hapticTap} aria-label={tab.label} aria-current={active ? "page" : undefined} className="flex flex-1 flex-col items-center">
               <span
@@ -60,7 +60,7 @@ export default function MobileTabBar({ unreadCount = 0, role }) {
                   borderRadius: 8,
                 }}
               >
-                <Plus width={26} height={26} stroke="#0A0A0A" strokeWidth={2.6} />
+                <CenterIcon width={26} height={26} stroke="#0A0A0A" strokeWidth={2.6} />
               </span>
               <span className="mt-1" style={{ ...LABEL_STYLE, color: "#0A0A0A" }}>{tab.label}</span>
             </Link>
