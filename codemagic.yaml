@@ -15,8 +15,6 @@ workflows:
     instance_type: mac_mini_m2
     max_build_duration: 60
     environment:
-      groups:
-        - appstore_credentials      # Codemagic UI'da oluşturacağın grup (aşağıda)
       vars:
         BUNDLE_ID: "com.yuklet.app"
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
