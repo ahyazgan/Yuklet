@@ -1,11 +1,12 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Coffee, Plus, MapPin, Phone, MessageCircle, ShieldCheck, Trash2, MessageSquare, ChevronRight } from "lucide-react";
+import { Coffee, Plus, MapPin, Phone, MessageCircle, ShieldCheck, Trash2, MessageSquare, ChevronRight, Share2 } from "lucide-react";
 import { useToast } from "../components/Toast";
 import SEO from "../components/SEO";
 import Logo from "../components/Logo";
 import { MOLA_CATS, catOf } from "../data/molaCats";
+import { shareUrl, publicBase } from "../native/share";
 
 // ── SAHA "Mola Yeri" — nakliyeci topluluk ilan panosu (Faz 1).
 //    Nakliyeciler okur; yalnız ONAYLI nakliyeci paylaşır. Ayrı içerik (mola_posts).
@@ -101,6 +102,15 @@ export default function MolaYeriPage({ user, posts = [], threads = [], onRemoveP
     const res = await onRemovePost?.(id);
     if (res && res.ok === false) { toast(res.error || "Silinemedi", "error"); return; }
     toast("Gönderi silindi", "info");
+  };
+  // Gönderiyi dışarıda (WhatsApp/sosyal medya) paylaş — native paylaşım sayfası,
+  // web'de Web Share API, ikisi de yoksa panoya kopyala.
+  const sharePost = async (p) => {
+    const url = `${publicBase()}/mola/${p.id}`;
+    const priceText = p.price != null ? ` — ${Number(p.price).toLocaleString("tr-TR")} ₺` : "";
+    const res = await shareUrl({ title: p.title, text: `${p.title}${priceText}`, url });
+    if (res === "copied") toast("Bağlantı panoya kopyalandı", "info");
+    else if (res === "failed") toast("Paylaşım başarısız", "error");
   };
 
   return (
@@ -242,6 +252,10 @@ export default function MolaYeriPage({ user, posts = [], threads = [], onRemoveP
                         )}
                       </>
                     )}
+                    {/* Paylaş — herkes için (WhatsApp/sosyal medya). İkon buton. */}
+                    <button onClick={() => sharePost(p)} aria-label="Paylaş" title="Paylaş" style={{ flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", background: C.card, color: C.ink, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "10px 12px", cursor: "pointer" }}>
+                      <Share2 size={15} strokeWidth={2.4} />
+                    </button>
                   </div>
                 </div>
               </motion.div>
