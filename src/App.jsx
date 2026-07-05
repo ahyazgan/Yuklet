@@ -558,10 +558,17 @@ function AppShell() {
   const finishOnboard = () => { saveOnboarded(); setShowOnboard(false); };
 
   // Giris yapilmis ama rolu yok (OAuth ilk giris) -> rol secim modali ac.
+  // roleChosenRef: bu oturumda rol basariyla secildiyse, auth listener'in
+  // (TOKEN_REFRESHED/SIGNED_IN) tekrar tetikledigi hydrate gecici olarak bos rol
+  // dondurse bile modali TEKRAR ACMA (yaris durumu -> sonsuz "sen kimsin" dongusu).
+  const roleChosenRef = useRef(false);
   useEffect(() => {
     if (!authReady) return;
     const u = profile || user;
-    setShowRole(Boolean(u && !u.role));
+    if (u && u.role) { roleChosenRef.current = true; setShowRole(false); return; }
+    if (!u) { roleChosenRef.current = false; setShowRole(false); return; }
+    // u var, rol yok:
+    setShowRole(!roleChosenRef.current);
   }, [authReady, user, profile]);
 
   // SB: oturum degisimini dinle, profil + ortak verileri yukle
@@ -694,6 +701,8 @@ function AppShell() {
     const res = await updateProfile({ role });
     // Basarisizsa modal ACIK kalir ve hatayi gosterir (throw -> RoleSelectModal catch).
     if (!res.ok) throw new Error(res.error || "Rol kaydedilemedi, tekrar dene.");
+    // updateProfile zaten profile/user'i set etti; modal effect'i (rol dolu -> kapat)
+    // devralir. Yaris durumu icin burada da acikca kapatiyoruz.
     setShowRole(false);
   };
   const logout = async () => { if (SB) { await api.signOut().catch(() => {}); } setUser(null); setProfile(null); };

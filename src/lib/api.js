@@ -266,7 +266,9 @@ export async function updatePassword({ password }) {
 }
 
 export async function getProfile(userId) {
-  const { data } = await supabase.from("profiles").select("*").eq("id", userId).single();
+  // maybeSingle: satir yoksa hata firlatmaz (single 0 satirda PGRST116 doner).
+  const { data, error } = await supabase.from("profiles").select("*").eq("id", userId).maybeSingle();
+  if (error) console.error("[getProfile]", error.message);
   return rowToProfile(data);
 }
 
@@ -293,20 +295,27 @@ export async function updateProfile(userId, patch) {
   if (patch.filoOzeti != null) row.filo_ozeti = patch.filoOzeti;
   if (patch.hizmetBolgeleri != null) row.hizmet_bolgeleri = patch.hizmetBolgeleri;
   const { data, error } = await supabase.from("profiles").update(row).eq("id", userId).select("*").maybeSingle();
-  if (error) return { ok: false, error: error.message };
+  if (error) { console.error("[updateProfile] UPDATE", error.message, "userId=", userId, "row=", row); return { ok: false, error: error.message }; }
   if (data) return { ok: true, profile: rowToProfile(data) };
-  // Profil satiri yok (trigger oncesi acilmis hesap vb.) -> olustur.
-  // RLS profiles_insert (auth.uid()=id) buna izin verir.
+  // UPDATE 0 satir etkiledi: ya profil satiri yok, ya da RLS (auth.uid() != userId)
+  // guncellemeyi engelledi. Auth oturumundaki gercek uid ile uyusmadigini yakala.
   const { data: session } = await supabase.auth.getUser();
   const sbUser = session?.user;
+  if (sbUser && String(sbUser.id) !== String(userId)) {
+    console.error("[updateProfile] uid uyumsuz: oturum=", sbUser.id, "guncellenen=", userId, "-> RLS engelledi");
+    return { ok: false, error: "Oturum kimligi profil kimligiyle uyusmuyor. Cikis yapip tekrar giris dene." };
+  }
+  // Profil satiri gercekten yok (trigger oncesi acilmis hesap vb.) -> olustur.
+  // RLS profiles_insert (auth.uid()=id) buna izin verir.
   const ins = {
     id: userId,
     email: sbUser?.email || "",
     name: row.name ?? (sbUser?.user_metadata?.name || sbUser?.user_metadata?.full_name || sbUser?.email || ""),
     ...row,
   };
-  const { data: created, error: insErr } = await supabase.from("profiles").insert(ins).select("*").single();
-  if (insErr) return { ok: false, error: insErr.message };
+  // upsert: es zamanli trigger satir acmis olsa bile (unique carpismasi yerine) gunceller.
+  const { data: created, error: insErr } = await supabase.from("profiles").upsert(ins, { onConflict: "id" }).select("*").single();
+  if (insErr) { console.error("[updateProfile] UPSERT", insErr.message, "ins=", ins); return { ok: false, error: insErr.message }; }
   return { ok: true, profile: rowToProfile(created) };
 }
 
