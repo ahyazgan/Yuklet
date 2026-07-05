@@ -17,12 +17,13 @@ workflows:
     environment:
       vars:
         BUNDLE_ID: "com.yuklet.app"
-        XCODE_WORKSPACE: "ios/App/App.xcworkspace"
+        # Bu proje CocoaPods DEGIL Swift Package Manager (SPM) kullanir
+        # (ios/App/CapApp-SPM). O yuzden .xcworkspace yok, .xcodeproj var.
+        XCODE_PROJECT: "ios/App/App.xcodeproj"
         XCODE_SCHEME: "App"
         APP_STORE_APPLE_ID: 0        # App Store Connect'te uygulama oluşunca sayısal ID'yi buraya yaz (opsiyonel)
       node: 22
       xcode: latest
-      cocoapods: default
     integrations:
       app_store_connect: yuklet_asc  # Codemagic UI'da ekleyeceğin App Store Connect API key adı
     scripts:
@@ -40,9 +41,8 @@ workflows:
         script: |
           npx cap sync ios
 
-      - name: CocoaPods kur
-        script: |
-          cd ios/App && pod install
+      # CocoaPods adimi YOK: proje SPM kullaniyor, Podfile yok.
+      # SPM bagimliliklari Xcode archive sirasinda otomatik cozulur.
 
       - name: Build numarasını otomatik artır
         script: |
@@ -56,7 +56,7 @@ workflows:
       - name: Xcode archive & imzala
         script: |
           xcode-project build-ipa \
-            --workspace "$XCODE_WORKSPACE" \
+            --project "$XCODE_PROJECT" \
             --scheme "$XCODE_SCHEME"
     artifacts:
       - build/ios/ipa/*.ipa
