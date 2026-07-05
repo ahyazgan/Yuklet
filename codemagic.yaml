@@ -20,7 +20,7 @@ workflows:
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
         APP_STORE_APPLE_ID: 0        # App Store Connect'te uygulama oluşunca sayısal ID'yi buraya yaz (opsiyonel)
-      node: 20
+      node: 22
       xcode: latest
       cocoapods: default
     integrations:
@@ -28,7 +28,9 @@ workflows:
     scripts:
       - name: npm bağımlılıklarını kur
         script: |
-          npm ci
+          # npm ci yerine install: lock ile registry arasindaki kucuk
+          # surum farklarina (emnapi 1.11.1 vs 1.11.2) takilmasin diye.
+          npm install
 
       - name: Web'i derle (Vite)
         script: |
