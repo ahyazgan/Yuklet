@@ -54,18 +54,30 @@ workflows:
           set -e
           keychain initialize
 
-          # 1) Dagitim sertifikasi yoksa olustur, anahtarliga ekle
+          # 0) Sertifika olusturmak icin bir private key uret.
+          #    fetch --create yeni dagitim sertifikasi olusturacaksa
+          #    imzalamak icin bu anahtara ihtiyaci var; yoksa
+          #    "Cannot save Signing Certificates without certificate
+          #    private key" hatasi verir.
+          openssl genrsa -out /tmp/cert_key.pem 2048
+
+          # 1) Bundle ID icin dagitim sertifikasi + App Store profilini
+          #    olustur/indir (--create: yoksa uret). Uretilen sertifika
+          #    yukaridaki private key ile imzalanir.
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
+            --certificate-key=@file:/tmp/cert_key.pem \
             --create
+
+          # 2) Sertifikayi anahtarliga ekle
           keychain add-certificates
 
-          # 2) Bundle ID icin profilleri listele (teshis: dogru profil var mi?)
+          # 3) Teshis: bu bundle id icin profiller
           echo "=== Bu bundle id icin profiller ==="
           app-store-connect list-profiles \
             --filter-bundle-id-identifier "$BUNDLE_ID" || true
 
-          # 3) Profilleri Xcode projesine uygula
+          # 4) Profilleri Xcode projesine uygula
           xcode-project use-profiles
 
       - name: Xcode archive & imzala
