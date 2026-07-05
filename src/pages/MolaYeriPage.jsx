@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Coffee, Plus, MapPin, Phone, MessageCircle, ShieldCheck, Trash2, Lock, MessageSquare, ChevronRight } from "lucide-react";
+import { Coffee, Plus, MapPin, Phone, MessageCircle, ShieldCheck, Trash2, MessageSquare, ChevronRight } from "lucide-react";
 import { useToast } from "../components/Toast";
 import SEO from "../components/SEO";
 import Logo from "../components/Logo";
@@ -91,9 +91,9 @@ export default function MolaYeriPage({ user, posts = [], threads = [], onRemoveP
     );
   }
 
-  const canPost = Boolean(user.verified);
+  // Paylaşım/başlık açma tüm nakliyecilere serbest (belge onayı gerekmiyor).
+  // Sayfa zaten nakliyeci-only (yukarıdaki gate); giriş yapan her nakliyeci paylaşabilir.
   const tryShare = () => {
-    if (!canPost) { toast("Paylaşmak için önce belge onayı gerekir", "error"); return; }
     navigate("/mola-paylas");
   };
   const doRemove = async (id) => {
@@ -140,20 +140,6 @@ export default function MolaYeriPage({ user, posts = [], threads = [], onRemoveP
       {/* ══ PANO görünümü (Faz 1) ══ */}
       {view === "pano" && <>
 
-      {/* Onaylı değilse uyarı bandı */}
-      {!canPost && (
-        <div style={{ margin: "14px 16px 0", padding: "11px 13px", background: "#FEF9E7", border: `2px solid ${C.ink}`, borderRadius: 6, display: "flex", alignItems: "center", gap: 10 }}>
-          <Lock size={18} color="#92600A" strokeWidth={2.4} style={{ flexShrink: 0 }} />
-          <div style={{ flex: 1, fontFamily: MONO, fontSize: 11, color: "#92600A", fontWeight: 700, lineHeight: 1.45 }}>
-            Paylaşım yapmak için belge onayı gerekir. Okuma herkese açık.
-          </div>
-          <button onClick={() => navigate("/profil")}
-            style={{ flexShrink: 0, background: C.ink, color: C.yellow, border: "none", borderRadius: 5, padding: "7px 10px", fontFamily: ARCHIVO, fontSize: 10, fontWeight: 800, textTransform: "uppercase", cursor: "pointer" }}>
-            Belge yükle
-          </button>
-        </div>
-      )}
-
       {/* Kategori filtre çipleri */}
       <div style={{ display: "flex", gap: 7, overflowX: "auto", padding: "14px 16px 4px", WebkitOverflowScrolling: "touch" }}>
         {[{ id: "all", short: "Tümü" }, ...MOLA_CATS].map((c) => {
@@ -176,7 +162,7 @@ export default function MolaYeriPage({ user, posts = [], threads = [], onRemoveP
             </div>
             <h3 style={{ fontFamily: ARCHIVO, fontSize: 15, fontWeight: 800, textTransform: "uppercase", color: C.ink, margin: 0 }}>Henüz gönderi yok</h3>
             <p style={{ fontFamily: MONO, fontSize: 11.5, color: C.sub, margin: "8px 0 0", lineHeight: 1.5 }}>
-              {canPost ? "İlk gönderiyi sen paylaş — satılık dorse, eleman ilanı veya duyuru." : "Onaylı nakliyeciler paylaşım yapabilir."}
+              İlk gönderiyi sen paylaş — satılık dorse, eleman ilanı veya duyuru.
             </p>
           </div>
         ) : (
@@ -268,11 +254,6 @@ export default function MolaYeriPage({ user, posts = [], threads = [], onRemoveP
       {/* ══ FORUM görünümü (Faz 2) ══ */}
       {view === "forum" && (
         <div style={{ flex: 1, padding: "14px 16px 120px", display: "flex", flexDirection: "column", gap: 11 }}>
-          {!canPost && (
-            <div style={{ padding: "11px 13px", background: "#FEF9E7", border: `2px solid ${C.ink}`, borderRadius: 6, fontFamily: MONO, fontSize: 11, color: "#92600A", fontWeight: 700, lineHeight: 1.45 }}>
-              Yorum yazmak herkese açık; <b>başlık açmak</b> için belge onayı gerekir.
-            </div>
-          )}
           {threads.length === 0 ? (
             <div style={{ ...cardSt, textAlign: "center", padding: "36px 20px", marginTop: 4 }}>
               <div style={{ width: 56, height: 56, margin: "0 auto 14px", borderRadius: 8, background: C.stone, border: `2px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -280,7 +261,7 @@ export default function MolaYeriPage({ user, posts = [], threads = [], onRemoveP
               </div>
               <h3 style={{ fontFamily: ARCHIVO, fontSize: 15, fontWeight: 800, textTransform: "uppercase", color: C.ink, margin: 0 }}>Henüz başlık yok</h3>
               <p style={{ fontFamily: MONO, fontSize: 11.5, color: C.sub, margin: "8px 0 0", lineHeight: 1.5 }}>
-                {canPost ? "İlk başlığı sen aç — bir soru sor ya da konu başlat." : "Onaylı nakliyeciler başlık açabilir."}
+                İlk başlığı sen aç — bir soru sor ya da konu başlat.
               </p>
             </div>
           ) : (
@@ -310,13 +291,13 @@ export default function MolaYeriPage({ user, posts = [], threads = [], onRemoveP
       {/* FAB — Pano'da "Paylaş", Forum'da "Başlık Aç" */}
       {view === "pano" ? (
         <button onClick={tryShare} aria-label="Paylaş"
-          style={{ position: "fixed", bottom: 86, left: "50%", transform: "translateX(calc(230px - 100% - 16px))", zIndex: 40, display: "inline-flex", alignItems: "center", gap: 7, background: canPost ? C.yellow : C.stone, color: C.ink, border: `2px solid ${C.ink}`, borderRadius: 8, padding: "12px 16px", fontFamily: ARCHIVO, fontSize: 13, fontWeight: 800, textTransform: "uppercase", cursor: "pointer", boxShadow: "3px 3px 0 #0A0A0A" }}>
-          {canPost ? <Plus size={18} strokeWidth={2.6} /> : <Lock size={16} strokeWidth={2.4} />} Paylaş
+          style={{ position: "fixed", bottom: 86, left: "50%", transform: "translateX(-50%)", zIndex: 40, display: "inline-flex", alignItems: "center", gap: 7, background: C.yellow, color: C.ink, border: `2px solid ${C.ink}`, borderRadius: 8, padding: "12px 16px", fontFamily: ARCHIVO, fontSize: 13, fontWeight: 800, textTransform: "uppercase", cursor: "pointer", boxShadow: "3px 3px 0 #0A0A0A" }}>
+          <Plus size={18} strokeWidth={2.6} /> Paylaş
         </button>
       ) : (
-        <button onClick={() => { if (!canPost) { toast("Başlık açmak için belge onayı gerekir", "error"); return; } navigate("/mola/baslik-ac"); }} aria-label="Başlık Aç"
-          style={{ position: "fixed", bottom: 86, left: "50%", transform: "translateX(calc(230px - 100% - 16px))", zIndex: 40, display: "inline-flex", alignItems: "center", gap: 7, background: canPost ? C.yellow : C.stone, color: C.ink, border: `2px solid ${C.ink}`, borderRadius: 8, padding: "12px 16px", fontFamily: ARCHIVO, fontSize: 13, fontWeight: 800, textTransform: "uppercase", cursor: "pointer", boxShadow: "3px 3px 0 #0A0A0A" }}>
-          {canPost ? <Plus size={18} strokeWidth={2.6} /> : <Lock size={16} strokeWidth={2.4} />} Başlık Aç
+        <button onClick={() => navigate("/mola/baslik-ac")} aria-label="Başlık Aç"
+          style={{ position: "fixed", bottom: 86, left: "50%", transform: "translateX(-50%)", zIndex: 40, display: "inline-flex", alignItems: "center", gap: 7, background: C.yellow, color: C.ink, border: `2px solid ${C.ink}`, borderRadius: 8, padding: "12px 16px", fontFamily: ARCHIVO, fontSize: 13, fontWeight: 800, textTransform: "uppercase", cursor: "pointer", boxShadow: "3px 3px 0 #0A0A0A" }}>
+          <Plus size={18} strokeWidth={2.6} /> Başlık Aç
         </button>
       )}
     </div>

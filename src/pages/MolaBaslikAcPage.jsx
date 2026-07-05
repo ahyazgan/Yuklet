@@ -26,7 +26,8 @@ export default function MolaBaslikAcPage({ user, onAddThread, onRequireAuth }) {
   const [busy, setBusy] = useState(false);
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
-  const blocked = !user || user.role !== "nakliyeci" || !user.verified;
+  // Başlık açma tüm nakliyecilere serbest — belge onayı GEREKMİYOR (yalnız giriş + rol).
+  const blocked = !user || user.role !== "nakliyeci";
   if (blocked) {
     return (
       <div style={shell}>

@@ -54,8 +54,8 @@ export default function MolaPaylasPage({ user, onAddPost, onRequireAuth }) {
   };
   const removePhoto = (i) => setPhotos((p) => p.filter((_, idx) => idx !== i));
 
-  // ── Gate: giriş / rol / onay ──
-  const blocked = !user || user.role !== "nakliyeci" || !user.verified;
+  // ── Gate: giriş / rol (belge onayı GEREKMİYOR — paylaşım tüm nakliyecilere serbest) ──
+  const blocked = !user || user.role !== "nakliyeci";
   if (blocked) {
     return (
       <div style={shell}>

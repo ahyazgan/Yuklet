@@ -659,7 +659,8 @@ drop policy if exists mola_insert on public.mola_posts;
 drop policy if exists mola_update on public.mola_posts;
 drop policy if exists mola_delete on public.mola_posts;
 create policy mola_read   on public.mola_posts for select using (public.is_nakliyeci() or public.is_admin());
-create policy mola_insert on public.mola_posts for insert with check (auth.uid() = owner_id and public.is_verified_nakliyeci());
+-- Paylaşım tüm nakliyecilere serbest (belge onayı GEREKMİYOR) -> is_nakliyeci.
+create policy mola_insert on public.mola_posts for insert with check (auth.uid() = owner_id and public.is_nakliyeci());
 create policy mola_update on public.mola_posts for update using (auth.uid() = owner_id or public.is_admin());
 create policy mola_delete on public.mola_posts for delete using (auth.uid() = owner_id or public.is_admin());
 
@@ -690,7 +691,8 @@ drop policy if exists mola_thread_insert on public.mola_threads;
 drop policy if exists mola_thread_update on public.mola_threads;
 drop policy if exists mola_thread_delete on public.mola_threads;
 create policy mola_thread_read   on public.mola_threads for select using (public.is_nakliyeci() or public.is_admin());
-create policy mola_thread_insert on public.mola_threads for insert with check (auth.uid() = owner_id and public.is_verified_nakliyeci());
+-- Başlık açma tüm nakliyecilere serbest (belge onayı GEREKMİYOR) -> is_nakliyeci.
+create policy mola_thread_insert on public.mola_threads for insert with check (auth.uid() = owner_id and public.is_nakliyeci());
 create policy mola_thread_update on public.mola_threads for update using (auth.uid() = owner_id or public.is_admin());
 create policy mola_thread_delete on public.mola_threads for delete using (auth.uid() = owner_id or public.is_admin());
 drop policy if exists mola_reply_read   on public.mola_replies;
