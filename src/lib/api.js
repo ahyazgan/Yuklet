@@ -268,7 +268,8 @@ export async function updatePassword({ password }) {
 export async function getProfile(userId) {
   // maybeSingle: satir yoksa hata firlatmaz (single 0 satirda PGRST116 doner).
   const { data, error } = await supabase.from("profiles").select("*").eq("id", userId).maybeSingle();
-  if (error) console.error("[getProfile]", error.message);
+  if (error) console.error("[getProfile] HATA:", error.message, "code=", error.code, "userId=", userId);
+  else console.log("[ROL] getProfile ham satir: id=", userId, "-> role=", JSON.stringify(data?.role), "satir var mi=", !!data);
   return rowToProfile(data);
 }
 

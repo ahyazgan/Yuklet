@@ -565,9 +565,11 @@ function AppShell() {
   useEffect(() => {
     if (!authReady) return;
     const u = profile || user;
+    console.log("[ROL] modal effect: authReady=", authReady, "u var mi=", !!u, "u.role=", JSON.stringify(u?.role), "roleChosenRef=", roleChosenRef.current);
     if (u && u.role) { roleChosenRef.current = true; setShowRole(false); return; }
     if (!u) { roleChosenRef.current = false; setShowRole(false); return; }
     // u var, rol yok:
+    console.log("[ROL] modal effect: ROL BOS -> modal", !roleChosenRef.current ? "ACILIYOR" : "acilmiyor (ref true)");
     setShowRole(!roleChosenRef.current);
   }, [authReady, user, profile]);
 
@@ -594,10 +596,11 @@ function AppShell() {
     // varsa onu KORU (fonksiyonel updater ile bayat okuma klobber'ini engelle).
     const hydrate = async (sbUser) => {
       if (sbUser) {
-        const prof = await api.getProfile(sbUser.id).catch(() => null);
+        const prof = await api.getProfile(sbUser.id).catch((e) => { console.log("[ROL] hydrate getProfile HATA:", e?.message); return null; });
+        console.log("[ROL] hydrate: uid=", sbUser.id, "email=", sbUser.email, "-> getProfile rol=", JSON.stringify(prof?.role), "prof var mi=", !!prof);
         const keep = (prev) =>
           (prev && prev.role && prof && !prof.role && String(prev.id) === String(prof.id)) ? prev : null;
-        setProfile((prev) => keep(prev) || prof);
+        setProfile((prev) => { const k = keep(prev); if (k) console.log("[ROL] hydrate: KLOBBER engellendi, eldeki dolu rol korundu:", prev.role); return k || prof; });
         setUser((prev) => keep(prev) || prof || { id: sbUser.id, name: sbUser.email || "", role: "", phone: "" });
       } else { setProfile(null); setUser(null); }
       setAuthReady(true);
@@ -706,13 +709,17 @@ function AppShell() {
   };
   // Ilk giriste rol secimi -> profile yaz
   const chooseRole = async (role) => {
+    console.log("[ROL] chooseRole basladi: secilen=", role, "SB=", SB, "user.id=", user?.id);
     let res;
     if (SB) {
       // Once atomik RPC (RLS/guard/yaris disi, sunucuda auth.uid()). Migration
       // kosulmamissa RPC bulunamaz (PGRST202/42883) -> updateProfile'a dus.
       res = await api.setMyRole(role);
+      console.log("[ROL] setMyRole RPC sonuc:", JSON.stringify(res));
       if (!res.ok && /PGRST202|42883|function .*set_my_role|could not find/i.test(res.code + " " + res.error)) {
+        console.log("[ROL] RPC bulunamadi -> updateProfile fallback");
         res = await updateProfile({ role });
+        console.log("[ROL] updateProfile fallback sonuc:", JSON.stringify(res));
       } else if (res.ok) {
         setProfile(res.profile); setUser(res.profile);
       }
@@ -720,7 +727,8 @@ function AppShell() {
       res = await updateProfile({ role });
     }
     // Basarisizsa modal ACIK kalir ve hatayi gosterir (throw -> RoleSelectModal catch).
-    if (!res.ok) throw new Error(res.error || "Rol kaydedilemedi, tekrar dene.");
+    if (!res.ok) { console.log("[ROL] chooseRole BASARISIZ:", res.error); throw new Error(res.error || "Rol kaydedilemedi, tekrar dene."); }
+    console.log("[ROL] chooseRole BASARILI, rol yazildi:", res.profile?.role);
     // Rol basariyla yazildi: bu oturumda modali BIR DAHA acma. hydrate rol-korumasi
     // state ezilmesini engeller; bu ref de anlik bir bos-rol okumasi olsa bile modal
     // effect'inin (App.jsx ustte) modali yeniden acmasini engeller.
