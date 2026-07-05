@@ -296,7 +296,16 @@ export async function updateProfile(userId, patch) {
   if (patch.hizmetBolgeleri != null) row.hizmet_bolgeleri = patch.hizmetBolgeleri;
   const { data, error } = await supabase.from("profiles").update(row).eq("id", userId).select("*").maybeSingle();
   if (error) { console.error("[updateProfile] UPDATE", error.message, "userId=", userId, "row=", row); return { ok: false, error: error.message }; }
-  if (data) return { ok: true, profile: rowToProfile(data) };
+  if (data) {
+    // YAZMA DOGRULAMASI: rol gonderildi ama DB donen satirda farkli deger tutuyorsa
+    // (guard trigger'i eski 'isveren' degerine geri cevirmis olabilir) SESSIZCE ok:true
+    // DONME — sonsuz "sen kimsin" dongusu yerine gorunur hata ver.
+    if (patch.role != null && data.role !== patch.role) {
+      console.error("[updateProfile] rol geri cevrildi: gonderilen=", patch.role, "DB=", data.role);
+      return { ok: false, error: `Rol kaydedilemedi (sunucu "${data.role}" degerinde tuttu). Yonetici ile iletisime gec.` };
+    }
+    return { ok: true, profile: rowToProfile(data) };
+  }
   // UPDATE 0 satir etkiledi: ya profil satiri yok, ya da RLS (auth.uid() != userId)
   // guncellemeyi engelledi. Auth oturumundaki gercek uid ile uyusmadigini yakala.
   const { data: session } = await supabase.auth.getUser();
@@ -317,6 +326,20 @@ export async function updateProfile(userId, patch) {
   const { data: created, error: insErr } = await supabase.from("profiles").upsert(ins, { onConflict: "id" }).select("*").single();
   if (insErr) { console.error("[updateProfile] UPSERT", insErr.message, "ins=", ins); return { ok: false, error: insErr.message }; }
   return { ok: true, profile: rowToProfile(created) };
+}
+
+// ── Rol ilk atamasi (SECURITY DEFINER RPC) ───────────────────
+// "Sen kimsin?" rol secimini RLS/guard/client-yaris disina cikaran ATOMIK yol.
+// set_my_role fonksiyonu sunucuda auth.uid()'yi kesin cozer, satir yoksa olusturur,
+// yalniz rol BOS/NULL iken yazar (guard'in ilk-atama serbestisiyle uyumlu). Boylece
+// client user.id bayatligindan / getProfile yarisından bagimsiz, deterministik yazar.
+// RPC yoksa (migration kosulmamis) cagiran taraf updateProfile'a duser.
+export async function setMyRole(role) {
+  const { data, error } = await supabase.rpc("set_my_role", { p_role: role });
+  if (error) return { ok: false, error: error.message, code: error.code };
+  const prof = rowToProfile(Array.isArray(data) ? data[0] : data);
+  if (!prof || prof.role !== role) return { ok: false, error: "Rol kaydedilemedi (sunucu farkli deger dondu)." };
+  return { ok: true, profile: prof };
 }
 
 // Hesabi KALICI sil (App Store/Play zorunlu). delete_my_account RPC auth.users'i

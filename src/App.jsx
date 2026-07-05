@@ -586,11 +586,19 @@ function AppShell() {
         api.fetchReviews().then(setReviews).catch(() => {})]);
     })();
     // Oturum: mevcut kullaniciyi al, sonra degisimleri dinle.
+    // ROL KORUMA: hydrate her auth olayinda (INITIAL_SESSION, SIGNED_IN,
+    // TOKEN_REFRESHED) calisir. Rol secildikten SONRA gec cozulen/tekrar tetiklenen
+    // bir hydrate, getProfile'i commit'i gec goren bir okumayla role='' dondururse,
+    // az once secilen dolu rolu EZERDI -> "sen kimsin" sonsuz dongusu. Bu yuzden:
+    // taze profil bos-rol donerken elimizde AYNI kullanicinin dolu-rollu profili
+    // varsa onu KORU (fonksiyonel updater ile bayat okuma klobber'ini engelle).
     const hydrate = async (sbUser) => {
       if (sbUser) {
         const prof = await api.getProfile(sbUser.id).catch(() => null);
-        // Rol bos ise needsRole akisi RoleSelectModal'i acar (role: "" birakilir).
-        setProfile(prof); setUser(prof || { id: sbUser.id, name: sbUser.email || "", role: "", phone: "" });
+        const keep = (prev) =>
+          (prev && prev.role && prof && !prof.role && String(prev.id) === String(prof.id)) ? prev : null;
+        setProfile((prev) => keep(prev) || prof);
+        setUser((prev) => keep(prev) || prof || { id: sbUser.id, name: sbUser.email || "", role: "", phone: "" });
       } else { setProfile(null); setUser(null); }
       setAuthReady(true);
     };
@@ -698,11 +706,25 @@ function AppShell() {
   };
   // Ilk giriste rol secimi -> profile yaz
   const chooseRole = async (role) => {
-    const res = await updateProfile({ role });
+    let res;
+    if (SB) {
+      // Once atomik RPC (RLS/guard/yaris disi, sunucuda auth.uid()). Migration
+      // kosulmamissa RPC bulunamaz (PGRST202/42883) -> updateProfile'a dus.
+      res = await api.setMyRole(role);
+      if (!res.ok && /PGRST202|42883|function .*set_my_role|could not find/i.test(res.code + " " + res.error)) {
+        res = await updateProfile({ role });
+      } else if (res.ok) {
+        setProfile(res.profile); setUser(res.profile);
+      }
+    } else {
+      res = await updateProfile({ role });
+    }
     // Basarisizsa modal ACIK kalir ve hatayi gosterir (throw -> RoleSelectModal catch).
     if (!res.ok) throw new Error(res.error || "Rol kaydedilemedi, tekrar dene.");
-    // updateProfile zaten profile/user'i set etti; modal effect'i (rol dolu -> kapat)
-    // devralir. Yaris durumu icin burada da acikca kapatiyoruz.
+    // Rol basariyla yazildi: bu oturumda modali BIR DAHA acma. hydrate rol-korumasi
+    // state ezilmesini engeller; bu ref de anlik bir bos-rol okumasi olsa bile modal
+    // effect'inin (App.jsx ustte) modali yeniden acmasini engeller.
+    roleChosenRef.current = true;
     setShowRole(false);
   };
   const logout = async () => { if (SB) { await api.signOut().catch(() => {}); } setUser(null); setProfile(null); };

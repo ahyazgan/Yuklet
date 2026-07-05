@@ -10,7 +10,7 @@ create table if not exists public.profiles (
   id          uuid primary key references auth.users(id) on delete cascade,
   name        text not null default '',
   email       text,
-  role        text not null default 'isveren',  -- isveren | tedarikci | nakliyeci
+  role        text not null default '',  -- '' (henuz secmemis) | isveren | tedarikci | nakliyeci
   phone       text default '',
   phone_verified boolean not null default false,
   verified    boolean not null default false,
@@ -293,13 +293,40 @@ begin
   end if;
   new.verified := old.verified;
   new.status   := old.status;
-  if old.role is not null and old.role <> '' then new.role := old.role; end if;
+  -- Rol yalniz GERCEKTEN secilmisse kilitli. Bos VEYA 'isveren' (eski default) =>
+  -- ilk-secim serbest (drift'ten kalan 'isveren' satirlari degistirilebilsin).
+  if old.role is not null and old.role <> '' and old.role <> 'isveren' then
+    new.role := old.role;
+  end if;
   return new;
 end; $$;
 drop trigger if exists on_profile_update_guard on public.profiles;
 create trigger on_profile_update_guard
   before insert or update on public.profiles
   for each row execute function public.guard_profile_update();
+
+-- ROL RPC: "Sen kimsin?" ilk atamasini RLS/guard/client-yaris disina cikaran atomik
+-- yol. Sunucuda auth.uid()'yi kesin cozer, satir yoksa olusturur, yalniz rol
+-- bos/isveren(default) iken yazar. Detay: migration-2026-07-rol-secim-kesin.sql
+create or replace function public.set_my_role(p_role text)
+returns public.profiles language plpgsql security definer set search_path = public as $$
+declare v_uid uuid := auth.uid(); r public.profiles;
+begin
+  if v_uid is null then raise exception 'Oturum yok (auth.uid() null).'; end if;
+  if p_role not in ('isveren','tedarikci','nakliyeci') then raise exception 'Gecersiz rol: %', p_role; end if;
+  insert into public.profiles (id, email, name, role)
+  select v_uid, u.email,
+         coalesce(u.raw_user_meta_data->>'full_name', u.raw_user_meta_data->>'name', split_part(coalesce(u.email,''), '@', 1)),
+         p_role
+  from auth.users u where u.id = v_uid
+  on conflict (id) do nothing;
+  update public.profiles set role = p_role
+   where id = v_uid and (role is null or role = '' or role = 'isveren')
+  returning * into r;
+  if r.id is null then select * into r from public.profiles where id = v_uid; end if;
+  return r;
+end; $$;
+grant execute on function public.set_my_role(text) to authenticated;
 
 -- ADMIN: tum profilleri gorur + gunceller (ban/rol/onay). profiles_read zaten
 -- herkese acik ama admin update icin ayrica gerek; guard trigger is_admin()'e
