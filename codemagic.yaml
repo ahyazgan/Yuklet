@@ -94,6 +94,10 @@ workflows:
     publishing:
       app_store_connect:
         auth: integration
-        # TestFlight'a otomatik yükle (App Store'a yayın için false bırak, elle "Submit" yap):
-        submit_to_testflight: true
+        # Build App Store Connect'e YUKLENIR (ic test icin hazir olur).
+        # submit_to_testflight FALSE: dis beta review'a gonderme denenmez;
+        # dis test icin test-info formu (feedback email, ad/soyad/telefon)
+        # gerekir. Ic testte (kendi cihazin) bu form gerekmez.
+        # Dis teste acmak istersen: bunu true yap + Apple'da test-info doldur.
+        submit_to_testflight: false
         submit_to_app_store: false
