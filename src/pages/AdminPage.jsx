@@ -237,7 +237,7 @@ export default function AdminPage({ user, reports = [], docs = [], users = [], l
                     <Badge bg={st.bg} fg={st.fg} dot>{st.label}</Badge>
                   </div>
                   <div style={{ fontFamily: MONO, fontSize: 11, color: C.sub, marginTop: 7 }}>
-                    {shortId(r.id)} · {({ user: "Kullanıcı", mola: "Mola", forum: "Forum" }[r.type] || "İlan")} · {r.fromName || "misafir"} · {fmt(r.createdAt)}
+                    {shortId(r.id)} · {({ user: "Kullanıcı", mola: "Mola", forum: "Sohbet" }[r.type] || "İlan")} · {r.fromName || "misafir"} · {fmt(r.createdAt)}
                   </div>
                   {r.description && (
                     <p style={{ margin: "10px 0 0", background: C.stone, border: `2px solid ${C.border}`, borderRadius: 5, padding: "9px 11px", fontFamily: BODY, fontSize: 13, color: C.ink, lineHeight: 1.45 }}>{r.description}</p>

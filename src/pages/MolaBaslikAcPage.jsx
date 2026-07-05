@@ -73,7 +73,7 @@ export default function MolaBaslikAcPage({ user, onAddThread, onRequireAuth }) {
         </button>
         <div style={{ minWidth: 0 }}>
           <h1 style={{ fontFamily: ARCHIVO, fontSize: 18, fontWeight: 800, textTransform: "uppercase", letterSpacing: "-0.02em", margin: 0, lineHeight: 1 }}>Başlık Aç</h1>
-          <div style={{ fontFamily: MONO, fontSize: 10, color: "rgba(255,255,255,0.6)", marginTop: 3 }}>Mola Forum · tartışma başlat</div>
+          <div style={{ fontFamily: MONO, fontSize: 10, color: "rgba(255,255,255,0.6)", marginTop: 3 }}>Mola Sohbet · tartışma başlat</div>
         </div>
       </div>
       <div style={{ height: 8, backgroundImage: HAZARD }} />

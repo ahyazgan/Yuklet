@@ -79,7 +79,7 @@ export default function MolaThreadPage({ user, threads = [], replies = [], onFet
   if (!user) {
     return (
       <div style={shell}>
-        <SEO title="Mola — Forum" />
+        <SEO title="Mola — Sohbet" />
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, padding: "0 24px", textAlign: "center" }}>
           <Logo size="lg" />
           <h1 style={{ fontFamily: ARCHIVO, fontSize: 20, fontWeight: 800, color: C.ink, textTransform: "uppercase", letterSpacing: "-0.02em", margin: 0 }}>Giriş gerekli</h1>
@@ -92,7 +92,7 @@ export default function MolaThreadPage({ user, threads = [], replies = [], onFet
   if (user.role === "nakliyeci" && threadLoading) {
     return (
       <div style={shell}>
-        <SEO title="Mola — Forum" />
+        <SEO title="Mola — Sohbet" />
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, padding: "0 24px", textAlign: "center" }}>
           <div style={{ width: 64, height: 64, borderRadius: 8, background: C.ink, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <Coffee size={30} color={C.yellow} strokeWidth={2.2} />
@@ -105,7 +105,7 @@ export default function MolaThreadPage({ user, threads = [], replies = [], onFet
   if (user.role !== "nakliyeci" || !thread) {
     return (
       <div style={shell}>
-        <SEO title="Mola — Forum" />
+        <SEO title="Mola — Sohbet" />
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, padding: "0 24px", textAlign: "center" }}>
           <div style={{ width: 64, height: 64, borderRadius: 8, background: C.ink, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <Coffee size={30} color={C.yellow} strokeWidth={2.2} />
@@ -144,7 +144,7 @@ export default function MolaThreadPage({ user, threads = [], replies = [], onFet
 
   return (
     <div style={shell}>
-      <SEO title={`${thread.title} — Mola Forum`} />
+      <SEO title={`${thread.title} — Mola Sohbet`} />
 
       {/* Header */}
       <div style={{ background: C.ink, padding: "14px 18px", color: "#fff", position: "relative", overflow: "hidden", display: "flex", alignItems: "center", gap: 12 }}>
@@ -153,7 +153,7 @@ export default function MolaThreadPage({ user, threads = [], replies = [], onFet
           <ChevronLeft size={20} />
         </button>
         <div style={{ minWidth: 0 }}>
-          <h1 style={{ fontFamily: ARCHIVO, fontSize: 16, fontWeight: 800, textTransform: "uppercase", letterSpacing: "-0.02em", margin: 0, lineHeight: 1.1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 320 }}>Forum</h1>
+          <h1 style={{ fontFamily: ARCHIVO, fontSize: 16, fontWeight: 800, textTransform: "uppercase", letterSpacing: "-0.02em", margin: 0, lineHeight: 1.1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 320 }}>Sohbet</h1>
           <div style={{ fontFamily: MONO, fontSize: 10, color: "rgba(255,255,255,0.6)", marginTop: 3 }}>{thread.replyCount || threadReplies.length} yorum</div>
         </div>
       </div>
@@ -242,7 +242,7 @@ export default function MolaThreadPage({ user, threads = [], replies = [], onFet
       {/* ── REPORT MODAL ── */}
       {showReport && (
         <ReportModal
-          targetLabel={`Forum: ${thread.title}`}
+          targetLabel={`Sohbet: ${thread.title}`}
           onClose={() => setShowReport(false)}
           onSubmit={(p) => onReport?.({ type: "forum", targetId: thread.id, listingId: null, fromId: user?.id || null, fromName: user?.name || "misafir", ...p })}
         />

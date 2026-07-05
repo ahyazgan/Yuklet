@@ -124,7 +124,7 @@ export default function MolaYeriPage({ user, posts = [], threads = [], onRemoveP
       <div style={{ display: "flex", gap: 8, padding: "14px 16px 0" }}>
         {[
           { id: "pano", label: "Pano", Icon: Coffee },
-          { id: "forum", label: "Forum", Icon: MessageSquare },
+          { id: "forum", label: "Sohbet", Icon: MessageSquare },
         ].map((s) => {
           const active = view === s.id;
           const Icon = s.Icon;
