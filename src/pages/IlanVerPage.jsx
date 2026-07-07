@@ -257,6 +257,7 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers
       ownerId: user?.id,
       ownerVerified: user?.verified || false,
       ownerRating: user?.rating || 5.0,
+      ownerLogo: user?.logo || "",
       status: "aktif", offers: 0, createdText: "az önce", createdAt: new Date().toISOString(),
     };
     setSaving(true);
@@ -316,6 +317,7 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers
       ownerId: user?.id,
       ownerVerified: user?.verified || false,
       ownerRating: user?.rating || 5.0,
+      ownerLogo: user?.logo || "",
       status: "aktif", offers: 0, createdText: "az önce", createdAt: new Date().toISOString(),
     };
     setSaving(true);

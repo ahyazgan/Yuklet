@@ -519,8 +519,10 @@ export default function IlanDetayPage({ listings = LISTINGS, user, fleet = [], o
                   {...(canVisit ? { onClick: () => { navigate(profilePath); window.scrollTo(0, 0); }, type: "button", "aria-label": `${l.owner} profilini gör` } : {})}
                   style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0, flex: 1, background: "none", border: "none", padding: 0, textAlign: "left", cursor: canVisit ? "pointer" : "default" }}
                 >
-                  <div style={{ width: 44, height: 44, borderRadius: 6, background: C.ink, color: C.yellow, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: HEAD, fontWeight: 900, fontSize: 19, flexShrink: 0 }}>
-                    {String(l.owner || "?").charAt(0).toUpperCase()}
+                  <div style={{ width: 44, height: 44, borderRadius: 6, background: l.ownerLogo ? "#fff" : C.ink, color: C.yellow, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: HEAD, fontWeight: 900, fontSize: 19, flexShrink: 0, overflow: "hidden", border: l.ownerLogo ? `2px solid ${C.ink}` : "none" }}>
+                    {l.ownerLogo
+                      ? <img src={l.ownerLogo} alt={`${l.owner || ""} logosu`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      : String(l.owner || "?").charAt(0).toUpperCase()}
                   </div>
                   <div style={{ minWidth: 0, flex: 1 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>

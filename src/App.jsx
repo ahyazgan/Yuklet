@@ -833,6 +833,11 @@ function AppShell() {
     }
     setUser(prev => prev ? { ...prev, ...patch } : prev);
     setUsers(prev => prev.map(u => (user && u.id === user.id) ? { ...u, ...patch } : u));
+    // Logo değişince kullanıcının mevcut ilanlarındaki snapshot'ı da güncelle
+    // (ilanlarda ownerLogo saklanır; yoksa eski ilanlar logosuz kalırdı).
+    if (user && "logo" in patch) {
+      setUserListings(prev => prev.map(l => String(l.ownerId) === String(user.id) ? { ...l, ownerLogo: patch.logo || "" } : l));
+    }
     return { ok: true };
   };
   // NOT: Telefon SMS doğrulaması şimdilik kaldırıldı (gerçek SMS sağlayıcı bağlı değil).

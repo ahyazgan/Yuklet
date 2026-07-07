@@ -212,6 +212,29 @@ export default function ProfilPage({ user, onUpdateProfile, onRequireAuth, onLog
     hizmetBolgeleri: Array.isArray(user?.hizmetBolgeleri) ? user.hizmetBolgeleri : [],
   });
 
+  // Firma logosu / amblemi — ilanlarda ve profilde görünür.
+  // localStorage'da data-url olarak tutulur ve her ilana snapshot'lanır; bu yüzden
+  // küçük tutulur (~500KB sınırı). İleride Supabase Storage public URL'i ile değişir.
+  const onLogoFile = async (e) => {
+    const f = e.target.files?.[0];
+    e.target.value = "";
+    if (!f) return;
+    if (!f.type.startsWith("image/")) { toast("Lütfen bir resim dosyası seç (PNG/JPG)", "error"); return; }
+    if (f.size > 500_000) { toast("Logo çok büyük (~500KB sınırı). Daha küçük bir görsel dene.", "error"); return; }
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const res = await onUpdateProfile?.({ logo: reader.result });
+      if (res && res.ok === false) { toast(res.error || "Logo yüklenemedi", "error"); return; }
+      toast("Logo güncellendi", "success");
+    };
+    reader.readAsDataURL(f);
+  };
+  const removeLogo = async () => {
+    const res = await onUpdateProfile?.({ logo: "" });
+    if (res && res.ok === false) { toast(res.error || "Logo kaldırılamadı", "error"); return; }
+    toast("Logo kaldırıldı", "info");
+  };
+
   const onFile = (e) => {
     const f = e.target.files?.[0];
     if (!f) return;
@@ -352,9 +375,11 @@ export default function ProfilPage({ user, onUpdateProfile, onRequireAuth, onLog
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 6, paddingRight: 18 }}>
-          {/* Avatar — yellow square, 2px border, initials */}
-          <div style={{ width: 60, height: 60, borderRadius: 6, background: C.yellow, border: `2px solid ${C.ink}`, boxShadow: "0 0 0 2px #fff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <span style={{ fontFamily: ARCHIVO, fontSize: 22, fontWeight: 900, color: C.ink }}>{initials(user.name)}</span>
+          {/* Avatar — logo varsa göster, yoksa baş harfli sarı kare */}
+          <div style={{ width: 60, height: 60, borderRadius: 6, background: user.logo ? "#fff" : C.yellow, border: `2px solid ${C.ink}`, boxShadow: "0 0 0 2px #fff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
+            {user.logo
+              ? <img src={user.logo} alt={`${user.name} logosu`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              : <span style={{ fontFamily: ARCHIVO, fontSize: 22, fontWeight: 900, color: C.ink }}>{initials(user.name)}</span>}
           </div>
           <div style={{ minWidth: 0, flex: 1 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -402,6 +427,33 @@ export default function ProfilPage({ user, onUpdateProfile, onRequireAuth, onLog
           <div style={{ marginBottom: 14 }}>
             <label style={labelSt}>Ad / Firma</label>
             <input style={inputSt} value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="Yıldızlar İnşaat" />
+          </div>
+
+          {/* Firma logosu — ilanlarında ve profilinde görünür */}
+          <div style={{ marginBottom: 14 }}>
+            <label style={labelSt}>Firma logosu</label>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{ width: 56, height: 56, flexShrink: 0, borderRadius: 6, background: user.logo ? "#fff" : C.stone, border: `2px solid ${C.ink}`, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+                {user.logo
+                  ? <img src={user.logo} alt="Firma logosu" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  : <span style={{ fontFamily: ARCHIVO, fontSize: 20, fontWeight: 900, color: C.muted }}>{initials(form.name || user.name)}</span>}
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 7, minWidth: 0 }}>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <label style={{ display: "inline-flex", alignItems: "center", gap: 6, cursor: "pointer", background: C.ink, color: C.yellow, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "8px 12px", fontFamily: ARCHIVO, fontSize: 12, fontWeight: 800, textTransform: "uppercase", letterSpacing: "-0.01em" }}>
+                    <Upload size={14} strokeWidth={2.4} /> {user.logo ? "Değiştir" : "Logo yükle"}
+                    <input type="file" accept="image/*" onChange={onLogoFile} style={{ display: "none" }} />
+                  </label>
+                  {user.logo && (
+                    <button type="button" onClick={removeLogo}
+                      style={{ background: "none", border: `2px solid ${C.border}`, borderRadius: 6, padding: "8px 12px", fontFamily: MONO, fontSize: 11, fontWeight: 700, color: C.red, cursor: "pointer", textTransform: "uppercase" }}>
+                      Kaldır
+                    </button>
+                  )}
+                </div>
+                <span style={{ fontFamily: MONO, fontSize: 9.5, color: C.faint, lineHeight: 1.5 }}>PNG / JPG · kare önerilir · max 500 KB</span>
+              </div>
+            </div>
           </div>
 
           <div style={{ marginBottom: 14 }}>
