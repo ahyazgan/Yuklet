@@ -17,8 +17,9 @@ import SEO from "../components/SEO";
 import Logo from "../components/Logo";
 import { LISTINGS } from "../data/listings";
 import { loadListings, loadOffers } from "../utils/storage";
-import { marketPulse } from "../utils/priceEstimate";
+import { marketPulse, haversineKm } from "../utils/priceEstimate";
 import { loadsNearCity } from "../utils/backhaul";
+import { IL_COORDS } from "../data/ilCoords";
 
 /* ── SAHA paleti (kesin değerler — _DESIGN_SYSTEM.md) ────────────────── */
 const C = {
@@ -403,6 +404,10 @@ function EmptyActiveJob({ nav, user }) {
 function NakliyeciBody({ nav, available, setAvailable, carrier }) {
   const backhaulCount = carrier?.backhaulCount || 0;
   const suitableJobs = carrier?.suitableJobs || [];
+  // Dönüş yükü kartı — gerçek veri (sabit "Bursa→İstanbul 412km" yerine).
+  const originCity = (carrier?.backhaulCity || "").toLocaleUpperCase("tr-TR");
+  const destCity = (carrier?.backhaulTo || "").toLocaleUpperCase("tr-TR");
+  const backhaulKm = carrier?.backhaulKm || null;
   return (
     <>
       {/* müsaitlik anahtarı */}
@@ -431,26 +436,50 @@ function NakliyeciBody({ nav, available, setAvailable, carrier }) {
       <SectionTitle right={backhaulCount > 0 ? <StatusBadge bg={C.green} fg="#FFFFFF">{backhaulCount} Eşleşme</StatusBadge> : null}>Dönüş Yükü</SectionTitle>
       <div className="relative mb-6 overflow-hidden" style={{ border: FRAME, borderRadius: 6, boxShadow: SHADOW }}>
         <div className="relative h-[120px] overflow-hidden" style={{ background: "#141414" }}>
+          {/* ızgara zemin — radar hissi */}
           <div
             className="absolute inset-0"
             style={{
-              backgroundImage: "linear-gradient(#262626 1px,transparent 1px),linear-gradient(90deg,#262626 1px,transparent 1px)",
-              backgroundSize: "26px 26px", opacity: 0.6,
+              backgroundImage: "linear-gradient(#2c2c2c 1px,transparent 1px),linear-gradient(90deg,#2c2c2c 1px,transparent 1px)",
+              backgroundSize: "26px 26px", opacity: 0.55,
             }}
           />
+          {/* şematik güzergah — canlı harita değil, güzergah önizlemesi */}
           <svg viewBox="0 0 392 120" className="absolute inset-0 h-full w-full">
-            <path d="M44 92 C 130 92, 160 40, 240 46 S 340 36, 356 26" stroke={C.yellow} strokeWidth="2.5" fill="none" strokeDasharray="2 7" strokeLinecap="round" />
-            <circle cx="44" cy="92" r="7" fill={C.yellow} />
-            <circle cx="356" cy="26" r="7" fill="none" stroke={C.yellow} strokeWidth="2.5" />
-            <circle cx="240" cy="46" r="5" fill={C.yellow} />
+            <path d="M44 92 C 130 92, 160 40, 240 46 S 340 36, 356 26" stroke={C.yellow} strokeWidth="3" fill="none" strokeDasharray="1 9" strokeLinecap="round" />
+            <circle cx="240" cy="46" r="4" fill={C.yellow} opacity="0.65" />
+            {/* başlangıç: senin ilin (dolu nokta) */}
+            <circle cx="44" cy="92" r="8" fill={C.yellow} stroke="#141414" strokeWidth="2" />
+            {/* hedef: yük ili (halka) */}
+            <circle cx="356" cy="26" r="7" fill="#141414" stroke={C.yellow} strokeWidth="3" />
           </svg>
-          <span className="absolute bottom-3 left-9 text-[9px] font-bold uppercase" style={{ fontFamily: MONO, color: C.muted }}>BURSA</span>
-          <span className="absolute right-6 top-9 text-[9px] font-bold uppercase" style={{ fontFamily: MONO, color: C.muted }}>İSTANBUL</span>
+
+          {/* başlangıç ili chip'i — gerçek merkez ilin */}
+          {originCity && (
+            <span
+              className="absolute bottom-2.5 left-6 flex items-center gap-1.5 px-2 py-[3px] text-[9px] font-bold uppercase"
+              style={{ fontFamily: MONO, color: "#fff", background: "rgba(0,0,0,.6)", border: `1.5px solid ${C.yellow}`, borderRadius: 4, letterSpacing: "0.04em" }}
+            >
+              <span className="h-[6px] w-[6px] rounded-full" style={{ background: C.yellow }} /> {originCity}
+            </span>
+          )}
+
+          {/* hedef ili chip'i — en yakın gerçek yükün ili (varsa) */}
+          {destCity && (
+            <span
+              className="absolute right-3 top-8 flex items-center gap-1.5 px-2 py-[3px] text-[9px] font-bold uppercase"
+              style={{ fontFamily: MONO, color: "#fff", background: "rgba(0,0,0,.6)", border: "1.5px solid rgba(255,255,255,.55)", borderRadius: 4, letterSpacing: "0.04em" }}
+            >
+              <span className="h-[6px] w-[6px] rounded-full" style={{ border: `1.5px solid ${C.yellow}` }} /> {destCity}
+            </span>
+          )}
+
+          {/* orta rozet — gerçek yaklaşık km ya da durum */}
           <span
             className="absolute left-1/2 top-3 -translate-x-1/2 px-2 py-[3px] text-[9px] font-bold uppercase"
-            style={{ fontFamily: MONO, color: C.yellow, background: "rgba(0,0,0,.55)", border: `1.5px solid ${C.yellow}`, borderRadius: 4 }}
+            style={{ fontFamily: MONO, color: C.yellow, background: "rgba(0,0,0,.55)", border: `1.5px solid ${C.yellow}`, borderRadius: 4, letterSpacing: "0.04em" }}
           >
-            412 KM · BOŞ DÖNÜŞ
+            {backhaulKm ? `~${backhaulKm} KM · BOŞ DÖNÜŞ` : backhaulCount > 0 ? `${backhaulCount} UYGUN YÜK` : "BOŞ DÖNÜŞ"}
           </span>
         </div>
         <div className="relative overflow-hidden px-4 py-3.5" style={{ background: C.ink }}>
@@ -783,10 +812,18 @@ export default function NakliyeHome({
     const suitableJobs = listings
       .filter((l) => l.type === "is" && l.status === "aktif" && String(l.ownerId) !== String(user.id))
       .slice(0, 2);
-    // Dönüş yükü: kullanıcının ilinden çıkan uygun yük sayısı (yaklaşık).
+    // Dönüş yükü: kullanıcının ilinden çıkan uygun yükler (gerçek eşleşme).
     const city = user.sehir || user.il || "";
-    const backhaulCount = city ? loadsNearCity(city, listings, { limit: 20 }).length : 0;
-    return { suitableJobs, openOffers, won, backhaulCount };
+    const nearLoads = city ? loadsNearCity(city, listings, { limit: 20 }) : [];
+    const backhaulCount = nearLoads.length;
+    // En yakın uygun yükün ili → karttaki gerçek güzergah ucu + yaklaşık km.
+    const near = nearLoads[0] || null;
+    const backhaulTo = near ? (near.fromIl || near.toIl) : null;
+    const backhaulKm =
+      city && backhaulTo && IL_COORDS[city] && IL_COORDS[backhaulTo]
+        ? haversineKm(IL_COORDS[city], IL_COORDS[backhaulTo])
+        : null;
+    return { suitableJobs, openOffers, won, backhaulCount, backhaulCity: city, backhaulTo, backhaulKm };
   }, [user, listings, offers]);
 
   // istatistik şeridi (rol başına 3 kutu) — alıcı gerçek veriye bağlı.
