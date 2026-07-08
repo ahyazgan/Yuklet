@@ -25,6 +25,8 @@ alter table public.profiles add column if not exists ilce             text defau
 alter table public.profiles add column if not exists hakkinda         text default '';
 alter table public.profiles add column if not exists calisma_saatleri text default '';
 alter table public.profiles add column if not exists malzemeler       text[] default '{}';
+-- Firma logosu: Storage'daki public URL (data-URI değil). storage-logo.sql'e bak.
+alter table public.profiles add column if not exists logo             text default '';
 -- Alıcı (işveren) profil alanları — herkese açık firma vitrini (/alici/:id) besler.
 alter table public.profiles add column if not exists firma_turu       text default '';
 alter table public.profiles add column if not exists web              text default '';
@@ -93,6 +95,8 @@ create index if not exists listings_status_idx on public.listings(status);
 create index if not exists listings_cat_idx    on public.listings(cat);
 
 -- Mevcut projeler icin: yeni sutunlari idempotent ekle (sema once kurulmussa).
+-- Firma logosu snapshot'i (ilan olusturulurken owner'in logo URL'i kopyalanir).
+alter table public.listings add column if not exists owner_logo     text;
 alter table public.listings add column if not exists delivery_proof jsonb;
 alter table public.listings add column if not exists cycle_stage    text;
 alter table public.listings add column if not exists arrived_at     timestamptz;

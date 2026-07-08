@@ -195,7 +195,7 @@ function Header({ name, role, unread, onBell, onProfile, onSearch }) {
 }
 
 /* ── İlan kartı: solda 6px renkli şerit + 2px çerçeve ───────────────── */
-function ListingCard({ code, status, statusBg, statusFg, title, from, to, cat, catColor, price, onClick }) {
+function ListingCard({ code, status, statusBg, statusFg, title, from, to, cat, catColor, price, owner, ownerLogo, ownerVerified, onClick }) {
   return (
     <button
       onClick={onClick}
@@ -212,12 +212,24 @@ function ListingCard({ code, status, statusBg, statusFg, title, from, to, cat, c
         <div className="mb-1.5 text-[14px] font-extrabold uppercase leading-tight" style={{ color: C.ink, fontFamily: ARCH, letterSpacing: "-0.01em" }}>
           {title}
         </div>
+        {/* firma logosu + adı */}
+        {owner && (
+          <div className="mb-2 flex items-center gap-2">
+            {ownerLogo && (
+              <img src={ownerLogo} alt="" style={{ width: 26, height: 26, borderRadius: 6, objectFit: "cover", border: `1.5px solid ${C.ink}`, flexShrink: 0 }} />
+            )}
+            <span className="truncate text-[12px] font-extrabold" style={{ color: C.ink, fontFamily: MONO }}>{owner}</span>
+            {ownerVerified && (
+              <span className="flex-shrink-0 text-[9px] font-bold uppercase" style={{ color: C.green, fontFamily: MONO }}>● ONAYLI</span>
+            )}
+          </div>
+        )}
         <div className="mb-2.5 flex items-center gap-1.5 text-[10px] font-bold uppercase" style={{ color: C.sub, fontFamily: MONO }}>
           {from}<ArrowRight size={12} strokeWidth={2.5} style={{ color: C.faint }} />{to}
         </div>
         <div className="flex items-center justify-between pt-2.5" style={{ borderTop: `1.5px solid ${C.stone}` }}>
           <span className="px-2 py-[3px] text-[9px] font-bold uppercase" style={{ color: C.ink, border: `1.5px solid ${C.ink}`, borderRadius: 4, fontFamily: MONO }}>{cat}</span>
-          <span className="text-[12.5px] font-bold" style={{ fontFamily: MONO, color: C.ink }}>{price}</span>
+          <span className="text-[15px] font-extrabold" style={{ fontFamily: MONO, color: C.green, letterSpacing: "-0.02em" }}>{price}</span>
         </div>
       </div>
     </button>
@@ -497,7 +509,8 @@ function NakliyeciBody({ nav, available, setAvailable, carrier }) {
                 code={code} status="Açık" statusBg={C.yellow} statusFg={C.ink}
                 title={l.title} from={from} to={to}
                 cat={isHafriyat ? "HAFRİYAT" : "SİLOBAS"} catColor={isHafriyat ? C.yellow : C.ink}
-                price={price} onClick={() => nav(`/ilan/${l.id}`)}
+                price={price} owner={l.owner} ownerLogo={l.ownerLogo} ownerVerified={l.ownerVerified}
+                onClick={() => nav(`/ilan/${l.id}`)}
               />
             );
           })}
@@ -645,6 +658,7 @@ function RecentListings({ nav, jobs = [] }) {
                 cat={isHafriyat ? "HAFRİYAT" : "SİLOBAS"}
                 catColor={isHafriyat ? C.yellow : C.ink}
                 price={price}
+                owner={l.owner} ownerLogo={l.ownerLogo} ownerVerified={l.ownerVerified}
                 onClick={() => nav(`/ilan/${l.id}`)}
               />
             );

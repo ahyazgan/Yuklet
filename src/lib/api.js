@@ -15,7 +15,7 @@ const rowToListing = (r) => ({
   dateText: r.date_text, recurring: r.recurring, recurringText: r.recurring_text,
   vehicle: r.vehicle, capacity: r.capacity,
   priceType: r.price_type, price: r.price, desc: r.description,
-  owner: r.owner_name, ownerId: r.owner_id, ownerVerified: r.owner_verified, ownerRating: r.owner_rating,
+  owner: r.owner_name, ownerId: r.owner_id, ownerLogo: r.owner_logo || "", ownerVerified: r.owner_verified, ownerRating: r.owner_rating,
   status: r.status, offers: r.offers_count, createdText: r.created_text, createdAt: r.created_at,
   km: r.km, pickup: r.pickup, dropoff: r.dropoff, phase: r.phase, tripsDone: r.trips_done,
   paymentStatus: r.payment_status, paymentAmount: r.payment_amount, paymentFee: r.payment_fee, paymentRef: r.payment_ref,
@@ -77,6 +77,7 @@ const rowToProfile = (r) => r && ({
   id: r.id, name: r.name, email: r.email, role: r.role,
   phone: r.phone, phoneVerified: r.phone_verified, verified: r.verified, rating: r.rating,
   status: r.status || "aktif",
+  logo: r.logo || "",   // firma logosu (Storage public URL)
   // Satıcı (tedarikçi) profil alanları — herkese açık vitrini besler.
   tesisTuru: r.tesis_turu || "", sehir: r.sehir || "", ilce: r.ilce || "",
   hakkinda: r.hakkinda || "", calismaSaatleri: r.calisma_saatleri || "",
@@ -280,6 +281,7 @@ export async function updateProfile(userId, patch) {
   if (patch.phone != null) row.phone = patch.phone;
   if (patch.role != null) row.role = patch.role;
   if (patch.phoneVerified != null) row.phone_verified = patch.phoneVerified;
+  if (patch.logo != null) row.logo = patch.logo;   // firma logosu (Storage URL)
   // Satıcı (tedarikçi) profil alanları
   if (patch.tesisTuru != null) row.tesis_turu = patch.tesisTuru;
   if (patch.sehir != null) row.sehir = patch.sehir;
@@ -388,6 +390,7 @@ export async function createListing(data, profile) {
     ...listingToRow(data),
     owner_id: profile?.id ?? null,
     owner_name: profile?.name || data.owner || "",
+    owner_logo: profile?.logo || data.ownerLogo || "",   // logo snapshot (Storage URL)
     owner_verified: profile?.verified ?? false,
     owner_rating: profile?.rating ?? 5.0,
     status: "aktif",
@@ -396,6 +399,14 @@ export async function createListing(data, profile) {
   const { data: out, error } = await supabase.from("listings").insert(row).select("*").single();
   if (error) throw error;
   return rowToListing(out);
+}
+
+// Bir kullanıcının TÜM ilanlarındaki logo snapshot'ını topluca tazele
+// (kullanıcı logosunu değiştirince eski ilanlar da yeni logoyu göstersin).
+export async function refreshOwnerLogo(ownerId, logoUrl) {
+  if (!ownerId) return;
+  const { error } = await supabase.from("listings").update({ owner_logo: logoUrl || "" }).eq("owner_id", ownerId);
+  if (error) throw error;
 }
 
 export async function updateListing(id, patch) {
@@ -664,6 +675,27 @@ export async function uploadMolaImages(ownerId, dataUrls = []) {
 export async function removeMolaPost(id) {
   const { error } = await supabase.from("mola_posts").delete().eq("id", id);
   if (error) throw error;
+}
+
+// ── Supabase Storage: Firma logosu ("logos" bucket, herkese açık okuma) ──
+// dataUrl (base64) -> blob -> upload -> public URL. Sabit path <userId>/logo.<ext>
+// + upsert:true → logo değişince URL AYNI kalır (snapshot'lı eski ilanlar da tazelenir).
+// storage-logo.sql çalıştırılmış olmalı.
+export async function uploadLogo(userId, dataUrl) {
+  if (!dataUrl || typeof dataUrl !== "string") return "";
+  if (!dataUrl.startsWith("data:")) return dataUrl; // zaten URL ise dokunma
+  const blob = await (await fetch(dataUrl)).blob();
+  // Uzantıyı SABİT tut (hep logo.png path'i): jpg→png geçişinde eski dosya
+  // yetim kalmasın, upsert aynı path'in üstüne yazsın (Storage çöpü birikmez).
+  const path = `${userId}/logo.png`;
+  const { error } = await supabase.storage.from("logos").upload(path, blob, {
+    contentType: blob.type || "image/png", upsert: true,
+  });
+  if (error) throw error;
+  const { data } = supabase.storage.from("logos").getPublicUrl(path);
+  // Cache-bust: URL sabit ama içerik değişebilir → tarayıcı eski logoyu göstermesin.
+  // Yükleme zamanı damgası boyut çakışmasından bağımsız benzersiz kalır.
+  return data?.publicUrl ? `${data.publicUrl}?v=${Date.now()}` : "";
 }
 
 // ── Mola Forum (mola_threads / mola_replies) — başlık + yorumlar ──

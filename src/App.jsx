@@ -826,8 +826,20 @@ function AppShell() {
   const updateProfile = async (patch) => {
     if (SB) {
       try {
+        // Logo data-URI ise önce Storage'a yükle, DB'ye kısa URL yaz (DB şişmesin).
+        if (patch.logo && typeof patch.logo === "string" && patch.logo.startsWith("data:")) {
+          patch = { ...patch, logo: await api.uploadLogo(user.id, patch.logo) };
+        }
         const res = await api.updateProfile(user.id, patch);
-        if (res.ok) { setProfile(res.profile); setUser(res.profile); return { ok: true }; }
+        if (res.ok) {
+          setProfile(res.profile); setUser(res.profile);
+          // Logo değişince mevcut ilanların DB'deki snapshot'ını da tazele (eski
+          // ilanlar yeni logoyu göstersin). URL sabit path olsa da içerik değişir.
+          if ("logo" in patch) {
+            try { await api.refreshOwnerLogo(user.id, res.profile.logo || ""); await reloadListings(); } catch (e) { console.error(e); }
+          }
+          return { ok: true };
+        }
         return { ok: false, error: res.error || "Profil güncellenemedi." };
       } catch (e) { console.error(e); return { ok: false, error: e?.message || "Profil güncellenemedi." }; }
     }

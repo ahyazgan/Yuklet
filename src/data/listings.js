@@ -1,6 +1,23 @@
 // YUK - ornek ilan verileri (demo)
 // type: "is" (musteri/muteahhit is acar) | "arac" (nakliyeci arac ilani verir)
 // cat:  "hafriyat" | "silobas"
+
+// Demo firma logosu: firma adinin bas harflerinden renkli rozet uretir
+// (harici dosya gerektirmez; inline SVG data-URI). Gercek kullanicilar
+// kendi logolarini yukler (ownerLogo), bu sadece ornek ilanlar icindir.
+function demoLogo(name) {
+  const palette = ["#1b6fb3", "#c0392b", "#27865f", "#8e44ad", "#d68910", "#2c3e50"];
+  const initials = name
+    .replace(/[^A-Za-zÇĞİÖŞÜçğıöşü ]/g, "")
+    .split(" ").filter(Boolean).slice(0, 2)
+    .map((w) => w[0].toLocaleUpperCase("tr")).join("");
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+  const bg = palette[h % palette.length];
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="64" height="64" rx="12" fill="${bg}"/><text x="32" y="42" font-family="Arial,Helvetica,sans-serif" font-size="28" font-weight="700" fill="#fff" text-anchor="middle">${initials}</text></svg>`;
+  return "data:image/svg+xml;utf8," + encodeURIComponent(svg);
+}
+
 export const LISTINGS = [
   {
     id: 1, type: "is", cat: "hafriyat",
@@ -13,7 +30,7 @@ export const LISTINGS = [
     recurring: true, recurringText: "5 gun, gunde ~20 sefer",
     priceType: "teklif", price: null,
     desc: "Bina kazisi cikan hafriyat. Yukleme makinesi sahada mevcut. Tasima mesafesi ~14 km.",
-    owner: "Yildizlar Insaat", ownerVerified: true, ownerRating: 4.7,
+    owner: "Yildizlar Insaat", ownerLogo: demoLogo("Yildizlar Insaat"), ownerVerified: true, ownerRating: 4.7,
     status: "aktif", offers: 6, createdText: "2 saat once",
   },
   {
@@ -27,7 +44,7 @@ export const LISTINGS = [
     recurring: false, recurringText: "",
     priceType: "sabit", price: 4500,
     desc: "Tek sefer dokme cimento tasima. Silobas zorunlu. Bosaltma sahada silo var.",
-    owner: "Cayirova Yapi", ownerVerified: true, ownerRating: 4.5,
+    owner: "Cayirova Yapi", ownerLogo: demoLogo("Cayirova Yapi"), ownerVerified: true, ownerRating: 4.5,
     status: "aktif", offers: 3, createdText: "5 saat once",
   },
   {
@@ -41,7 +58,7 @@ export const LISTINGS = [
     vehicle: "Damperli kamyon", capacity: "18 ton",
     priceType: "teklif", price: null,
     desc: "Anadolu yakasi hafriyat/moloz isleri icin bos aracim var. Sefer veya gunluk calisirim.",
-    owner: "Murat K.", ownerVerified: false, ownerRating: 4.9,
+    owner: "Murat K.", ownerLogo: demoLogo("Murat K"), ownerVerified: false, ownerRating: 4.9,
     status: "aktif", offers: 2, createdText: "1 saat once",
   },
   {
@@ -55,7 +72,7 @@ export const LISTINGS = [
     vehicle: "Silobas (cimento)", capacity: "30 ton",
     priceType: "teklif", price: null,
     desc: "Marmara geneli dokme cimento tasirim. Belgelerim tam, duzenli is tercihim.",
-    owner: "Demir Nakliyat", ownerVerified: true, ownerRating: 4.8,
+    owner: "Demir Nakliyat", ownerLogo: demoLogo("Demir Nakliyat"), ownerVerified: true, ownerRating: 4.8,
     status: "aktif", offers: 4, createdText: "dun",
   },
   {
@@ -69,7 +86,7 @@ export const LISTINGS = [
     recurring: true, recurringText: "Yaklasik 1 hafta",
     priceType: "teklif", price: null,
     desc: "Yol genisletmeden cikan toprak. Birden fazla araca ihtiyac var.",
-    owner: "Baskent Altyapi", ownerVerified: true, ownerRating: 4.6,
+    owner: "Baskent Altyapi", ownerLogo: demoLogo("Baskent Altyapi"), ownerVerified: true, ownerRating: 4.6,
     status: "aktif", offers: 9, createdText: "3 saat once",
   },
   {
@@ -83,7 +100,7 @@ export const LISTINGS = [
     recurring: false, recurringText: "",
     priceType: "teklif", price: null,
     desc: "Limandan bosaltilan micir, fabrikaya tasinacak. Dokme yuk dorse uygun.",
-    owner: "Ege Lojistik", ownerVerified: true, ownerRating: 4.4,
+    owner: "Ege Lojistik", ownerLogo: demoLogo("Ege Lojistik"), ownerVerified: true, ownerRating: 4.4,
     status: "aktif", offers: 5, createdText: "6 saat once",
   },
 ];
@@ -119,7 +136,7 @@ export const DEMO_SELLER_LISTINGS = [
     stock: "bol",
     priceType: "sabit", price: 480,
     desc: "Yıkanmış 16–32 mm mıcır. Ocak teslim fiyatıdır, nakliye platformdan ayarlanır. Büyük tonajda fiyat görüşülür.",
-    owner: "Akdağ Kırma Ocağı", ownerId: "demo-satici-1", ownerVerified: true, ownerRating: 4.8,
+    owner: "Akdağ Kırma Ocağı", ownerLogo: demoLogo("Akdağ Kırma Ocağı"), ownerId: "demo-satici-1", ownerVerified: true, ownerRating: 4.8,
     status: "aktif", offers: 4, createdText: "1 gün önce",
   },
   {
@@ -130,7 +147,7 @@ export const DEMO_SELLER_LISTINGS = [
     stock: "orta",
     priceType: "sabit", price: 520,
     desc: "Beton santralleri için elenmiş çakıl. Sürekli alımda anlaşmalı fiyat.",
-    owner: "Akdağ Kırma Ocağı", ownerId: "demo-satici-1", ownerVerified: true, ownerRating: 4.8,
+    owner: "Akdağ Kırma Ocağı", ownerLogo: demoLogo("Akdağ Kırma Ocağı"), ownerId: "demo-satici-1", ownerVerified: true, ownerRating: 4.8,
     status: "aktif", offers: 2, createdText: "3 gün önce",
   },
   {
@@ -141,7 +158,7 @@ export const DEMO_SELLER_LISTINGS = [
     stock: "az",
     priceType: "teklif", price: null,
     desc: "İnşaat ve sıva kumu. Stok sınırlı, fiyat için teklif verin.",
-    owner: "Akdağ Kırma Ocağı", ownerId: "demo-satici-1", ownerVerified: true, ownerRating: 4.8,
+    owner: "Akdağ Kırma Ocağı", ownerLogo: demoLogo("Akdağ Kırma Ocağı"), ownerId: "demo-satici-1", ownerVerified: true, ownerRating: 4.8,
     status: "aktif", offers: 1, createdText: "5 gün önce",
   },
 ];

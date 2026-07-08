@@ -266,12 +266,12 @@ function ListingCard({ l, history, config, isFav = false, onToggleFav, rel }) {
       {/* sahip + onaylı + puan */}
       <div
         className="flex items-center gap-2"
-        style={{ ...MONO, padding: "8px 12px 0 12px", fontSize: 9.5, color: C.sub }}
+        style={{ ...MONO, padding: "9px 12px 0 12px", fontSize: 11, color: C.sub }}
       >
         {l.ownerLogo && (
-          <img src={l.ownerLogo} alt="" style={{ width: 16, height: 16, borderRadius: 3, objectFit: "cover", border: `1px solid ${C.ink}`, flexShrink: 0 }} />
+          <img src={l.ownerLogo} alt="" style={{ width: 30, height: 30, borderRadius: 6, objectFit: "cover", border: `1.5px solid ${C.ink}`, flexShrink: 0 }} />
         )}
-        <span style={{ fontWeight: 700, color: C.ink }} className="truncate">
+        <span style={{ fontWeight: 800, color: C.ink, fontSize: 12 }} className="truncate">
           {l.owner}
         </span>
         {l.ownerVerified && (
@@ -323,16 +323,16 @@ function ListingCard({ l, history, config, isFav = false, onToggleFav, rel }) {
             </span>
           )}
           {fixed ? (
-            <span style={{ ...MONO, fontSize: isProduct ? 12.5 : 14, fontWeight: 700, color: C.green }}>
+            <span style={{ ...MONO, fontSize: isProduct ? 15 : 17, fontWeight: 800, color: C.green, letterSpacing: "-0.02em" }}>
               {fixed}
             </span>
           ) : market?.suggest ? (
             <span className="flex flex-col items-end" style={{ lineHeight: 1.05 }}>
-              <span style={{ ...MONO, fontSize: 8, fontWeight: 700, color: C.muted, letterSpacing: "0.04em" }}>YÜKLET ÖNERİ</span>
-              <span style={{ ...MONO, fontSize: 13, fontWeight: 700, color: C.ink }}>{market.suggest}</span>
+              <span style={{ ...MONO, fontSize: 8.5, fontWeight: 700, color: C.muted, letterSpacing: "0.04em" }}>YÜKLET ÖNERİ</span>
+              <span style={{ ...MONO, fontSize: 16, fontWeight: 800, color: C.ink, letterSpacing: "-0.02em" }}>{market.suggest}</span>
             </span>
           ) : (
-            <span style={{ ...MONO, fontSize: 10, fontWeight: 700, color: C.sub }}>
+            <span style={{ ...MONO, fontSize: 11, fontWeight: 800, color: C.ink, padding: "3px 8px", borderRadius: 5, background: C.yellow, border: `1.5px solid ${C.ink}`, whiteSpace: "nowrap" }}>
               TEKLİFE AÇIK
             </span>
           )}
