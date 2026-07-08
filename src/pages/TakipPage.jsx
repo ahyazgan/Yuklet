@@ -253,6 +253,13 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
   const split = splitAmount(l.paymentAmount || amountToPay);
   const canPay = matched && isOwner && payStatus === "yok" && amountToPay > 0;        // müteahhit emanete öder
 
+  // ── Direkt ödeme onayı (emanet kapalıyken taraflar el sıkışır) ──
+  // Emanet YOK: para elden/havale taraflar arasında. İş bitince iki taraf da
+  // ödemeyi onaylar; ikisi de onaylayınca "tamamlandı" sayılır (kayıt/ihtilaf izi).
+  const paidAt = l.paymentPaidAt || null;             // iş sahibi "ödedim" dedi
+  const receivedAt = l.paymentReceivedAt || null;     // nakliyeci "aldım" dedi
+  const paySettled = Boolean(paidAt && receivedAt);
+
   // ── Teslim Kanıtı (kantar fişi) — tonaj anlaşmazlığını çözen güven kilidi ──
   const proof = l.deliveryProof || null;
   const canSubmitProof = isNakliyeci && matched && !proof;                            // nakliyeci kanıt ekler
@@ -361,6 +368,17 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
     const res = await onReleasePayment?.(l);
     setPayBusy(false);
     setPayMsg(res?.ok ? "Ödeme nakliyeciye serbest bırakıldı." : (res?.error || "İşlem başarısız."));
+  };
+  // ── Direkt ödeme onayı (emanetsiz): iş sahibi "ödedim", nakliyeci "aldım" ──
+  const confirmDirectPay = async (kind) => {   // kind: "paid" | "received"
+    if (payBusy) return;
+    setPayBusy(true); setPayMsg("");
+    const patch = kind === "paid" ? { paymentPaidAt: nowIso() } : { paymentReceivedAt: nowIso() };
+    const res = await onUpdateListing?.(l.id, patch);
+    setPayBusy(false);
+    if (res && res.ok === false) { setPayMsg(res.error || "Kaydedilemedi. Tekrar dene."); return; }
+    hapticSuccess();
+    setPayMsg(kind === "paid" ? "Ödeme yaptığın kaydedildi." : "Ödemeyi aldığın kaydedildi.");
   };
 
   const toggleTag = (t) => setRateTags((prev) => prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]);
@@ -1045,6 +1063,61 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
                   </div>
                 )}
               </div>
+            )}
+          </div>
+        )}
+
+        {/* ── ÖDEME ONAYI (direkt ödeme — emanet yok) ── */}
+        {matched && isDone && !PAYMENTS_ENABLED && (
+          <div style={whiteCard}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 6 }}>
+              <span style={{ fontFamily: ARCH, fontSize: 14, fontWeight: 900, textTransform: "uppercase", letterSpacing: "-0.01em", color: C.ink }}>Ödeme</span>
+              {amountToPay > 0 && <span style={{ fontFamily: MONO, fontSize: 15, fontWeight: 700, color: C.ink }}>{fmtTL(amountToPay)}</span>}
+            </div>
+
+            {paySettled ? (
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 7, fontFamily: ARCH, fontSize: 13, fontWeight: 900, textTransform: "uppercase", color: C.green }}>
+                <Check size={16} /> Ödeme tamamlandı
+              </div>
+            ) : (
+              <>
+                <p style={{ fontFamily: MONO, fontSize: 10.5, color: C.sub, lineHeight: 1.5, margin: "0 0 12px" }}>
+                  Ödeme taraflar arasında (elden / havale) yapılır. Yapıldığında iki taraf da onaylar; kayıt altına alınır.
+                </p>
+
+                {/* İş sahibi tarafı: ödedim */}
+                {isOwner && (paidAt ? (
+                  <div style={{ display: "inline-flex", alignItems: "center", gap: 6, fontFamily: MONO, fontSize: 11.5, fontWeight: 700, color: C.green }}>
+                    <Check size={14} /> Ödediğini bildirdin
+                  </div>
+                ) : (
+                  <button onClick={() => confirmDirectPay("paid")} disabled={payBusy}
+                    style={{ width: "100%", background: C.green, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "13px 0", fontFamily: ARCH, fontSize: 13, fontWeight: 900, textTransform: "uppercase", color: "#fff", cursor: payBusy ? "default" : "pointer", opacity: payBusy ? 0.6 : 1, boxShadow: `3px 3px 0 ${C.ink}`, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7 }}>
+                    <Check size={15} /> Ödemeyi Yaptım
+                  </button>
+                ))}
+
+                {/* Nakliyeci tarafı: aldım */}
+                {isNakliyeci && (receivedAt ? (
+                  <div style={{ display: "inline-flex", alignItems: "center", gap: 6, fontFamily: MONO, fontSize: 11.5, fontWeight: 700, color: C.green }}>
+                    <Check size={14} /> Ödemeyi aldığını onayladın
+                  </div>
+                ) : (
+                  <button onClick={() => confirmDirectPay("received")} disabled={payBusy}
+                    style={{ width: "100%", background: C.green, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "13px 0", fontFamily: ARCH, fontSize: 13, fontWeight: 900, textTransform: "uppercase", color: "#fff", cursor: payBusy ? "default" : "pointer", opacity: payBusy ? 0.6 : 1, boxShadow: `3px 3px 0 ${C.ink}`, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7 }}>
+                    <Check size={15} /> Ödemeyi Aldım
+                  </button>
+                ))}
+
+                {/* Karşı tarafın durumu (bilgi) */}
+                <div style={{ fontFamily: MONO, fontSize: 10, color: C.muted, marginTop: 8 }}>
+                  {isOwner
+                    ? (receivedAt ? "Nakliyeci ödemeyi aldığını onayladı." : "Nakliyecinin \"aldım\" onayı bekleniyor.")
+                    : isNakliyeci
+                      ? (paidAt ? "İş sahibi ödediğini bildirdi." : "İş sahibinin \"ödedim\" onayı bekleniyor.")
+                      : `${paidAt ? "İş sahibi ödediğini bildirdi." : "Ödeme bekleniyor."}${receivedAt ? " Nakliyeci aldığını onayladı." : ""}`}
+                </div>
+              </>
             )}
           </div>
         )}

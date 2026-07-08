@@ -15,6 +15,8 @@ import { newId } from "../utils/id";
 import { pendingReviews } from "../utils/reviewGate";
 import SEO from "../components/SEO";
 import Logo from "../components/Logo";
+import PhoneGateModal from "../components/PhoneGateModal";
+import { isValidPhone } from "../lib/smsProvider";
 import { shareUrl, listingShareUrl } from "../native/share";
 import { hapticTap, hapticSuccess } from "../native/haptics";
 import { getCurrentPosition } from "../native/geo";
@@ -124,7 +126,7 @@ function AppBar({ title, step, total, onBack }) {
   );
 }
 
-export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers = [], reviews = [], user, fleet = [], onRequireAuth }) {
+export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers = [], reviews = [], user, fleet = [], onRequireAuth, onUpdateProfile }) {
   const navigate = useNavigate();
   const { id } = useParams();
   const editing = Boolean(id);
@@ -189,6 +191,7 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers
   const [step, setStep] = useState(1);
   const [published, setPublished] = useState(null);
   const [reviewGate, setReviewGate] = useState(null); // bekleyen zorunlu değerlendirmeler
+  const [needPhone, setNeedPhone] = useState(false);  // telefon zorunlu kapısı
   const realKm = haversineKm(pickup, dropoff);
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
@@ -198,7 +201,8 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers
   const publishGate = () => {
     if (editing) return true;
     if (!user) { onRequireAuth?.(); return false; }
-    // Telefon doğrulama (SMS) şimdilik kaldırıldı — gerçek SMS sağlayıcı bağlı değil.
+    // Telefon zorunlu: geçerli cep numarası yoksa akış içinde girdirilir.
+    if (!isValidPhone(user.phone)) { setNeedPhone(true); return false; }
     const pend = pendingReviews(user, listings, offers, reviews);
     if (pend.length) { setReviewGate(pend); return false; }
     return true;
@@ -908,6 +912,16 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers
         </div>
       )}
 
+
+      {/* ── TELEFON ZORUNLU KAPISI ──────────────────────────────── */}
+      {needPhone && (
+        <PhoneGateModal
+          initialPhone={user?.phone || ""}
+          reason="İlan yayınlamak için profilinde geçerli bir cep numarası olmalı. Eşleştiğin tarafla iletişim buradan kurulur."
+          onSave={(phone) => onUpdateProfile?.({ phone })}
+          onClose={() => setNeedPhone(false)}
+        />
+      )}
 
       {/* ── ZORUNLU DEĞERLENDİRME KAPISI ──────────────────────────── */}
       {reviewGate && (

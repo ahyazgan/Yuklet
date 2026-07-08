@@ -27,6 +27,8 @@ import ProfitCalc from "../components/ProfitCalc";
 import JobStatusBar from "../components/JobStatusBar";
 import { pendingReviews } from "../utils/reviewGate";
 import { PAYMENTS_ENABLED } from "../config/features";
+import PhoneGateModal from "../components/PhoneGateModal";
+import { isValidPhone } from "../lib/smsProvider";
 import SEO from "../components/SEO";
 
 // ── SAHA tokens (inline) ──────────────────────────────────────────
@@ -125,7 +127,7 @@ function DetailRow({ label, value }) {
   );
 }
 
-export default function IlanDetayPage({ listings = LISTINGS, user, fleet = [], onRequireAuth, offers = [], reviews = [], onAddOffer, onAcceptJob, onReport, isBlocked, onToggleBlock }) {
+export default function IlanDetayPage({ listings = LISTINGS, user, fleet = [], onRequireAuth, onUpdateProfile, offers = [], reviews = [], onAddOffer, onAcceptJob, onReport, isBlocked, onToggleBlock }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
@@ -139,6 +141,7 @@ export default function IlanDetayPage({ listings = LISTINGS, user, fleet = [], o
   const [sending, setSending] = useState(false);   // teklif gönderiliyor (çift-tık koruması)
   const [showWhy, setShowWhy] = useState(false);
   const [reviewGate, setReviewGate] = useState(null); // bekleyen değerlendirmeler (zorunlu)
+  const [needPhone, setNeedPhone] = useState(false);  // telefon zorunlu kapısı
   const [showAcceptConfirm, setShowAcceptConfirm] = useState(false); // doğrudan kabul onayı
   const [accepting, setAccepting] = useState(false);
   const [pickedVehicleId, setPickedVehicleId] = useState(null); // kabulde atanan filo aracı
@@ -225,7 +228,8 @@ export default function IlanDetayPage({ listings = LISTINGS, user, fleet = [], o
   const offerGate = () => {
     if (!user) { onRequireAuth?.(); return false; }
     if (!roleAllowed) { toast(roleHint, "error"); return false; }   // yanlış rol bu aksiyonu yapamaz
-    // Telefon doğrulama (SMS) şimdilik kaldırıldı — gerçek SMS sağlayıcı bağlı değil.
+    // Telefon zorunlu: geçerli cep numarası yoksa akış içinde girdirilir.
+    if (!isValidPhone(user.phone)) { setNeedPhone(true); return false; }
     const pend = pendingReviews(user, listings, offers, reviews);
     if (pend.length) { setReviewGate(pend); return false; }
     return true;
@@ -1014,6 +1018,16 @@ export default function IlanDetayPage({ listings = LISTINGS, user, fleet = [], o
         </div>
       )}
 
+
+      {/* ── TELEFON ZORUNLU KAPISI ──────────────────────────────── */}
+      {needPhone && (
+        <PhoneGateModal
+          initialPhone={user?.phone || ""}
+          reason="Teklif vermek / işi kabul etmek için profilinde geçerli bir cep numarası olmalı. Eşleştiğin tarafla iletişim buradan kurulur."
+          onSave={(phone) => onUpdateProfile?.({ phone })}
+          onClose={() => setNeedPhone(false)}
+        />
+      )}
 
       {/* ── ZORUNLU DEĞERLENDİRME KAPISI ──────────────────────────── */}
       {reviewGate && (
