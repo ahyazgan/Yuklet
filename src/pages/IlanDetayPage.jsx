@@ -9,12 +9,12 @@
 
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ChevronLeft, Share2, Heart, Star, BadgeCheck, ArrowRight, X, Send, AlertTriangle, Truck, TrendingUp, TrendingDown, Boxes, Check, Info, ChevronDown, ShieldCheck, RotateCw, Navigation } from "lucide-react";
+import { ChevronLeft, Share2, Heart, Star, BadgeCheck, ArrowRight, X, Send, AlertTriangle, Truck, Boxes, Check, ShieldCheck, RotateCw, Navigation } from "lucide-react";
 import { LISTINGS } from "../data/listings";
 import { CATS } from "../data/categories";
 import { computeReliability, reliabilityTier } from "../utils/reliability";
-import { backhaulForJob, loadsForVehicle, vehicleClassOf } from "../utils/backhaul";
-import { estimatePrice, fmtTL, priceSignal } from "../utils/priceEstimate";
+import { vehicleClassOf } from "../utils/backhaul";
+import { estimatePrice, fmtTL } from "../utils/priceEstimate";
 import { loadPricingConfig } from "../utils/storage";
 import { newId, nowIso } from "../utils/id";
 import { useToast } from "../components/Toast";
@@ -192,14 +192,6 @@ export default function IlanDetayPage({ listings = LISTINGS, user, fleet = [], o
   const acceptMode = (l.type === "is" || l.type === "arac") && l.priceType === "sabit";
   const acceptLabel = isVehicle ? "Aracı Kirala" : "İşi Kabul Et";
   const closed = l.status === "kapali" || l.status === "eslesti";
-  const backhaul = isProduct ? [] : isVehicle ? loadsForVehicle(l, listings) : backhaulForJob(l, listings);
-  // Benzer ilanlar — aynı kategori + tür; aynı il/malzeme öne çıkar. En çok 4.
-  const similar = listings
-    .filter((x) => String(x.id) !== String(l.id) && x.status !== "kapali" && x.cat === l.cat && x.type === l.type)
-    .map((x) => ({ x, score: (x.il === l.il ? 2 : 0) + (x.material && x.material === l.material ? 1 : 0) }))
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 4)
-    .map((s) => s.x);
   const est = !isFixed && l.type === "is" && l.amount
     ? estimatePrice({ cat: l.cat, amount: l.amount, unit: l.unit, fromIl: l.il, toIl: l.varisIl, material: l.material, vehicle: l.vehicle, dateText: l.dateText, recurring: l.recurring, kmOverride: l.km, history: { listings, offers }, config: loadPricingConfig() })
     : null;
@@ -427,11 +419,11 @@ export default function IlanDetayPage({ listings = LISTINGS, user, fleet = [], o
         {/* route card (ürün ilanında güzergah yok) */}
         {!isProduct && <RouteCard from={fromPlace} to={toPlace} km={l.km != null ? l.km : null} />}
 
-        {/* price estimate badge (teklife açık iş ilanı) */}
-        {est && (
+        {/* nakliye / kira fiyatı (sabit fiyatlı ilan) */}
+        {isFixed && !isProduct && (
           <div style={{ display: "inline-flex", alignItems: "center", gap: 8, alignSelf: "flex-start", background: C.yellow, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "7px 12px", boxShadow: "3px 3px 0 rgba(10,10,10,0.10)" }}>
-            <span style={{ fontFamily: MONO, fontSize: 9, fontWeight: 700, letterSpacing: "0.06em" }}>TAHMİNİ BÜTÇE</span>
-            <span style={{ fontFamily: MONO, fontSize: 13, fontWeight: 700 }}>{fmtTL(est.min)} – {fmtTL(est.max)}</span>
+            <span style={{ fontFamily: MONO, fontSize: 9, fontWeight: 700, letterSpacing: "0.06em" }}>{isVehicle ? "KİRA FİYATI" : "NAKLİYE FİYATI"}</span>
+            <span style={{ fontFamily: MONO, fontSize: 15, fontWeight: 700 }}>{fmtTL(l.price)}</span>
           </div>
         )}
 
@@ -561,46 +553,6 @@ export default function IlanDetayPage({ listings = LISTINGS, user, fleet = [], o
           </div>
         </div>
 
-        {/* ── Backhaul / dönüş yükü ──────────────────────────────── */}
-        {backhaul.length > 0 && (
-          <div style={{ ...card, padding: 15 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-              <span style={{ width: 4, height: 14, background: C.yellow, borderRadius: 1 }} />
-              <span style={headLabel}>
-                {isVehicle ? "BU ARACA UYGUN YAKIN İŞLER" : "DÖNÜŞ YÜKÜ FIRSATI"}
-              </span>
-              <span style={{ marginLeft: "auto", background: C.yellow, border: `2px solid ${C.ink}`, fontFamily: MONO, fontSize: 8, fontWeight: 700, padding: "1px 6px", borderRadius: 4 }}>YENİ</span>
-            </div>
-            <p style={{ fontSize: 12, color: C.sub, margin: "0 0 12px", lineHeight: 1.5 }}>
-              {isVehicle
-                ? `${vehicleClassOf(l)} aracınıza uygun yakın işler (sefer tahmini dahil).`
-                : "Bu işi alan araç dönüşte boş gitmesin — güzergaha uygun yükler."}
-            </p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {backhaul.map((m) => (
-                <button key={m.listing.id} onClick={() => navigate(`/ilan/${m.listing.id}`)}
-                  style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, border: `2px solid ${C.ink}`, borderRadius: 6, padding: 12, background: C.stone, textAlign: "left", cursor: "pointer", width: "100%" }}>
-                  <span style={{ minWidth: 0, flex: 1 }}>
-                    <span style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, marginBottom: 5 }}>
-                      <span style={{ fontFamily: MONO, fontSize: 9, fontWeight: 700, background: C.card, border: `2px solid ${C.ink}`, padding: "1px 6px", borderRadius: 4 }}>
-                        {(m.fromIl || "—")} → {(m.toIl || "—")}
-                      </span>
-                      {m.roundTrip && (
-                        <span style={{ fontFamily: MONO, fontSize: 9, fontWeight: 700, background: C.green, color: "#fff", border: `2px solid ${C.ink}`, padding: "1px 6px", borderRadius: 4 }}>TAM TUR ↺</span>
-                      )}
-                    </span>
-                    <span style={{ display: "block", fontFamily: HEAD, fontSize: 13, fontWeight: 800, textTransform: "uppercase", letterSpacing: "-0.01em", color: C.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.listing.title}</span>
-                    <span style={{ display: "block", fontFamily: MONO, fontSize: 10, color: C.sub, marginTop: 3 }}>
-                      {m.listing.il}{m.listing.amount ? ` · ${m.listing.amount} ${m.listing.unit || ""}` : ""}{m.trips ? ` · ~${m.trips} sefer` : ""}
-                    </span>
-                  </span>
-                  <span style={{ flexShrink: 0, fontFamily: MONO, fontSize: 9, fontWeight: 700, background: C.yellow, border: `2px solid ${C.ink}`, padding: "4px 8px", borderRadius: 5 }}>{m.fit}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* ── Owner / closed banner (in-flow; replaces sticky CTA logic) ── */}
         {isOwner && (
           <div style={{ background: C.ink, border: `2px solid ${C.ink}`, borderRadius: 6, padding: 16, textAlign: "center", boxShadow: "3px 3px 0 rgba(10,10,10,0.18)" }}>
@@ -650,31 +602,6 @@ export default function IlanDetayPage({ listings = LISTINGS, user, fleet = [], o
         </div>
 
         {/* report button — full-width white 2px, red mono uppercase */}
-        {/* ── Benzer ilanlar ─────────────────────────────────────── */}
-        {similar.length > 0 && (
-          <div style={{ marginTop: 4 }}>
-            <div style={{ ...headLabel, marginBottom: 10 }}>BENZER İLANLAR</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {similar.map((s) => (
-                <button
-                  key={s.id}
-                  onClick={() => { navigate(`/ilan/${s.id}`); window.scrollTo(0, 0); }}
-                  style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", textAlign: "left", background: C.card, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "10px 12px", cursor: "pointer" }}
-                >
-                  <span style={{ flexShrink: 0, width: 30, height: 30, borderRadius: 6, border: `2px solid ${C.ink}`, background: s.cat === "hafriyat" ? C.ink : C.stone, color: s.cat === "hafriyat" ? C.yellow : C.ink, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: MONO, fontSize: 10, fontWeight: 700 }}>{s.cat === "hafriyat" ? "HF" : "SB"}</span>
-                  <span style={{ minWidth: 0, flex: 1 }}>
-                    <span style={{ display: "block", fontFamily: HEAD, fontSize: 12.5, fontWeight: 800, color: C.ink, textTransform: "uppercase", letterSpacing: "-0.01em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.title}</span>
-                    <span style={{ display: "block", marginTop: 2, fontFamily: MONO, fontSize: 10, color: C.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {s.il || "—"}{s.material ? ` · ${s.material}` : ""}{s.amount ? ` · ${s.amount} ${(s.unit || "").toUpperCase()}` : ""}
-                    </span>
-                  </span>
-                  <ArrowRight size={15} strokeWidth={2.6} color={C.muted} style={{ flexShrink: 0 }} />
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
         <div style={{ display: "flex", gap: 8 }}>
           <button onClick={() => setShowReport(true)}
             style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, flex: 1, background: C.card, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "12px", fontFamily: MONO, fontSize: 11, fontWeight: 700, color: C.red, letterSpacing: "0.06em", textTransform: "uppercase", cursor: "pointer" }}>
@@ -774,83 +701,6 @@ export default function IlanDetayPage({ listings = LISTINGS, user, fleet = [], o
                 <h2 style={{ fontFamily: HEAD, fontSize: 18, fontWeight: 900, textTransform: "uppercase", letterSpacing: "-0.02em", margin: "8px 0 2px", lineHeight: 1.18 }}>{l.title}</h2>
                 <div style={{ fontFamily: MONO, fontSize: 11, color: C.sub }}>{l.il}{l.ilce ? `, ${l.ilce}` : ""}</div>
 
-                {/* YÜKLET Akıllı Fiyat — önerilen fiyat + tek-tık doldur + güven */}
-                {est && (
-                  <div style={{ marginTop: 14, background: C.ink, border: `2px solid ${C.ink}`, borderRadius: 6, overflow: "hidden", boxShadow: "3px 3px 0 rgba(10,10,10,0.18)" }}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "9px 13px", borderBottom: `2px solid ${C.yellow}` }}>
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontFamily: HEAD, fontSize: 11.5, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.04em", color: C.yellow }}>
-                        <TrendingUp size={15} strokeWidth={2.6} /> YÜKLET Akıllı Fiyat
-                      </span>
-                      <span style={{ fontFamily: MONO, fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: C.ink, background: C.yellow, borderRadius: 4, padding: "2px 7px" }}>
-                        GÜVEN: {est.confidence}
-                      </span>
-                    </div>
-                    <div style={{ padding: "12px 13px 13px" }}>
-                      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 10 }}>
-                        <div style={{ minWidth: 0 }}>
-                          <div style={{ fontFamily: MONO, fontSize: 9, fontWeight: 700, color: "#9A988E", letterSpacing: "0.06em", textTransform: "uppercase" }}>ÖNERİLEN FİYAT</div>
-                          <div style={{ fontFamily: MONO, fontSize: 24, fontWeight: 700, color: "#fff", marginTop: 2, lineHeight: 1 }}>{fmtTL(est.mid)}</div>
-                        </div>
-                        <button onClick={() => setPrice(String(est.mid))}
-                          style={{ flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 6, background: C.yellow, color: C.ink, border: `2px solid ${C.yellow}`, borderRadius: 6, padding: "8px 12px", fontFamily: HEAD, fontWeight: 800, fontSize: 12, textTransform: "uppercase", cursor: "pointer" }}>
-                          <Check size={14} strokeWidth={3} /> Bu fiyata ver
-                        </button>
-                      </div>
-                      <div style={{ fontFamily: MONO, fontSize: 10, color: "#9A988E", marginTop: 8 }}>
-                        Aralık {fmtTL(est.min)} – {fmtTL(est.max)} · ~{est.km} km
-                        {est.dataDriven
-                          ? ` · ${est.sampleSize} benzer işten${est.accepted ? ` (${est.accepted} gerçekleşen)` : ""}`
-                          : " · henüz işlem verisi yok, sezgisel tahmin"}
-                      </div>
-                      {est.laneCalibrated && (
-                        <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 8, background: "rgba(74,222,128,0.12)", border: "1.5px solid #4ADE80", borderRadius: 5, padding: "4px 9px" }}>
-                          <Check size={12} color="#4ADE80" strokeWidth={3} />
-                          <span style={{ fontFamily: MONO, fontSize: 9.5, fontWeight: 700, color: "#fff" }}>
-                            BU GÜZERGAH {est.laneSamples} İŞTEN KALİBRELİ{est.laneAccepted ? ` · ${est.laneAccepted} GERÇEK` : ""}
-                          </span>
-                        </div>
-                      )}
-
-                      {/* arz/talep sinyali */}
-                      {est.supplyDemand && est.supplyDemand.tone !== "ok" && (
-                        <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 10, background: "rgba(255,255,255,0.06)", border: `1.5px solid ${est.supplyDemand.tone === "up" ? "#F59E0B" : "#4ADE80"}`, borderRadius: 5, padding: "5px 9px" }}>
-                          {est.supplyDemand.tone === "up" ? <TrendingUp size={13} color="#F59E0B" /> : <TrendingDown size={13} color="#4ADE80" />}
-                          <span style={{ fontFamily: MONO, fontSize: 10, fontWeight: 700, color: "#fff" }}>
-                            {est.supplyDemand.label} · {est.supplyDemand.demand} iş / {est.supplyDemand.supply} araç
-                          </span>
-                        </div>
-                      )}
-
-                      {/* "Fiyat neden bu?" döküm */}
-                      {est.breakdown?.length > 0 && (
-                        <div style={{ marginTop: 11, borderTop: "1.5px solid #2A2A2A", paddingTop: 10 }}>
-                          <button onClick={() => setShowWhy((s) => !s)}
-                            style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", padding: 0, cursor: "pointer", fontFamily: MONO, fontSize: 10.5, fontWeight: 700, color: C.yellow, letterSpacing: "0.03em" }}>
-                            <Info size={13} /> Fiyat neden bu?
-                            <ChevronDown size={13} style={{ transform: showWhy ? "rotate(180deg)" : "none", transition: "transform .2s" }} />
-                          </button>
-                          {showWhy && (
-                            <div style={{ marginTop: 9, display: "flex", flexDirection: "column", gap: 6 }}>
-                              {est.breakdown.map((b) => (
-                                <div key={b.key} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-                                  <span style={{ fontFamily: MONO, fontSize: 10.5, color: "#C9C6BD" }}>{b.label}</span>
-                                  <span style={{ fontFamily: MONO, fontSize: 11, fontWeight: 700, color: b.value < 0 ? "#4ADE80" : "#fff", whiteSpace: "nowrap" }}>
-                                    {b.value < 0 ? "−" : "+"}{fmtTL(Math.abs(b.value))}
-                                  </span>
-                                </div>
-                              ))}
-                              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, borderTop: "1.5px solid #2A2A2A", paddingTop: 7, marginTop: 1 }}>
-                                <span style={{ fontFamily: HEAD, fontSize: 11, fontWeight: 800, textTransform: "uppercase", color: C.yellow }}>Önerilen</span>
-                                <span style={{ fontFamily: MONO, fontSize: 13, fontWeight: 700, color: "#fff" }}>{fmtTL(est.mid)}</span>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
                 {/* ürün siparişi: miktar alanı */}
                 {isProduct && (
                   <>
@@ -875,27 +725,6 @@ export default function IlanDetayPage({ listings = LISTINGS, user, fleet = [], o
                 <label style={{ display: "block", fontFamily: MONO, fontSize: 10, fontWeight: 700, color: C.muted, letterSpacing: "0.06em", textTransform: "uppercase", margin: "18px 0 7px" }}>{isProduct ? "BİRİM FİYAT TEKLİFİN (₺, opsiyonel)" : "TEKLİF FİYATINIZ (₺)"}</label>
                 <input type="number" min="0" value={price} onChange={(e) => setPrice(e.target.value)}
                   placeholder="0" style={{ ...sheetInput, fontFamily: MONO, fontWeight: 700, fontSize: 26, padding: "12px 14px" }} />
-
-                {/* canlı rekabet sinyali — sen yazarken fiyatın piyasaya göre konumu */}
-                {est && (() => {
-                  const sig = priceSignal(price, est);
-                  if (!sig) return null;
-                  const TONE = {
-                    win: { bg: "#F0FBF3", bd: C.green, fg: C.green, Icon: Check },
-                    ok: { bg: C.stone, bd: C.ink, fg: C.ink, Icon: TrendingUp },
-                    high: { bg: "#FEF7E6", bd: C.yellowDeep, fg: "#8A6D00", Icon: AlertTriangle },
-                    low: { bg: "#FEF2F2", bd: C.red, fg: C.red, Icon: AlertTriangle },
-                  }[sig.tone];
-                  return (
-                    <div style={{ display: "flex", alignItems: "center", gap: 9, marginTop: 9, background: TONE.bg, border: `2px solid ${TONE.bd}`, borderRadius: 6, padding: "9px 12px" }}>
-                      <TONE.Icon size={16} strokeWidth={2.6} color={TONE.fg} style={{ flexShrink: 0 }} />
-                      <span style={{ minWidth: 0 }}>
-                        <span style={{ fontFamily: HEAD, fontSize: 12.5, fontWeight: 800, textTransform: "uppercase", color: TONE.fg }}>{sig.label}</span>
-                        <span style={{ display: "block", fontFamily: MONO, fontSize: 10.5, color: C.sub, marginTop: 1 }}>{sig.hint}</span>
-                      </span>
-                    </div>
-                  );
-                })()}
 
                 {/* listing price type chip (informational, real l.priceType) */}
                 <div style={{ display: "flex", gap: 8, marginTop: 10, alignItems: "center", flexWrap: "wrap" }}>
