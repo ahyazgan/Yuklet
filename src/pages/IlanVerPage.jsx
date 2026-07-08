@@ -10,8 +10,7 @@ import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { CATS, LISTING_TYPES, VEHICLE_TYPES, MATERIALS, UNITS, STOCK_LEVELS } from "../data/categories";
 import { IL_LIST } from "../data/listings";
 import CategoryIcon from "../components/CategoryIcon";
-import { estimatePrice, fmtTL, haversineKm } from "../utils/priceEstimate";
-import { loadOffers, loadPricingConfig } from "../utils/storage";
+import { haversineKm } from "../utils/priceEstimate";
 import { newId } from "../utils/id";
 import { pendingReviews } from "../utils/reviewGate";
 import SEO from "../components/SEO";
@@ -151,7 +150,7 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers
     yukleme: editListing.yukleme || "", bosaltma: editListing.bosaltma || "",
     material: editListing.material || "", amount: editListing.amount != null ? String(editListing.amount) : "", unit: editListing.unit || "ton",
     vehicle: editListing.vehicle || "", capacity: editListing.capacity || "",
-    dateText: editListing.dateText || "", priceType: editListing.priceType || "teklif",
+    dateText: editListing.dateText || "", priceType: "sabit",
     price: editListing.price != null ? String(editListing.price) : "", desc: editListing.desc || "",
     owner: editListing.owner || user?.name || "",
     recurring: editListing.recurring || false,
@@ -165,7 +164,7 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers
     title: pf.title || "", il: pf.il || "İstanbul", ilce: pf.ilce || "", varisIl: pf.varisIl || pf.il || "İstanbul",
     yukleme: pf.yukleme || "", bosaltma: pf.bosaltma || "",
     material: pf.material || "", amount: pf.amount || "", unit: pf.unit || "ton", vehicle: "", capacity: "",
-    dateText: "", priceType: "teklif", price: "", desc: pf.desc || "", owner: user?.name || "",
+    dateText: "", priceType: "sabit", price: "", desc: pf.desc || "", owner: user?.name || "",
     recurring: false, recurringFreq: "haftalik", recurringDuration: "", dailyTrips: "",
     stock: "bol", deliveryIncluded: false,
   });
@@ -216,6 +215,10 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers
       setError("Başlık, ilçe ve ad/firma alanları zorunludur.");
       return;
     }
+    if (!(Number(form.price) > 0)) {
+      setError("Sabit fiyat zorunludur. Lütfen geçerli bir tutar girin.");
+      return;
+    }
     const data = {
       type, cat,
       title: form.title.trim(),
@@ -227,7 +230,7 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers
       vehicle: type === "arac" ? form.vehicle : undefined,
       capacity: type === "arac" ? form.capacity.trim() : undefined,
       dateText: form.dateText.trim() || "Belirtilmedi",
-      priceType: form.priceType, price: form.priceType === "sabit" ? Number(form.price) || 0 : null,
+      priceType: "sabit", price: Number(form.price) || 0,
       desc: form.desc.trim(),
       recurring: form.recurring,
       recurringFreq: form.recurring ? form.recurringFreq : undefined,
@@ -341,9 +344,6 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers
     ? fleet.filter((v) => v.active && v.cat === cat)
     : [];
   const pickFleet = (v) => { set("vehicle", v.vehicle); if (v.capacity) set("capacity", v.capacity); };
-  const est = type === "is" && Number(form.amount) > 0
-    ? estimatePrice({ cat, amount: Number(form.amount), unit: form.unit, fromIl: form.il, toIl: form.varisIl, material: form.material, vehicle: form.vehicle, dateText: form.dateText, recurring: form.recurring, kmOverride: realKm, history: { listings, offers: loadOffers() }, config: loadPricingConfig() })
-    : null;
 
   // ── gate: not logged in ──
   if (!user) {
@@ -829,53 +829,21 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers
             </Block>
           )}
 
-          {/* başlangıç + fiyatlandırma */}
+          {/* başlangıç + sabit fiyat */}
           <Block style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <Field label="Başlangıç / Tarih">
                 <input style={fieldBox} value={form.dateText} onChange={(e) => set("dateText", e.target.value)} placeholder="Örn: 8-12 Haziran" />
               </Field>
-              <SelectField label="Fiyatlandırma" value={form.priceType} onChange={(e) => set("priceType", e.target.value)}>
-                <option value="teklif">{type === "urun" ? "Teklife açık" : "Teklife açık — teklif topla"}</option>
-                <option value="sabit">{type === "urun" ? "Sabit fiyat" : "Sabit fiyat — doğrudan kabul"}</option>
-              </SelectField>
-            </div>
-            {type !== "urun" && (
-              <div style={{ fontFamily: MONO, fontSize: 10.5, color: C.sub, lineHeight: 1.5, background: C.stone, border: `2px solid ${C.border}`, borderRadius: 6, padding: "9px 11px" }}>
-                {form.priceType === "sabit"
-                  ? (type === "arac"
-                      ? "Alıcı teklif vermeden aracını sabit fiyattan doğrudan KİRALAR — ilk kiralayan alır."
-                      : "Nakliyeci teklif vermeden işi sabit fiyattan doğrudan KABUL EDER — ilk kabul eden işi alır.")
-                  : (type === "arac"
-                      ? "Alıcılar fiyat teklifi verir; sen en uygununu seçersin."
-                      : "Nakliyeciler fiyat teklifi verir; sen en uygununu seçip kabul edersin.")}
-              </div>
-            )}
-            {form.priceType === "sabit" && (
-              <Field label="Sabit fiyat (₺)">
+              <Field label="Sabit fiyat (₺) *">
                 <input style={{ ...fieldBox, fontFamily: MONO, fontWeight: 700 }} type="number" min="0" inputMode="numeric" value={form.price} onChange={(e) => set("price", e.target.value)} placeholder="₺" />
-                {est && (
-                  <button type="button" onClick={() => set("price", String(est.mid))}
-                    style={{ marginTop: 8, width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 7, background: C.ink, color: C.yellow, fontFamily: ARCH, fontSize: 12.5, fontWeight: 800, textTransform: "uppercase", border: `2px solid ${C.ink}`, borderRadius: 6, padding: "10px 0", cursor: "pointer" }}>
-                    <Check size={15} strokeWidth={3} /> Önerilen fiyatı uygula · {fmtTL(est.mid)}
-                  </button>
-                )}
               </Field>
-            )}
-
-            {/* fiyat tahmini rozeti */}
-            {est && (
-              <div style={{ background: C.yellow, border: `2px solid ${C.ink}`, borderRadius: 6, padding: 14 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontFamily: MONO, fontSize: 10.5, fontWeight: 700, color: C.ink, letterSpacing: "0.04em" }}>YÜKLET AKILLI FİYAT · GÜVEN: {String(est.confidence).toUpperCase()}</span>
-                  <span style={{ fontFamily: MONO, fontSize: 15, fontWeight: 700 }}>{fmtTL(est.min)} – {fmtTL(est.max)}</span>
-                </div>
-                <div style={{ marginTop: 5, fontFamily: MONO, fontSize: 10.5, color: "#3a3a2a" }}>
-                  Önerilen ~{fmtTL(est.mid)} · {est.distLabel} · ~{est.km} km · {est.trips > 1 ? `~${est.trips} sefer` : "tek sefer"}
-                  {est.dataDriven ? ` · ${est.sampleSize} benzer işten` : " · sezgisel tahmin"}
-                </div>
-              </div>
-            )}
+            </div>
+            <div style={{ fontFamily: MONO, fontSize: 10.5, color: C.sub, lineHeight: 1.5, background: C.stone, border: `2px solid ${C.border}`, borderRadius: 6, padding: "9px 11px" }}>
+              {type === "arac"
+                ? "Aracını sabit fiyattan yayınlarsın — alıcı teklif vermeden doğrudan KİRALAR, ilk kiralayan alır."
+                : "İşini sabit fiyattan yayınlarsın — nakliyeci teklif vermeden doğrudan KABUL EDER, ilk kabul eden işi alır."}
+            </div>
           </Block>
 
           {/* düzenli iş */}
