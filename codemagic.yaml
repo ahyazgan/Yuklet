@@ -23,7 +23,9 @@ workflows:
         XCODE_SCHEME: "App"
         APP_STORE_APPLE_ID: 0        # App Store Connect'te uygulama oluşunca sayısal ID'yi buraya yaz (opsiyonel)
       node: 22
-      xcode: latest
+      # xcode surumu SABIT: "latest" haber vermeden degisip calisan build'i
+      # bozabilir. Ilk basarili build 26.4.1 ile alindi; ona sabitlendi.
+      xcode: 26.4.1
     integrations:
       app_store_connect: yuklet_asc  # Codemagic UI'da ekleyeceğin App Store Connect API key adı
     scripts:
@@ -54,22 +56,31 @@ workflows:
           set -e
           keychain initialize
 
-          # 0) Sertifika olusturmak icin bir private key uret.
-          #    fetch --create yeni dagitim sertifikasi olusturacaksa
-          #    imzalamak icin bu anahtara ihtiyaci var; yoksa
-          #    "Cannot save Signing Certificates without certificate
-          #    private key" hatasi verir.
-          openssl genrsa -out /tmp/cert_key.pem 2048
+          # SERTIFIKA LIMITI KORUMASI (Apple limiti: hesap basina ~2-3):
+          # Sertifika olusturmak icin gereken ozel anahtar, ONCE Codemagic
+          # ortam degiskeninden (CM_CERTIFICATE_PRIVATE_KEY) okunur; boylece
+          # her build AYNI anahtari kullanir, --create var olan sertifikayi
+          # bulur ve YENI uretmez. Degisken yoksa (ilk kez) gecici bir anahtar
+          # uretilir -- ilk build'den sonra bu anahtari Codemagic'e kaydet.
+          CERT_KEY=/tmp/cert_key.pem
+          if [ -n "$CM_CERTIFICATE_PRIVATE_KEY" ]; then
+            printf '%s' "$CM_CERTIFICATE_PRIVATE_KEY" > $CERT_KEY
+            echo "Kayitli imzalama anahtari kullanildi (sabit)."
+          else
+            openssl genrsa -out $CERT_KEY 2048
+            echo "UYARI: Sabit anahtar yok, gecici uretildi. Ilk basarili"
+            echo "build'den sonra bu anahtari Codemagic'e kaydet ki her build"
+            echo "yeni sertifika uretip Apple limitini doldurmasin."
+          fi
 
-          # 1) Bundle ID icin dagitim sertifikasi + App Store profilini
-          #    olustur/indir (--create: yoksa uret). Uretilen sertifika
-          #    yukaridaki private key ile imzalanir.
+          # Bundle ID icin dagitim sertifikasi + App Store profilini olustur/
+          # indir. --create: eslesen sertifika/profil YOKSA uretir, VARSA indirir.
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
-            --certificate-key=@file:/tmp/cert_key.pem \
+            --certificate-key=@file:$CERT_KEY \
             --create
 
-          # 2) Sertifikayi anahtarliga ekle
+          # Sertifikayi anahtarliga ekle
           keychain add-certificates
 
           # 3) Teshis: bu bundle id icin profiller

@@ -171,19 +171,17 @@ html.native-app, html.native-app body {
 }
 
 /* ── Yatay taşma koruması (iOS'ta içerik sağdan kesilmesin) ──
-   overflow-x:hidden yoksa genişliği ekranı aşan bir öğe sayfayı
-   sağa iter ve içerik kenardan kesik görünür. Ayrıca sol/sağ
-   güvenli alanı (yatay çentik/dinamik ada) payla telafi et. */
-html, body { overflow-x: hidden; max-width: 100%; }
-.app-root {
-  overflow-x: hidden;
-  min-width: 0;               /* flex icindeki overflow-x-auto satirlar
-                                 sayfayi genisletmesin, kendileri kaysin */
-  padding-left: env(safe-area-inset-left);
-  padding-right: env(safe-area-inset-right);
-}
-/* main ve dogrudan cocuklari da tasmayi icerde tutsun */
-.app-root > * { min-width: 0; max-width: 100%; }
+   ÖNEMLİ: .app-root'a overflow-x:hidden KOYMA — o, dikey kaydırmayı da
+   scroll-konteynerine çevirip position:sticky başlıkları/alt CTA'ları
+   bozar (14+ sayfa). Bunun yerine:
+   1) html/body'de overflow-x:clip — sticky'yi bozmaz, yine de sağa taşan
+      öğe sayfayı genişletemez (clip, hidden'ın aksine scroll konteyneri
+      OLUŞTURMAZ).
+   2) Asıl taşma, flex içindeki overflow-x-auto satırların (il/kategori
+      filtreleri) min-width:0 olmamasından; onu aşağıda satır bazında çöz. */
+html, body { overflow-x: clip; max-width: 100%; }
+/* Yatay kaydırma satırları kendileri kaysın, ebeveyni genişletmesin */
+.app-root .overflow-x-auto { min-width: 0; }
 
 /* ═══ RESPONSIVE — MOBILE ═══ */
 @media (max-width: 768px) {
