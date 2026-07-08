@@ -677,12 +677,10 @@ function AppShell() {
       return res;
     }
     if (SB) return api.signInWithProvider(provider); // web: tarayici yonlendirilir
-    // localStorage modu: sahte hesap (rol henuz yok -> rol secim modali acilir)
-    const fake = { id: Date.now(), name: provider === "apple" ? "Apple Kullanici" : "Google Kullanici", email: "", role: "", provider, verified: false, rating: 5.0 };
-    setUsers(prev => prev.some(u => u.id === fake.id) ? prev : [...prev, fake]);
-    setUser(fake);
-    setShowAuth(false);
-    return { ok: true };
+    // Supabase YAPILANDIRILMAMIS (env eksik) -> GERCEK kimlik dogrulama yok.
+    // Sahte OAuth hesabi ACMA: aksi halde herkes kayit olmadan iceri girerdi
+    // (guvenlik acigi). Net hata don; sessizce sahte oturum acma.
+    return { ok: false, error: "Sunucu baglantisi yok — giris yapilamiyor. Lutfen daha sonra tekrar dene." };
   };
   // ── Giris: E-POSTA / SIFRE (kayit + giris) ───────────────────
   // SB modu: signUp/signIn Supabase'e yazar; onAuthChange oturumu kurar. Onay
@@ -699,12 +697,10 @@ function AppShell() {
       setShowAuth(false);               // oturum kuruldu -> onAuthChange hydrate eder
       return res;
     }
-    // localStorage modu: rol kayıt formundan gelir (gelmezse boş -> rol modali)
-    const fake = { id: Date.now(), name: name || email, email, role: role || "", provider: "email", verified: false, rating: 5.0 };
-    setUsers(prev => prev.some(u => u.email === email) ? prev : [...prev, fake]);
-    setUser(fake);
-    setShowAuth(false);
-    return { ok: true };
+    // Supabase YAPILANDIRILMAMIS (env eksik) -> GERCEK kimlik dogrulama yok.
+    // Sahte oturum ACMA: aksi halde herkes herhangi bir e-posta/sifreyle, kayit
+    // olmadan "giris" yapardi (guvenlik acigi — asil bildirilen hata bu). Net hata don.
+    return { ok: false, error: "Sunucu baglantisi yok — giris yapilamiyor. Lutfen internetini kontrol et veya daha sonra tekrar dene." };
   };
   // Sifremi unuttum -> sifirlama baglantili e-posta (SB modu). localStorage modunda
   // backend yok -> bilgi mesaji ile gecistir (gelistirme/onizleme).
@@ -958,6 +954,15 @@ function AppShell() {
           <strong style={{ display: "block", fontSize: 12, marginBottom: 2 }}>SUPABASE BAĞLANTI SORUNU</strong>
           {sbHealth.message}
           <button onClick={() => setSbHealth(null)} aria-label="Kapat" style={{ position: "absolute", top: 6, right: 8, background: "none", border: "none", color: "#fff", fontSize: 16, cursor: "pointer", lineHeight: 1 }}>×</button>
+        </div>
+      )}
+      {/* Env HIC yuklenmemis (or. Vercel/native build'de VITE_SUPABASE_* tanimsiz) ->
+          app localStorage moduna duser ve GERCEK giris yapilamaz. Uretimde net uyar,
+          sessizce sahte-giris moduna dusme (bu sessizlik "herkes girebiliyor" bug'iydi). */}
+      {!SB && import.meta.env.PROD && (
+        <div role="alert" style={{ position: "fixed", left: 12, right: 12, bottom: 76, zIndex: 9999, margin: "0 auto", maxWidth: 440, background: "#7A1212", color: "#fff", border: "2px solid #0A0A0A", borderRadius: 8, padding: "10px 12px", boxShadow: "3px 3px 0 rgba(10,10,10,.4)", fontFamily: "'Space Mono', ui-monospace, monospace", fontSize: 11.5, lineHeight: 1.45 }}>
+          <strong style={{ display: "block", fontSize: 12, marginBottom: 2 }}>GİRİŞ GEÇİCİ OLARAK KAPALI</strong>
+          Sunucu bağlantısı yapılandırılmamış. (Yayın ortamında VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY tanımlı değil.)
         </div>
       )}
       <OfflineBanner onReconnect={() => { if (SB) { reloadListings(); reloadOffers(); } }} />
