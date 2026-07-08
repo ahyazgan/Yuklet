@@ -115,7 +115,15 @@ KVKK basvurulari: kvkk@yuklet.co`
 - Verilen teklifler baglayici nitelikte olup iyi niyet kurallarina tabidir
 - Anlasma ve odeme kosullari taraflar arasinda serbestce belirlenir
 
-## 5. Sorumluluk Sinirlamasi
+## 5. Kullanici Icerigi ve Sifir Tolerans
+
+- Uygunsuz, saldirgan, taciz edici, nefret soylemi iceren veya hukuka aykiri icerige **sifir tolerans** gosterilir
+- Kullanicilar bu tur icerigi veya kullaniciyi **Sikayet Et** ozelligiyle bildirebilir ve ilgili kullaniciyi **engelleyebilir**
+- Bildirilen icerik **en gec 24 saat icinde** incelenir
+- Ihlal tespit edilirse icerik kaldirilir ve **ihlal eden kullanicinin hesabi askiya alinir veya kalici olarak kapatilir**
+- Bu kurallara aykiri davranan kullanicilarla platform iletisimi kesme hakkini sakli tutar
+
+## 6. Sorumluluk Sinirlamasi
 
 - Tasimanin yapilmasi, kalitesi ve odemesi taraflarin sorumlulugundadir
 - Platform, kullanicilar arasindaki uyusmazliklarin tarafi degildir
@@ -123,12 +131,12 @@ KVKK basvurulari: kvkk@yuklet.co`
 - Platform, ucuncu taraf sitelere verilen linklerin iceriginden sorumlu degildir
 - Mucbir sebepler nedeniyle olusan aksakliklardan sorumluluk kabul edilmez
 
-## 6. Fikri Mulkiyet
+## 7. Fikri Mulkiyet
 
 - Platform uzerindeki tum icerik, tasarim ve yazilim YÜKLET'e aittir
 - Izinsiz kopyalama, dagitma veya degistirme yasaktir
 
-## 7. Uyusmazlik Cozumu
+## 8. Uyusmazlik Cozumu
 
 - Bu kosullar Turkiye Cumhuriyeti kanunlarina tabidir
 - Uyusmazliklarda Istanbul Mahkemeleri ve Icra Daireleri yetkilidir`
