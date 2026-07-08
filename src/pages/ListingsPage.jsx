@@ -30,6 +30,7 @@ import { loadSavedSearches, saveSavedSearches, loadOffers, loadPricingConfig, lo
 import usePullToRefresh from "../hooks/usePullToRefresh";
 import useFavorites from "../hooks/useFavorites";
 import { computeReliability, reliabilityTier } from "../utils/reliability";
+import { haulerCategory } from "../utils/haulerCategory";
 import SEO from "../components/SEO";
 
 const ListingsMap = lazy(() => import("../components/ListingsMap"));
@@ -403,8 +404,12 @@ function EmptyBox({ icon, title, sub, action }) {
   );
 }
 
-export default function ListingsPage({ listings = LISTINGS, onRefresh, blockedIds = [], offers = [], reviews = [] }) {
+export default function ListingsPage({ listings = LISTINGS, user, fleet = [], onRefresh, blockedIds = [], offers = [], reviews = [] }) {
   const navigate = useNavigate();
+  // Nakliyeci uzmanlığı (silobas/hafriyat) → İlanlar bu kategoriyle açılır.
+  // null = ikisi de / belirsiz / nakliyeci değil → varsayılan "Tümü".
+  const haulerCat = useMemo(() => haulerCategory({ user, listings, fleet }), [user, listings, fleet]);
+  const defaultCat = haulerCat || "all";
   // İlan sahibi başına güvenilirlik (kart rozeti için, bir kez hesapla).
   const ownerRel = useMemo(() => {
     const map = {};
@@ -422,8 +427,9 @@ export default function ListingsPage({ listings = LISTINGS, onRefresh, blockedId
   const priceHistory = useMemo(() => ({ listings, offers: loadOffers() }), [listings]);
   const pricingConfig = useMemo(() => loadPricingConfig(), []);
   const [type, setType] = useState(["arac", "is", "urun"].includes(sp.get("type")) ? sp.get("type") : "all");
+  // URL'de cat varsa o kazanır; yoksa nakliyecinin uzmanlık kategorisiyle aç (yoksa "all").
   const [cat, setCat] = useState(
-    ["hafriyat", "silobas"].includes(sp.get("cat")) ? sp.get("cat") : "all"
+    ["hafriyat", "silobas"].includes(sp.get("cat")) ? sp.get("cat") : defaultCat
   );
   const [il, setIl] = useState("all");
   const [q, setQ] = useState("");
@@ -451,7 +457,7 @@ export default function ListingsPage({ listings = LISTINGS, onRefresh, blockedId
   const currentSearch = { type, cat, il, q, material, priceMin, priceMax, sort, verifiedOnly };
   const isDefaultSearch =
     type === "all" &&
-    cat === "all" &&
+    cat === defaultCat &&
     il === "all" &&
     !q &&
     material === "all" &&
@@ -504,7 +510,7 @@ export default function ListingsPage({ listings = LISTINGS, onRefresh, blockedId
 
   const clearAll = () => {
     setType("all");
-    setCat("all");
+    setCat(defaultCat);
     setIl("all");
     setQ("");
     setMaterial("all");
