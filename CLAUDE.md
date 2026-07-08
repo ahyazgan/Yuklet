@@ -65,14 +65,14 @@ Satıcı (ocak/santral) kendi ürün/stok ilanını açar, alıcı bulur, nakliy
            yukleme, bosaltma, material, amount, unit, date, dateText,
            recurring, recurringText, vehicle, capacity,
            priceType:"sabit"|"teklif", price, desc,
-           owner, ownerId, ownerVerified, ownerRating,
+           owner, ownerId, ownerVerified, ownerRating, ownerLogo,
            status:"aktif"|"kapali"|"eslesti", offers, createdText }
 
 Teklif:  { id, listingId, fromUser, fromUserId, price, message,
            status:"beklemede"|"kabul"|"ret", createdAt }
 
 Kullanıcı: { id, name, email, password, role:"isveren"|"tedarikci"|"nakliyeci",
-             phone, verified, rating }
+             phone, verified, rating, logo }
 
 Mesaj:   { id, listingId, offerId, fromId, fromName, toId, toName,
            text, createdAt }

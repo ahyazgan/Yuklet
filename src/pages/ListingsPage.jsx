@@ -268,6 +268,9 @@ function ListingCard({ l, history, config, isFav = false, onToggleFav, rel }) {
         className="flex items-center gap-2"
         style={{ ...MONO, padding: "8px 12px 0 12px", fontSize: 9.5, color: C.sub }}
       >
+        {l.ownerLogo && (
+          <img src={l.ownerLogo} alt="" style={{ width: 16, height: 16, borderRadius: 3, objectFit: "cover", border: `1px solid ${C.ink}`, flexShrink: 0 }} />
+        )}
         <span style={{ fontWeight: 700, color: C.ink }} className="truncate">
           {l.owner}
         </span>
