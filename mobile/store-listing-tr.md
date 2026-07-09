@@ -1,17 +1,25 @@
 # YÜKLET — Mağaza Listeleme Metinleri (TR)
 
-Aşağıdaki içerikler App Store Connect ve Play Console'a doğrudan yapıştırılabilir.
-Marka, kategori ve karakter sınırları her iki mağaza için ayrı belirtildi.
+App Store Connect ve Play Console'a doğrudan yapıştırılabilir. **Gizlilik/veri-güvenliği
+formu cevapları ayrı dosyada:** `mobile/STORE-PRIVACY-FORMS.md`.
+
+> NOT: Ürün modeli **sabit fiyat + doğrudan kabul** (teklif toplama kaldırıldı). Metinler buna göre.
 
 ---
 
 ## Uygulama adı
 **YÜKLET** — Yük & Nakliye Eşleştirme
 
-- App Store adı (≤30 karakter): `YÜKLET – Yük & Nakliye`
+- App Store adı (≤30): `YÜKLET – Yük & Nakliye`
 - App Store altyazı (≤30): `Hafriyat & silobas işleri`
 - Play başlık (≤30): `YÜKLET: Yük & Nakliye`
 - Play kısa açıklama (≤80): `Hafriyat ve silobas yüklerini doğru araçla, komisyonsuz eşleştir.`
+
+## Promosyon metni (App Store, ≤170, sonradan güncellenebilir)
+```
+Sabit fiyatını yaz, uygun nakliyeci doğrudan kabul etsin. Hafriyat ve silobas işleri
+için komisyonsuz eşleşme, canlı sefer takibi ve güvenli iletişim.
+```
 
 ## Anahtar kelimeler (App Store, ≤100 karakter, virgülle)
 ```
@@ -30,13 +38,13 @@ hafriyat,nakliye,silobas,kamyon,damper,taşıma,yük,müteahhit,ocak,agrega,çak
 YÜKLET, hafriyat ve silobas/dökme yük taşımacılığını üç tarafı buluşturan bir
 ilan ve eşleştirme platformudur.
 
-İş sahibi (alıcı) işini yayınlar, nakliyeciler teklif verir, anlaşma sağlanır
-ve iş başlar. Satıcılar (kırma ocağı, beton santrali, kum ocağı) ürün ve
-stok ilanlarını açar; nakliye platform üzerinden ayarlanır.
+İş sahibi (alıcı) işini SABİT FİYATLA yayınlar; uygun nakliyeci teklif beklemeden
+işi DOĞRUDAN KABUL eder. Satıcılar (kırma ocağı, beton santrali, kum ocağı) ürün
+ve stok ilanlarını açar; nakliye platform üzerinden ayarlanır.
 
-— NE İŞE YARAR? —
-• İş ilanı aç, teklifleri karşılaştır, en uygun nakliyeciyle anlaş.
-• Boş aracın mı var? Açık iş ilanlarına teklif ver, geri dönüş yükü bul.
+— NASIL ÇALIŞIR? —
+• İş ilanını sabit fiyatla aç; uygun nakliyeci doğrudan kabul etsin.
+• Boş aracın mı var? Sana uygun işi tek dokunuşla kabul et, dönüş yükünü doldur.
 • Satıcıysan ürün ilanını yayınla, alıcılara ulaş.
 
 — İKİ TAŞIMA KATEGORİSİ —
@@ -45,50 +53,65 @@ stok ilanlarını açar; nakliye platform üzerinden ayarlanır.
 
 — NEDEN YÜKLET? —
 • Komisyonsuz eşleştirme.
-• Hızlı teklif ve mesajlaşma.
-• İl/ilçe bazlı ilan arama.
-• Güvenli iletişim ve değerlendirme sistemi.
+• Şeffaf sabit fiyat — pazarlık yok, sürpriz yok.
+• Canlı sefer takibi ve tahmini varış.
+• Güvenli mesajlaşma, karşılıklı puanlama ve dijital sözleşme/irsaliye.
 
 YÜKLET bir e-ticaret uygulaması değildir; sepet veya doğrudan satış yoktur.
-Amaç, doğru yükü doğru araçla buluşturmaktır.
+Ödeme taraflar arasında yapılır; uygulama yalnızca eşleştirme, iletişim ve
+"ödeme onayı" kaydını sağlar. Amaç, doğru yükü doğru araçla buluşturmaktır.
 ```
 
 ---
+
+## Zorunlu URL'ler (her iki mağaza)
+- **Gizlilik Politikası URL:** `https://yuklet.co/gizlilik.html` (uygulama içi: Profil → Gizlilik & Yasal)
+- **Destek URL:** `https://yuklet.co/destek.html`
+- **Pazarlama/Web:** `https://yuklet.co`
+- **Hesap silme:** uygulama içinde Profil → hesap silme (Apple 5.1.1(v) ✓); web: `https://yuklet.co/hesap-silme.html`
 
 ## Görsel varlık gereksinimleri
 
 | Varlık | App Store | Play Store |
 |---|---|---|
-| Uygulama ikonu | 1024×1024 (hazır: `assets/icon.png`) | 512×512 |
-| Ekran görüntüsü | 6.7" 1290×2796 + 6.5" 1242×2688 | min 2 adet, 1080×1920+ |
+| Uygulama ikonu | 1024×1024 (`assets/icon.png`) | 512×512 |
+| Ekran görüntüsü | 6.7" 1290×2796 (zorunlu) + 6.5" 1242×2688 | min 2, 1080×1920+ |
 | Feature graphic | — | 1024×500 (zorunlu) |
-| Tanıtım videosu | Opsiyonel | Opsiyonel (YouTube) |
 
-### Ekran görüntüsü çekimi
-Native build cihazda/simülatörde çalışırken şu ekranları çekin:
-1. Ana sayfa (3 persona seçimi)
-2. İlanlar listesi
-3. İlan detayı / teklif verme
-4. İlan ver formu
-5. Mesajlaşma
+### Ekran görüntüsü planı (cihaz/simülatörde çek)
+1. Ana sayfa (rol karşılama + istatistik + dönüş yükü kartı)
+2. İlanlar listesi (sabit fiyat kartları)
+3. İlan detayı ("NAKLİYE FİYATI" + "İşi Kabul Et")
+4. İlan Ver formu (sabit fiyat)
+5. Canlı sefer takibi (harita + faz)
+6. Mesajlaşma / değerlendirme
 
 ---
 
 ## İnceleme (review) notları — kopyala/yapıştır
 ```
-Uygulama, hafriyat ve silobas yük taşımacılığında iş sahibi, satıcı ve
-nakliyeciyi buluşturan bir ilan platformudur. Test için:
+YÜKLET, hafriyat ve silobas yük taşımacılığında iş sahibi, satıcı ve nakliyeciyi
+buluşturan bir ilan/eşleştirme platformudur. Uygulama içi satın alma/dijital
+ürün YOKTUR; ödeme taraflar arasında (elden/havale) yapılır, uygulama yalnızca
+"ödeme onayı" kaydını tutar.
 
-1. Açılışta "Google ile giriş" veya "Apple ile giriş" kullanılabilir.
-2. Demo akış: Ana sayfa → "İlan Ver" → iş ilanı oluştur → "İlanlar"dan
-   bir ilana girip "Teklif Ver".
-3. Konum izni istenmez; il/ilçe elle seçilir.
-4. Uygulama içinde satın alma/ödeme zorunluluğu yoktur.
+Test akışı:
+1. Giriş: iOS'ta "Apple ile Giriş" veya "E-posta ile Kayıt". (Google girişi
+   iOS'ta gösterilmez.)
+2. İlan vermek / işi kabul etmek için profilde geçerli bir cep numarası gerekir
+   (kayıt sonrası Profil'den girilir). Demo hesapta numara girilidir.
+3. Demo akış: Ana sayfa → "İlan Ver" → sabit fiyatlı iş ilanı oluştur →
+   "İlanlar" → bir ilana gir → "İşi Kabul Et" → "Takip" ekranında sefer + ödeme onayı.
+4. Konum: yalnızca sefer takibi sırasında canlı konum paylaşımı için istenir
+   (opsiyonel). İlan konumu il/ilçe olarak elle seçilir.
 
-Demo hesap: [App Store/Play inceleme hesabı buraya]
+Demo hesap:
+  E-posta: [inceleme@yuklet.co — oluşturun]
+  Şifre:   [••••]
+  (Numara ve örnek ilan girili bir hesap hazırlayın ki inceleyici akışı görsün.)
 ```
 
-## Telif / yayıncı bilgisi
+## Yayıncı bilgisi
 - Yayıncı: [Şirket/şahıs adı]
 - İletişim: a.hakan_@hotmail.com
 - Web: https://yuklet.co
