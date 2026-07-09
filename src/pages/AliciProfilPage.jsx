@@ -7,13 +7,14 @@ import Logo from "../components/Logo";
 import ReportModal from "../components/ReportModal";
 import { StarsDisplay } from "../components/Stars";
 import { visibleReviewsFor } from "../utils/reviewGate";
-import { computeReliability } from "../utils/reliability";
+import { computeReliability, reliabilityTier } from "../utils/reliability";
 import { isSupabaseConfigured } from "../lib/supabase";
 import { getProfile } from "../lib/api";
 
-// ── SAHA herkese açık ALICI (işveren) vitrini — nakliyeciler bir alıcıyı buradan görür.
-//    Salt-okunur: firma bilgileri (ProfilPage'te düzenlenir), açık iş ilanları,
-//    aldığı değerlendirmeler. Görsel dil = SaticiProfilPage ile aynı.
+// ── SAHA herkese açık ALICI (işveren) vitrini — bir MÜŞTERİ KÜNYESİ gibi kurgulanır.
+//    Kahraman = güven/sicil (nakliyeci & satıcının tek sorusu: gerçek firma mı,
+//    ödüyor mu, ne kadar iş çıkarıyor?). Açık işler "fırsat" olarak listelenir.
+//    Katalog YOK — bu taraf talep üretir, arz değil. Alanlar ProfilPage'te düzenlenir.
 
 const C = {
   ink: "#0A0A0A", yellow: "#FACC15", green: "#16803C", red: "#DC2626",
@@ -123,6 +124,10 @@ export default function AliciProfilPage({ user, users = [], listings = [], revie
   const konum = [buyer.ilce, buyer.sehir].filter(Boolean).join(", ");
   const web = webHref(buyer.web);
 
+  // ── Künye türetimleri (güven kahraman) ──
+  const openJobs = buyerListings;
+  const relTier = reliabilityTier(rel?.score ?? null);
+
   return (
     <div style={shell}>
       <SEO title={`${buyer.name} — Firma`} description={buyer.hakkinda || "Firma profili, iş ilanları ve değerlendirmeler."} />
@@ -165,11 +170,11 @@ export default function AliciProfilPage({ user, users = [], listings = [], revie
           </div>
         </div>
 
-        {/* İstatistik bandı */}
+        {/* İstatistik bandı — künye odaklı: puan · açık iş · güven */}
         <div style={{ display: "flex", marginTop: 18, marginRight: 18, border: "2px solid rgba(255,255,255,0.18)", borderRadius: 6, overflow: "hidden" }}>
           {[
             { v: Number(avgRating).toFixed(1), l: "PUAN", accent: true },
-            { v: String(buyerListings.length), l: "İLAN" },
+            { v: String(openJobs.length), l: "AÇIK İŞ" },
             { v: rel?.score != null ? `%${rel.score}` : "—", l: "GÜVEN" },
           ].map((s, i) => (
             <div key={s.l} style={{ flex: 1, textAlign: "center", padding: "11px 4px", borderLeft: i > 0 ? "2px solid rgba(255,255,255,0.14)" : "none" }}>
@@ -181,11 +186,99 @@ export default function AliciProfilPage({ user, users = [], listings = [], revie
       </div>
       <div style={{ height: 8, backgroundImage: HAZARD }} />
 
-      {/* ── Gövde ── */}
+      {/* ── Gövde: MÜŞTERİ KÜNYESİ ── */}
       <div style={{ flex: 1, padding: "18px 16px 110px", display: "flex", flexDirection: "column", gap: 16 }}>
 
-        {/* Hakkında + künye */}
+        {/* FİRMA SİCİLİ — künyenin kahramanı, en üstte (güven + iş hacmi) */}
         <motion.section initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} style={cardSt}>
+          <h2 style={{ ...sectionTitle, display: "flex", alignItems: "center", gap: 7 }}>
+            <ShieldCheck size={16} strokeWidth={2.4} color={C.ink} /> Firma sicili
+          </h2>
+
+          {/* 3 güven metriği */}
+          <div style={{ display: "flex", border: `2px solid ${C.ink}`, borderRadius: 6, overflow: "hidden" }}>
+            {[
+              { v: String(rel?.jobsDone ?? 0), l: "TAMAMLANAN İŞ" },
+              { v: rel?.score != null ? `%${rel.score}` : "—", l: "GÜVEN", accent: true },
+              { v: String(openJobs.length), l: "AÇIK İŞ" },
+            ].map((s, i) => (
+              <div key={s.l} style={{ flex: 1, textAlign: "center", padding: "12px 4px", borderLeft: i > 0 ? `2px solid ${C.ink}` : "none", background: s.accent ? C.yellow : C.card }}>
+                <div style={{ fontFamily: MONO, fontSize: 20, fontWeight: 700, color: C.ink }}>{s.v}</div>
+                <div style={{ fontFamily: MONO, fontSize: 8.5, color: C.sub, marginTop: 3, letterSpacing: 0.3, fontWeight: 700 }}>{s.l}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* güvenilirlik etiketi + doğrulama durumu */}
+          <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 9 }}>
+            {rel?.score != null && (
+              <div style={{ display: "flex", alignItems: "center", gap: 9, fontFamily: MONO, fontSize: 12, color: relTier.color, fontWeight: 700 }}>
+                <ShieldCheck size={15} strokeWidth={2.4} color={relTier.color} /> {relTier.label} güvenilirlik
+              </div>
+            )}
+            {buyer.verified ? (
+              <div style={{ display: "flex", alignItems: "center", gap: 9, fontFamily: MONO, fontSize: 12, color: C.green, fontWeight: 700 }}>
+                <BadgeCheck size={15} strokeWidth={2.4} color={C.green} /> Belgeleri doğrulanmış firma
+              </div>
+            ) : (
+              <div style={{ display: "flex", alignItems: "center", gap: 9, fontFamily: MONO, fontSize: 12, color: C.muted, fontWeight: 700 }}>
+                <ShieldCheck size={15} strokeWidth={2.2} color={C.muted} /> Belge doğrulaması bekleniyor
+              </div>
+            )}
+          </div>
+        </motion.section>
+
+        {/* Açık iş ilanları — nakliyeci için fırsat listesi */}
+        <section style={cardSt}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: openJobs.length > 0 ? 12 : 0 }}>
+            <h2 style={{ ...sectionTitle, margin: 0, display: "flex", alignItems: "center", gap: 7 }}>
+              <Briefcase size={16} strokeWidth={2.4} color={C.ink} /> Açık iş ilanları
+            </h2>
+            {openJobs.length > 0 && (
+              <span style={{ fontFamily: MONO, fontSize: 10, fontWeight: 700, color: C.ink, background: C.yellow, border: `2px solid ${C.ink}`, borderRadius: 5, padding: "2px 8px" }}>{openJobs.length} FIRSAT</span>
+            )}
+          </div>
+          {openJobs.length === 0 ? (
+            <p style={{ fontFamily: MONO, fontSize: 11, color: C.faint, margin: "12px 0 0", lineHeight: 1.5 }}>Bu firmanın şu an açık işi yok.</p>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+              {openJobs.map((l) => (
+                <button key={l.id} onClick={() => { navigate(`/ilan/${l.id}`); window.scrollTo(0, 0); }}
+                  style={{ display: "flex", alignItems: "center", gap: 12, textAlign: "left", width: "100%", border: `2px solid ${C.ink}`, borderRadius: 6, padding: 11, background: C.card, cursor: "pointer" }}>
+                  <span style={{ width: 40, height: 40, flexShrink: 0, borderRadius: 5, background: C.stone, border: `2px solid ${C.ink}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <Briefcase size={18} color={C.ink} strokeWidth={2} />
+                  </span>
+                  <span style={{ minWidth: 0, flex: 1 }}>
+                    <span style={{ display: "block", fontFamily: ARCHIVO, fontSize: 13, fontWeight: 800, color: C.ink, textTransform: "uppercase", letterSpacing: "-0.02em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{l.title}</span>
+                    <span style={{ display: "block", fontFamily: MONO, fontSize: 10, color: C.sub, marginTop: 2 }}>
+                      {[l.il, l.material, l.amount ? `${l.amount} ${l.unit || ""}`.trim() : ""].filter(Boolean).join(" · ")}
+                    </span>
+                  </span>
+                  {l.priceType === "sabit" && l.price != null && (
+                    <span style={{ fontFamily: MONO, fontSize: 12, fontWeight: 700, color: C.green, whiteSpace: "nowrap" }}>{Number(l.price).toLocaleString("tr-TR")} ₺</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* Faaliyet alanı — ne inşa ediyor */}
+        {faaliyet.length > 0 && (
+          <section style={cardSt}>
+            <h2 style={{ ...sectionTitle, display: "flex", alignItems: "center", gap: 7 }}>
+              <Briefcase size={16} strokeWidth={2.4} color={C.ink} /> Faaliyet alanı
+            </h2>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
+              {faaliyet.map((m) => (
+                <span key={m} style={{ fontFamily: MONO, fontSize: 10, fontWeight: 700, padding: "6px 10px", borderRadius: 6, border: `2px solid ${C.ink}`, background: C.stone, color: C.ink }}>{m}</span>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Hakkında + iletişim künyesi (ikincil) */}
+        <section style={cardSt}>
           <h2 style={{ ...sectionTitle, display: "flex", alignItems: "center", gap: 7 }}>
             <Building2 size={16} strokeWidth={2.4} color={C.ink} /> Hakkında
           </h2>
@@ -206,56 +299,7 @@ export default function AliciProfilPage({ user, users = [], listings = [], revie
                 <Globe size={15} strokeWidth={2.2} color={C.sub} /> {buyer.web}
               </a>
             )}
-            {buyer.verified && (
-              <div style={{ display: "flex", alignItems: "center", gap: 9, fontFamily: MONO, fontSize: 12, color: C.green, fontWeight: 700 }}>
-                <ShieldCheck size={15} strokeWidth={2.4} color={C.green} /> Belgeleri doğrulanmış firma
-              </div>
-            )}
           </div>
-        </motion.section>
-
-        {/* Faaliyet alanı */}
-        {faaliyet.length > 0 && (
-          <section style={cardSt}>
-            <h2 style={{ ...sectionTitle, display: "flex", alignItems: "center", gap: 7 }}>
-              <Briefcase size={16} strokeWidth={2.4} color={C.ink} /> Faaliyet alanı
-            </h2>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
-              {faaliyet.map((m) => (
-                <span key={m} style={{ fontFamily: MONO, fontSize: 10, fontWeight: 700, padding: "6px 10px", borderRadius: 6, border: `2px solid ${C.ink}`, background: C.stone, color: C.ink }}>{m}</span>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Açık iş ilanları */}
-        <section style={cardSt}>
-          <h2 style={{ ...sectionTitle, display: "flex", alignItems: "center", gap: 7 }}>
-            <Briefcase size={16} strokeWidth={2.4} color={C.ink} /> İş ilanları
-          </h2>
-          {buyerListings.length === 0 ? (
-            <p style={{ fontFamily: MONO, fontSize: 11, color: C.faint, margin: 0, lineHeight: 1.5 }}>Bu firmanın yayında ilanı yok.</p>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
-              {buyerListings.map((l) => (
-                <button key={l.id} onClick={() => { navigate(`/ilan/${l.id}`); window.scrollTo(0, 0); }}
-                  style={{ display: "flex", alignItems: "center", gap: 12, textAlign: "left", width: "100%", border: `2px solid ${C.ink}`, borderRadius: 6, padding: 11, background: C.card, cursor: "pointer" }}>
-                  <span style={{ width: 40, height: 40, flexShrink: 0, borderRadius: 5, background: C.stone, border: `2px solid ${C.ink}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <Briefcase size={18} color={C.ink} strokeWidth={2} />
-                  </span>
-                  <span style={{ minWidth: 0, flex: 1 }}>
-                    <span style={{ display: "block", fontFamily: ARCHIVO, fontSize: 13, fontWeight: 800, color: C.ink, textTransform: "uppercase", letterSpacing: "-0.02em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{l.title}</span>
-                    <span style={{ display: "block", fontFamily: MONO, fontSize: 10, color: C.sub, marginTop: 2 }}>
-                      {[l.il, l.material, l.amount ? `${l.amount} ${l.unit || ""}`.trim() : ""].filter(Boolean).join(" · ")}
-                    </span>
-                  </span>
-                  {l.priceType === "sabit" && l.price != null && (
-                    <span style={{ fontFamily: MONO, fontSize: 12, fontWeight: 700, color: C.green, whiteSpace: "nowrap" }}>{Number(l.price).toLocaleString("tr-TR")} ₺</span>
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
         </section>
 
         {/* Değerlendirmeler */}

@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { BadgeCheck, Star, MapPin, Clock, Building2, Package, ShieldCheck, ArrowLeft, MessageCircle, AlertTriangle } from "lucide-react";
+import { BadgeCheck, Star, MapPin, Clock, Building2, Package, Truck, ShieldCheck, ArrowLeft, ArrowRight, MessageCircle, AlertTriangle } from "lucide-react";
 import SEO from "../components/SEO";
 import Logo from "../components/Logo";
 import ReportModal from "../components/ReportModal";
@@ -11,9 +11,10 @@ import { computeReliability } from "../utils/reliability";
 import { isSupabaseConfigured } from "../lib/supabase";
 import { getProfile } from "../lib/api";
 
-// ── SAHA herkese açık SATICI vitrini — alıcılar bir satıcıyı buradan görür.
-//    Salt-okunur: satıcı bilgileri (ProfilPage'te düzenlenir), aktif ürün
-//    ilanları, aldığı değerlendirmeler. Görsel dil = ProfilPage header'ı.
+// ── SAHA herkese açık SATICI vitrini — bir MAĞAZA gibi kurgulanır.
+//    Kahraman = fiyatlı ürün kataloğu (alıcının tek sorusu: ne satıyor, kaça,
+//    stok var mı, kapıya getirir mi?). Mağaza künyesi (hakkında/konum/saat)
+//    ikincildir. Salt-okunur; alanlar ProfilPage'te düzenlenir.
 
 const C = {
   ink: "#0A0A0A", yellow: "#FACC15", green: "#16803C", red: "#DC2626",
@@ -30,6 +31,13 @@ const shell = {
 };
 const cardSt = { background: C.card, border: `2px solid ${C.ink}`, borderRadius: 6, padding: 16, boxShadow: "6px 6px 0 rgba(10,10,10,.12)" };
 const sectionTitle = { fontFamily: ARCHIVO, fontSize: 13, fontWeight: 800, color: C.ink, letterSpacing: "-0.02em", textTransform: "uppercase", margin: "0 0 12px" };
+
+// Stok seviyesi rozet renkleri — vitrin sinyali (bol/orta/az).
+const STOCK_BADGE = {
+  bol:  { label: "Bol stok",  bg: "#E6F4EA", fg: "#16803C", bd: "#16803C" },
+  orta: { label: "Orta stok", bg: "#FEF6E0", fg: "#92600A", bd: "#E0B400" },
+  az:   { label: "Az stok",   bg: "#FDECEC", fg: "#DC2626", bd: "#DC2626" },
+};
 
 function initials(name) {
   const parts = String(name || "?").trim().split(/\s+/).filter(Boolean);
@@ -117,6 +125,12 @@ export default function SaticiProfilPage({ user, users = [], listings = [], revi
   const malzemeler = Array.isArray(seller.malzemeler) ? seller.malzemeler : [];
   const konum = [seller.ilce, seller.sehir].filter(Boolean).join(", ");
 
+  // ── Vitrin türetimleri (katalog kahraman) ──
+  const products = sellerListings;
+  const withPrice = products.filter((l) => Number(l.price) > 0);
+  const lowestPrice = withPrice.length ? Math.min(...withPrice.map((l) => Number(l.price))) : null;
+  const anyDelivery = products.some((l) => l.deliveryIncluded);
+
   return (
     <div style={shell}>
       <SEO title={`${seller.name} — Satıcı`} description={seller.hakkinda || "Satıcı profili, ürün ilanları ve değerlendirmeler."} />
@@ -160,11 +174,11 @@ export default function SaticiProfilPage({ user, users = [], listings = [], revi
           </div>
         </div>
 
-        {/* İstatistik bandı */}
+        {/* İstatistik bandı — mağaza odaklı: puan · ürün sayısı · güven */}
         <div style={{ display: "flex", marginTop: 18, marginRight: 18, border: "2px solid rgba(255,255,255,0.18)", borderRadius: 6, overflow: "hidden" }}>
           {[
             { v: Number(avgRating).toFixed(1), l: "PUAN", accent: true },
-            { v: String(sellerListings.length), l: "İLAN" },
+            { v: String(products.length), l: "ÜRÜN" },
             { v: rel?.score != null ? `%${rel.score}` : "—", l: "GÜVEN" },
           ].map((s, i) => (
             <div key={s.l} style={{ flex: 1, textAlign: "center", padding: "11px 4px", borderLeft: i > 0 ? "2px solid rgba(255,255,255,0.14)" : "none" }}>
@@ -176,13 +190,99 @@ export default function SaticiProfilPage({ user, users = [], listings = [], revi
       </div>
       <div style={{ height: 8, backgroundImage: HAZARD }} />
 
-      {/* ── Gövde ── */}
+      {/* ── Gövde: MAĞAZA VİTRİNİ ── */}
       <div style={{ flex: 1, padding: "18px 16px 110px", display: "flex", flexDirection: "column", gap: 16 }}>
 
-        {/* Hakkında + künye */}
+        {/* ÜRÜN KATALOĞU — vitrinin kahramanı, en üstte */}
         <motion.section initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} style={cardSt}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: products.length > 0 ? 12 : 0 }}>
+            <h2 style={{ ...sectionTitle, margin: 0, display: "flex", alignItems: "center", gap: 7 }}>
+              <Package size={16} strokeWidth={2.4} color={C.ink} /> Ürün kataloğu
+            </h2>
+            {products.length > 0 && (
+              <span style={{ fontFamily: MONO, fontSize: 10, fontWeight: 700, color: C.ink, background: C.yellow, border: `2px solid ${C.ink}`, borderRadius: 5, padding: "2px 8px" }}>{products.length} ÜRÜN</span>
+            )}
+          </div>
+
+          {/* vitrin özet bandı: en düşük fiyat + teslimat sinyali */}
+          {products.length > 0 && (lowestPrice != null || anyDelivery) && (
+            <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
+              {lowestPrice != null && (
+                <span style={{ fontFamily: MONO, fontSize: 11, fontWeight: 700, color: C.green, background: "#E6F4EA", border: `2px solid ${C.green}`, borderRadius: 5, padding: "5px 10px" }}>
+                  En düşük {lowestPrice.toLocaleString("tr-TR")} ₺/ton
+                </span>
+              )}
+              {anyDelivery && (
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontFamily: MONO, fontSize: 11, fontWeight: 700, color: C.ink, background: C.stone, border: `2px solid ${C.ink}`, borderRadius: 5, padding: "5px 10px" }}>
+                  <Truck size={13} strokeWidth={2.4} /> Kapıya teslim var
+                </span>
+              )}
+            </div>
+          )}
+
+          {products.length === 0 ? (
+            <p style={{ fontFamily: MONO, fontSize: 11, color: C.faint, margin: "12px 0 0", lineHeight: 1.5 }}>Bu satıcının yayında ürünü yok.</p>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {products.map((l) => {
+                const sb = STOCK_BADGE[l.stock] || null;
+                const price = Number(l.price) > 0 ? Number(l.price) : null;
+                return (
+                  <button key={l.id} onClick={() => { navigate(`/ilan/${l.id}`); window.scrollTo(0, 0); }}
+                    style={{ textAlign: "left", width: "100%", border: `2px solid ${C.ink}`, borderRadius: 6, padding: 13, background: C.card, cursor: "pointer", boxShadow: "3px 3px 0 rgba(10,10,10,.08)" }}>
+                    {/* üst rozet satırı: kategori + stok + nakliye */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
+                      <span style={{ fontFamily: MONO, fontSize: 9.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.4, color: l.cat === "hafriyat" ? C.ink : C.yellow, background: l.cat === "hafriyat" ? C.yellow : C.ink, border: `2px solid ${C.ink}`, borderRadius: 4, padding: "2px 7px" }}>
+                        {l.cat === "hafriyat" ? "HAFRİYAT" : "SİLOBAS"}
+                      </span>
+                      {sb && (
+                        <span style={{ fontFamily: MONO, fontSize: 9.5, fontWeight: 700, color: sb.fg, background: sb.bg, border: `2px solid ${sb.bd}`, borderRadius: 4, padding: "2px 7px" }}>{sb.label}</span>
+                      )}
+                      {l.deliveryIncluded && (
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontFamily: MONO, fontSize: 9.5, fontWeight: 700, color: C.green, background: "#E6F4EA", border: `2px solid ${C.green}`, borderRadius: 4, padding: "2px 7px" }}>
+                          <Truck size={11} strokeWidth={2.4} /> Nakliye dahil
+                        </span>
+                      )}
+                    </div>
+                    {/* ürün adı */}
+                    <div style={{ fontFamily: ARCHIVO, fontSize: 15, fontWeight: 800, color: C.ink, textTransform: "uppercase", letterSpacing: "-0.02em", lineHeight: 1.15 }}>{l.title}</div>
+                    {/* konum + malzeme */}
+                    <div style={{ fontFamily: MONO, fontSize: 10.5, color: C.sub, marginTop: 4, display: "flex", alignItems: "center", gap: 5 }}>
+                      <MapPin size={12} strokeWidth={2.2} /> {[l.il, l.ilce].filter(Boolean).join(" / ")}{l.material ? ` · ${l.material}` : ""}
+                    </div>
+                    {/* fiyat + incele */}
+                    <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginTop: 10 }}>
+                      <span style={{ fontFamily: MONO, fontSize: 20, fontWeight: 700, color: C.ink }}>
+                        {price != null ? `${price.toLocaleString("tr-TR")} ₺` : "Fiyat sor"}
+                        {price != null && <span style={{ fontSize: 11, color: C.muted, fontWeight: 700 }}> /ton</span>}
+                      </span>
+                      <span style={{ fontFamily: ARCHIVO, fontSize: 11, fontWeight: 800, textTransform: "uppercase", color: C.ink, display: "inline-flex", alignItems: "center", gap: 3 }}>
+                        İncele <ArrowRight size={13} strokeWidth={2.6} />
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </motion.section>
+
+        {/* Sattığı malzemeler — hızlı katalog taraması */}
+        {malzemeler.length > 0 && (
+          <section style={cardSt}>
+            <h2 style={sectionTitle}>Sattığı malzemeler</h2>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
+              {malzemeler.map((m) => (
+                <span key={m} style={{ fontFamily: MONO, fontSize: 10, fontWeight: 700, padding: "6px 10px", borderRadius: 6, border: `2px solid ${C.ink}`, background: C.stone, color: C.ink }}>{m}</span>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Mağaza bilgisi (künye) — hakkında + konum + saat, ikincil */}
+        <section style={cardSt}>
           <h2 style={{ ...sectionTitle, display: "flex", alignItems: "center", gap: 7 }}>
-            <Building2 size={16} strokeWidth={2.4} color={C.ink} /> Hakkında
+            <Building2 size={16} strokeWidth={2.4} color={C.ink} /> Mağaza bilgisi
           </h2>
           {seller.hakkinda ? (
             <p style={{ fontSize: 13, color: C.sub, margin: "0 0 14px", lineHeight: 1.55 }}>{seller.hakkinda}</p>
@@ -206,48 +306,6 @@ export default function SaticiProfilPage({ user, users = [], listings = [], revi
               </div>
             )}
           </div>
-        </motion.section>
-
-        {/* Sattığı malzemeler */}
-        {malzemeler.length > 0 && (
-          <section style={cardSt}>
-            <h2 style={sectionTitle}>Sattığı malzemeler</h2>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
-              {malzemeler.map((m) => (
-                <span key={m} style={{ fontFamily: MONO, fontSize: 10, fontWeight: 700, padding: "6px 10px", borderRadius: 6, border: `2px solid ${C.ink}`, background: C.stone, color: C.ink }}>{m}</span>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Ürün ilanları */}
-        <section style={cardSt}>
-          <h2 style={{ ...sectionTitle, display: "flex", alignItems: "center", gap: 7 }}>
-            <Package size={16} strokeWidth={2.4} color={C.ink} /> Ürün ilanları
-          </h2>
-          {sellerListings.length === 0 ? (
-            <p style={{ fontFamily: MONO, fontSize: 11, color: C.faint, margin: 0, lineHeight: 1.5 }}>Bu satıcının yayında ilanı yok.</p>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
-              {sellerListings.map((l) => (
-                <button key={l.id} onClick={() => { navigate(`/ilan/${l.id}`); window.scrollTo(0, 0); }}
-                  style={{ display: "flex", alignItems: "center", gap: 12, textAlign: "left", width: "100%", border: `2px solid ${C.ink}`, borderRadius: 6, padding: 11, background: C.card, cursor: "pointer" }}>
-                  <span style={{ width: 40, height: 40, flexShrink: 0, borderRadius: 5, background: C.stone, border: `2px solid ${C.ink}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <Package size={18} color={C.ink} strokeWidth={2} />
-                  </span>
-                  <span style={{ minWidth: 0, flex: 1 }}>
-                    <span style={{ display: "block", fontFamily: ARCHIVO, fontSize: 13, fontWeight: 800, color: C.ink, textTransform: "uppercase", letterSpacing: "-0.02em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{l.title}</span>
-                    <span style={{ display: "block", fontFamily: MONO, fontSize: 10, color: C.sub, marginTop: 2 }}>
-                      {[l.il, l.material, l.amount ? `${l.amount} ${l.unit || ""}`.trim() : ""].filter(Boolean).join(" · ")}
-                    </span>
-                  </span>
-                  {l.priceType === "sabit" && l.price != null && (
-                    <span style={{ fontFamily: MONO, fontSize: 12, fontWeight: 700, color: C.green, whiteSpace: "nowrap" }}>{Number(l.price).toLocaleString("tr-TR")} ₺</span>
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
         </section>
 
         {/* Değerlendirmeler */}
@@ -276,11 +334,11 @@ export default function SaticiProfilPage({ user, users = [], listings = [], revi
           </section>
         )}
 
-        {/* Mesaj CTA (kendi profilimde gizli) */}
+        {/* Mesaj CTA (kendi profilimde gizli) — vitrin dili: fiyat sor */}
         {!isMe && (
           <button type="button" onClick={() => navigate("/mesajlar")}
             style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, background: C.yellow, border: `2px solid ${C.ink}`, color: C.ink, borderRadius: 6, padding: "15px", fontFamily: ARCHIVO, fontSize: 14, fontWeight: 800, textTransform: "uppercase", letterSpacing: "-0.01em", cursor: "pointer", boxShadow: "3px 3px 0 #0A0A0A" }}>
-            <MessageCircle size={18} strokeWidth={2.4} /> Satıcıya mesaj gönder
+            <MessageCircle size={18} strokeWidth={2.4} /> Satıcıya yaz — fiyat sor
           </button>
         )}
 
