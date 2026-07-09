@@ -21,7 +21,9 @@ Statü: `[ ]` yapılacak · `[?]` durumu belirsiz, önce doğrula · bitince `[x
 
 **Doğrulama:** Canlı sitede giriş yap → Supabase → Authentication → Users'da yeni kayıt görünmeli. Görünmüyorsa env build'e girmemiştir.
 
-### 2. Supabase migration'ları canlıda uygulanmış mı  `[?]`
+### 2. Supabase migration'ları canlıda uygulanmış mı  `[x]`
+> **✅ Doğrulandı 2026-07-09 (production):** 8/8 profil kolonu mevcut · 3/3 RPC mevcut (`set_my_role`, `accept_job`, `guard_driver_listing_update`) · guard `accepted_by_id` whitelist'te (`guard_fixed = true`). Backend tamam.
+
 Bugünkü **vitrin/künye** işi `profiles` tablosundaki kolonlara bağlı — canlıda yoksa profil kaydı sessizce boş döner. Hepsi idempotent (`add column if not exists` / `create or replace`), tekrar çalıştırmak güvenli.
 
 **Doğrulama (Supabase → SQL Editor):**
@@ -102,6 +104,6 @@ Web girişi çalışıyor; uygulama-içi (native) Google girişi için:
 ---
 
 ### Özet sıralama
-1. **Önce P0** (Vercel env + SQL doğrulama) — app'in canlıda gerçekten çalışması buna bağlı.
+1. **P0 backend ✅ doğrulandı (2026-07-09).** Kalan tek P0: **Vercel env + redeploy** — app'in canlıda gerçekten çalışması buna bağlı.
 2. Sonra **P1** (mağaza formları + gizlilik URL + Play kapalı test) — gönderim için zorunlu.
 3. **P2/P3** ilk sürümden sonra da eklenebilir (native Google girişi ve gelen-mail olmadan da yayınlanabilirsin; web Google girişi + noreply gideni çalışıyor).
