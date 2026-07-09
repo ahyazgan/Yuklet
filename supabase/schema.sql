@@ -272,6 +272,14 @@ returns boolean language sql security definer set search_path = public as $$
 $$;
 grant execute on function public.is_admin() to authenticated;
 
+-- Askıya alınmış (status='banli') kullanıcı için true — mesaj/yorum insert RLS'i
+-- sunucu tarafında da engellesin (istemci guard'ına ek savunma; App Store 1.2).
+create or replace function public.is_banned()
+returns boolean language sql security definer set search_path = public as $$
+  select coalesce((select status = 'banli' from public.profiles where id = auth.uid()), false);
+$$;
+grant execute on function public.is_banned() to authenticated;
+
 -- İlan sahibi VEYA kabul edilmiş teklifin sürücüsü ise true (trip_locations RLS +
 -- messages_insert taraf kontrolü kullanır). BURADA tanımlı olmalı — messages_insert
 -- policy'si bunu CREATE anında çözer; sonra tanımlansa schema.sql en baştan patlardı.
@@ -435,6 +443,7 @@ create policy messages_read on public.messages for select using (
 -- edebiliyordu. to_id de karsi taraf olmali (kendine/ucuncu kisiye yazamaz).
 create policy messages_insert on public.messages for insert with check (
   auth.uid() = from_id
+  and not public.is_banned()                      -- banli kullanici mesaj atamaz
   and public.is_trip_party(listing_id, from_id)   -- gonderen ise tarafi
   and public.is_trip_party(listing_id, to_id)     -- alici da ise tarafi
   and from_id <> to_id
@@ -482,6 +491,7 @@ create policy reviews_read   on public.reviews for select using (true);         
 -- herkese sinirsiz sahte puan atmasina izin veriyordu.
 create policy reviews_insert on public.reviews for insert with check (
   auth.uid() = from_id
+  and not public.is_banned()                      -- banli kullanici yorum yapamaz
   and from_id <> to_id
   and exists (
     select 1 from public.listings l
