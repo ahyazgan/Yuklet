@@ -15,6 +15,11 @@ workflows:
     instance_type: mac_mini_m2
     max_build_duration: 60
     environment:
+      groups:
+        # Supabase build-time anahtarlari (VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY).
+        # Codemagic UI'da "yuklet_supabase" grubu olarak eklenmeli; yoksa native
+        # build sunucuya baglanamaz ("Sunucu baglantisi yapilandirilmamis").
+        - yuklet_supabase
       vars:
         BUNDLE_ID: "com.yuklet.app"
         # Bu proje CocoaPods DEGIL Swift Package Manager (SPM) kullanir
@@ -135,6 +140,7 @@ workflows:
     environment:
       groups:
         - yuklet_android
+        - yuklet_supabase   # VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY (build-time)
       vars:
         PACKAGE_NAME: "com.yuklet.app"
       node: 22
