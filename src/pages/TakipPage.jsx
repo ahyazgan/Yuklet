@@ -643,7 +643,7 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
                 return (
                   <div style={{ height: 220, borderRadius: 6, border: `2px dashed ${C.muted}`, background: C.stone, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, textAlign: "center", padding: "0 24px" }}>
                     <Navigation size={28} strokeWidth={1.8} color={C.muted} />
-                    <div style={{ fontFamily: ARCH, fontSize: 15, fontWeight: 800, textTransform: "uppercase", letterSpacing: "-0.01em", color: C.ink }}>Canlı konum yakında</div>
+                    <div style={{ fontFamily: ARCH, fontSize: 15, fontWeight: 800, textTransform: "uppercase", letterSpacing: "-0.01em", color: C.ink }}>Henüz canlı konum yok</div>
                     <div style={{ fontFamily: MONO, fontSize: 10.5, color: C.muted, lineHeight: 1.6, maxWidth: 260 }}>
                       Sürücü yola çıkıp konum paylaşımını açtığında aracın canlı konumu burada görünecek.
                     </div>
