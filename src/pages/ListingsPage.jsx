@@ -218,33 +218,45 @@ function ListingCard({ l, isFav = false, onToggleFav, rel }) {
         {l.title}
       </div>
 
-      {/* güzergah: from ● —— to ○ */}
-      <div
-        className="flex items-center gap-2"
-        style={{ padding: "8px 12px 0 12px" }}
-      >
-        <span
-          style={{ width: 8, height: 8, borderRadius: "50%", background: C.ink, flexShrink: 0 }}
-        />
-        <span style={{ ...MONO, fontSize: 10.5, fontWeight: 700 }}>{fromTxt}</span>
-        <span style={{ flex: 1, height: 2, background: C.border, borderRadius: 1 }} />
-        <span
-          style={{
-            width: 9,
-            height: 9,
-            borderRadius: "50%",
-            border: `2px solid ${C.ink}`,
-            background: C.card,
-            flexShrink: 0,
-          }}
-        />
-        <span
-          style={{ ...MONO, fontSize: 10.5, fontWeight: 700, maxWidth: 130 }}
-          className="truncate"
+      {/* konum satırı — ÜRÜN: mağaza/ocak konumu (katalog), İŞ/ARAÇ: güzergah çizgisi */}
+      {isProduct ? (
+        <div
+          className="flex items-center gap-1.5"
+          style={{ padding: "8px 12px 0 12px" }}
         >
-          {toTxt}
-        </span>
-      </div>
+          <MapPin size={12} strokeWidth={2.4} color={C.sub} style={{ flexShrink: 0 }} />
+          <span style={{ ...MONO, fontSize: 10.5, fontWeight: 700 }} className="truncate">
+            {[l.il, l.ilce].filter(Boolean).join(" / ") || "Ocak / Santral"}
+          </span>
+        </div>
+      ) : (
+        <div
+          className="flex items-center gap-2"
+          style={{ padding: "8px 12px 0 12px" }}
+        >
+          <span
+            style={{ width: 8, height: 8, borderRadius: "50%", background: C.ink, flexShrink: 0 }}
+          />
+          <span style={{ ...MONO, fontSize: 10.5, fontWeight: 700 }}>{fromTxt}</span>
+          <span style={{ flex: 1, height: 2, background: C.border, borderRadius: 1 }} />
+          <span
+            style={{
+              width: 9,
+              height: 9,
+              borderRadius: "50%",
+              border: `2px solid ${C.ink}`,
+              background: C.card,
+              flexShrink: 0,
+            }}
+          />
+          <span
+            style={{ ...MONO, fontSize: 10.5, fontWeight: 700, maxWidth: 130 }}
+            className="truncate"
+          >
+            {toTxt}
+          </span>
+        </div>
+      )}
 
       {/* sahip + onaylı + puan */}
       <div
