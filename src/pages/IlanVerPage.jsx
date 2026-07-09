@@ -496,6 +496,15 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers
 
   const NEW_TITLE = { is: "İş ilanı ver", arac: "Araç ilanı ver", urun: "Ürün ilanı ver" };
   const title = editing ? "İlanı düzenle" : (NEW_TITLE[type] || "İlan oluştur");
+  // Rol/tür bazlı akış kimliği — alıcı iş formu "talep/fırsat", satıcı ürün formu
+  // "katalog kalemi", nakliyeci "boş araç" hisseder. Paylaşılan JSX role göre konuşur.
+  const FLOW_KICKER = {
+    is:   "Taşınacak yükünü ilana çevir — sabit fiyatını gören nakliyeci doğrudan kabul etsin.",
+    arac: "Boş aracını yayınla — uygun iş doğrudan sana gelsin.",
+    urun: "Kataloğuna yeni ürün ekle — alıcılar fiyat ve stokla görsün.",
+  };
+  const CAT_HEADING = { is: "Ne taşınacak?", arac: "Ne taşırsın?", urun: "Ne satıyorsun?" };
+  const CTA_PUBLISH = { is: "İş İlanını Yayınla", arac: "Araç İlanını Yayınla", urun: "Ürünü Yayınla" };
   const onBack = () => { if (step === 2) { setStep(1); setError(""); } else navigate(-1); };
 
   // primary full-width ink button (Devam Et / İlanı Oluştur)
@@ -509,15 +518,23 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers
   return (
     <div style={{ ...shell, paddingBottom: 110 }}>
       <SEO title={title} description="Taşınacak yükünüzü veya boş aracınızı yayınlayın; nakliyeci ve iş sahiplerinden teklif alın." />
-      <AppBar title="İlan oluştur" step={step} total={2} onBack={onBack} />
+      <AppBar title={editing ? "İlanı düzenle" : (NEW_TITLE[type] || "İlan oluştur")} step={step} total={2} onBack={onBack} />
 
       {/* ──────────────── STEP 1: ne taşınacak + ilan türü ──────────────── */}
       {step === 1 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 22, padding: 16 }}>
 
-          {/* NE TAŞINACAK? — kategori kartları */}
+          {/* ROL KİMLİĞİ — akışın ne olduğunu tek cümlede söyler (talep/katalog/araç) */}
+          {!editing && (
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 11, background: C.stone, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "11px 13px" }}>
+              <span style={{ width: 4, alignSelf: "stretch", background: C.yellow, borderRadius: 2, flexShrink: 0 }} />
+              <span style={{ fontFamily: MONO, fontSize: 11, fontWeight: 700, color: C.ink, lineHeight: 1.45 }}>{FLOW_KICKER[type] || FLOW_KICKER.is}</span>
+            </div>
+          )}
+
+          {/* NE TAŞINACAK / SATIYORSUN — kategori kartları */}
           <div>
-            <h2 style={sectionTitle}>Ne taşınacak?</h2>
+            <h2 style={sectionTitle}>{CAT_HEADING[type] || "Ne taşınacak?"}</h2>
             <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 12 }}>
               {CATS.map((c) => {
                 const active = cat === c.id;
@@ -636,7 +653,7 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers
               {cat === "hafriyat" ? "HAFRİYAT" : "SİLOBAS"}
             </span>
             <span style={{ fontFamily: MONO, fontSize: 11, fontWeight: 700, textTransform: "uppercase", background: C.ink, color: C.yellow, border: `2px solid ${C.ink}`, borderRadius: 5, padding: "5px 11px" }}>
-              ÜRÜN İLANI
+              KATALOG KALEMİ
             </span>
           </div>
 
@@ -713,7 +730,7 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers
           )}
 
           <button type="button" onClick={submit} disabled={saving} style={{ ...inkBtn, opacity: saving ? 0.6 : 1, cursor: saving ? "default" : "pointer" }}>
-            {saving ? "Kaydediliyor…" : (editing ? "Değişiklikleri Kaydet" : "Ürünü Yayınla")} <ArrowRight size={18} strokeWidth={2.5} />
+            {saving ? "Kaydediliyor…" : (editing ? "Değişiklikleri Kaydet" : (CTA_PUBLISH[type] || "Ürünü Yayınla"))} <ArrowRight size={18} strokeWidth={2.5} />
           </button>
         </div>
       )}
@@ -913,7 +930,7 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers
           )}
 
           <button type="button" onClick={submit} disabled={saving} style={{ ...inkBtn, opacity: saving ? 0.6 : 1, cursor: saving ? "default" : "pointer" }}>
-            {saving ? "Kaydediliyor…" : (editing ? "Değişiklikleri Kaydet" : "İlanı Oluştur")} <ArrowRight size={18} strokeWidth={2.5} />
+            {saving ? "Kaydediliyor…" : (editing ? "Değişiklikleri Kaydet" : (CTA_PUBLISH[type] || "İlanı Oluştur"))} <ArrowRight size={18} strokeWidth={2.5} />
           </button>
         </div>
       )}
