@@ -3,7 +3,7 @@
 
 export const CATS = [
   { id: "hafriyat", name: "Hafriyat", icon: "🚛", clr: "#C85A24", desc: "Kazi, toprak ve moloz tasima" },
-  { id: "silobas", name: "Silobas & Dökme", icon: "🛢️", clr: "#2E6FA3", desc: "Dokme yuk: cimento, agrega, tahil, kimyasal" },
+  { id: "silobas", name: "Silobas & Dökme", icon: "🛢️", clr: "#2E6FA3", desc: "Dökme sanayi/inşaat yükü: çimento, agrega, kum, kimyasal" },
 ];
 
 // Kullanici rolleri (3 taraf)
@@ -62,13 +62,16 @@ export const HAFRIYAT_VEHICLES = [
   "Ekskavatörlü + damper (komple)",
 ];
 
-// --- SİLOBAŞ & DÖKÜME ---
+// --- SİLOBAŞ & DÖKÜME (sanayi / inşaat dökme yük) ---
 export const SILOBAS_MATERIALS = [
   // İnşaat / Bağlayıcı
   "Çimento (döküme)",
+  "Klinker",
   "Kireç (söndürülmüş/kalsit)",
   "Alçı (döküme)",
   "Uçucu kül (fly ash)",
+  "Yüksek fırın cürufu (slag)",
+  "Mermer / kalsit tozu",
   // Agrega / Kum
   "Kum (0–3 mm)",
   "İnce kum (0–1 mm)",
@@ -77,39 +80,26 @@ export const SILOBAS_MATERIALS = [
   "Mıcır (16–32 mm)",
   "Kırma taş (agrega)",
   "Bazalt agrega",
-  // Gıda / Tarım
-  "Buğday",
-  "Arpa",
-  "Mısır",
-  "Yulaf",
-  "Çeltik / Pirinç",
-  "Ayçiçeği tohumu",
-  "Kanola",
-  "Katı hayvan yemi",
-  "Un (döküme)",
-  "Nişasta",
-  "Şeker",
-  "Tuz",
-  // Kimyasal / Endüstriyel
+  // Endüstriyel / Kimyasal
   "Kimyasal granül",
   "Plastik granül (pelet)",
-  "Gübre (granül)",
-  "Gübre (toz)",
   "Soda külü",
-  "Diğer döküme yük",
+  "Bentonit",
+  "Perlit",
+  "Baritin",
 ];
 
 export const SILOBAS_VEHICLES = [
   "Silobas – Çimento (20 t)",
   "Silobas – Çimento (30 t)",
   "Silobas – Çimento (40 t)",
-  "Silobas – Gıda / Tahıl (hyjienik)",
+  "Silobas – Kireç / alçı (30 t)",
+  "Silobas – Mineral / kül (30 t)",
   "Silobas – Kimyasal (inox)",
-  "Tanker – Sıvı gıda (paslanmaz)",
   "Tanker – Sıvı kimyasal",
   "Dökme yük dorsesi (açık üst)",
   "Kapalı kasa (toz yük)",
-  "Flexitank (çuval dökme)",
+  "Damperli silobas (dökme mineral)",
 ];
 
 // --- BIRLESIK export (geriye donuk uyumluluk) ---

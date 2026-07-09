@@ -126,6 +126,42 @@ function AppBar({ title, step, total, onBack }) {
   );
 }
 
+// Malzeme seçici: hazır chip listesi + "Diğer…" ile elle yazma (liste dışı yük için).
+// key={cat} ile sarılır → kategori değişince (yük listesi değişir) sıfırdan kurulur.
+function MaterialPicker({ materials, value, onChange }) {
+  const inList = materials.includes(value);
+  const [otherOpen, setOtherOpen] = useState(Boolean(value) && !inList);
+  const isOther = otherOpen || (Boolean(value) && !inList);
+  const chip = (active) => ({
+    fontFamily: MONO, fontSize: 12, fontWeight: 700, padding: "7px 13px", borderRadius: 5, cursor: "pointer",
+    background: active ? C.yellow : C.card, border: `2px solid ${C.ink}`, color: C.ink,
+    boxShadow: active ? "2px 2px 0 #0A0A0A" : "none", transition: "all 0.1s ease",
+  });
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
+      {materials.length === 0 && <span style={{ fontSize: 13, color: C.muted }}>Bu kategoride malzeme listesi yok.</span>}
+      {materials.map((m) => {
+        const active = value === m;
+        return (
+          <button type="button" key={m} onClick={() => { setOtherOpen(false); onChange(active ? "" : m); }} style={chip(active)}>
+            {m}
+          </button>
+        );
+      })}
+      <button type="button" onClick={() => { setOtherOpen(true); if (materials.includes(value)) onChange(""); }} style={chip(isOther)}>
+        Diğer…
+      </button>
+      {isOther && (
+        <input
+          type="text" value={value} onChange={(e) => onChange(e.target.value)} autoFocus
+          placeholder="Malzemeyi elle yaz (ör. dolomit, cüruf)"
+          style={{ ...fieldBox, flexBasis: "100%", marginTop: 2 }}
+        />
+      )}
+    </div>
+  );
+}
+
 export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers = [], reviews = [], user, fleet = [], onRequireAuth, onUpdateProfile }) {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -543,24 +579,7 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers
           {type !== "urun" && (
           <div>
             <h2 style={sectionTitle}>Malzeme</h2>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
-              {materials.length === 0 && <span style={{ fontSize: 13, color: C.muted }}>Bu kategoride malzeme listesi yok.</span>}
-              {materials.map((m) => {
-                const active = form.material === m;
-                return (
-                  <button type="button" key={m} onClick={() => set("material", active ? "" : m)}
-                    style={{
-                      fontFamily: MONO, fontSize: 12, fontWeight: 700, padding: "7px 13px", borderRadius: 5, cursor: "pointer",
-                      background: active ? C.yellow : C.card,
-                      border: `2px solid ${C.ink}`, color: C.ink,
-                      boxShadow: active ? "2px 2px 0 #0A0A0A" : "none",
-                      transition: "all 0.1s ease",
-                    }}>
-                    {m}
-                  </button>
-                );
-              })}
-            </div>
+            <MaterialPicker key={cat} materials={materials} value={form.material} onChange={(v) => set("material", v)} />
           </div>
           )}
 
@@ -624,24 +643,7 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers
           {/* MALZEME TÜRÜ — chip seçici */}
           <div>
             <h2 style={sectionTitle}>Malzeme türü</h2>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
-              {materials.length === 0 && <span style={{ fontSize: 13, color: C.muted }}>Bu kategoride malzeme listesi yok.</span>}
-              {materials.map((m) => {
-                const active = form.material === m;
-                return (
-                  <button type="button" key={m} onClick={() => set("material", active ? "" : m)}
-                    style={{
-                      fontFamily: MONO, fontSize: 12, fontWeight: 700, padding: "7px 13px", borderRadius: 5, cursor: "pointer",
-                      background: active ? C.yellow : C.card,
-                      border: `2px solid ${C.ink}`, color: C.ink,
-                      boxShadow: active ? "2px 2px 0 #0A0A0A" : "none",
-                      transition: "all 0.1s ease",
-                    }}>
-                    {m}
-                  </button>
-                );
-              })}
-            </div>
+            <MaterialPicker key={cat} materials={materials} value={form.material} onChange={(v) => set("material", v)} />
           </div>
 
           {/* ÜRÜN ADI + FİYAT/STOK */}
