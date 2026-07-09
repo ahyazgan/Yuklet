@@ -11,7 +11,7 @@ Statü: `[ ]` yapılacak · `[?]` durumu belirsiz, önce doğrula · bitince `[x
 ## P0 — Bunlar olmadan app düzgün çalışmaz / reddedilir
 
 ### 1. Vercel ortam değişkenleri + redeploy  `[x]` env set → redeploy/native doğrula
-> **✅ Doğrulandı 2026-07-09:** `yuklet` projesinde `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` **üç ortamda da** (Production/Preview/Development) tanımlı (5 Tem eklenmiş). **Kalan:** (a) canlı Production deploy 5 Tem'den sonra mı — değilse bir kez Redeploy; (b) **native için Codemagic `yuklet_supabase` grubunu ayrıca doldur** (aşağıdaki Codemagic notu); (c) yuklet.co'da kayıt→Users testiyle doğrula.
+> **✅ WEB TAMAM 2026-07-09:** `yuklet` projesinde `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` üç ortamda da tanımlı (5 Tem). Canlı Production deploy bugün (`1f6fc30`, 5 Tem'den sonra) → **env gömülü ve canlı, redeploy gerekmedi.** **Kalan:** (a) yuklet.co'da kayıt→Users testiyle son doğrulama; (b) **native için Codemagic `yuklet_supabase` grubunu ayrıca doldur** (aşağıdaki Codemagic notu).
 
 **Neden:** Env yoksa app "sahte-giriş" moduna düşüyor (herkes kayıtsız giriyor gibi görünür), Supabase'e hiç bağlanmaz. Vercel = web (yuklet.co); native mağaza app'i env'i **Codemagic**'ten alır (`codemagic.yaml` → `yuklet_supabase` grubu).
 **Adımlar:**
