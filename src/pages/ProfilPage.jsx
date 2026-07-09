@@ -170,6 +170,14 @@ const cardSt = { background: C.card, border: `2px solid ${C.ink}`, borderRadius:
 const sectionTitle = { fontFamily: ARCHIVO, fontSize: 13, fontWeight: 800, color: C.ink, letterSpacing: "-0.02em", textTransform: "uppercase", margin: "0 0 12px" };
 const labelSt = { display: "block", marginBottom: 6, fontFamily: MONO, fontSize: 10, fontWeight: 700, color: C.sub, letterSpacing: 0.4, textTransform: "uppercase" };
 const inputSt = { width: "100%", boxSizing: "border-box", background: C.card, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "11px 13px", fontSize: 14, color: C.ink, outline: "none", fontFamily: MONO };
+// "Herkese açık profilini önizle" butonu — düzenleme formunu public vitrine bağlar
+// (satıcı → mağaza vitrini, alıcı → firma künyesi, nakliyeci → nakliyeci profili).
+const previewBtnSt = {
+  width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
+  background: C.stone, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "10px 12px",
+  fontFamily: ARCHIVO, fontSize: 12, fontWeight: 800, textTransform: "uppercase",
+  letterSpacing: "-0.01em", color: C.ink, cursor: "pointer", marginBottom: 16,
+};
 
 export default function ProfilPage({ user, onUpdateProfile, onRequireAuth, onLogout, onDeleteAccount, reviews = [], getUserRating, listings = [], offers = [], docs = [], onAddDoc, onRemoveDoc, notifPrefs = DEFAULT_NOTIF_PREFS, onUpdateNotifPrefs, onReport, blockedIds = [], onToggleBlock, getContact }) {
   const toast = useToast();
@@ -520,9 +528,16 @@ export default function ProfilPage({ user, onUpdateProfile, onRequireAuth, onLog
             <h2 style={{ ...sectionTitle, display: "flex", alignItems: "center", gap: 7 }}>
               <Building2 size={16} strokeWidth={2.4} color={C.ink} /> Satıcı bilgileri
             </h2>
-            <p style={{ fontFamily: MONO, fontSize: 10, color: C.faint, margin: "0 0 14px", lineHeight: 1.5 }}>
-              Bu bilgiler herkese açık satıcı profilinde görünür. Alıcılar seni böyle bulur.
+            <p style={{ fontFamily: MONO, fontSize: 10, color: C.faint, margin: "0 0 10px", lineHeight: 1.5 }}>
+              Herkese açık <b style={{ color: C.ink }}>mağaza vitrinini</b> besler — alıcılar seni önce ürün
+              kataloğun, stok ve teslimat bilginle görür. Ürünleri fiyatıyla{" "}
+              <button type="button" onClick={() => navigate("/ilan-ver")}
+                style={{ background: "none", border: "none", padding: 0, font: "inherit", color: C.ink, fontWeight: 700, textDecoration: "underline", cursor: "pointer" }}>İlan Ver</button>{" "}
+              sayfasından yayınlarsın.
             </p>
+            <button type="button" onClick={() => navigate(`/satici/${user.id}`)} style={previewBtnSt}>
+              <Package size={14} strokeWidth={2.4} /> Mağaza vitrinini gör <ChevronRight size={15} strokeWidth={2.4} />
+            </button>
 
             {/* Tesis türü */}
             <div style={{ marginBottom: 14 }}>
@@ -602,9 +617,13 @@ export default function ProfilPage({ user, onUpdateProfile, onRequireAuth, onLog
             <h2 style={{ ...sectionTitle, display: "flex", alignItems: "center", gap: 7 }}>
               <Building2 size={16} strokeWidth={2.4} color={C.ink} /> Firma bilgileri
             </h2>
-            <p style={{ fontFamily: MONO, fontSize: 10, color: C.faint, margin: "0 0 14px", lineHeight: 1.5 }}>
-              Bu bilgiler herkese açık firma profilinde görünür. Nakliyeciler seni böyle tanır.
+            <p style={{ fontFamily: MONO, fontSize: 10, color: C.faint, margin: "0 0 10px", lineHeight: 1.5 }}>
+              Herkese açık <b style={{ color: C.ink }}>firma künyeni</b> besler — nakliyeciler seni önce güvenin,
+              tamamlanan iş sayın ve doğrulanmış belgelerinle tanır. Ne kadar eksiksizse o kadar güven verir.
             </p>
+            <button type="button" onClick={() => navigate(`/alici/${user.id}`)} style={previewBtnSt}>
+              <ShieldCheck size={14} strokeWidth={2.4} /> Firma künyeni gör <ChevronRight size={15} strokeWidth={2.4} />
+            </button>
 
             {/* Firma türü */}
             <div style={{ marginBottom: 14 }}>
@@ -690,9 +709,13 @@ export default function ProfilPage({ user, onUpdateProfile, onRequireAuth, onLog
             <h2 style={{ ...sectionTitle, display: "flex", alignItems: "center", gap: 7 }}>
               <Truck size={16} strokeWidth={2.4} color={C.ink} /> Taşıma bilgileri
             </h2>
-            <p style={{ fontFamily: MONO, fontSize: 10, color: C.faint, margin: "0 0 14px", lineHeight: 1.5 }}>
-              Bu bilgiler herkese açık nakliyeci profilinde görünür. Alıcılar seni böyle bulur.
+            <p style={{ fontFamily: MONO, fontSize: 10, color: C.faint, margin: "0 0 10px", lineHeight: 1.5 }}>
+              Herkese açık <b style={{ color: C.ink }}>nakliyeci profilini</b> besler — alıcılar seni filon,
+              hizmet bölgen ve puanınla bulur.
             </p>
+            <button type="button" onClick={() => navigate(`/nakliyeci-profil/${user.id}`)} style={previewBtnSt}>
+              <Truck size={14} strokeWidth={2.4} /> Nakliyeci profilini gör <ChevronRight size={15} strokeWidth={2.4} />
+            </button>
 
             {/* Taşıma türü */}
             <div style={{ marginBottom: 14 }}>
