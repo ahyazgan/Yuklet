@@ -16,7 +16,7 @@ create policy listings_update_driver on public.listings for update
 create or replace function public.guard_driver_listing_update()
 returns trigger language plpgsql security definer set search_path = public as $$
 declare
-  allowed text[] := array['phase','status','cycle_stage','arrived_at','trips_done','delivery_proof'];
+  allowed text[] := array['phase','status','cycle_stage','arrived_at','trips_done','delivery_proof','payment_received_at','payment_paid_at'];
 begin
   if auth.uid() is null or auth.uid() = old.owner_id or public.is_admin() then
     return new;

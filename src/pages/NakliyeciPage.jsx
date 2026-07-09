@@ -34,14 +34,14 @@ const HERO_TITLE = ["Boş dönme,", "yolda yük al"];
 
 const HOW = [
   { n: "01", t: "Araç ilanını aç", d: "Araç tipi, kapasite, bölge ve müsaitliğini belirt. 2 dakika." },
-  { n: "02", t: "İş ilanlarına teklif ver", d: "Sana uygun yükleri filtrele, fiyatını ve mesajını gönder." },
-  { n: "03", t: "Anlaş, yola çık", d: "Teklif kabul edilince iş sahibiyle iletişime geç, belgeleri dijital yönet." },
+  { n: "02", t: "Uygun işi doğrudan kabul et", d: "Sana uygun sabit fiyatlı yükleri filtrele, tek dokunuşla kabul et." },
+  { n: "03", t: "Anlaş, yola çık", d: "Kabul edince iş sahibiyle iletişime geç, belgeleri dijital yönet." },
 ];
 
 const BENEFITS = [
   { t: "Boş sefer yok", d: "Bölgendeki yükleri önceden gör. Boş dönüş yerine iş al, km başı kazancını artır." },
   { t: "Anında iş eşleştirme", d: "İş ilanları anlık güncellenir. Sabah ilan veren alıcı öğleden önce araç bulur." },
-  { t: "Fiyatı sen belirle", d: "Platform fiyat dikte etmez. Kendi teklifini ver, iş sahibiyle doğrudan anlaş." },
+  { t: "Şeffaf sabit fiyat", d: "Her iş ilanında fiyat baştan bellidir. Uygun olanı doğrudan kabul et — sürpriz yok." },
   { t: "Dijital irsaliye", d: "Kağıt takip yok. Taşıma belgelerini telefonda gör, sakla, gönder." },
 ];
 
@@ -69,7 +69,7 @@ export default function NakliyeciPage() {
     <div className="mx-auto w-full max-w-[460px]" style={{ background: C.bg, color: C.ink }}>
       <SEO
         title="Nakliyeci & Taşıyıcı"
-        description="Boş sefer yapmayın. Hafriyat ve döküm yük işlerini bulun, anında teklif verin, daha fazla kazanın."
+        description="Boş sefer yapmayın. Hafriyat ve döküm yük işlerini bulun, sabit fiyattan doğrudan kabul edin, daha fazla kazanın."
       />
 
       {/* üst hazard şeridi */}
@@ -108,7 +108,7 @@ export default function NakliyeciPage() {
 
         {/* gövde + sarı vurgu */}
         <p className="mt-4 max-w-[300px] text-[13px] font-medium leading-relaxed" style={{ color: C.heroBody }}>
-          Bölgendeki hafriyat ve döküm yük işlerini anlık gör. Teklif ver, iş sahibiyle doğrudan anlaş. Boş dönüş yok, kayıp kilometre yok.{" "}
+          Bölgendeki hafriyat ve döküm yük işlerini anlık gör. Sabit fiyatlı işi doğrudan kabul et, iş sahibiyle anlaş. Boş dönüş yok, kayıp kilometre yok.{" "}
           <span style={{ color: C.yellow, fontWeight: 700 }}>%0 komisyon.</span>
         </p>
 

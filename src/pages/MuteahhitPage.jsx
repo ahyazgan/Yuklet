@@ -34,12 +34,12 @@ const HERO_TITLE = ["Belgeli aracı", "dakikada bul"];
 
 const HOW = [
   { n: "01", t: "İlanını ver", d: "Yükleme / boşaltma, yük tipi, miktar ve tarih. 2 dakika." },
-  { n: "02", t: "Teklifleri karşılaştır", d: "Nakliyeciler fiyat ve araçla teklif yollar; puanlara bak." },
-  { n: "03", t: "Anlaş & başla", d: "En uygun teklifi kabul et, doğrudan iletişime geç." },
+  { n: "02", t: "Doğrudan eşleş", d: "Sabit fiyatını gören uygun, puanlı nakliyeci işi doğrudan kabul eder." },
+  { n: "03", t: "Anlaş & başla", d: "Eşleşince doğrudan iletişime geç, işi başlat." },
 ];
 
 const BENEFITS = [
-  { t: "Anlık teklif", d: "İlanını ver, dakikalar içinde belgeli nakliyecilerden fiyat gelsin." },
+  { t: "Hızlı eşleşme", d: "Sabit fiyatını yaz; belgeli nakliyeci dakikalar içinde doğrudan kabul etsin." },
   { t: "Malzemeyi kaynağından al", d: "Kum, mıcır, çimentoyu doğrudan ocak ve santrallerden sipariş et — aracısız." },
   { t: "Belgeli & puanlı", d: "Sadece K belgeli, geçmişi doğrulanmış araç ve satıcılarla çalış." },
   { t: "Her yük tipi", d: "Hafriyat, kum, çakıl, mıcır, çimento — hepsi tek yerde." },
@@ -70,7 +70,7 @@ export default function MuteahhitPage() {
     <div className="mx-auto w-full max-w-[460px]" style={{ background: C.bg, color: C.ink }}>
       <SEO
         title="Alıcı"
-        description="Şantiyen için hafriyat ve döküm yük nakliyesi artık çok kolay. Anlık teklif al, belgeli araçlarla çalış."
+        description="Şantiyen için hafriyat ve döküm yük nakliyesi artık çok kolay. Sabit fiyatını yaz, belgeli araçlarla doğrudan eşleş."
       />
 
       {/* üst hazard şeridi */}

@@ -292,6 +292,10 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers
       setError("Ürün adı, ilçe ve ad/firma alanları zorunludur.");
       return;
     }
+    if (!(Number(form.price) > 0)) {
+      setError("Fiyat zorunludur. Lütfen ton başı geçerli bir tutar girin.");
+      return;
+    }
     const stockLabel = (STOCK_LEVELS.find((s) => s.id === form.stock) || {}).label || "";
     const data = {
       type: "urun", cat,
@@ -417,7 +421,7 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers
           {/* summary card — dark header block + hazard stripe */}
           <div style={{ width: "100%", textAlign: "left", background: C.card, border: `2px solid ${C.ink}`, borderRadius: 6, overflow: "hidden", boxShadow: "4px 4px 0 #0A0A0A" }}>
             <div style={{ background: C.ink, color: C.yellow, fontFamily: MONO, fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", padding: "9px 14px", display: "flex", justifyContent: "space-between", alignItems: "center", position: "relative" }}>
-              <span>HMT-{String(published.id).padStart(4, "0")}</span>
+              <span>YKL-{String(published.id).padStart(4, "0")}</span>
               <span style={{ color: "#fff", display: "inline-flex", alignItems: "center", gap: 4, marginRight: 14 }}><CheckCircle2 size={12} /> AKTİF</span>
               <span style={{ position: "absolute", top: 0, right: 0, bottom: 0, width: 8, backgroundImage: HAZARD }} />
             </div>

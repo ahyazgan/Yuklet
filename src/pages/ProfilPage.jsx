@@ -101,6 +101,7 @@ function menuForRole(role) {
   const common = [
     { icon: Heart, label: "Favorilerim", desc: "Kaydettiğin ilanlar", to: "/ilanlar?fav=1" },
     { icon: HelpCircle, label: "Yardım & destek", desc: "Sık sorulan sorular ve iletişim", to: "/iletisim" },
+    { icon: ShieldCheck, label: "Gizlilik & Yasal", desc: "Gizlilik, kullanım koşulları, KVKK, hesap silme", to: "/yasal/gizlilik" },
   ];
   if (role === "nakliyeci") {
     return [
@@ -989,11 +990,10 @@ export default function ProfilPage({ user, onUpdateProfile, onRequireAuth, onLog
             ] : []),
             ...(isAdmin(user) ? [{ icon: ShieldCheck, label: "Yönetim Paneli", desc: "Şikayet, belge ve moderasyon", to: "/admin" }] : []),
             { icon: Ban, label: "Engellenen kullanıcılar", desc: blockedIds.length ? `${blockedIds.length} kullanıcı engelli` : "Engellediğin kimse yok", onClick: () => setShowBlocked(true) },
-            { icon: HelpCircle, label: "Yardım & destek", desc: "Sık sorulan sorular ve iletişim", to: "/iletisim" },
           ].map((m, i, arr) => {
             const Icon = m.icon;
             return (
-              <button key={m.label} onClick={() => (m.onClick ? m.onClick() : navigate(m.to))}
+              <button key={m.to || m.label} onClick={() => (m.onClick ? m.onClick() : navigate(m.to))}
                 style={{ width: "100%", display: "flex", alignItems: "center", gap: 14, padding: "14px 14px", background: "none", border: "none", borderBottom: i < arr.length - 1 ? `1.5px solid ${C.ink}` : "none", textAlign: "left", cursor: "pointer" }}>
                 <span style={{ width: 38, height: 38, flexShrink: 0, borderRadius: 6, background: C.stone, border: `2px solid ${C.ink}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <Icon size={18} color={C.ink} strokeWidth={2} />

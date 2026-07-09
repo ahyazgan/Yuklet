@@ -27,6 +27,17 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="com.yuklet.app" />
             </intent-filter>
+
+            <!-- App Link: https://yuklet.co/... paylaşılan linkler uygulamayı açar.
+                 autoVerify için yuklet.co/.well-known/assetlinks.json'a imza SHA-256'sı
+                 yazılmalı (bkz. docs/DEEP-LINK-KURULUM.md). Doğrulanana kadar zararsız:
+                 link tarayıcıda açılmaya devam eder. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="yuklet.co" />
+            </intent-filter>
         </activity>
 
         <provider

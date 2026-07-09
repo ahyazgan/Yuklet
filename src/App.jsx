@@ -71,7 +71,7 @@ const LegalPage = lazy(() => import("./pages/LegalPage"));
 const BildirimlerPage = lazy(() => import("./pages/BildirimlerPage"));
 const DispatchPage = lazy(() => import("./pages/DispatchPage"));
 const TripHistoryPage = lazy(() => import("./pages/TripHistoryPage"));
-const FiyatSimulasyonuPage = lazy(() => import("./pages/FiyatSimulasyonuPage"));
+// const FiyatSimulasyonuPage = lazy(() => import("./pages/FiyatSimulasyonuPage")); // Akıllı/tahmini fiyat kaldırıldı — öksüz rota gizlendi
 const FleetPage = lazy(() => import("./pages/FleetPage"));
 
 function ScrollToTop() {
@@ -286,6 +286,7 @@ function AppShell() {
   useEffect(() => { if (!SB) saveMessages(messages); }, [messages, SB]);
   const reloadMessages = async () => { try { setMessages(await api.fetchMessages()); } catch (e) { console.error(e); } };
   const addMessage = async (msg) => {
+    if ((profile || user)?.status === "banli") return { ok: false, error: "Hesabın askıya alındı." };
     if (SB) {
       try { const saved = await api.sendMessage(msg); setMessages(prev => [...prev, saved]); return { ok: true }; }
       catch (e) { console.error(e); return { ok: false, error: e?.message || "Mesaj gönderilemedi." }; }
@@ -331,6 +332,7 @@ function AppShell() {
   const [reviews, setReviews] = useState(() => (SB ? [] : loadReviews()));
   useEffect(() => { if (!SB) saveReviews(reviews); }, [reviews, SB]);
   const addReview = async (r) => {
+    if ((profile || user)?.status === "banli") return { ok: false, error: "Hesabın askıya alındı." };
     if (SB) {
       try { await api.addReview(r); setReviews(await api.fetchReviews()); return { ok: true }; }
       catch (e) { console.error(e); return { ok: false, error: e?.message || "Değerlendirme gönderilemedi." }; }
@@ -915,7 +917,7 @@ function AppShell() {
                 )}
                 <Route path="/ilan-ver" element={<PageTransition><IlanVerPage onPublish={publishListing} onUpdate={updateListing} listings={listings} offers={offers} reviews={reviews} user={user} fleet={myFleet} onRequireAuth={requireAuth} onUpdateProfile={updateProfile} /></PageTransition>} />
                 <Route path="/ilan-duzenle/:id" element={<PageTransition><IlanVerPage onPublish={publishListing} onUpdate={updateListing} listings={listings} offers={offers} reviews={reviews} user={user} fleet={myFleet} onRequireAuth={requireAuth} onUpdateProfile={updateProfile} /></PageTransition>} />
-                <Route path="/ilanlarim" element={<PageTransition><IlanlarimPage listings={listings} user={user} offers={offers} reviews={reviews} onUpdateOffer={updateOffer} onAcceptOffer={acceptOffer} onUpdateListing={updateListing} onDeleteListing={removeListing} onRequireAuth={requireAuth} getContact={getContact} onReport={addReport} /></PageTransition>} />
+                <Route path="/ilanlarim" element={<PageTransition><IlanlarimPage listings={listings} user={user} offers={offers} reviews={reviews} onUpdateOffer={updateOffer} onAcceptOffer={acceptOffer} onUpdateListing={updateListing} onDeleteListing={removeListing} onRequireAuth={requireAuth} onUpdateProfile={updateProfile} getContact={getContact} onReport={addReport} /></PageTransition>} />
                 <Route path="/tekliflerim" element={<PageTransition><TekliflerimPage listings={listings} user={user} offers={offers} onRequireAuth={requireAuth} /></PageTransition>} />
                 <Route path="/mesajlar" element={<PageTransition><MesajlarPage user={user} listings={listings} offers={offers} messages={messages} onSendMessage={addMessage} onRequireAuth={requireAuth} onSeen={markMessagesSeen} onMarkThreadRead={markThreadRead} getContact={getContact} msgSeen={msgSeen} blockedIds={myBlocked} onReport={addReport} onToggleBlock={toggleBlock} /></PageTransition>} />
                 <Route path="/profil" element={<PageTransition><ProfilPage user={user} onUpdateProfile={updateProfile} onRequireAuth={requireAuth} onLogout={logout} onDeleteAccount={deleteAccount} reviews={reviews} getUserRating={getUserRating} listings={listings} offers={offers} docs={docs.filter(d => user && String(d.ownerId) === String(user.id))} onAddDoc={addDoc} onRemoveDoc={removeDoc} notifPrefs={notifPrefs} onUpdateNotifPrefs={updateNotifPrefs} onReport={addReport} blockedIds={myBlocked} onToggleBlock={toggleBlock} getContact={getContact} /></PageTransition>} />
@@ -937,7 +939,7 @@ function AppShell() {
                 <Route path="/iletisim" element={<PageTransition><IletisimPage /></PageTransition>} />
                 {/* Piyasa Nabzı — özellik komple gizlendi (sistem henüz uygun değil); geri açmak için yorumu kaldır */}
                 {/* <Route path="/piyasa" element={<PageTransition><PiyasaNabziPage listings={listings} offers={offers} /></PageTransition>} /> */}
-                <Route path="/fiyat-simulasyonu" element={<PageTransition><FiyatSimulasyonuPage /></PageTransition>} />
+                {/* <Route path="/fiyat-simulasyonu" element={<PageTransition><FiyatSimulasyonuPage /></PageTransition>} /> */}
                 <Route path="/yasal/:slug" element={<PageTransition><LegalPage /></PageTransition>} />
                 <Route path="*" element={<PageTransition><NotFoundPage /></PageTransition>} />
               </Routes>

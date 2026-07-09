@@ -4,6 +4,8 @@ import { Plus, Check, X, MessageSquare, FileText, Phone, RotateCw, Pencil, Lock,
 import { CATS, STOCK_LEVELS } from "../data/categories";
 import CategoryIcon from "../components/CategoryIcon";
 import ReportModal from "../components/ReportModal";
+import PhoneGateModal from "../components/PhoneGateModal";
+import { isValidPhone } from "../lib/smsProvider";
 import { computeReliability, reliabilityTier } from "../utils/reliability";
 import { useToast } from "../components/Toast";
 import { shareUrl, listingShareUrl } from "../native/share";
@@ -51,7 +53,7 @@ function fmtDate(iso) {
 
 function shortId(id) {
   const s = String(id ?? "");
-  return "HMT-" + s.slice(-4).toUpperCase().padStart(4, "0");
+  return "YKL-" + s.slice(-4).toUpperCase().padStart(4, "0");
 }
 
 // Onaylanan malzeme siparişinden nakliye (iş) ilanı için ön-doldurma parametreleri.
@@ -77,9 +79,10 @@ function initial(name) {
   return String(name || "?").trim().charAt(0).toUpperCase() || "?";
 }
 
-export default function IlanlarimPage({ listings = [], user, offers = [], reviews = [], onUpdateOffer, onAcceptOffer, onUpdateListing, onDeleteListing, onRequireAuth, getContact, onReport }) {
+export default function IlanlarimPage({ listings = [], user, offers = [], reviews = [], onUpdateOffer, onAcceptOffer, onUpdateListing, onDeleteListing, onRequireAuth, onUpdateProfile, getContact, onReport }) {
   const navigate = useNavigate();
   const toast = useToast();
+  const [needPhone, setNeedPhone] = useState(false);   // telefon zorunlu kapısı (kabul öncesi)
   const [tab, setTab] = useState("aktif");
   const [expanded, setExpanded] = useState({}); // listingId -> bool
   const [reportOffer, setReportOffer] = useState(null); // şikayet edilen teklif
@@ -108,6 +111,9 @@ export default function IlanlarimPage({ listings = [], user, offers = [], review
 
   // ── Actions (functionality preserved 1:1) ──
   const accept = async (listing, offer) => {
+    // Telefon zorunlu: eşleşince karşı taraf sana ulaşabilmeli (diğer eşleşme
+    // noktalarıyla simetrik — ilan ver / teklif ver / kabul).
+    if (!isValidPhone(user?.phone)) { setNeedPhone(true); return; }
     // ATOMİK: tek çağrı — teklif 'kabul' + kardeşler 'ret' + ilan 'eslesti'. Eski iki
     // ayrı çağrı araya hata girince yarı-kalıp çift-kabule yol açabiliyordu.
     const res = await onAcceptOffer?.(offer, listing);
@@ -407,9 +413,6 @@ export default function IlanlarimPage({ listings = [], user, offers = [], review
                                     <button onClick={() => accept(l, o)} style={{ ...btnBase, flex: 1, background: C.green, color: "#fff", borderColor: C.ink }}>
                                       <Check size={14} strokeWidth={3} /> {o.kind === "siparis" ? "Siparişi Onayla" : "Kabul Et"}
                                     </button>
-                                    <button onClick={() => navigate("/mesajlar")} style={{ ...btnBase, background: C.card }}>
-                                      <MessageSquare size={14} strokeWidth={2.4} /> Mesaj
-                                    </button>
                                     <button onClick={() => reject(o)} style={{ ...btnBase, background: C.card, color: C.red, borderColor: C.ink }}>
                                       <X size={14} strokeWidth={3} /> Ret
                                     </button>
@@ -473,6 +476,16 @@ export default function IlanlarimPage({ listings = [], user, offers = [], review
               desc: (p.desc ? p.desc + " — " : "") + (reportOffer.message ? `Şikayet edilen teklif mesajı: "${String(reportOffer.message).slice(0, 200)}"` : `Teklif no: ${reportOffer.id}`),
             })
           }
+        />
+      )}
+
+      {/* ── TELEFON ZORUNLU KAPISI (teklif/sipariş kabul öncesi) ── */}
+      {needPhone && (
+        <PhoneGateModal
+          initialPhone={user?.phone || ""}
+          reason="Teklifi kabul edip eşleşmek için profilinde geçerli bir cep numarası olmalı. Karşı taraf seninle buradan iletişim kurar."
+          onSave={(phone) => onUpdateProfile?.({ phone })}
+          onClose={() => setNeedPhone(false)}
         />
       )}
     </div>

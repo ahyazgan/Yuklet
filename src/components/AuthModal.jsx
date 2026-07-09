@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Capacitor } from "@capacitor/core";
 import Logo from "./Logo";
 
@@ -6,6 +7,10 @@ import Logo from "./Logo";
 // buton HER ZAMAN hata verir; App Store 4.8 kuralı da yalnız iOS'u bağlar.
 // (Web'de de gizli — web Apple OAuth için Services ID yapılandırılmadı, ürün mobil-only.)
 const SHOW_APPLE = Capacitor.getPlatform() === "ios";
+// Google butonu iOS'ta GİZLİ: native iOS Google girişi (Info.plist reversed-client-id)
+// henüz yapılandırılmadı → buton kırık olurdu (App Store 2.1). iOS'ta e-posta + Apple kalır.
+// ID girilip yapılandırılınca bu koşulu kaldır.
+const SHOW_GOOGLE = Capacitor.getPlatform() !== "ios";
 
 // ── SAHA Giriş modal — E-POSTA/ŞİFRE + GOOGLE / APPLE. 2px ink çerçeve · hazard
 // şeridi · Archivo uppercase · Space Mono. E-posta ile giriş/kayıt arasında geçiş;
@@ -51,6 +56,8 @@ function AppleIcon() {
 }
 
 export default function AuthModal({ onClose, onProvider, onEmailAuth, onReset }) {
+  const navigate = useNavigate();
+  const goLegal = (slug) => { onClose?.(); navigate(`/yasal/${slug}`); };
   const [busy, setBusy] = useState("");   // "google" | "apple" | "email" | ""
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");           // onay e-postası vb. bilgi mesajı
@@ -268,7 +275,8 @@ export default function AuthModal({ onClose, onProvider, onEmailAuth, onReset })
           </div>
 
           <div className="flex flex-col gap-3">
-            {/* Google */}
+            {/* Google — iOS'ta gizli (SHOW_GOOGLE) */}
+            {SHOW_GOOGLE && (
             <button
               type="button"
               onClick={() => go("google")}
@@ -279,6 +287,7 @@ export default function AuthModal({ onClose, onProvider, onEmailAuth, onReset })
               <GoogleIcon />
               {busy === "google" ? "Yönlendiriliyor…" : "Google ile Devam Et"}
             </button>
+            )}
 
             {/* Apple — yalnız iOS (SHOW_APPLE) */}
             {SHOW_APPLE && (
@@ -297,8 +306,9 @@ export default function AuthModal({ onClose, onProvider, onEmailAuth, onReset })
 
           {/* yasal not */}
           <p className="mt-5 text-center text-[10px] leading-relaxed" style={{ color: C.sub, fontFamily: MONO }}>
-            Devam ederek <span style={{ fontWeight: 700, color: C.ink }}>Kullanım Koşulları</span> ve{" "}
-            <span style={{ fontWeight: 700, color: C.ink }}>Gizlilik Politikası</span>'nı kabul edersin.
+            Devam ederek{" "}
+            <button type="button" onClick={() => goLegal("kullanim-kosullari")} style={{ fontWeight: 700, color: C.ink, background: "none", border: "none", padding: 0, textDecoration: "underline", cursor: "pointer", fontFamily: MONO, fontSize: "inherit" }}>Kullanım Koşulları</button> ve{" "}
+            <button type="button" onClick={() => goLegal("gizlilik")} style={{ fontWeight: 700, color: C.ink, background: "none", border: "none", padding: 0, textDecoration: "underline", cursor: "pointer", fontFamily: MONO, fontSize: "inherit" }}>Gizlilik Politikası</button>'nı kabul edersin.
           </p>
         </div>
       </div>

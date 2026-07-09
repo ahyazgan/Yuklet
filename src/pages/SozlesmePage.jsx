@@ -34,8 +34,8 @@ const MONO = "'Space Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace";
 const ARCH = "'Archivo', system-ui, sans-serif";
 const HAZARD = `repeating-linear-gradient(45deg, ${C.ink} 0 9px, ${C.yellow} 9px 18px)`;
 
-const belgeNo = (id) => "HMT-SZL-" + String(id).padStart(6, "0");
-const ilanNo = (id) => "HMT-" + String(id).padStart(4, "0");
+const belgeNo = (id) => "YKL-SZL-" + String(id).padStart(6, "0");
+const ilanNo = (id) => "YKL-" + String(id).padStart(4, "0");
 const today = () => {
   try {
     return new Date().toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric" });
@@ -204,7 +204,7 @@ export default function SozlesmePage({ listings = LISTINGS, offers = [], getCont
               <PartyBox
                 label="İş Veren"
                 name={owner.name}
-                lines={[`VKN: ${ilanNo(l.id)}`, owner.phone && `Tel: ${owner.phone}`]}
+                lines={[`İlan No: ${ilanNo(l.id)}`, owner.phone && `Tel: ${owner.phone}`]}
               />
               <PartyBox
                 label="Taşıyan"

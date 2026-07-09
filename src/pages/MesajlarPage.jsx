@@ -75,10 +75,10 @@ function initials(name) {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-// Short HMT-style listing code derived from id.
+// Short YKL-style listing code derived from id.
 function listingCode(id) {
   const n = String(id).replace(/\D/g, "").slice(-4).padStart(4, "0");
-  return `HMT-${n}`;
+  return `YKL-${n}`;
 }
 
 export default function MesajlarPage({ user, listings = [], offers = [], messages = [], onSendMessage, onRequireAuth, onSeen, onMarkThreadRead, getContact, msgSeen = {}, blockedIds = [], onReport, onToggleBlock }) {

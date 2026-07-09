@@ -39,7 +39,7 @@ export function buildEIrsaliye(listing, offer) {
   return {
     kind: "e-irsaliye",
     title: "e-İrsaliye (Sevk)",
-    no: "HMT-IRS-" + pad6(listing.id),
+    no: "YKL-IRS-" + pad6(listing.id),
     ettn: mockEttn(seed),
     senaryo: "TEMELIRSALIYE",
     tip: "SEVK",
@@ -64,7 +64,7 @@ export function buildEFatura(listing, offer) {
   return {
     kind: "e-fatura",
     title: "e-Fatura (Taşıma Hizmeti)",
-    no: "HMT-FAT-" + pad6(listing.id),
+    no: "YKL-FAT-" + pad6(listing.id),
     ettn: mockEttn(seed),
     senaryo: "TEMELFATURA",
     tip: "SATIS",

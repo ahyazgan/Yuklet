@@ -26,31 +26,31 @@ const HAZARD = "repeating-linear-gradient(45deg,#0A0A0A 0 9px,#FACC15 9px 18px)"
 
 // 3 rol kartlari (Muteahhit / Nakliyeci / Tedarikci)
 const ROLES = [
-  { ltr: "A", color: C.yellow, txt: C.ink, title: "Alıcı", desc: "Taşınacak yükün için iş ilanı aç, gelen teklifleri karşılaştır, en uygun nakliyeciyle anlaş." },
-  { ltr: "N", color: "#E7E2D6", txt: C.ink, title: "Nakliyeci / Taşıyıcı", desc: "Boş aracın için ilan ver ya da açık iş ilanlarına teklif gönder, dönüş yükünü doldur." },
+  { ltr: "A", color: C.yellow, txt: C.ink, title: "Alıcı", desc: "Taşınacak yükün için sabit fiyatlı iş ilanı aç; uygun nakliyeci doğrudan kabul etsin." },
+  { ltr: "N", color: "#E7E2D6", txt: C.ink, title: "Nakliyeci / Taşıyıcı", desc: "Boş aracın için ilan ver ya da sana uygun sabit fiyatlı işleri doğrudan kabul et, dönüş yükünü doldur." },
   { ltr: "S", color: C.green, txt: "#FFFFFF", title: "Satıcı", desc: "Ocak, santral veya kum ocağı stoğunu yayınla; alıcı bulur, nakliyeyi platformda ayarla." },
 ];
 
 // Akis chip'leri
 const FLOW = [
   { t: "İlan Aç", on: "yellow" },
-  { t: "Teklif Al", on: "card" },
-  { t: "Eşleş", on: "green" },
+  { t: "Sabit Fiyat", on: "card" },
+  { t: "Doğrudan Eşleş", on: "green" },
   { t: "İş Başlar", on: "yellow" },
 ];
 
 const STEPS = [
   { num: "01", title: "İlanını Yayınla", desc: "Taşınacak yükünü veya boş aracını birkaç dakikada ekle. Konum, miktar ve tarihi belirt." },
-  { num: "02", title: "Teklifleri Topla", desc: "İlgili nakliyeciler veya iş sahipleri ilanını görür, sana teklif gönderir." },
-  { num: "03", title: "Anlaş", desc: "Gelen teklifleri karşılaştır, en uygun olanla doğrudan iletişime geç ve anlaş." },
+  { num: "02", title: "Doğrudan Eşleş", desc: "Sabit fiyatını gören uygun taraf ilanını doğrudan kabul eder — pazarlık ve bekleme yok." },
+  { num: "03", title: "Anlaş", desc: "Eşleşince karşı tarafla doğrudan iletişime geç ve işi başlat." },
   { num: "04", title: "Yola Çık", desc: "İş tamamlandıktan sonra karşılıklı puanlama ile güvenli bir topluluk oluşturulur." },
 ];
 
 const FAQ = [
-  ["İlan vermek ücretli mi?", "Hayır. İlan vermek ve teklif almak ücretsizdir. Platform, iş sahibi ile nakliyeciyi komisyonsuz buluşturur."],
+  ["İlan vermek ücretli mi?", "Hayır. İlan vermek ve eşleşmek ücretsizdir. Platform, iş sahibi ile nakliyeciyi komisyonsuz buluşturur."],
   ["Hangi işler için kullanabilirim?", "İki ana kategori vardır: Hafriyat (kazı, toprak, moloz taşıma) ve Silobas (dökme çimento, kum, mıcır, tahıl gibi yükler)."],
   ["İş ilanı mı araç ilanı mı vermeliyim?", "Taşınacak yükünüz varsa 'İş ilanı', boş aracınıza iş arıyorsanız 'Araç ilanı' verin. Karşı taraf size ulaşır."],
-  ["Teklifler nasıl geliyor?", "İlanınız yayınlandıktan sonra ilgili kullanıcılar teklif verir veya doğrudan iletişime geçer. Teklifleri ilan detayında görürsünüz."],
+  ["İlan verince ne oluyor?", "İlanınız yayınlandıktan sonra sabit fiyatınızı gören uygun taraf işi doğrudan kabul eder; ardından iletişim açılır ve işi başlatırsınız."],
   ["Ödeme platform üzerinden mi yapılıyor?", "Hayır, anlaşma ve ödeme taraflar arasında yapılır. Platform yalnızca eşleştirme ve iletişimi sağlar."],
 ];
 

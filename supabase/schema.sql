@@ -76,6 +76,8 @@ create table if not exists public.listings (
   payment_amount  numeric,                          -- emanete alinan toplam bedel
   payment_fee     numeric,                          -- platform komisyonu (kesilen)
   payment_ref     text,                             -- saglayici referansi (mock veya gercek)
+  payment_paid_at     timestamptz,                  -- direkt odeme (emanetsiz): is sahibi "odedim" onayi
+  payment_received_at timestamptz,                  -- direkt odeme (emanetsiz): nakliyeci "aldim" onayi
   delivery_proof  jsonb,                            -- teslim kaniti: tonnage, ticketNo, photo, signature, location, status…
   cycle_stage     text,                             -- mekik dongusu: await_load | loaded (geofence sefer sayimi)
   arrived_at      timestamptz,                      -- bosaltma alanina varis (geofence)
@@ -116,6 +118,9 @@ alter table public.listings add column if not exists payment_status text not nul
 alter table public.listings add column if not exists payment_amount numeric;
 alter table public.listings add column if not exists payment_fee    numeric;
 alter table public.listings add column if not exists payment_ref    text;
+-- Direkt odeme onayi (emanetsiz model) — idempotent
+alter table public.listings add column if not exists payment_paid_at     timestamptz;
+alter table public.listings add column if not exists payment_received_at timestamptz;
 
 -- ──────────────────────────────────────────────
 -- 3) OFFERS  (teklifler)
@@ -367,7 +372,7 @@ create policy listings_update_driver on public.listings for update
 create or replace function public.guard_driver_listing_update()
 returns trigger language plpgsql security definer set search_path = public as $$
 declare
-  allowed text[] := array['phase','status','cycle_stage','arrived_at','trips_done','delivery_proof'];
+  allowed text[] := array['phase','status','cycle_stage','arrived_at','trips_done','delivery_proof','payment_received_at','payment_paid_at'];
 begin
   -- Sahip, admin ve dogrudan SQL (auth.uid() null) tam yetkili; yalniz surucu kisitlanir.
   if auth.uid() is null or auth.uid() = old.owner_id or public.is_admin() then

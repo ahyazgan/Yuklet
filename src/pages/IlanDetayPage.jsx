@@ -57,7 +57,7 @@ const headLabel = {
   letterSpacing: "0.04em", color: C.ink,
 };
 
-const ilanNo = (id) => "HMT-" + String(id).padStart(4, "0");
+const ilanNo = (id) => "YKL-" + String(id).padStart(4, "0");
 
 const CAT_TAG = {
   hafriyat: { label: "HAFRİYAT", bg: C.ink, fg: C.yellow },

@@ -19,6 +19,7 @@ const rowToListing = (r) => ({
   status: r.status, offers: r.offers_count, createdText: r.created_text, createdAt: r.created_at,
   km: r.km, pickup: r.pickup, dropoff: r.dropoff, phase: r.phase, tripsDone: r.trips_done,
   paymentStatus: r.payment_status, paymentAmount: r.payment_amount, paymentFee: r.payment_fee, paymentRef: r.payment_ref,
+  paymentPaidAt: r.payment_paid_at, paymentReceivedAt: r.payment_received_at,   // direkt ödeme onayı (emanetsiz)
   deliveryProof: r.delivery_proof, cycleStage: r.cycle_stage, arrivedAt: r.arrived_at,
   earlyPaid: r.early_paid, earlyPayFee: r.early_pay_fee, acceptedById: r.accepted_by_id,
   assignedVehicle: r.assigned_vehicle,   // accept_job RPC'sinin yazdığı atanan araç+şoför (aksi halde Takip'te görünmez)
@@ -48,6 +49,7 @@ const LISTING_KEYMAP = {
   status: "status", createdText: "created_text", type: "type", cat: "cat",
   km: "km", pickup: "pickup", dropoff: "dropoff", phase: "phase", tripsDone: "trips_done",
   paymentStatus: "payment_status", paymentAmount: "payment_amount", paymentFee: "payment_fee", paymentRef: "payment_ref",
+  paymentPaidAt: "payment_paid_at", paymentReceivedAt: "payment_received_at",
   deliveryProof: "delivery_proof", cycleStage: "cycle_stage", arrivedAt: "arrived_at",
   earlyPaid: "early_paid", earlyPayFee: "early_pay_fee", acceptedById: "accepted_by_id",
   assignedVehicle: "assigned_vehicle",
@@ -92,8 +94,9 @@ const rowToProfile = (r) => r && ({
 
 // ── Auth ────────────────────────────────────────────────────
 export async function signUp({ name, email, password, role, phone }) {
-  // Rol KASTEN boş bırakılır: kayıtta rol seçtirilmez, ilk girişte RoleSelectModal
-  // ile sorulur (OAuth ile aynı akış). Boş rol → needsRole → modal açılır.
+  // Rol kayıt formunda ZORUNLU seçilir ve buradan metadata'ya yazılır; handle_new_user
+  // (schema.sql) bunu profiles.role'e kalıcı yapar. RoleSelectModal yalnızca OAuth /
+  // rolü boş kalan hesaplar için fallback'tir (boş rol → needsRole → modal açılır).
   const { data, error } = await supabase.auth.signUp({
     email, password,
     options: { data: { name, role: role || "", phone: phone || "" } },

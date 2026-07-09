@@ -50,7 +50,7 @@ const ARCH = "'Archivo', system-ui, sans-serif";
 
 const HAZARD = "repeating-linear-gradient(45deg,#0A0A0A 0 9px,#FACC15 9px 18px)";
 
-const idText = (l) => "HMT-" + String(l.id).padStart(4, "0");
+const idText = (l) => "YKL-" + String(l.id).padStart(4, "0");
 
 const PHASES = [["eslesti", "Eşleşti"], ["yuklendi", "Yüklendi"], ["yolda", "Yolda"], ["teslim", "Teslim"]];
 

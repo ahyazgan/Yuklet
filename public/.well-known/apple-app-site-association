@@ -1,0 +1,11 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "REPLACE_TEAMID.com.yuklet.app",
+        "paths": ["/ilan/*", "/takip/*", "/yasal/*", "/sifre-yenile*", "*"]
+      }
+    ]
+  }
+}

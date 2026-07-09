@@ -6,8 +6,8 @@
 
 import { Capacitor } from "@capacitor/core";
 
-// Native versionName/CFBundleShortVersionString ile EŞ tutulmalı (şu an 1.0.0).
-export const APP_VERSION = "1.0.0";
+// Native versionName/CFBundleShortVersionString ile EŞ tutulmalı (Android + iOS = 1.0.1).
+export const APP_VERSION = "1.0.1";
 
 // Uzak sürüm bildirimi. Örnek içerik için public/app-version.json'a bakın.
 const VERSION_URL = "https://yuklet.co/app-version.json";

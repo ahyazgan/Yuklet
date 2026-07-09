@@ -3,7 +3,7 @@
 // TÜM filtreleme/işlevsellik korunur: URL params, kaydedilmiş aramalar,
 // gelişmiş filtreler (malzeme/fiyat/sıralama), dönüş yükü (backhaul), harita.
 
-import { useState, useMemo, useEffect, lazy, Suspense } from "react";
+import { useState, useMemo, useEffect, useRef, lazy, Suspense } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   Search,
@@ -25,8 +25,7 @@ import {
 import { LISTINGS, IL_LIST } from "../data/listings";
 import { CATS, MATERIALS } from "../data/categories";
 import { loadsNearCity } from "../utils/backhaul";
-import { estimatePrice, priceSignal, fmtTL } from "../utils/priceEstimate";
-import { loadSavedSearches, saveSavedSearches, loadOffers, loadPricingConfig, loadRecentSearches, saveRecentSearches } from "../utils/storage";
+import { loadSavedSearches, saveSavedSearches, loadRecentSearches, saveRecentSearches } from "../utils/storage";
 import usePullToRefresh from "../hooks/usePullToRefresh";
 import useFavorites from "../hooks/useFavorites";
 import { computeReliability, reliabilityTier } from "../utils/reliability";
@@ -75,30 +74,13 @@ const fmtPrice = (l) =>
 const DEVIATION_KM = { 0: 0, 1: 12, 2: 45 };
 const deviationOf = (dist) => DEVIATION_KM[dist] ?? 60;
 
-// İş ilanı için YÜKLET Akıllı Fiyat etiketi:
-// teklife açık → önerilen fiyat ipucu · sabit fiyat → piyasa altı/üstü rozeti.
-function marketTagOf(l, history, config) {
-  if (l.type !== "is" || !l.amount) return null;
-  const est = estimatePrice({ cat: l.cat, amount: l.amount, unit: l.unit, fromIl: l.il, toIl: l.varisIl, material: l.material, vehicle: l.vehicle, kmOverride: l.km, history, config });
-  if (!est) return null;
-  if (l.priceType === "sabit" && l.price) {
-    const sig = priceSignal(l.price, est);
-    if (!sig) return null;
-    if (sig.tone === "win" || sig.tone === "low") return { text: "PİYASA ALTI", color: C.green };
-    if (sig.tone === "high") return { text: "PİYASA ÜSTÜ", color: C.yellowDeep };
-    return { text: "PİYASA SEVİYESİ", color: C.sub };
-  }
-  return { suggest: `~${fmtTL(est.mid)}` };
-}
-
 // Türkçe-duyarlı küçük harfe çevir (İ→i, I→ı) — arama eşleştirme için.
 const norm = (s) => String(s ?? "").toLocaleLowerCase("tr");
 
 // ── İlan kartı ──
-function ListingCard({ l, history, config, isFav = false, onToggleFav, rel }) {
+function ListingCard({ l, isFav = false, onToggleFav, rel }) {
   const isH = l.cat === "hafriyat";
   const isProduct = l.type === "urun";
-  const market = marketTagOf(l, history, config);
   const fixed = isProduct
     ? (l.price ? `₺${l.price.toLocaleString("tr-TR")}${l.priceUnit || "/ton"}` : null)
     : fmtPrice(l);
@@ -318,19 +300,9 @@ function ListingCard({ l, history, config, isFav = false, onToggleFav, rel }) {
           ))}
         </div>
         <div className="flex flex-shrink-0 items-center gap-2.5">
-          {market?.text && (
-            <span style={{ ...MONO, fontSize: 8.5, fontWeight: 700, padding: "2px 6px", borderRadius: 4, color: market.color, border: `1.5px solid ${market.color}`, background: C.card, whiteSpace: "nowrap" }}>
-              {market.text}
-            </span>
-          )}
           {fixed ? (
             <span style={{ ...MONO, fontSize: isProduct ? 15 : 17, fontWeight: 800, color: C.green, letterSpacing: "-0.02em" }}>
               {fixed}
-            </span>
-          ) : market?.suggest ? (
-            <span className="flex flex-col items-end" style={{ lineHeight: 1.05 }}>
-              <span style={{ ...MONO, fontSize: 8.5, fontWeight: 700, color: C.muted, letterSpacing: "0.04em" }}>YÜKLET ÖNERİ</span>
-              <span style={{ ...MONO, fontSize: 16, fontWeight: 800, color: C.ink, letterSpacing: "-0.02em" }}>{market.suggest}</span>
             </span>
           ) : (
             <span style={{ ...MONO, fontSize: 11, fontWeight: 800, color: C.ink, padding: "3px 8px", borderRadius: 5, background: C.yellow, border: `1.5px solid ${C.ink}`, whiteSpace: "nowrap" }}>
@@ -346,7 +318,11 @@ function ListingCard({ l, history, config, isFav = false, onToggleFav, rel }) {
               whiteSpace: "nowrap",
             }}
           >
-            {isProduct ? "İLETİŞİME GEÇ →" : l.offers > 0 ? `${l.offers} TEKLİF →` : "TEKLİF VER →"}
+            {isProduct
+              ? "İLETİŞİME GEÇ →"
+              : (l.priceType === "sabit" && l.price)
+                ? (l.type === "arac" ? "KİRALA →" : "KABUL ET →")
+                : l.offers > 0 ? `${l.offers} TEKLİF →` : "TEKLİF VER →"}
           </span>
         </div>
       </div>
@@ -424,13 +400,23 @@ export default function ListingsPage({ listings = LISTINGS, user, fleet = [], on
   const ptrRefresh = onRefresh || (() => new Promise((r) => setTimeout(r, 500)));
   const { distance, refreshing, pull } = usePullToRefresh(ptrRefresh);
   // YÜKLET Akıllı Fiyat: kartlardaki piyasa etiketleri için geçmiş veri (bir kez).
-  const priceHistory = useMemo(() => ({ listings, offers: loadOffers() }), [listings]);
-  const pricingConfig = useMemo(() => loadPricingConfig(), []);
   const [type, setType] = useState(["arac", "is", "urun"].includes(sp.get("type")) ? sp.get("type") : "all");
   // URL'de cat varsa o kazanır; yoksa nakliyecinin uzmanlık kategorisiyle aç (yoksa "all").
   const [cat, setCat] = useState(
     ["hafriyat", "silobas"].includes(sp.get("cat")) ? sp.get("cat") : defaultCat
   );
+  // Mount'ta filo/ilan (SB) henüz boşsa haulerCat null olur → cat "all" kalır.
+  // Veri gelip haulerCat çözülünce, kullanıcı elle değiştirmediyse bir kez uygula.
+  const initialCatRef = useRef(cat);
+  const haulerCatAppliedRef = useRef(false);
+  useEffect(() => {
+    if (haulerCatAppliedRef.current) return;
+    if (["hafriyat", "silobas"].includes(sp.get("cat"))) { haulerCatAppliedRef.current = true; return; }
+    if (haulerCat) {
+      if (cat === initialCatRef.current) setCat(haulerCat);   // kullanıcı dokunmadıysa
+      haulerCatAppliedRef.current = true;
+    }
+  }, [haulerCat, cat, sp]);
   const [il, setIl] = useState("all");
   const [q, setQ] = useState("");
   const [mode, setMode] = useState(sp.get("mode") === "backhaul" ? "backhaul" : "normal"); // normal | backhaul
@@ -1079,7 +1065,7 @@ export default function ListingsPage({ listings = LISTINGS, user, fleet = [], on
                     onClick={() => navigate(`/ilan/${m.listing.id}`)}
                     style={{ display: "block", width: "100%", textAlign: "left" }}
                   >
-                    <ListingCard l={m.listing} history={priceHistory} config={pricingConfig} isFav={isFav(m.listing.id)} onToggleFav={toggleFav} rel={ownerRel[String(m.listing.ownerId)]} />
+                    <ListingCard l={m.listing} isFav={isFav(m.listing.id)} onToggleFav={toggleFav} rel={ownerRel[String(m.listing.ownerId)]} />
                   </button>
                 </div>
                 );
@@ -1138,7 +1124,7 @@ export default function ListingsPage({ listings = LISTINGS, user, fleet = [], on
                 onClick={() => navigate(`/ilan/${l.id}`)}
                 style={{ display: "block", width: "100%", textAlign: "left" }}
               >
-                <ListingCard l={l} history={priceHistory} config={pricingConfig} isFav={isFav(l.id)} onToggleFav={toggleFav} rel={ownerRel[String(l.ownerId)]} />
+                <ListingCard l={l} isFav={isFav(l.id)} onToggleFav={toggleFav} rel={ownerRel[String(l.ownerId)]} />
               </button>
             ))}
           </div>

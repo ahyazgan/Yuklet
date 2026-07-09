@@ -36,7 +36,7 @@ const HAZARD = "repeating-linear-gradient(45deg,#0A0A0A 0 9px,#FACC15 9px 18px)"
 
 const fmt = (iso) => { try { return new Date(iso).toLocaleString("tr-TR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }); } catch { return ""; } };
 
-const shortId = (id) => "HMT-" + String(id ?? "").slice(-4).toUpperCase().padStart(4, "0");
+const shortId = (id) => "YKL-" + String(id ?? "").slice(-4).toUpperCase().padStart(4, "0");
 
 const TABS = [["reports", "Şikayet"], ["disputes", "İtiraz"], ["listings", "İlan"], ["announce", "Duyuru"], ["users", "Üye"], ["docs", "Belge"], ["pricing", "Finans"], ["audit", "Kayıt"]];
 

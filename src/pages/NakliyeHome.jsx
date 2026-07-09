@@ -45,11 +45,11 @@ const SHADOW = "6px 6px 0 rgba(10,10,10,.12)";        // büyük kart sert gölg
 const SHADOW_SM = "3px 3px 0 #0A0A0A";                 // küçük öğe sert gölge
 const FRAME = `2px solid ${C.ink}`;
 
-/* Rol -> header içeriği */
+/* Rol -> header rozet metni (konum gerçek profilden gelir, bkz. `place`) */
 const ROLE = {
-  muteahhit: { badge: "ALICI", place: "ÜMRANİYE · İSTANBUL" },
-  nakliyeci: { badge: "NAKLİYECİ", place: "SİLOBAS 30T · BURSA" },
-  tedarikci: { badge: "SATICI", place: "ALİAĞA · İZMİR" },
+  muteahhit: { badge: "ALICI" },
+  nakliyeci: { badge: "NAKLİYECİ" },
+  tedarikci: { badge: "SATICI" },
 };
 
 /* ── İmza parçaları ─────────────────────────────────────────────────── */
@@ -122,7 +122,7 @@ function StatBox({ value, label, money, dot }) {
 }
 
 /* ── ÜST: koyu header bloğu yok — açık üst (hazard şerit App'te değil burada) ─ */
-function Header({ name, role, unread, onBell, onProfile, onSearch }) {
+function Header({ name, role, place, unread, onBell, onProfile, onSearch }) {
   const r = ROLE[role] || ROLE.muteahhit;
   const initial = (name || "D").trim().charAt(0).toUpperCase();
   return (
@@ -145,9 +145,11 @@ function Header({ name, role, unread, onBell, onProfile, onSearch }) {
               >
                 {r.badge}
               </span>
-              <span className="text-[9.5px] font-bold uppercase" style={{ color: C.sub, fontFamily: MONO, letterSpacing: "0.02em" }}>
-                {r.place}
-              </span>
+              {place && (
+                <span className="text-[9.5px] font-bold uppercase" style={{ color: C.sub, fontFamily: MONO, letterSpacing: "0.02em" }}>
+                  {place}
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -286,10 +288,11 @@ function YellowCTA({ nav, eyebrow = "%0 KOMİSYON", title, action = "İlan Ver",
 
 /* ── Güven şeridi: koyu kart, 3 sütun ───────────────────────────────── */
 function TrustStrip() {
+  // Uydurma sayı yok — platformun gerçek/tasarımsal değer önermeleri.
   const items = [
-    { v: "2.400+", l: "İLAN" },
-    { v: "850+", l: "NAKLİYECİ" },
     { v: "%0", l: "KOMİSYON" },
+    { v: "✓", l: "GÜVENLİ EŞLEŞME" },
+    { v: "★", l: "PUANLI ÜYELER" },
   ];
   return (
     <div className="mb-6 grid grid-cols-3 overflow-hidden" style={{ background: C.ink, border: FRAME, borderRadius: 6 }}>
@@ -315,7 +318,7 @@ function MuteahhitBody({ nav, user, active, offersOnMine, recentJobs }) {
         <EmptyActiveJob nav={nav} user={user} />
       )}
 
-      <YellowCTA nav={nav} title="İlanını Aç / Teklif Al" action="İlan Ver" to="/ilan-ver" />
+      <YellowCTA nav={nav} title="İlanını Aç / Doğrudan Eşleş" action="İlan Ver" to="/ilan-ver" />
       <RecentListings nav={nav} jobs={recentJobs} />
     </>
   );
@@ -323,7 +326,7 @@ function MuteahhitBody({ nav, user, active, offersOnMine, recentJobs }) {
 
 /* Aktif iş kartı — gerçek ilan verisinden */
 function ActiveJobCard({ nav, job, offersOnMine }) {
-  const code = "HMT-" + String(job.id).padStart(4, "0").slice(-4);
+  const code = "YKL-" + String(job.id).padStart(4, "0").slice(-4);
   const statusLabel = job.status === "eslesti" ? "Eşleşti" : "Aktif";
   const from = (job.il || job.yukleme || "—").toUpperCase();
   const to = (job.varisIl || job.bosaltma || job.ilce || "—").toUpperCase();
@@ -524,7 +527,7 @@ function NakliyeciBody({ nav, available, setAvailable, carrier }) {
       ) : (
         <div className="mb-6 flex flex-col gap-2.5">
           {suitableJobs.map((l) => {
-            const code = "HMT-" + String(l.id).padStart(4, "0").slice(-4);
+            const code = "YKL-" + String(l.id).padStart(4, "0").slice(-4);
             const from = (l.il || l.yukleme || "—").toUpperCase();
             const to = (l.varisIl || l.bosaltma || l.ilce || "—").toUpperCase();
             const isHafriyat = l.cat === "hafriyat";
@@ -670,7 +673,7 @@ function RecentListings({ nav, jobs = [] }) {
       ) : (
         <div className="mb-6 flex flex-col gap-2.5">
           {jobs.map((l) => {
-            const code = "HMT-" + String(l.id).padStart(4, "0").slice(-4);
+            const code = "YKL-" + String(l.id).padStart(4, "0").slice(-4);
             const from = (l.il || l.yukleme || "—").toUpperCase();
             const to = (l.varisIl || l.bosaltma || l.ilce || "—").toUpperCase();
             const isHafriyat = l.cat === "hafriyat";
@@ -846,10 +849,14 @@ export default function NakliyeHome({
   }[role];
 
   const name = user?.name || (role === "nakliyeci" ? "Demir Nakliyat" : role === "tedarikci" ? "Aliağa Mıcır" : "Yıldızlar İnşaat");
+  // Gerçek konum (profil) — yoksa gösterme (sabit placeholder yerine).
+  const place = user
+    ? [user.ilce, user.sehir || user.il].filter(Boolean).join(" · ").toLocaleUpperCase("tr-TR")
+    : "";
 
   return (
     <div className="mx-auto flex w-full max-w-[460px] flex-col pb-24" style={{ background: C.bg, color: C.ink }}>
-      <SEO title="Ana Sayfa" description="Hafriyat ve silobas iş ilanları. Nakliyecilerden teklif alın, komisyonsuz eşleşin." />
+      <SEO title="Ana Sayfa" description="Hafriyat ve silobas iş ilanları. Sabit fiyatını yaz, nakliyeci doğrudan kabul etsin — komisyonsuz eşleş." />
 
       {/* üst hazard şeridi */}
       <Hazard h={8} />
@@ -857,6 +864,7 @@ export default function NakliyeHome({
       <Header
         name={name}
         role={role}
+        place={place}
         unread={notifUnread}
         onBell={() => navigate("/bildirimler")}
         onProfile={() => navigate("/profil")}
@@ -910,7 +918,7 @@ export default function NakliyeHome({
             <div className="flex items-center justify-between py-3.5 pl-4 pr-7">
               <div>
                 <div className="text-[14px] font-extrabold uppercase" style={{ color: "#FFFFFF", fontFamily: ARCH, letterSpacing: "-0.01em" }}>Ücretsiz Hesap Aç</div>
-                <div className="mt-0.5 text-[9.5px] font-bold uppercase" style={{ color: C.muted, fontFamily: MONO }}>İlan Ver · Teklif Al · Komisyon Yok</div>
+                <div className="mt-0.5 text-[9.5px] font-bold uppercase" style={{ color: C.muted, fontFamily: MONO }}>İlan Ver · Doğrudan Eşleş · Komisyon Yok</div>
               </div>
               <button
                 onClick={() => onLoginClick?.()}
