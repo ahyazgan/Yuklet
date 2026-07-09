@@ -112,3 +112,71 @@ workflows:
         # Dis teste acmak istersen: bunu true yap + Apple'da test-info doldur.
         submit_to_testflight: false
         submit_to_app_store: false
+
+  # ────────────────────────────────────────────────────────────────────
+  # ANDROID — Play (AAB) · bulutta imzalı bundle üretir
+  # KURULUM (bir kez): Codemagic UI > bu app > Environment variables >
+  # "yuklet_android" GRUBU oluştur ve şu 4 değişkeni ekle (hepsi Secure):
+  #   CM_KEYSTORE          = yuklet-upload.jks'nin BASE64'ü (aşağıdaki komut)
+  #   CM_KEYSTORE_PASSWORD = keystore.properties'teki storePassword
+  #   CM_KEY_ALIAS         = keystore.properties'teki keyAlias
+  #   CM_KEY_PASSWORD      = keystore.properties'teki keyPassword
+  # Windows'ta jks base64 üretmek (PowerShell):
+  #   [Convert]::ToBase64String([IO.File]::ReadAllBytes("C:\Users\Yazgan\yuklet-imza\yuklet-upload.jks")) | Set-Clipboard
+  # (Çıktı panoya kopyalanır → Codemagic'te CM_KEYSTORE değerine yapıştır.)
+  # AAB artefaktını Codemagic build sayfasından indir → PLAY-KURULUM.md ile
+  # Play Console kapalı teste yükle. (Otomatik yükleme için alttaki google_play
+  # bloğunun yorumunu kaldır + Play service account JSON ekle.)
+  # ────────────────────────────────────────────────────────────────────
+  android-play:
+    name: YÜKLET Android - Play (AAB)
+    instance_type: linux_x2
+    max_build_duration: 45
+    environment:
+      groups:
+        - yuklet_android
+      vars:
+        PACKAGE_NAME: "com.yuklet.app"
+      node: 22
+      java: 17
+    scripts:
+      - name: npm bağımlılıklarını kur
+        script: npm install
+
+      - name: Web'i derle (Vite)
+        script: npm run build
+
+      - name: Capacitor Android sync
+        script: npx cap sync android
+
+      - name: İmza dosyalarını hazırla (keystore + keystore.properties)
+        script: |
+          set -e
+          # jks'yi base64 env'den çöz (android/app/upload.jks)
+          echo "$CM_KEYSTORE" | base64 --decode > "$CM_BUILD_DIR/android/app/upload.jks"
+          # build.gradle rootProject (android/) altından okur → storeFile göreli
+          cat > "$CM_BUILD_DIR/android/keystore.properties" <<EOF
+          storeFile=app/upload.jks
+          storePassword=$CM_KEYSTORE_PASSWORD
+          keyAlias=$CM_KEY_ALIAS
+          keyPassword=$CM_KEY_PASSWORD
+          EOF
+
+      - name: versionCode'u otomatik artır (BUILD_NUMBER)
+        script: |
+          # Play strictly-increasing versionCode ister; CI build sayısıyla türet.
+          # 100 offset: git'teki manuel değerlerin (şu an 2) üstünde kalsın.
+          sed -i -E "s/versionCode [0-9]+/versionCode $((100 + BUILD_NUMBER))/" android/app/build.gradle
+          grep -n "versionCode" android/app/build.gradle
+
+      - name: Release AAB üret (imzalı)
+        script: |
+          cd android
+          ./gradlew bundleRelease
+    artifacts:
+      - android/app/build/outputs/**/*.aab
+      - android/app/build/outputs/**/mapping.txt
+    # publishing:
+    #   google_play:                 # OTOMATIK yükleme (opsiyonel)
+    #     credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS  # Play service account JSON (Secure env)
+    #     track: internal            # kapalı test = "internal"; ilk yükleme manuel yapılmalı
