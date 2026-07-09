@@ -57,15 +57,22 @@ Authentication → Providers → Email → **"Confirm email" KAPALI** olmalı; y
 
 ## P1 — Mağaza gönderimi (App Store + Play)
 
-### 4. Gizlilik & KVKK **public URL**  `[ ]`
-App içinde `/yasal/gizlilik` var, ama mağaza formları **dışarıdan erişilebilir bir URL** ister (ör. `yuklet.co/gizlilik`). Aynı metni statik bir web sayfası olarak yayınla.
+### 4. Gizlilik & KVKK **public URL**  `[x]` sayfalar hazır
+> **✅ Doğrulandı:** `public/` altında tam ve güncel yasal sayfalar mevcut — `gizlilik.html`, `kvkk.html`, `kullanim-kosullari.html`, `hesap-silme.html`, `destek.html` (ortak `style.css`, app'in gerçek veri pratiğiyle birebir uyumlu). Site deploy edilince şu URL'ler canlı:
+> - Gizlilik: `https://yuklet.co/gizlilik.html`
+> - KVKK: `https://yuklet.co/kvkk.html`
+> - Hesap silme: `https://yuklet.co/hesap-silme.html` _(Play "Data deletion URL" formu bunu ister)_
+>
+> **Yapılacak:** Bu URL'leri App Store Connect (App Privacy Policy URL) ve Play Console (Store listing + Data safety → data deletion) formlarına gir. Şirket kuruluşu bitince sayfalara unvan/adres/Mersis eklenecek (kod içinde `<!-- ... -->` notu düşülü).
 
 ### 5. Play kapalı test (closed testing)  `[ ]`
 Google'ın güncel şartı: yeni bireysel geliştirici hesaplarında yayın öncesi bir süre kapalı test (yaklaşık **12 tester / 14 gün**) gerekebilir. Detay: `PLAY-KURULUM.md`.
 
 ### 6. Mağaza formları  `[ ]`
-- **App Store Connect:** açıklama, anahtar kelimeler, ekran görüntüleri (6.7" + 6.5"), kategori, yaş sınırı, **App Privacy** (veri toplama beyanı).
-- **Play Console:** açıklama, grafik varlıklar, **Data Safety** formu, içerik derecelendirme, hedef kitle.
+> **✅ Metinler hazır → `MAGAZA-METINLERI.md`:** app adı, subtitle, açıklama (Apple+Play), keyword, kategori, yaş, **Data Safety** + **App Privacy** tabloları — hepsi karakter sınırı hesaplanmış, forma yapıştırmaya hazır.
+- **App Store Connect:** metinleri yapıştır + **ekran görüntüleri** (6.7" + 6.5") ekle.
+- **Play Console:** metinleri yapıştır + **grafik varlıklar** (feature graphic + ekran görüntüleri) ekle.
+- Kalan tek üretilemeyen parça: **ekran görüntüleri / feature graphic** (görsel iş, koddan çıkmaz).
 
 ### 7. capacitor.config — App Store ID / iosUrl  `[ ]` _(opsiyonel)_
 Paylaşım/deep link tam çalışsın diye App Store'da uygulama oluşunca App ID'yi ekle. `appId` zaten `com.yuklet.app`, `appName` = YÜKLET.
@@ -81,9 +88,12 @@ Web girişi çalışıyor; uygulama-içi (native) Google girişi için:
 - **iOS** client (bundle `com.yuklet.app`) → `VITE_GOOGLE_IOS_CLIENT_ID`; çıkan REVERSED_CLIENT_ID → `ios/App/App/Info.plist`
 - Aynı env'leri Vercel + CI (Codemagic) tarafına da ekle. Adım adım: `KURULUM-GIRIS.md`.
 
-### 9. Deep link doğrulama  `[ ]`
-- Android: `assetlinks.json` SHA256 parmak izi
-- iOS: `apple-app-site-association` TeamID
+### 9. Deep link doğrulama — placeholder'ları doldur  `[ ]`
+Dosyalar hazır ama **placeholder içeriyor**; değerler senin hesabından gelir:
+- **Android** → `public/.well-known/assetlinks.json` içindeki `REPLACE_WITH_APP_SIGNING_SHA256` yerine Play **App signing** SHA-256'yı yaz. (Play Console → Uygulama → Test ve yayınla → **Uygulama imzalama** → "App signing key certificate" SHA-256.)
+- **iOS** → `public/.well-known/apple-app-site-association` içindeki `REPLACE_TEAMID` yerine Apple **Team ID**'yi yaz (Apple Developer → Membership → Team ID). Sonuç: `TEAMID.com.yuklet.app`.
+
+Doldurunca site'yi redeploy et; `.well-known/` dosyaları kökten `Content-Type: application/json` ile servis edilmeli (Vercel `public/` için bunu otomatik yapar).
 
 ---
 
