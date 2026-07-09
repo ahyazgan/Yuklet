@@ -406,17 +406,18 @@ export default function ListingsPage({ listings = LISTINGS, user, fleet = [], on
     ["hafriyat", "silobas"].includes(sp.get("cat")) ? sp.get("cat") : defaultCat
   );
   // Mount'ta filo/ilan (SB) henüz boşsa haulerCat null olur → cat "all" kalır.
-  // Veri gelip haulerCat çözülünce, kullanıcı elle değiştirmediyse bir kez uygula.
-  const initialCatRef = useRef(cat);
+  // Veri gelip haulerCat çözülünce, kullanıcı kategoriye ELLE dokunmadıysa bir kez uygula.
+  const userTouchedCatRef = useRef(false);   // kullanıcı kategoriyi elle değiştirdi mi
   const haulerCatAppliedRef = useRef(false);
+  const pickCat = (c) => { userTouchedCatRef.current = true; setCat(c); };
   useEffect(() => {
     if (haulerCatAppliedRef.current) return;
     if (["hafriyat", "silobas"].includes(sp.get("cat"))) { haulerCatAppliedRef.current = true; return; }
     if (haulerCat) {
-      if (cat === initialCatRef.current) setCat(haulerCat);   // kullanıcı dokunmadıysa
+      if (!userTouchedCatRef.current) setCat(haulerCat);   // kullanıcı dokunmadıysa
       haulerCatAppliedRef.current = true;
     }
-  }, [haulerCat, cat, sp]);
+  }, [haulerCat, sp]);
   const [il, setIl] = useState("all");
   const [q, setQ] = useState("");
   const [mode, setMode] = useState(sp.get("mode") === "backhaul" ? "backhaul" : "normal"); // normal | backhaul
@@ -482,7 +483,7 @@ export default function ListingsPage({ listings = LISTINGS, user, fleet = [], on
   };
   const applySearch = (s) => {
     setType(s.type);
-    setCat(s.cat);
+    pickCat(s.cat);
     setIl(s.il);
     setQ(s.q);
     setMaterial(s.material);
@@ -496,7 +497,7 @@ export default function ListingsPage({ listings = LISTINGS, user, fleet = [], on
 
   const clearAll = () => {
     setType("all");
-    setCat(defaultCat);
+    pickCat(defaultCat);
     setIl("all");
     setQ("");
     setMaterial("all");
@@ -807,7 +808,7 @@ export default function ListingsPage({ listings = LISTINGS, user, fleet = [], on
               style={tabStyle(mode === "normal" && cat === "all")}
               onClick={() => {
                 setMode("normal");
-                setCat("all");
+                pickCat("all");
               }}
             >
               TÜMÜ
@@ -820,7 +821,7 @@ export default function ListingsPage({ listings = LISTINGS, user, fleet = [], on
                   style={tabStyle(active)}
                   onClick={() => {
                     setMode("normal");
-                    setCat(c.id);
+                    pickCat(c.id);
                   }}
                 >
                   {c.id === "hafriyat" && (
@@ -1187,11 +1188,11 @@ export default function ListingsPage({ listings = LISTINGS, user, fleet = [], on
                   KATEGORİ
                 </div>
                 <div className="flex flex-wrap gap-1.5">
-                  <button style={chip(cat === "all")} onClick={() => setCat("all")}>
+                  <button style={chip(cat === "all")} onClick={() => pickCat("all")}>
                     TÜMÜ
                   </button>
                   {CATS.map((c) => (
-                    <button key={c.id} style={chip(cat === c.id)} onClick={() => setCat(c.id)}>
+                    <button key={c.id} style={chip(cat === c.id)} onClick={() => pickCat(c.id)}>
                       {c.id === "hafriyat" ? "HAFRİYAT" : "SİLOBAS"}
                     </button>
                   ))}
