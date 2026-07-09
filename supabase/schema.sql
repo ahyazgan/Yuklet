@@ -386,6 +386,14 @@ begin
   if auth.uid() is null or auth.uid() = old.owner_id or public.is_admin() then
     return new;
   end if;
+  -- DOGRUDAN KABUL gecisi (aktif → eslesti): nakliyeci sabit fiyatli isi kabul
+  -- edince accept_job RPC accepted_by_id + assigned_vehicle yazar. Bu tek seferlik
+  -- kendini-atama gecisine izin ver (aksi halde guard "İşi Kabul Et"i reddediyordu).
+  -- Guvenli: yalniz bos (null) accepted_by_id kendine atanabilir, baskasina degil.
+  if old.status = 'aktif' and new.status = 'eslesti'
+     and old.accepted_by_id is null and new.accepted_by_id = auth.uid() then
+    allowed := allowed || array['accepted_by_id','assigned_vehicle'];
+  end if;
   if (to_jsonb(new) - allowed) is distinct from (to_jsonb(old) - allowed) then
     raise exception 'Surucu yalniz sefer alanlarini guncelleyebilir';
   end if;

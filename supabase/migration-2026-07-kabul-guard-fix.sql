@@ -1,19 +1,19 @@
 -- ════════════════════════════════════════════════════════════════════
--- MIGRATION 2026-07: Direkt ödeme onayı (emanetsiz model)
--- Sorun: TakipPage "Ödemeyi Yaptım / Ödemeyi Aldım" onayı listings tablosunda
--- payment_paid_at / payment_received_at alanlarını yazıyor; bu kolonlar canlı
--- DB'de yoktu → api mapper eler, hiçbir şey persist olmaz, karşı taraf görmez,
--- "Ödeme tamamlandı" durumuna hiç ulaşılamazdı (yalnız localStorage'da çalışırdı).
--- Ayrıca nakliyecinin "Ödemeyi Aldım" yazması için sürücü guard whitelist'ine
--- payment_received_at eklenmeli (aksi halde trigger reddeder).
+-- MIGRATION 2026-07: "İşi Kabul Et" hatası düzeltmesi (sürücü guard)
+-- Sorun: Nakliyeci sabit fiyatlı işe "İŞİ KABUL ET" deyince kırmızı hata:
+--   "Sürücü yalnız sefer alanlarını güncelleyebilir".
+-- Neden: accept_job RPC ilanı güncellerken accepted_by_id + assigned_vehicle
+--   yazıyor; guard_driver_listing_update whitelist'inde bu 2 kolon yoktu →
+--   trigger kabulü reddediyordu (SECURITY DEFINER RLS'i atlar ama trigger'ı
+--   ATLAMAZ; auth.uid() hâlâ sürücü). Sonuç: Supabase modunda HİÇBİR iş kabul
+--   edilemiyordu (çekirdek akış kırık).
+-- Çözüm: Guard'a, YALNIZ 'aktif'→'eslesti' kendini-atama geçişinde bu iki
+--   kolonun yazılmasına izin ver. Güvenli: sadece boş (null) accepted_by_id
+--   kendine (auth.uid()) atanabilir; başkasına atama / yeniden atama engellenir.
 -- CANLI PROJEDE: bu dosyayı Supabase SQL Editor'de bir kez çalıştır.
+-- Uygulama YENİDEN BUILD GEREKMEZ — sunucu tarafı düzeltme, anında etkili.
 -- ════════════════════════════════════════════════════════════════════
 
--- 1) Kolonlar (idempotent)
-alter table public.listings add column if not exists payment_paid_at     timestamptz;
-alter table public.listings add column if not exists payment_received_at timestamptz;
-
--- 2) Sürücü (eşleşen nakliyeci) guard whitelist'ine ödeme onayı alanlarını ekle
 create or replace function public.guard_driver_listing_update()
 returns trigger language plpgsql security definer set search_path = public as $$
 declare
@@ -22,8 +22,7 @@ begin
   if auth.uid() is null or auth.uid() = old.owner_id or public.is_admin() then
     return new;
   end if;
-  -- Doğrudan kabul geçişi (aktif → eslesti): accept_job accepted_by_id +
-  -- assigned_vehicle yazar; bu kendini-atama geçişine izin ver.
+  -- Doğrudan kabul geçişi (aktif → eslesti): nakliyeci kendini atar.
   if old.status = 'aktif' and new.status = 'eslesti'
      and old.accepted_by_id is null and new.accepted_by_id = auth.uid() then
     allowed := allowed || array['accepted_by_id','assigned_vehicle'];
@@ -34,5 +33,5 @@ begin
   return new;
 end; $$;
 
--- Doğrulama:
--- select column_name from information_schema.columns where table_name='listings' and column_name in ('payment_paid_at','payment_received_at');
+-- Doğrulama (kabul geçişi artık serbest, diğer sürücü tahrifatı hâlâ kapalı):
+-- select prosrc from pg_proc where proname = 'guard_driver_listing_update';
