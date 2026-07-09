@@ -222,21 +222,56 @@ export default function ProfilPage({ user, onUpdateProfile, onRequireAuth, onLog
   });
 
   // Firma logosu / amblemi — ilanlarda ve profilde görünür.
-  // localStorage'da data-url olarak tutulur ve her ilana snapshot'lanır; bu yüzden
-  // küçük tutulur (~500KB sınırı). İleride Supabase Storage public URL'i ile değişir.
+  // Boyut sınırı YOK: görsel istemcide otomatik küçültülür (max 512px).
+  // Telefon fotoğrafları (3-8MB) elle küçültme gerektirmeden yüklenebilir.
+  // Önce PNG denenir (şeffaf logolar bozulmasın); hâlâ büyükse beyaz zemin + JPEG.
+  // Supabase modunda sonuç Storage'a gider (uploadLogo), localStorage modunda
+  // data-url küçük kaldığı için ilan snapshot'ları da güvenli kalır.
+  const LOGO_MAX_PX = 512;
+  const LOGO_TARGET_CHARS = 400_000; // data-url uzunluğu hedefi (~300KB binary)
+  const downscaleLogo = (file) =>
+    new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        try {
+          const scale = Math.min(1, LOGO_MAX_PX / Math.max(img.width, img.height));
+          const w = Math.max(1, Math.round(img.width * scale));
+          const h = Math.max(1, Math.round(img.height * scale));
+          const canvas = document.createElement("canvas");
+          canvas.width = w; canvas.height = h;
+          canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+          let out = canvas.toDataURL("image/png");
+          if (out.length > LOGO_TARGET_CHARS) {
+            // PNG hâlâ büyük (fotoğraf vb.) → şeffaflığı beyaza bas, JPEG'e geç.
+            const flat = document.createElement("canvas");
+            flat.width = w; flat.height = h;
+            const fctx = flat.getContext("2d");
+            fctx.fillStyle = "#fff";
+            fctx.fillRect(0, 0, w, h);
+            fctx.drawImage(canvas, 0, 0);
+            out = flat.toDataURL("image/jpeg", 0.85);
+          }
+          resolve(out);
+        } catch (err) { reject(err); }
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Görsel çözülemedi")); };
+      img.src = url;
+    });
+
   const onLogoFile = async (e) => {
     const f = e.target.files?.[0];
     e.target.value = "";
     if (!f) return;
     if (!f.type.startsWith("image/")) { toast("Lütfen bir resim dosyası seç (PNG/JPG)", "error"); return; }
-    if (f.size > 500_000) { toast("Logo çok büyük (~500KB sınırı). Daha küçük bir görsel dene.", "error"); return; }
-    const reader = new FileReader();
-    reader.onload = async () => {
-      const res = await onUpdateProfile?.({ logo: reader.result });
-      if (res && res.ok === false) { toast(res.error || "Logo yüklenemedi", "error"); return; }
-      toast("Logo güncellendi", "success");
-    };
-    reader.readAsDataURL(f);
+    if (f.size > 15_000_000) { toast("Dosya çok büyük (max ~15MB). Daha küçük bir görsel dene.", "error"); return; }
+    let dataUrl;
+    try { dataUrl = await downscaleLogo(f); }
+    catch { toast("Görsel okunamadı. Farklı bir dosya dene.", "error"); return; }
+    const res = await onUpdateProfile?.({ logo: dataUrl });
+    if (res && res.ok === false) { toast(res.error || "Logo yüklenemedi", "error"); return; }
+    toast("Logo güncellendi", "success");
   };
   const removeLogo = async () => {
     const res = await onUpdateProfile?.({ logo: "" });
@@ -460,7 +495,7 @@ export default function ProfilPage({ user, onUpdateProfile, onRequireAuth, onLog
                     </button>
                   )}
                 </div>
-                <span style={{ fontFamily: MONO, fontSize: 9.5, color: C.faint, lineHeight: 1.5 }}>PNG / JPG · kare önerilir · max 500 KB</span>
+                <span style={{ fontFamily: MONO, fontSize: 9.5, color: C.faint, lineHeight: 1.5 }}>PNG / JPG · kare önerilir · büyük görseller otomatik küçültülür</span>
               </div>
             </div>
           </div>
