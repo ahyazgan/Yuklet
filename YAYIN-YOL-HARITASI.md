@@ -72,7 +72,7 @@ Google'ın güncel şartı: yeni bireysel geliştirici hesaplarında yayın önc
 > **✅ Metinler hazır → `MAGAZA-METINLERI.md`:** app adı, subtitle, açıklama (Apple+Play), keyword, kategori, yaş, **Data Safety** + **App Privacy** tabloları — hepsi karakter sınırı hesaplanmış, forma yapıştırmaya hazır.
 - **App Store Connect:** metinleri yapıştır + **ekran görüntüleri** (6.7" + 6.5") ekle.
 - **Play Console:** metinleri yapıştır + **grafik varlıklar** (feature graphic + ekran görüntüleri) ekle.
-- Kalan tek üretilemeyen parça: **ekran görüntüleri / feature graphic** (görsel iş, koddan çıkmaz).
+- Kalan tek üretilemeyen parça: **ekran görüntüleri / feature graphic** (görsel iş, koddan çıkmaz) — ama **çekim planı hazır → `MAGAZA-EKRAN-PLANI.md`** (hangi ekran, hangi sıra, hangi başlık).
 
 ### 7. capacitor.config — App Store ID / iosUrl  `[ ]` _(opsiyonel)_
 Paylaşım/deep link tam çalışsın diye App Store'da uygulama oluşunca App ID'yi ekle. `appId` zaten `com.yuklet.app`, `appName` = YÜKLET.
