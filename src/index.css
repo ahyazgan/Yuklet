@@ -63,7 +63,10 @@
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; transition: background .3s, color .3s; }
 a { text-decoration: none; color: inherit; }
-button { font-family: inherit; cursor: pointer; }
+/* color: inherit → iOS'ta buton içindeki rengi belirtilmemiş metin sistem mavisi
+   yerine ebeveyninden (ink) miras alır. Inline renkli metin (yeşil fiyat, sarı
+   buton vb.) bunu override eder, etkilenmez. */
+button { font-family: inherit; cursor: pointer; color: inherit; }
 input, textarea, select { font-family: inherit; }
 
 /* ═══ APP ROOT — SADECE MOBİL APP ═══
