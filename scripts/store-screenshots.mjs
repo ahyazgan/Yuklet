@@ -26,11 +26,13 @@ const SATICI = { id: "u-ss-satici", name: "Akdağ Kırma Ocağı", email: "akdag
 
 const L = [
   // Alıcının işleri (ana sayfa "AKTİF İŞİM" + künye)
-  { id: "9101", type: "is", cat: "hafriyat", title: "Şantiye kazı hafriyatı — 5.000 m³", il: "İstanbul", ilce: "Ümraniye", varisIl: "İstanbul", yukleme: "Dudullu OSB şantiyesi", bosaltma: "Kemerburgaz döküm sahası", material: "Toprak (kazı)", amount: 5000, unit: "m³", dateText: "Bu hafta", priceType: "sabit", price: 185000, owner: "Yıldızlar İnşaat", ownerId: "u-ss-alici", ownerVerified: true, ownerRating: 4.9, status: "eslesti", offers: 0, createdText: "2 saat önce", recurring: true, recurringFreq: "gunluk", dailyTrips: 8, recurringText: "Her gün • Günde 8 sefer" },
-  { id: "9102", type: "is", cat: "silobas", title: "Dökme çimento taşıma — santral besleme", il: "İstanbul", ilce: "Tuzla", varisIl: "Kocaeli", yukleme: "Akçansa terminali", bosaltma: "Tuzla beton santrali", material: "Çimento (dökme)", amount: 120, unit: "ton", dateText: "8-12 Temmuz", priceType: "sabit", price: 54000, owner: "Yıldızlar İnşaat", ownerId: "u-ss-alici", ownerVerified: true, ownerRating: 4.9, status: "aktif", offers: 0, createdText: "5 saat önce" },
+  // TUTARLILIK KURALI: varış ili = boşaltma noktasının GERÇEK ili; fiyat = miktar
+  // × gerçekçi birim (hafriyat/moloz ~₺600-650/ton, çimento ~₺450/ton hat bazlı).
+  { id: "9101", type: "is", cat: "hafriyat", title: "Şantiye kazı hafriyatı — 900 ton", il: "İstanbul", ilce: "Ümraniye", varisIl: "İstanbul", yukleme: "Dudullu OSB şantiyesi", bosaltma: "Kemerburgaz döküm sahası", material: "Toprak (kazı)", amount: 900, unit: "ton", dateText: "Bu hafta", priceType: "sabit", price: 585000, owner: "Yıldızlar İnşaat", ownerId: "u-ss-alici", ownerVerified: true, ownerRating: 4.9, status: "eslesti", offers: 0, createdText: "2 saat önce", recurring: true, recurringFreq: "gunluk", dailyTrips: 8, recurringText: "Her gün • Günde 8 sefer" },
+  { id: "9102", type: "is", cat: "silobas", title: "Dökme çimento taşıma — santral besleme", il: "İstanbul", ilce: "Tuzla", varisIl: "Kocaeli", yukleme: "Tuzla çimento terminali", bosaltma: "Gebze beton santrali", material: "Çimento (dökme)", amount: 120, unit: "ton", dateText: "8-12 Temmuz", priceType: "sabit", price: 54000, owner: "Yıldızlar İnşaat", ownerId: "u-ss-alici", ownerVerified: true, ownerRating: 4.9, status: "aktif", offers: 0, createdText: "5 saat önce" },
   // Tamamlanmış işler (ana sayfa "TAMAMLANAN" istatistiği dolu görünsün)
-  { id: "9103", type: "is", cat: "hafriyat", title: "Bahçelievler temel kazısı", il: "İstanbul", ilce: "Bahçelievler", material: "Toprak (kazı)", amount: 1800, unit: "m³", priceType: "sabit", price: 96000, owner: "Yıldızlar İnşaat", ownerId: "u-ss-alici", ownerVerified: true, ownerRating: 4.9, status: "kapali", offers: 0, createdText: "geçen ay" },
-  { id: "9104", type: "is", cat: "hafriyat", title: "Moloz nakliyesi — dönüşüm sahası", il: "İstanbul", ilce: "Kadıköy", material: "Yıkıntı molozi", amount: 400, unit: "ton", priceType: "sabit", price: 52000, owner: "Yıldızlar İnşaat", ownerId: "u-ss-alici", ownerVerified: true, ownerRating: 4.9, status: "kapali", offers: 0, createdText: "geçen ay" },
+  { id: "9103", type: "is", cat: "hafriyat", title: "Bahçelievler temel kazısı — 300 ton", il: "İstanbul", ilce: "Bahçelievler", material: "Toprak (kazı)", amount: 300, unit: "ton", priceType: "sabit", price: 195000, owner: "Yıldızlar İnşaat", ownerId: "u-ss-alici", ownerVerified: true, ownerRating: 4.9, status: "kapali", offers: 0, createdText: "geçen ay" },
+  { id: "9104", type: "is", cat: "hafriyat", title: "Moloz nakliyesi — dönüşüm sahası", il: "İstanbul", ilce: "Kadıköy", material: "Yıkıntı molozi", amount: 400, unit: "ton", priceType: "sabit", price: 240000, owner: "Yıldızlar İnşaat", ownerId: "u-ss-alici", ownerVerified: true, ownerRating: 4.9, status: "kapali", offers: 0, createdText: "geçen ay" },
   // Satıcının ürün kataloğu (vitrin)
   { id: "9201", type: "urun", cat: "silobas", title: "Yıkanmış kum (0–3 mm)", il: "Kocaeli", ilce: "Gebze", material: "Kum (0–3 mm)", priceType: "sabit", price: 520, priceUnit: "₺/ton", stock: "bol", stockText: "Bol stok", deliveryIncluded: true, desc: "Elenmiş, yıkanmış inşaat kumu.", owner: "Akdağ Kırma Ocağı", ownerId: "u-ss-satici", ownerVerified: true, ownerRating: 4.8, status: "aktif", offers: 0, createdText: "1 gün önce" },
   { id: "9202", type: "urun", cat: "silobas", title: "Mıcır (16–32 mm) — ocak teslim", il: "Kocaeli", ilce: "Gebze", material: "Mıcır (16–32 mm)", priceType: "sabit", price: 480, priceUnit: "₺/ton", stock: "orta", stockText: "Orta stok", deliveryIncluded: false, owner: "Akdağ Kırma Ocağı", ownerId: "u-ss-satici", ownerVerified: true, ownerRating: 4.8, status: "aktif", offers: 0, createdText: "2 gün önce" },
@@ -66,7 +68,8 @@ const COMPOSE = [
   { file: "03-ilan-ver", variant: "yellow", kicker: "SABİT FİYAT", lines: ["YÜKÜNÜ", "<em>2 DAKİKADA</em>", "İLANA ÇEVİR"] },
   { file: "04-satici-vitrini", variant: "dark", kicker: "OCAKTAN FİYAT", lines: ["MALZEMEYİ", "<em>KAYNAĞINDAN</em>", "AL"] },
   { file: "05-nakliyeci-profili", variant: "yellow", kicker: "GÜVEN SİSTEMİ", lines: ["<em>BELGELİ</em>", "NAKLİYECİYLE", "ÇALIŞ"] },
-  { file: "06-ilan-detay", variant: "manila", kicker: "DOĞRUDAN KABUL", lines: ["PAZARLIK YOK,", "<em>NET RAKAM</em>"] },
+  // push: telefonu aşağı iter (px) — alt kenardan istenmeyen bölüm kırpılır.
+  { file: "06-ilan-detay", variant: "manila", kicker: "DOĞRUDAN KABUL", lines: ["PAZARLIK YOK,", "<em>NET RAKAM</em>"], push: 170 },
 ];
 
 const VARIANTS = {
@@ -88,7 +91,7 @@ function buildFrame(c, b64) {
     .kick span{font-family:'Space Mono',monospace;font-weight:700;font-size:31px;letter-spacing:.24em;color:${v.kick};text-transform:uppercase}
     h1{font-size:150px;font-weight:900;line-height:1.02;letter-spacing:-.03em;color:${v.fg};text-transform:uppercase}
     h1 em{font-style:normal;${v.em}}
-    .phone{width:1064px;margin:96px auto 0;background:#0A0A0A;border:16px solid #0A0A0A;border-bottom:none;
+    .phone{width:1064px;margin:${96 + (c.push || 0)}px auto 0;background:#0A0A0A;border:16px solid #0A0A0A;border-bottom:none;
            border-radius:78px 78px 0 0;overflow:hidden;position:relative;box-shadow:26px 26px 0 rgba(10,10,10,.16)}
     .hole{position:absolute;top:20px;left:50%;transform:translateX(-50%);width:34px;height:34px;border-radius:50%;
           background:#0A0A0A;z-index:9;box-shadow:0 0 0 5px rgba(255,255,255,.10)}
