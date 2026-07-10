@@ -411,8 +411,27 @@ export default function ListingsPage({ listings = LISTINGS, user, fleet = [], on
   // Aşağı-çekip-yenile (dokunmatik). onRefresh yoksa kısa görsel geri bildirim.
   const ptrRefresh = onRefresh || (() => new Promise((r) => setTimeout(r, 500)));
   const { distance, refreshing, pull } = usePullToRefresh(ptrRefresh);
+  // Alıcı (isveren) için /ilanlar bir "tedarik" ekranı: açılışta ocak/santral
+  // ürün kataloglarını göster. Diğer roller "Tümü" ile açılır. Kullanıcı sekmeden
+  // istediği türe geçebilir — bu yalnız VARSAYILAN'dır.
+  const defaultType = user?.role === "isveren" ? "urun" : "all";
   // YÜKLET Akıllı Fiyat: kartlardaki piyasa etiketleri için geçmiş veri (bir kez).
-  const [type, setType] = useState(["arac", "is", "urun"].includes(sp.get("type")) ? sp.get("type") : "all");
+  const [type, setType] = useState(
+    ["arac", "is", "urun"].includes(sp.get("type")) ? sp.get("type") : defaultType
+  );
+  // Rol geç hidrate olursa (sayfa yenileme) varsayılan türü bir kez uygula —
+  // kullanıcı sekmeye ELLE dokunmadıysa. (haulerCat desenine paralel.)
+  const userTouchedTypeRef = useRef(false);
+  const typeAppliedRef = useRef(false);
+  const pickType = (t) => { userTouchedTypeRef.current = true; setType(t); };
+  useEffect(() => {
+    if (typeAppliedRef.current) return;
+    if (["arac", "is", "urun"].includes(sp.get("type"))) { typeAppliedRef.current = true; return; }
+    if (user?.role) {
+      if (!userTouchedTypeRef.current) setType(user.role === "isveren" ? "urun" : "all");
+      typeAppliedRef.current = true;
+    }
+  }, [user, sp]);
   // URL'de cat varsa o kazanır; yoksa nakliyecinin uzmanlık kategorisiyle aç (yoksa "all").
   const [cat, setCat] = useState(
     ["hafriyat", "silobas"].includes(sp.get("cat")) ? sp.get("cat") : defaultCat
@@ -455,7 +474,7 @@ export default function ListingsPage({ listings = LISTINGS, user, fleet = [], on
   };
   const currentSearch = { type, cat, il, q, material, priceMin, priceMax, sort, verifiedOnly };
   const isDefaultSearch =
-    type === "all" &&
+    type === defaultType &&
     cat === defaultCat &&
     il === "all" &&
     !q &&
@@ -494,7 +513,7 @@ export default function ListingsPage({ listings = LISTINGS, user, fleet = [], on
     persistSaved([{ id: key, ...currentSearch, label: labelFor(currentSearch) }, ...saved].slice(0, 8));
   };
   const applySearch = (s) => {
-    setType(s.type);
+    pickType(s.type);
     pickCat(s.cat);
     setIl(s.il);
     setQ(s.q);
@@ -508,7 +527,7 @@ export default function ListingsPage({ listings = LISTINGS, user, fleet = [], on
   const removeSearch = (id) => persistSaved(saved.filter((s) => s.id !== id));
 
   const clearAll = () => {
-    setType("all");
+    setType(defaultType);
     pickCat(defaultCat);
     setIl("all");
     setQ("");
@@ -591,6 +610,13 @@ export default function ListingsPage({ listings = LISTINGS, user, fleet = [], on
   }, [mode, il, cat, listings]);
 
   const openCount = mode === "backhaul" ? backhaul.length : filtered.length;
+  // Sayaç ismi türe duyarlı: ürün görünümünde "AÇIK İŞ" yanlış olur.
+  const countNoun =
+    mode === "backhaul" ? "YAKIN YÜK"
+      : type === "urun" ? "ÜRÜN"
+      : type === "arac" ? "ARAÇ"
+      : type === "is" ? "AÇIK İŞ"
+      : "İLAN";
 
   // ── Sekme yardımcı: tab tasarımı ──
   const tabStyle = (active) => ({
@@ -653,7 +679,7 @@ export default function ListingsPage({ listings = LISTINGS, user, fleet = [], on
                 <h1 style={{ ...HEAD, fontSize: 26, fontWeight: 900, lineHeight: 1 }}>İlanlar</h1>
               )}
               <span style={{ ...MONO, fontSize: 11, fontWeight: 700, color: C.sub }}>
-                {openCount} {mode === "backhaul" ? "YAKIN YÜK" : "AÇIK İŞ"}
+                {openCount} {countNoun}
               </span>
             </div>
             {/* Liste / Harita toggle — sadece normal modda */}
@@ -884,7 +910,7 @@ export default function ListingsPage({ listings = LISTINGS, user, fleet = [], on
               ["arac", "ARAÇ"],
               ["urun", "ÜRÜN"],
             ].map(([k, lbl]) => (
-              <button key={k} style={chip(type === k)} onClick={() => setType(k)}>
+              <button key={k} style={chip(type === k)} onClick={() => pickType(k)}>
                 {lbl}
               </button>
             ))}
@@ -1223,7 +1249,7 @@ export default function ListingsPage({ listings = LISTINGS, user, fleet = [], on
                     ["arac", "ARAÇ İLANI"],
                     ["urun", "ÜRÜN İLANI"],
                   ].map(([k, lbl]) => (
-                    <button key={k} style={chip(type === k)} onClick={() => setType(k)}>
+                    <button key={k} style={chip(type === k)} onClick={() => pickType(k)}>
                       {lbl}
                     </button>
                   ))}
