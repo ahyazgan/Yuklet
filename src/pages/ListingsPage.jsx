@@ -414,7 +414,8 @@ export default function ListingsPage({ listings = LISTINGS, user, fleet = [], on
   // Alıcı (isveren) için /ilanlar bir "tedarik" ekranı: açılışta ocak/santral
   // ürün kataloglarını göster. Diğer roller "Tümü" ile açılır. Kullanıcı sekmeden
   // istediği türe geçebilir — bu yalnız VARSAYILAN'dır.
-  const defaultType = user?.role === "isveren" ? "urun" : "all";
+  const isBuyer = user?.role === "isveren";
+  const defaultType = isBuyer ? "urun" : "all";
   // YÜKLET Akıllı Fiyat: kartlardaki piyasa etiketleri için geçmiş veri (bir kez).
   const [type, setType] = useState(
     ["arac", "is", "urun"].includes(sp.get("type")) ? sp.get("type") : defaultType
@@ -451,7 +452,8 @@ export default function ListingsPage({ listings = LISTINGS, user, fleet = [], on
   }, [haulerCat, sp]);
   const [il, setIl] = useState("all");
   const [q, setQ] = useState("");
-  const [mode, setMode] = useState(sp.get("mode") === "backhaul" ? "backhaul" : "normal"); // normal | backhaul
+  // Dönüş yükü (backhaul) sadece nakliyeci aracı — alıcı bu moda hiç girmez.
+  const [mode, setMode] = useState(sp.get("mode") === "backhaul" && !isBuyer ? "backhaul" : "normal"); // normal | backhaul
   const [material, setMaterial] = useState("all");
   const [priceMin, setPriceMin] = useState("");
   const [priceMax, setPriceMax] = useState("");
@@ -653,7 +655,7 @@ export default function ListingsPage({ listings = LISTINGS, user, fleet = [], on
   return (
     <div style={shell}>
       <SEO
-        title="İlanlar"
+        title={isBuyer ? "Malzeme Bul" : "İlanlar"}
         description="Hafriyat ve silobas iş ve araç ilanları. Konuma, kategoriye ve türüne göre filtreleyin."
       />
 
@@ -676,7 +678,9 @@ export default function ListingsPage({ listings = LISTINGS, user, fleet = [], on
                   Dönüş Yükü
                 </h1>
               ) : (
-                <h1 style={{ ...HEAD, fontSize: 26, fontWeight: 900, lineHeight: 1 }}>İlanlar</h1>
+                <h1 style={{ ...HEAD, fontSize: 26, fontWeight: 900, lineHeight: 1 }}>
+                  {isBuyer ? "Malzeme Bul" : "İlanlar"}
+                </h1>
               )}
               <span style={{ ...MONO, fontSize: 11, fontWeight: 700, color: C.sub }}>
                 {openCount} {countNoun}
@@ -764,7 +768,7 @@ export default function ListingsPage({ listings = LISTINGS, user, fleet = [], on
               <input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                placeholder="İL · MALZEME · GÜZERGAH ARA"
+                placeholder={isBuyer ? "İL · MALZEME · OCAK ARA" : "İL · MALZEME · GÜZERGAH ARA"}
                 aria-label="İlan ara"
                 style={{
                   ...MONO,
@@ -877,10 +881,13 @@ export default function ListingsPage({ listings = LISTINGS, user, fleet = [], on
                 </button>
               );
             })}
-            <button style={tabStyle(mode === "backhaul")} onClick={() => setMode("backhaul")}>
-              <RotateCw size={13} strokeWidth={2.5} color={mode === "backhaul" ? C.yellow : C.ink} />
-              DÖNÜŞ
-            </button>
+            {/* Dönüş yükü sekmesi sadece nakliyeci aracı — alıcıda gösterme. */}
+            {!isBuyer && (
+              <button style={tabStyle(mode === "backhaul")} onClick={() => setMode("backhaul")}>
+                <RotateCw size={13} strokeWidth={2.5} color={mode === "backhaul" ? C.yellow : C.ink} />
+                DÖNÜŞ
+              </button>
+            )}
           </div>
         </div>
       </div>
