@@ -26,7 +26,7 @@ Statü: `[ ]` yapılacak · `[?]` durumu belirsiz, önce doğrula · bitince `[x
 ### 2. Supabase migration'ları canlıda uygulanmış mı  `[x]`
 > **✅ Doğrulandı 2026-07-09 (production):** 8/8 profil kolonu mevcut · 3/3 RPC mevcut (`set_my_role`, `accept_job`, `guard_driver_listing_update`) · guard `accepted_by_id` whitelist'te (`guard_fixed = true`). Backend tamam.
 >
-> **⚠ YENİ (2026-07-10) — çalıştırılacak:** `supabase/migration-2026-07-ilan-tur-rol-guard.sql` (ilan türü ↔ rol kapısı: nakliyeci yalnız araç, alıcı yalnız iş, satıcı ürün+iş) henüz canlıda çalıştırılmadı → SQL Editor'de bir kez çalıştır; dosyanın sonundaki doğrulama sorgusu 1 satır dönmeli.
+> **✅ 2026-07-10:** `migration-2026-07-ilan-tur-rol-guard.sql` (ilan türü ↔ rol kapısı: nakliyeci yalnız araç, alıcı yalnız iş, satıcı ürün+iş) canlıda çalıştırıldı — `trg_guard_listing_type_role` trigger'ı aktif.
 
 Bugünkü **vitrin/künye** işi `profiles` tablosundaki kolonlara bağlı — canlıda yoksa profil kaydı sessizce boş döner. Hepsi idempotent (`add column if not exists` / `create or replace`), tekrar çalıştırmak güvenli.
 
