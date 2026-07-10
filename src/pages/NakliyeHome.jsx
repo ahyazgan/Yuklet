@@ -122,7 +122,7 @@ function StatBox({ value, label, money, dot }) {
 }
 
 /* ── ÜST: koyu header bloğu yok — açık üst (hazard şerit App'te değil burada) ─ */
-function Header({ name, role, place, unread, onBell, onProfile, onSearch }) {
+function Header({ name, role, place, unread, logo, onBell, onProfile, onSearch }) {
   const r = ROLE[role] || ROLE.muteahhit;
   const initial = (name || "D").trim().charAt(0).toUpperCase();
   return (
@@ -174,10 +174,13 @@ function Header({ name, role, place, unread, onBell, onProfile, onSearch }) {
           <button
             onClick={onProfile}
             aria-label="Profil"
-            className="flex h-10 w-10 items-center justify-center text-[15px] font-black"
-            style={{ background: C.yellow, color: C.ink, border: FRAME, borderRadius: 6, fontFamily: ARCH }}
+            className="flex h-10 w-10 items-center justify-center overflow-hidden text-[15px] font-black"
+            style={{ background: logo ? C.card : C.yellow, color: C.ink, border: FRAME, borderRadius: 6, fontFamily: ARCH }}
           >
-            {initial}
+            {/* firma logosu yüklüyse onu göster; yoksa baş harf (kutu boyutu aynı) */}
+            {logo
+              ? <img src={logo} alt="" className="h-full w-full object-cover" />
+              : initial}
           </button>
         </div>
       </div>
@@ -865,6 +868,7 @@ export default function NakliyeHome({
         name={name}
         role={role}
         place={place}
+        logo={user?.logo || ""}
         unread={notifUnread}
         onBell={() => navigate("/bildirimler")}
         onProfile={() => navigate("/profil")}
