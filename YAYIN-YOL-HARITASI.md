@@ -4,7 +4,27 @@ _Son güncelleme: 2026-07-09_
 
 Kod tarafı yayına hazır (son tarama temiz: konsol logları sağlıklı, ödeme/cüzdan yüzeyi `PAYMENTS_ENABLED=false` ile gated, legal + hesap silme yerinde, reachable "coming soon" yok). Bundan sonrası **panel / konsol işleri** — bunlar Vercel, Supabase, Google Cloud, App Store Connect ve Play Console gibi dış sistemlerde yapılır; koddan halledilemez.
 
-Statü: `[ ]` yapılacak · `[?]` durumu belirsiz, önce doğrula · bitince `[x]` işaretle.
+Statü: `[ ]` yapılacak · `[?]` durumu belirsiz, önce doğrula · bitince `[x]` işaretle · `[—]` ertelendi.
+
+> ## 🎯 ODAK: YALNIZ APP STORE (karar 2026-07-10)
+> İlk yayın hedefi **sadece Apple App Store**. Bu kararla düşen işler: Play kapalı test,
+> Play Console formları/Data Safety, feature graphic, `assetlinks.json` (Android deep link),
+> Android Google client. Play varlıkları (`store-assets/play-*`) ileride lazım olur diye repoda duruyor.
+>
+> **Aynı gün yapılan kod hazırlığı:** iOS hedefi **iPhone-only** yapıldı
+> (`TARGETED_DEVICE_FAMILY = 1`) → App Store Connect artık **iPad ekran görüntüsü istemez**,
+> inceleme iPad'de yapılmaz (uygulama 460px telefon kolonu — doğru karar). iPad kullanıcıları
+> uygulamayı uyumluluk modunda yine indirebilir.
+>
+> **App Store'a giden yol (sıralı):**
+> 1. Apple Developer hesabı aktif + App Store Connect'te uygulama oluştur (bundle `com.yuklet.app`)
+> 2. Codemagic iOS workflow ile TestFlight build'i al (`KURULUM-CODEMAGIC.md`; `yuklet_supabase` env grubu şart)
+> 3. Metinleri yapıştır → `MAGAZA-METINLERI.md` (App Store bölümü) · Görselleri yükle → `store-assets/appstore-1290x2796/`
+> 4. Privacy Policy URL: `https://yuklet.co/gizlilik.html` · App Privacy formu → `MAGAZA-METINLERI.md` §3
+> 5. **Giriş ön-kontrolü (Apple 4.8 & 2.1):** Apple girişi altyapısı kodda hazır (`api.js` SocialLogin) —
+>    Supabase'de Apple provider + Xcode "Sign in with Apple" capability adımlarını yap (`KURULUM-GIRIS.md`).
+>    Google girişi: iOS client'ı yapılandır **ya da** native'de butonun gizli/çalışır olduğunu TestFlight'ta doğrula.
+> 6. TestFlight'ta 3 rol akışını cihazda test et → incelemeye gönder
 
 ---
 
@@ -69,7 +89,7 @@ Authentication → Providers → Email → **"Confirm email" KAPALI** olmalı; y
 >
 > **Yapılacak:** Bu URL'leri App Store Connect (App Privacy Policy URL) ve Play Console (Store listing + Data safety → data deletion) formlarına gir. Şirket kuruluşu bitince sayfalara unvan/adres/Mersis eklenecek (kod içinde `<!-- ... -->` notu düşülü).
 
-### 5. Play kapalı test (closed testing)  `[ ]`
+### 5. Play kapalı test (closed testing)  `[—]` ERTELENDİ (yalnız App Store)
 Google'ın güncel şartı: yeni bireysel geliştirici hesaplarında yayın öncesi bir süre kapalı test (yaklaşık **12 tester / 14 gün**) gerekebilir. Detay: `PLAY-KURULUM.md`.
 
 ### 6. Mağaza formları  `[ ]`
