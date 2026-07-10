@@ -331,7 +331,7 @@ function ListingCard({ l, isFav = false, onToggleFav, rel }) {
             }}
           >
             {isProduct
-              ? "İLETİŞİME GEÇ →"
+              ? "SİPARİŞ VER →"
               : (l.priceType === "sabit" && l.price)
                 ? (l.type === "arac" ? "KİRALA →" : "KABUL ET →")
                 : l.offers > 0 ? `${l.offers} TEKLİF →` : "TEKLİF VER →"}
