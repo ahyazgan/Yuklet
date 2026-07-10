@@ -77,9 +77,10 @@ export default function AliciProfilPage({ user, users = [], listings = [], revie
   const buyer = localBuyer || (resolved ? fetched.profile : null);
   const loading = needsFetch && !resolved;
 
-  // Alıcının açtığı AKTİF iş ilanları.
+  // Alıcının AÇIK (aktif) iş ilanları — künyedeki "fırsat" listesi.
+  // "eslesti" iş açık fırsat değildir; sayaç ve liste yalnız aktifi gösterir.
   const buyerListings = useMemo(
-    () => listings.filter((l) => String(l.ownerId) === String(id) && l.type === "is" && l.status !== "kapali"),
+    () => listings.filter((l) => String(l.ownerId) === String(id) && l.type === "is" && l.status === "aktif"),
     [listings, id]
   );
 

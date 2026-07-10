@@ -79,9 +79,11 @@ export default function SaticiProfilPage({ user, users = [], listings = [], revi
   const seller = localSeller || (resolved ? fetched.profile : null);
   const loading = needsFetch && !resolved;
 
-  // Satıcının kendi açtığı AKTİF ilanları (ürün/diğer).
+  // Satıcının yayındaki ÜRÜN ilanları — vitrin kataloğu yalnız ürün gösterir.
+  // (Satıcının "Nakliye Ayarla" ile açtığı İŞ ilanları kataloğa KARIŞMAZ;
+  //  onlar ilan panosunda yaşar. ₺/ton etiketi ve stok rozeti yalnız üründe doğru.)
   const sellerListings = useMemo(
-    () => listings.filter((l) => String(l.ownerId) === String(id) && l.status !== "kapali"),
+    () => listings.filter((l) => String(l.ownerId) === String(id) && l.type === "urun" && l.status !== "kapali"),
     [listings, id]
   );
 
