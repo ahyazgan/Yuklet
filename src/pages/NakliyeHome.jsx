@@ -334,6 +334,11 @@ function ActiveJobCard({ nav, job, offersOnMine }) {
   const from = (job.il || job.yukleme || "—").toUpperCase();
   const to = (job.varisIl || job.bosaltma || job.ilce || "—").toUpperCase();
   const offerCount = job.offers != null ? job.offers : offersOnMine;
+  // Sabit-fiyat modeli: kartta NET RAKAM gösterilir (teklif sayısı değil).
+  // Teklif metni yalnız eski/istisna (fiyatsız) ilanlar için geriye-uyum.
+  const fixedPrice = job.priceType === "sabit" && job.price != null
+    ? "₺" + Number(job.price).toLocaleString("tr-TR")
+    : null;
   return (
     <div className="relative mb-6 overflow-hidden" style={{ border: FRAME, borderRadius: 6, boxShadow: SHADOW }}>
       <div className="relative overflow-hidden px-4 py-3.5" style={{ background: "#0A0A0A" }}>
@@ -354,7 +359,7 @@ function ActiveJobCard({ nav, job, offersOnMine }) {
       <div className="px-4 py-3.5" style={{ background: C.card }}>
         <div className="mb-3 flex items-center justify-between text-[10.5px] font-bold uppercase" style={{ color: C.sub, fontFamily: MONO }}>
           <span>{job.amount ? `${job.amount} ${job.unit || "TON"}` : (job.material || "—")}</span>
-          <span style={{ color: C.green }}>{offerCount} TEKLİF</span>
+          <span style={{ color: C.green }}>{fixedPrice || `${offerCount} TEKLİF`}</span>
         </div>
         <div className="flex gap-2.5">
           <button
@@ -391,7 +396,7 @@ function EmptyActiveJob({ nav, user }) {
             Henüz aktif işin yok
           </div>
           <div className="mt-1.5 text-[10.5px] font-bold uppercase leading-snug" style={{ color: C.sub, fontFamily: MONO }}>
-            {user ? "İlk iş ilanını aç, nakliyecilerden teklif al" : "Giriş yap, ilanını aç, teklif al"}
+            {user ? "İlk işini sabit fiyatla yayınla, nakliyeci doğrudan kabul etsin" : "Giriş yap, ilanını net fiyatla aç"}
           </div>
         </div>
         <button
@@ -756,7 +761,7 @@ function PiyasaWidget({ nav }) {
 }
 
 export default function NakliyeHome({
-  user, listings = [], offers = [], pendingOffersCount = 0, notifUnread = 0, onLoginClick, announcement,
+  user, listings = [], offers = [], notifUnread = 0, onLoginClick, announcement,
 }) {
   const navigate = useNavigate();
   const [annDismissed, setAnnDismissed] = useState(false);
@@ -781,11 +786,12 @@ export default function NakliyeHome({
       isJobs.find((l) => l.status === "aktif") ||
       null;
     const activeCount = mine.filter((l) => l.status === "aktif" || l.status === "eslesti").length;
+    const matched = mine.filter((l) => l.status === "eslesti").length; // doğrudan kabul edilen işler
     const done = mine.filter((l) => l.status === "kapali").length;
     // Kullanıcının ilanlarına gelen toplam teklif sayısı.
     const mineIds = new Set(mine.map((l) => String(l.id)));
     const offersOnMine = offers.filter((o) => mineIds.has(String(o.listingId))).length;
-    return { mine, active, activeCount, done, offersOnMine };
+    return { mine, active, activeCount, matched, done, offersOnMine };
   }, [user, listings, offers]);
 
   // Son ilanlar: en yeni iş ilanları (kendi ilanların hariç değil — piyasa görünümü).
@@ -836,7 +842,8 @@ export default function NakliyeHome({
   const STAT = {
     muteahhit: [
       { value: user ? String(buyer.activeCount) : "—", label: "Aktif İlan" },
-      { value: user ? String(pendingOffersCount || buyer.offersOnMine) : "—", label: "Gelen Teklif", dot: (pendingOffersCount || buyer.offersOnMine) > 0 },
+      // Sabit-fiyat modeli: alıcı teklif beklemez; işi doğrudan kabul edilir → "Eşleşen".
+      { value: user ? String(buyer.matched) : "—", label: "Eşleşen", dot: buyer.matched > 0 },
       { value: user ? String(buyer.done) : "—", label: "Tamamlanan" },
     ],
     nakliyeci: [

@@ -8,7 +8,7 @@
 // Gerçekçi Türkçe demo verisi tarayıcı localStorage'ına seed edilir; canlı DB'ye dokunmaz.
 
 import { chromium } from "playwright-core";
-import { mkdirSync } from "node:fs";
+import { mkdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
@@ -26,12 +26,15 @@ const SATICI = { id: "u-ss-satici", name: "Akdağ Kırma Ocağı", email: "akdag
 
 const L = [
   // Alıcının işleri (ana sayfa "AKTİF İŞİM" + künye)
-  { id: "9101", type: "is", cat: "hafriyat", title: "Şantiye kazı hafriyatı — 5.000 m³", il: "İstanbul", ilce: "Ümraniye", varisIl: "İstanbul", yukleme: "Dudullu OSB şantiyesi", bosaltma: "Kemerburgaz döküm sahası", material: "Toprak (kazı)", amount: 5000, unit: "m³", dateText: "Bu hafta", priceType: "sabit", price: 185000, owner: "Yıldızlar İnşaat", ownerId: "u-ss-alici", ownerVerified: true, ownerRating: 4.9, status: "aktif", offers: 3, createdText: "2 saat önce", recurring: true, recurringFreq: "gunluk", dailyTrips: 8, recurringText: "Her gün • Günde 8 sefer" },
-  { id: "9102", type: "is", cat: "silobas", title: "Dökme çimento taşıma — santral besleme", il: "İstanbul", ilce: "Tuzla", varisIl: "Kocaeli", yukleme: "Akçansa terminali", bosaltma: "Tuzla beton santrali", material: "Çimento (dökme)", amount: 120, unit: "ton", dateText: "8-12 Temmuz", priceType: "sabit", price: 54000, owner: "Yıldızlar İnşaat", ownerId: "u-ss-alici", ownerVerified: true, ownerRating: 4.9, status: "aktif", offers: 1, createdText: "5 saat önce" },
+  { id: "9101", type: "is", cat: "hafriyat", title: "Şantiye kazı hafriyatı — 5.000 m³", il: "İstanbul", ilce: "Ümraniye", varisIl: "İstanbul", yukleme: "Dudullu OSB şantiyesi", bosaltma: "Kemerburgaz döküm sahası", material: "Toprak (kazı)", amount: 5000, unit: "m³", dateText: "Bu hafta", priceType: "sabit", price: 185000, owner: "Yıldızlar İnşaat", ownerId: "u-ss-alici", ownerVerified: true, ownerRating: 4.9, status: "eslesti", offers: 0, createdText: "2 saat önce", recurring: true, recurringFreq: "gunluk", dailyTrips: 8, recurringText: "Her gün • Günde 8 sefer" },
+  { id: "9102", type: "is", cat: "silobas", title: "Dökme çimento taşıma — santral besleme", il: "İstanbul", ilce: "Tuzla", varisIl: "Kocaeli", yukleme: "Akçansa terminali", bosaltma: "Tuzla beton santrali", material: "Çimento (dökme)", amount: 120, unit: "ton", dateText: "8-12 Temmuz", priceType: "sabit", price: 54000, owner: "Yıldızlar İnşaat", ownerId: "u-ss-alici", ownerVerified: true, ownerRating: 4.9, status: "aktif", offers: 0, createdText: "5 saat önce" },
+  // Tamamlanmış işler (ana sayfa "TAMAMLANAN" istatistiği dolu görünsün)
+  { id: "9103", type: "is", cat: "hafriyat", title: "Bahçelievler temel kazısı", il: "İstanbul", ilce: "Bahçelievler", material: "Toprak (kazı)", amount: 1800, unit: "m³", priceType: "sabit", price: 96000, owner: "Yıldızlar İnşaat", ownerId: "u-ss-alici", ownerVerified: true, ownerRating: 4.9, status: "kapali", offers: 0, createdText: "geçen ay" },
+  { id: "9104", type: "is", cat: "hafriyat", title: "Moloz nakliyesi — dönüşüm sahası", il: "İstanbul", ilce: "Kadıköy", material: "Yıkıntı molozi", amount: 400, unit: "ton", priceType: "sabit", price: 52000, owner: "Yıldızlar İnşaat", ownerId: "u-ss-alici", ownerVerified: true, ownerRating: 4.9, status: "kapali", offers: 0, createdText: "geçen ay" },
   // Satıcının ürün kataloğu (vitrin)
-  { id: "9201", type: "urun", cat: "silobas", title: "Yıkanmış kum (0–3 mm)", il: "Kocaeli", ilce: "Gebze", material: "Kum (0–3 mm)", priceType: "sabit", price: 520, priceUnit: "₺/ton", stock: "bol", stockText: "Bol stok", deliveryIncluded: true, desc: "Elenmiş, yıkanmış inşaat kumu.", owner: "Akdağ Kırma Ocağı", ownerId: "u-ss-satici", ownerVerified: true, ownerRating: 4.8, status: "aktif", offers: 2, createdText: "1 gün önce" },
-  { id: "9202", type: "urun", cat: "silobas", title: "Mıcır (16–32 mm) — ocak teslim", il: "Kocaeli", ilce: "Gebze", material: "Mıcır (16–32 mm)", priceType: "sabit", price: 480, priceUnit: "₺/ton", stock: "orta", stockText: "Orta stok", deliveryIncluded: false, owner: "Akdağ Kırma Ocağı", ownerId: "u-ss-satici", ownerVerified: true, ownerRating: 4.8, status: "aktif", offers: 4, createdText: "2 gün önce" },
-  { id: "9203", type: "urun", cat: "silobas", title: "Kırma taş agrega — beton sınıfı", il: "Kocaeli", ilce: "Gebze", material: "Kırma taş (agrega)", priceType: "sabit", price: 445, priceUnit: "₺/ton", stock: "bol", stockText: "Bol stok", deliveryIncluded: true, owner: "Akdağ Kırma Ocağı", ownerId: "u-ss-satici", ownerVerified: true, ownerRating: 4.8, status: "aktif", offers: 1, createdText: "3 gün önce" },
+  { id: "9201", type: "urun", cat: "silobas", title: "Yıkanmış kum (0–3 mm)", il: "Kocaeli", ilce: "Gebze", material: "Kum (0–3 mm)", priceType: "sabit", price: 520, priceUnit: "₺/ton", stock: "bol", stockText: "Bol stok", deliveryIncluded: true, desc: "Elenmiş, yıkanmış inşaat kumu.", owner: "Akdağ Kırma Ocağı", ownerId: "u-ss-satici", ownerVerified: true, ownerRating: 4.8, status: "aktif", offers: 0, createdText: "1 gün önce" },
+  { id: "9202", type: "urun", cat: "silobas", title: "Mıcır (16–32 mm) — ocak teslim", il: "Kocaeli", ilce: "Gebze", material: "Mıcır (16–32 mm)", priceType: "sabit", price: 480, priceUnit: "₺/ton", stock: "orta", stockText: "Orta stok", deliveryIncluded: false, owner: "Akdağ Kırma Ocağı", ownerId: "u-ss-satici", ownerVerified: true, ownerRating: 4.8, status: "aktif", offers: 0, createdText: "2 gün önce" },
+  { id: "9203", type: "urun", cat: "silobas", title: "Kırma taş agrega — beton sınıfı", il: "Kocaeli", ilce: "Gebze", material: "Kırma taş (agrega)", priceType: "sabit", price: 445, priceUnit: "₺/ton", stock: "bol", stockText: "Bol stok", deliveryIncluded: true, owner: "Akdağ Kırma Ocağı", ownerId: "u-ss-satici", ownerVerified: true, ownerRating: 4.8, status: "aktif", offers: 0, createdText: "3 gün önce" },
   // Nakliyecinin araç ilanları (profil + pano)
   { id: "9301", type: "arac", cat: "hafriyat", title: "Damperli kamyon boşta — 25 ton", il: "İstanbul", ilce: "Tuzla", vehicle: "Damperli kamyon (20–25 t)", capacity: "25 ton", dateText: "Hemen", priceType: "sabit", price: 14500, owner: "Demir Nakliyat", ownerId: "u-ss-nak", ownerVerified: true, ownerRating: 4.9, status: "aktif", offers: 0, createdText: "30 dk önce" },
   { id: "9302", type: "arac", cat: "silobas", title: "Silobas araç — çimento/dökme yük", il: "Kocaeli", ilce: "Gebze", vehicle: "Silobas (çimento)", capacity: "28 ton", dateText: "Yarından itibaren", priceType: "sabit", price: 16000, owner: "Demir Nakliyat", ownerId: "u-ss-nak", ownerVerified: true, ownerRating: 4.9, status: "aktif", offers: 0, createdText: "1 saat önce" },
@@ -50,8 +53,71 @@ const SHOTS = [
   { file: "03-ilan-ver", path: "/ilan-ver", user: ALICI, waitText: "Ne taşınacak?" },
   { file: "04-satici-vitrini", path: "/satici/u-ss-satici", user: ALICI, waitText: "Yıkanmış kum (0–3 mm)" },
   { file: "05-nakliyeci-profili", path: "/nakliyeci-profil/u-ss-nak", user: ALICI, waitText: "Hizmet bölgeleri" },
-  { file: "06-ilan-detay", path: "/ilan/9101", user: NAKLIYECI, waitText: "Şantiye kazı hafriyatı" },
+  { file: "06-ilan-detay", path: "/ilan/9102", user: NAKLIYECI, waitText: "Dökme çimento taşıma" },
 ];
+
+// ── App Store pazarlama çerçevesi — kicker + dev başlık + telefon mockup.
+//    Referans stil: koyu/sarı/manila dönüşümlü zemin, Archivo 900 başlıkta tek
+//    vurgu, hazard üst şerit, yuvarlak çerçeveli telefon alttan kırpılır.
+//    DİL: sabit fiyat / net rakam — "teklif" YOK (ürün modeli doğrudan kabul).
+const COMPOSE = [
+  { file: "01-ana-sayfa", variant: "dark", kicker: "%0 KOMİSYON", lines: ["İLANINI AÇ,", "<em>NET FİYATLA</em>", "EŞLEŞ"] },
+  { file: "02-ilan-panosu", variant: "manila", kicker: "CANLI PİYASA", lines: ["BÖLGENDEKİ", "YÜKLERİ", "<em>ANLIK GÖR</em>"] },
+  { file: "03-ilan-ver", variant: "yellow", kicker: "SABİT FİYAT", lines: ["YÜKÜNÜ", "<em>2 DAKİKADA</em>", "İLANA ÇEVİR"] },
+  { file: "04-satici-vitrini", variant: "dark", kicker: "OCAKTAN FİYAT", lines: ["MALZEMEYİ", "<em>KAYNAĞINDAN</em>", "AL"] },
+  { file: "05-nakliyeci-profili", variant: "yellow", kicker: "GÜVEN SİSTEMİ", lines: ["<em>BELGELİ</em>", "NAKLİYECİYLE", "ÇALIŞ"] },
+  { file: "06-ilan-detay", variant: "manila", kicker: "DOĞRUDAN KABUL", lines: ["PAZARLIK YOK,", "<em>NET RAKAM</em>"] },
+];
+
+const VARIANTS = {
+  dark:   { bg: "#17150F", fg: "#FFFFFF", kick: "#FACC15", block: "#FACC15", em: "color:#FACC15" },
+  yellow: { bg: "#FACC15", fg: "#0A0A0A", kick: "#0A0A0A", block: "#0A0A0A", em: "background:#0A0A0A;color:#FFFFFF;padding:2px 26px;box-decoration-break:clone" },
+  manila: { bg: "#EAE5DA", fg: "#0A0A0A", kick: "#0A0A0A", block: "#FACC15", em: "background:#FACC15;color:#0A0A0A;padding:2px 26px;box-decoration-break:clone" },
+};
+
+function buildFrame(c, b64) {
+  const v = VARIANTS[c.variant];
+  return `<!doctype html><html lang="tr"><head><meta charset="utf-8"><style>
+    @import url('https://fonts.googleapis.com/css2?family=Archivo:wght@900&family=Space+Mono:wght@700&display=swap');
+    *{margin:0;box-sizing:border-box}
+    body{width:1290px;height:2796px;background:${v.bg};overflow:hidden;font-family:'Archivo',sans-serif}
+    .hz{height:28px;background:repeating-linear-gradient(45deg,#0A0A0A 0 18px,#FACC15 18px 36px)}
+    .wrap{padding:104px 92px 0}
+    .kick{display:flex;align-items:center;gap:20px;margin-bottom:44px}
+    .kick i{display:block;width:16px;height:44px;background:${v.block}}
+    .kick span{font-family:'Space Mono',monospace;font-weight:700;font-size:31px;letter-spacing:.24em;color:${v.kick};text-transform:uppercase}
+    h1{font-size:150px;font-weight:900;line-height:1.02;letter-spacing:-.03em;color:${v.fg};text-transform:uppercase}
+    h1 em{font-style:normal;${v.em}}
+    .phone{width:1064px;margin:96px auto 0;background:#0A0A0A;border:16px solid #0A0A0A;border-bottom:none;
+           border-radius:78px 78px 0 0;overflow:hidden;position:relative;box-shadow:26px 26px 0 rgba(10,10,10,.16)}
+    .hole{position:absolute;top:20px;left:50%;transform:translateX(-50%);width:34px;height:34px;border-radius:50%;
+          background:#0A0A0A;z-index:9;box-shadow:0 0 0 5px rgba(255,255,255,.10)}
+    .phone img{display:block;width:100%}
+  </style></head><body>
+    <div class="hz"></div>
+    <div class="wrap">
+      <div class="kick"><i></i><span>${c.kicker}</span></div>
+      <h1>${c.lines.join("<br/>")}</h1>
+    </div>
+    <div class="phone"><div class="hole"></div><img src="data:image/png;base64,${b64}"/></div>
+  </body></html>`;
+}
+
+// Ham iOS ekran görüntülerini pazarlama çerçevesine kompoze eder (aynı dosya adına yazar).
+async function composeStore(browser) {
+  for (const c of COMPOSE) {
+    const b64 = readFileSync(join(OUT_IOS, c.file + ".png")).toString("base64");
+    const ctx = await browser.newContext({ viewport: { width: 1290, height: 2796 }, deviceScaleFactor: 1 });
+    const page = await ctx.newPage();
+    await page.setContent(buildFrame(c, b64), { waitUntil: "domcontentloaded" });
+    await page.evaluate(() => document.fonts.ready);
+    await page.evaluate(() => Promise.all([...document.images].map((i) => i.decode())));
+    await page.waitForTimeout(400);
+    await page.screenshot({ path: join(OUT_IOS, c.file + ".png") });
+    console.log(`  ✓ çerçeveli  ${c.file}.png`);
+    await ctx.close();
+  }
+}
 
 async function waitServer() {
   for (let i = 0; i < 60; i++) {
@@ -130,8 +196,10 @@ const run = async () => {
   console.log("Sunucu bekleniyor: " + BASE);
   await waitServer();
   const browser = await launch();
-  console.log("\nApp Store 6.7\" (1290×2796):");
+  console.log("\nApp Store 6.7\" (1290×2796) — ham çekim:");
   await shootAll(browser, DEVICES[0]);
+  console.log("\nApp Store — pazarlama çerçevesi kompozisyonu:");
+  await composeStore(browser);
   console.log("\nGoogle Play (1080×1920):");
   await shootAll(browser, DEVICES[1]);
   console.log("\nFeature graphic:");
