@@ -174,11 +174,18 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers
 
   // Rol = ilan türü. Alıcı iş ilanı, satıcı ürün ilanı, nakliyeci araç ilanı açar.
   // Kullanıcı türü seçmez; rolünden gelir. Bu yüzden state değil, sabit türetim.
-  // Öncelik: düzenleme türü > URL ?type= (nakliye-ayarla akışı) > kullanıcı rolü > "is".
+  // ROL-TÜR KAPISI: URL ?type= yalnız rolün İZİNLİ türlerindeyse kabul edilir —
+  // nakliyeci /ilan-ver?type=is yazsa bile yük ilanı formu AÇILMAZ (araca düşer).
+  // Satıcıya "is" istisnası: onaylanan siparişin nakliyesini ayarlamak için
+  // (İlanlarım > "Nakliye Ayarla" ?type=is ile gelir; landing vaadi de bu).
+  // Sunucu tarafı eşleniği: migration-2026-07-ilan-tur-rol-guard.sql.
+  // Öncelik: düzenleme türü > izinli URL ?type= > kullanıcı rolü > "is".
   const ROLE_TYPE = { isveren: "is", tedarikci: "urun", nakliyeci: "arac" };
+  const ROLE_ALLOWED = { isveren: ["is"], tedarikci: ["urun", "is"], nakliyeci: ["arac"] };
+  const allowedTypes = ROLE_ALLOWED[user?.role] || null; // rol yoksa giriş kapısı zaten engeller
   const type =
     editListing?.type ||
-    (["is", "arac", "urun"].includes(pf.type) ? pf.type : null) ||
+    (["is", "arac", "urun"].includes(pf.type) && (!allowedTypes || allowedTypes.includes(pf.type)) ? pf.type : null) ||
     ROLE_TYPE[user?.role] ||
     "is";
   const [cat, setCat] = useState(editListing?.cat || (["hafriyat", "silobas"].includes(pf.cat) ? pf.cat : "hafriyat"));
@@ -237,6 +244,11 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers
   const publishGate = () => {
     if (editing) return true;
     if (!user) { onRequireAuth?.(); return false; }
+    // Rol-tür kapısı (savunma katmanı): rolün izin vermediği türde YENİ ilan yayınlanamaz.
+    if (allowedTypes && !allowedTypes.includes(type)) {
+      setError("Bu ilan türü rolüne kapalı. Alıcı iş, satıcı ürün, nakliyeci araç ilanı verir.");
+      return false;
+    }
     // Telefon zorunlu: geçerli cep numarası yoksa akış içinde girdirilir.
     if (!isValidPhone(user.phone)) { setNeedPhone(true); return false; }
     const pend = pendingReviews(user, listings, offers, reviews);
