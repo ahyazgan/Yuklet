@@ -745,33 +745,20 @@ export default function ListingsPage({ listings = LISTINGS, user, fleet = [], on
             )}
           </div>
 
-          {/* Favoriler filtresi + (alıcı) talep bırakma — talep girişi barda değil burada */}
+          {/* Favoriler filtresi — kaydedilen ilanları göster/gizle.
+              (Alıcı talep girişi başlıkta değil: sağ altta yüzen TALEP BIRAK butonu.) */}
           {mode === "normal" && (
-            <div className="flex items-center gap-2" style={{ marginTop: 12 }}>
-              <button
-                onClick={() => setFavOnly((v) => !v)}
-                aria-pressed={favOnly}
-                className="flex items-center gap-1.5"
-                style={{ background: favOnly ? C.red : C.card, border: `2px solid ${favOnly ? C.red : C.ink}`, borderRadius: 6, padding: "6px 11px", cursor: "pointer" }}
-              >
-                <Heart size={14} strokeWidth={2.5} color={favOnly ? "#fff" : C.red} fill={favOnly ? "#fff" : "none"} />
-                <span style={{ ...MONO, fontSize: 10, fontWeight: 700, letterSpacing: "0.04em", color: favOnly ? "#fff" : C.ink }}>
-                  FAVORİLER{favCount > 0 ? ` · ${favCount}` : ""}
-                </span>
-              </button>
-              {isBuyer && (
-                <button
-                  onClick={() => navigate("/ilan-ver")}
-                  className="flex items-center gap-1.5"
-                  style={{ background: C.yellow, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "6px 11px", cursor: "pointer" }}
-                >
-                  <Plus size={14} strokeWidth={2.75} color={C.ink} />
-                  <span style={{ ...MONO, fontSize: 10, fontWeight: 700, letterSpacing: "0.04em", color: C.ink }}>
-                    TALEP BIRAK
-                  </span>
-                </button>
-              )}
-            </div>
+            <button
+              onClick={() => setFavOnly((v) => !v)}
+              aria-pressed={favOnly}
+              className="flex items-center gap-1.5"
+              style={{ marginTop: 12, background: favOnly ? C.red : C.card, border: `2px solid ${favOnly ? C.red : C.ink}`, borderRadius: 6, padding: "6px 11px", cursor: "pointer" }}
+            >
+              <Heart size={14} strokeWidth={2.5} color={favOnly ? "#fff" : C.red} fill={favOnly ? "#fff" : "none"} />
+              <span style={{ ...MONO, fontSize: 10, fontWeight: 700, letterSpacing: "0.04em", color: favOnly ? "#fff" : C.ink }}>
+                FAVORİLER{favCount > 0 ? ` · ${favCount}` : ""}
+              </span>
+            </button>
           )}
 
           {/* Piyasa Nabzı girişi — sistem henüz buna uygun değil, gizlendi.
@@ -1222,6 +1209,34 @@ export default function ListingsPage({ listings = LISTINGS, user, fleet = [], on
           </div>
         )}
       </div>
+
+      {/* ── (ALICI) YÜZEN TALEP BUTONU — alt barın üstünde, kaydırınca da görünür ── */}
+      {isBuyer && (
+        <div
+          className="pointer-events-none fixed inset-x-0 z-40 mx-auto w-full max-w-[460px]"
+          style={{ bottom: "calc(max(8px, env(safe-area-inset-bottom)) + 74px)" }}
+        >
+          <div className="flex justify-end pr-4">
+            <button
+              onClick={() => navigate("/ilan-ver")}
+              className="pointer-events-auto flex items-center gap-2"
+              style={{
+                background: C.yellow,
+                border: `2px solid ${C.ink}`,
+                borderRadius: 8,
+                padding: "12px 16px",
+                cursor: "pointer",
+                boxShadow: "3px 3px 0 #0A0A0A",
+              }}
+            >
+              <Plus size={18} strokeWidth={3} color={C.ink} />
+              <span style={{ ...HEAD, fontSize: 13.5, fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.01em", color: C.ink }}>
+                Talep Bırak
+              </span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── FİLTRE ALT SAYFASI ── */}
       {mode === "normal" && showFilters && (
