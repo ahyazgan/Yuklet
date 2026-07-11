@@ -7,7 +7,8 @@ import { hapticTap } from "../native/haptics";
 // Ortada büyük sarı "+" butonu (48px, 2px ink çerçeve, radius 8px). Emoji DEĞİL — lucide stroke ikonlar.
 
 // Sekmeler role göre değişir:
-//   Alıcı (isveren):    Ana · Tedarik · +Talep · Sipariş · Mesaj · Profil (6'lı)
+//   Alıcı (isveren):    Ana · Tedarik · Sipariş · Mesaj · Profil (orta buton yok;
+//                       talep girişi Tedarik ekranının içinde)
 //   Satıcı (tedarikci): Ana · Vitrinim(bekleyen sipariş rozeti) · +Ürün Ekle · Mesaj · Profil
 //   Nakliyeci:          Ana · İlanlar · Mola · Mesaj · Profil
 //   Misafir:            Ana · İlanlar · +İlan Ver · Mesaj · Profil
@@ -15,10 +16,10 @@ const HOME_TAB = { to: "/", label: "Ana", Icon: Home, match: (p) => p === "/" };
 const LISTINGS_TAB = { to: "/ilanlar", label: "İlanlar", Icon: List, match: (p) => p === "/ilanlar" || p.startsWith("/ilanlar?") || p.startsWith("/ilan/") };
 const ADD_TAB = { to: "/ilan-ver", label: "İlan Ver", Icon: Plus, center: true, match: (p) => p.startsWith("/ilan-ver") };
 const MESSAGES_TAB = { to: "/mesajlar", label: "Mesaj", Icon: MessageCircle, match: (p) => p.startsWith("/mesajlar") };
-// Alıcı: pazar ekranı "Tedarik" dilinde; ortadaki buton talep bırakma;
-// verdiği siparişlerin durumu /tekliflerim'de (alıcı dilinde "Siparişlerim").
+// Alıcı: pazar ekranı "Tedarik" dilinde; verdiği siparişlerin durumu
+// /tekliflerim'de (alıcı dilinde "Siparişlerim"). Talep bırakma barda değil,
+// Tedarik ekranının içinde (başlık altı buton + boş sonuç CTA'sı).
 const TEDARIK_TAB = { ...LISTINGS_TAB, label: "Tedarik", Icon: Store };
-const TALEP_TAB = { ...ADD_TAB, label: "Talep" };
 // updateBadge: son bakıştan beri durumu değişen (onay/ret) sipariş sayısı.
 const SIPARIS_TAB = { to: "/tekliflerim", label: "Sipariş", Icon: Package, updateBadge: true, match: (p) => p.startsWith("/tekliflerim") || p.startsWith("/takip/") };
 // Satıcı: pazar yerine kendi vitrini; ilan detayı/düzenleme de vitrin işi sayılır.
@@ -34,7 +35,7 @@ const SELLER_PROFILE_TAB = { ...PROFILE_TAB, match: (p) => p.startsWith("/profil
 function tabsForRole(role) {
   if (role === "tedarikci") return [HOME_TAB, VITRIN_TAB, URUN_TAB, MESSAGES_TAB, SELLER_PROFILE_TAB];
   if (role === "nakliyeci") return [HOME_TAB, LISTINGS_TAB, MOLA_CENTER_TAB, MESSAGES_TAB, PROFILE_TAB];
-  if (role === "isveren") return [HOME_TAB, TEDARIK_TAB, TALEP_TAB, SIPARIS_TAB, MESSAGES_TAB, PROFILE_TAB];
+  if (role === "isveren") return [HOME_TAB, TEDARIK_TAB, SIPARIS_TAB, MESSAGES_TAB, PROFILE_TAB];
   return [HOME_TAB, LISTINGS_TAB, ADD_TAB, MESSAGES_TAB, PROFILE_TAB];
 }
 
