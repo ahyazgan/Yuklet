@@ -40,13 +40,15 @@ const fmtTL = (n) => "₺" + Number(n).toLocaleString("tr-TR");
 export default function TekliflerimPage({ listings = [], offers = [], user, onRequireAuth }) {
   const navigate = useNavigate();
   const [tab, setTab] = useState("beklemede");
+  // Alıcı için sayfanın dili "Siparişlerim"; nakliyeci/diğerleri için "Tekliflerim".
+  const buyer = user?.role === "isveren";
 
   if (!user) {
     return (
       <div style={{ ...shell, alignItems: "center", justifyContent: "center", padding: "48px 20px", gap: 16, textAlign: "center" }}>
         <SEO title="Tekliflerim" description="Gönderdiğiniz teklif ve siparişleri takip edin." />
         <Logo size="lg" />
-        <h1 style={{ fontFamily: HEAD, fontSize: 21, fontWeight: 900, textTransform: "uppercase", letterSpacing: "-0.02em", color: C.ink, lineHeight: 1.15, margin: 0 }}>Tekliflerinizi görmek için giriş yapın</h1>
+        <h1 style={{ fontFamily: HEAD, fontSize: 21, fontWeight: 900, textTransform: "uppercase", letterSpacing: "-0.02em", color: C.ink, lineHeight: 1.15, margin: 0 }}>Sipariş ve tekliflerinizi görmek için giriş yapın</h1>
         <p style={{ fontFamily: BODY, fontSize: 13.5, color: C.sub, margin: 0, maxWidth: 300 }}>Verdiğiniz teklif ve siparişlerin durumunu burada izlersiniz.</p>
         <button onClick={() => onRequireAuth?.()} style={{ marginTop: 4, cursor: "pointer", background: C.ink, color: C.yellow, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "13px 22px", fontFamily: HEAD, fontSize: 14, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.02em", boxShadow: "3px 3px 0 #0A0A0A" }}>
           Giriş yap / Kayıt ol
@@ -70,15 +72,15 @@ export default function TekliflerimPage({ listings = [], offers = [], user, onRe
 
   return (
     <div style={shell}>
-      <SEO title="Tekliflerim & Siparişlerim" description="Gönderdiğiniz teklif ve siparişleri durumuna göre takip edin." />
+      <SEO title={buyer ? "Siparişlerim" : "Tekliflerim & Siparişlerim"} description="Gönderdiğiniz teklif ve siparişleri durumuna göre takip edin." />
 
       {/* Header */}
       <header style={{ background: C.header, padding: "20px 18px 16px", borderBottom: `2px solid ${C.ink}` }}>
         <button onClick={() => navigate(-1)} style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "none", border: "none", cursor: "pointer", fontFamily: MONO, fontSize: 11, fontWeight: 700, color: C.sub, padding: 0, marginBottom: 10 }}>
           <ChevronLeft size={15} strokeWidth={2.5} /> Geri
         </button>
-        <h1 style={{ fontFamily: HEAD, fontSize: 27, fontWeight: 900, textTransform: "uppercase", letterSpacing: "-0.02em", color: C.ink, lineHeight: 1, margin: 0 }}>Tekliflerim</h1>
-        <p style={{ fontFamily: MONO, fontSize: 11, color: C.sub, margin: "6px 0 0" }}>{mine.length} TEKLİF / SİPARİŞ · DURUM TAKİBİ</p>
+        <h1 style={{ fontFamily: HEAD, fontSize: 27, fontWeight: 900, textTransform: "uppercase", letterSpacing: "-0.02em", color: C.ink, lineHeight: 1, margin: 0 }}>{buyer ? "Siparişlerim" : "Tekliflerim"}</h1>
+        <p style={{ fontFamily: MONO, fontSize: 11, color: C.sub, margin: "6px 0 0" }}>{mine.length} {buyer ? "SİPARİŞ" : "TEKLİF / SİPARİŞ"} · DURUM TAKİBİ</p>
 
         {/* Tabs */}
         <div style={{ display: "flex", marginTop: 16, border: `2px solid ${C.ink}`, borderRadius: 6, overflow: "hidden" }}>
@@ -109,9 +111,9 @@ export default function TekliflerimPage({ listings = [], offers = [], user, onRe
         {visible.length === 0 ? (
           <div style={{ marginTop: 40, display: "flex", flexDirection: "column", alignItems: "center", gap: 12, textAlign: "center" }}>
             <Inbox size={40} color={C.muted} strokeWidth={1.8} />
-            <p style={{ fontFamily: MONO, fontSize: 12, color: C.sub, margin: 0 }}>Bu durumda teklif/sipariş yok.</p>
+            <p style={{ fontFamily: MONO, fontSize: 12, color: C.sub, margin: 0 }}>{buyer ? "Bu durumda sipariş yok." : "Bu durumda teklif/sipariş yok."}</p>
             <button onClick={() => navigate("/ilanlar")} style={{ cursor: "pointer", background: C.yellow, color: C.ink, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "11px 18px", fontFamily: HEAD, fontSize: 13, fontWeight: 800, textTransform: "uppercase", boxShadow: "3px 3px 0 #0A0A0A" }}>
-              İlanlara Göz At
+              {buyer ? "Tedarike Göz At" : "İlanlara Göz At"}
             </button>
           </div>
         ) : (

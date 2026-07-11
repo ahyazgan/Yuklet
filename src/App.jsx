@@ -969,7 +969,7 @@ function AppShell() {
       )}
       <OfflineBanner onReconnect={() => { if (SB) { reloadListings(); reloadOffers(); } }} />
       <InstallPrompt />
-      <MobileTabBar unreadCount={unreadCount} role={(profile || user)?.role} />
+      <MobileTabBar unreadCount={unreadCount} pendingOffersCount={pendingOffersCount} role={(profile || user)?.role} />
 
       {showNewPassword && <NewPasswordModal onSubmit={updatePassword} onDone={() => setShowNewPassword(false)} />}
       {showAuth && !showRole && !showNewPassword && <AuthModal onClose={() => setShowAuth(false)} onProvider={startOAuth} onEmailAuth={emailAuth} onReset={resetPassword} />}

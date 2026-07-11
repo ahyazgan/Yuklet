@@ -7,19 +7,22 @@ import { hapticTap } from "../native/haptics";
 // Ortada büyük sarı "+" butonu (48px, 2px ink çerçeve, radius 8px). Emoji DEĞİL — lucide stroke ikonlar.
 
 // Sekmeler role göre değişir:
-//   Alıcı (isveren):    Ana · Tedarik · +Talep · Mesaj · Profil
-//   Satıcı (tedarikci): Ana · Vitrinim · +Ürün Ekle · Mesaj · Profil
+//   Alıcı (isveren):    Ana · Tedarik · +Talep · Sipariş · Mesaj · Profil (6'lı)
+//   Satıcı (tedarikci): Ana · Vitrinim(bekleyen sipariş rozeti) · +Ürün Ekle · Mesaj · Profil
 //   Nakliyeci:          Ana · İlanlar · Mola · Mesaj · Profil
 //   Misafir:            Ana · İlanlar · +İlan Ver · Mesaj · Profil
 const HOME_TAB = { to: "/", label: "Ana", Icon: Home, match: (p) => p === "/" };
 const LISTINGS_TAB = { to: "/ilanlar", label: "İlanlar", Icon: List, match: (p) => p === "/ilanlar" || p.startsWith("/ilanlar?") || p.startsWith("/ilan/") };
 const ADD_TAB = { to: "/ilan-ver", label: "İlan Ver", Icon: Plus, center: true, match: (p) => p.startsWith("/ilan-ver") };
 const MESSAGES_TAB = { to: "/mesajlar", label: "Mesaj", Icon: MessageCircle, match: (p) => p.startsWith("/mesajlar") };
-// Alıcı: pazar ekranı "Tedarik" dilinde; ortadaki buton talep bırakma.
+// Alıcı: pazar ekranı "Tedarik" dilinde; ortadaki buton talep bırakma;
+// verdiği siparişlerin durumu /tekliflerim'de (alıcı dilinde "Siparişlerim").
 const TEDARIK_TAB = { ...LISTINGS_TAB, label: "Tedarik", Icon: Store };
 const TALEP_TAB = { ...ADD_TAB, label: "Talep" };
+const SIPARIS_TAB = { to: "/tekliflerim", label: "Sipariş", Icon: Package, match: (p) => p.startsWith("/tekliflerim") || p.startsWith("/takip/") };
 // Satıcı: pazar yerine kendi vitrini; ilan detayı/düzenleme de vitrin işi sayılır.
-const VITRIN_TAB = { to: "/ilanlarim", label: "Vitrinim", Icon: Package, match: (p) => p.startsWith("/ilanlarim") || p.startsWith("/ilan/") || p.startsWith("/ilan-duzenle") };
+// Gelen siparişler de vitrinde onaylandığı için bekleyen sipariş rozeti bu sekmede.
+const VITRIN_TAB = { to: "/ilanlarim", label: "Vitrinim", Icon: Package, orderBadge: true, match: (p) => p.startsWith("/ilanlarim") || p.startsWith("/ilan/") || p.startsWith("/ilan-duzenle") };
 const URUN_TAB = { ...ADD_TAB, label: "Ürün Ekle" };
 // Nakliyecide ortadaki büyük buton: İlan Ver yerine Mola.
 const MOLA_CENTER_TAB = { to: "/mola", label: "Mola", Icon: Coffee, center: true, match: (p) => p.startsWith("/mola") };
@@ -30,7 +33,7 @@ const SELLER_PROFILE_TAB = { ...PROFILE_TAB, match: (p) => p.startsWith("/profil
 function tabsForRole(role) {
   if (role === "tedarikci") return [HOME_TAB, VITRIN_TAB, URUN_TAB, MESSAGES_TAB, SELLER_PROFILE_TAB];
   if (role === "nakliyeci") return [HOME_TAB, LISTINGS_TAB, MOLA_CENTER_TAB, MESSAGES_TAB, PROFILE_TAB];
-  if (role === "isveren") return [HOME_TAB, TEDARIK_TAB, TALEP_TAB, MESSAGES_TAB, PROFILE_TAB];
+  if (role === "isveren") return [HOME_TAB, TEDARIK_TAB, TALEP_TAB, SIPARIS_TAB, MESSAGES_TAB, PROFILE_TAB];
   return [HOME_TAB, LISTINGS_TAB, ADD_TAB, MESSAGES_TAB, PROFILE_TAB];
 }
 
@@ -42,7 +45,7 @@ const LABEL_STYLE = {
   letterSpacing: "0.04em",
 };
 
-export default function MobileTabBar({ unreadCount = 0, role }) {
+export default function MobileTabBar({ unreadCount = 0, pendingOffersCount = 0, role }) {
   const { pathname } = useLocation();
   const tabs = tabsForRole(role);
   // 6 sekmede (nakliyeci) yatay boşluğu daralt — 460px'te sığsın.
@@ -80,7 +83,7 @@ export default function MobileTabBar({ unreadCount = 0, role }) {
           );
         }
 
-        const badge = tab.to === "/mesajlar" ? unreadCount : 0;
+        const badge = tab.to === "/mesajlar" ? unreadCount : tab.orderBadge ? pendingOffersCount : 0;
         const { Icon } = tab;
         return (
           <Link
