@@ -86,6 +86,7 @@ export default function IlanlarimPage({ listings = [], user, offers = [], review
   const [tab, setTab] = useState("aktif");
   const [expanded, setExpanded] = useState({}); // listingId -> bool
   const [reportOffer, setReportOffer] = useState(null); // şikayet edilen teklif
+  const [confirmDel, setConfirmDel] = useState(null);   // silme onayı bekleyen ilan ("Emin misin?" penceresi)
 
   if (!user) {
     return (
@@ -132,11 +133,14 @@ export default function IlanlarimPage({ listings = [], user, offers = [], review
     if (res && res.ok === false) { toast(res.error || "İlan yenilenemedi", "error"); return; }
     toast("İlan yenilendi ve tekrar yayında", "success");
   };
-  const del = (l) => {
-    if (window.confirm(`"${l.title}" ilanını silmek istediğinize emin misiniz?`)) {
-      onDeleteListing?.(l.id);
-      toast("İlan silindi", "info");
-    }
+  // Silme iki adım: önce uygulama içi "Emin misin?" penceresi, onaylanırsa sil.
+  const del = (l) => setConfirmDel(l);
+  const doDelete = () => {
+    if (!confirmDel) return;
+    onDeleteListing?.(confirmDel.id);
+    setConfirmDel(null);
+    hapticWarn();
+    toast("İlan silindi", "info");
   };
   const toggleClose = (l) => onUpdateListing?.(l.id, { status: l.status === "kapali" ? "aktif" : "kapali" });
   const markDelivered = (l) => {
@@ -294,8 +298,13 @@ export default function IlanlarimPage({ listings = [], user, offers = [], review
 
                 {/* Body */}
                 {closed ? (
-                  <div style={{ padding: 14, fontFamily: MONO, fontSize: 11.5, color: C.muted }}>
-                    İlan kapatıldı · {lOffers.length} teklif alındı
+                  <div style={{ padding: 14, display: "flex", alignItems: "center", gap: 10 }}>
+                    <span style={{ flex: 1, fontFamily: MONO, fontSize: 11.5, color: C.muted }}>
+                      İlan kapatıldı · {lOffers.length} teklif alındı
+                    </span>
+                    <button onClick={() => del(l)} style={{ ...btnBase, color: C.red }}>
+                      <Trash2 size={13} strokeWidth={2.4} /> Sil
+                    </button>
                   </div>
                 ) : matched ? (
                   l.type === "urun" ? (
@@ -341,6 +350,7 @@ export default function IlanlarimPage({ listings = [], user, offers = [], review
                       <div style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
                         <IconBtn title="Düzenle" onClick={() => navigate(`/ilan-duzenle/${l.id}`)}><Pencil size={15} strokeWidth={2.2} /></IconBtn>
                         <IconBtn title="Paylaş" onClick={() => share(l)}><Share2 size={15} strokeWidth={2.2} /></IconBtn>
+                        <IconBtn title="Sil" onClick={() => del(l)}><Trash2 size={15} strokeWidth={2.2} color={C.red} /></IconBtn>
                       </div>
                     </div>
 
@@ -477,6 +487,43 @@ export default function IlanlarimPage({ listings = [], user, offers = [], review
             })
           }
         />
+      )}
+
+      {/* ── SİLME ONAYI — uygulama içi "Emin misin?" penceresi ── */}
+      {confirmDel && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+          <button
+            onClick={() => setConfirmDel(null)}
+            aria-label="Vazgeç"
+            style={{ position: "absolute", inset: 0, background: "rgba(10,10,10,0.55)", border: "none", cursor: "pointer" }}
+          />
+          <div
+            role="alertdialog"
+            aria-modal="true"
+            aria-label="İlanı sil"
+            style={{ position: "relative", width: "100%", maxWidth: 340, background: C.card, border: `2px solid ${C.ink}`, borderRadius: 8, boxShadow: "6px 6px 0 rgba(10,10,10,.35)", padding: 18 }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+              <span style={{ display: "flex", width: 34, height: 34, flexShrink: 0, alignItems: "center", justifyContent: "center", background: C.red, border: `2px solid ${C.ink}`, borderRadius: 6 }}>
+                <Trash2 size={16} color="#fff" strokeWidth={2.4} />
+              </span>
+              <h3 style={{ fontFamily: HEAD, fontSize: 16, fontWeight: 900, textTransform: "uppercase", letterSpacing: "-0.01em", color: C.ink, margin: 0 }}>
+                İlanı Sil
+              </h3>
+            </div>
+            <p style={{ fontFamily: BODY, fontSize: 13, color: C.sub, margin: "0 0 14px", lineHeight: 1.5 }}>
+              “{confirmDel.title}” kalıcı olarak silinecek{offers.some((o) => String(o.listingId) === String(confirmDel.id)) ? " (gelen teklif/siparişleriyle birlikte)" : ""}. Emin misin?
+            </p>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={() => setConfirmDel(null)} style={{ ...btnBase, flex: 1 }}>
+                Vazgeç
+              </button>
+              <button onClick={doDelete} style={{ ...btnBase, flex: 1, background: C.red, color: "#fff" }}>
+                <Trash2 size={13} strokeWidth={2.4} /> Evet, Sil
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* ── TELEFON ZORUNLU KAPISI (teklif/sipariş kabul öncesi) ── */}

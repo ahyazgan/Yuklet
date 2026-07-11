@@ -11,7 +11,7 @@ import { motion } from "framer-motion";
 import { useMemo } from "react";
 import {
   Bell, Search, MapPin, RefreshCw, Truck, Package,
-  ArrowRight, MessageCircle, ChevronRight, Activity, TrendingUp,
+  ArrowRight, MessageCircle, ChevronRight, Activity, TrendingUp, Plus,
 } from "lucide-react";
 import SEO from "../components/SEO";
 import Logo from "../components/Logo";
@@ -945,6 +945,27 @@ export default function NakliyeHome({
 
       {/* alt hazard şeridi */}
       <Hazard h={8} className="mt-2" />
+
+      {/* (ALICI) yüzen TALEP BIRAK — alt barın üstünde sabit, Tedarik ekranındakiyle aynı */}
+      {user?.role === "isveren" && (
+        <div
+          className="pointer-events-none fixed inset-x-0 z-40 mx-auto w-full max-w-[460px]"
+          style={{ bottom: "calc(max(8px, env(safe-area-inset-bottom)) + 74px)" }}
+        >
+          <div className="flex justify-end pr-4">
+            <button
+              onClick={() => navigate("/ilan-ver")}
+              className="pointer-events-auto flex items-center gap-2"
+              style={{ background: C.yellow, color: C.ink, border: FRAME, borderRadius: 8, padding: "12px 16px", cursor: "pointer", boxShadow: "3px 3px 0 #0A0A0A" }}
+            >
+              <Plus size={18} strokeWidth={3} />
+              <span className="text-[13.5px] font-black uppercase" style={{ fontFamily: ARCH, letterSpacing: "0.01em" }}>
+                Talep Bırak
+              </span>
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
