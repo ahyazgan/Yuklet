@@ -28,6 +28,10 @@ export const loadMessages = () => load("hamted_messages", []);
 export const saveMessages = (v) => save("hamted_messages", v);
 export const loadMsgSeen = () => load("hamted_msg_seen", {});
 export const saveMsgSeen = (v) => save("hamted_msg_seen", v);
+// Sipariş/teklif durumu "görüldü" kaydı — { [userId]: { [offerId]: status } }.
+// Alıcının Sipariş sekmesi rozeti: son bakıştan beri durumu değişen sipariş sayısı.
+export const loadOffersSeen = () => load("hamted_offers_seen", {});
+export const saveOffersSeen = (v) => save("hamted_offers_seen", v);
 export const loadNotifSeen = () => load("hamted_notif_seen", {});
 export const saveNotifSeen = (v) => save("hamted_notif_seen", v);
 export const loadReviews = () => load("hamted_reviews", []);

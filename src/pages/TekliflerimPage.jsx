@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowRight, Package, Truck, Boxes, ChevronLeft, Inbox } from "lucide-react";
 import { CATS } from "../data/categories";
@@ -37,11 +37,17 @@ const STATUS = {
 
 const fmtTL = (n) => "₺" + Number(n).toLocaleString("tr-TR");
 
-export default function TekliflerimPage({ listings = [], offers = [], user, onRequireAuth }) {
+export default function TekliflerimPage({ listings = [], offers = [], user, onRequireAuth, onSeen }) {
   const navigate = useNavigate();
   const [tab, setTab] = useState("beklemede");
   // Alıcı için sayfanın dili "Siparişlerim"; nakliyeci/diğerleri için "Tekliflerim".
   const buyer = user?.role === "isveren";
+
+  // Sayfa açıkken teklif/sipariş durumları "görüldü" sayılır → bardaki rozet söner.
+  // onSeen bilerek bağımlılık dışında: her render'da kimliği değişir, döngü yaratır.
+  useEffect(() => {
+    if (user) onSeen?.();
+  }, [user, offers]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!user) {
     return (

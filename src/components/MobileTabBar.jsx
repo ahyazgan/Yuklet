@@ -19,7 +19,8 @@ const MESSAGES_TAB = { to: "/mesajlar", label: "Mesaj", Icon: MessageCircle, mat
 // verdiği siparişlerin durumu /tekliflerim'de (alıcı dilinde "Siparişlerim").
 const TEDARIK_TAB = { ...LISTINGS_TAB, label: "Tedarik", Icon: Store };
 const TALEP_TAB = { ...ADD_TAB, label: "Talep" };
-const SIPARIS_TAB = { to: "/tekliflerim", label: "Sipariş", Icon: Package, match: (p) => p.startsWith("/tekliflerim") || p.startsWith("/takip/") };
+// updateBadge: son bakıştan beri durumu değişen (onay/ret) sipariş sayısı.
+const SIPARIS_TAB = { to: "/tekliflerim", label: "Sipariş", Icon: Package, updateBadge: true, match: (p) => p.startsWith("/tekliflerim") || p.startsWith("/takip/") };
 // Satıcı: pazar yerine kendi vitrini; ilan detayı/düzenleme de vitrin işi sayılır.
 // Gelen siparişler de vitrinde onaylandığı için bekleyen sipariş rozeti bu sekmede.
 const VITRIN_TAB = { to: "/ilanlarim", label: "Vitrinim", Icon: Package, orderBadge: true, match: (p) => p.startsWith("/ilanlarim") || p.startsWith("/ilan/") || p.startsWith("/ilan-duzenle") };
@@ -45,7 +46,7 @@ const LABEL_STYLE = {
   letterSpacing: "0.04em",
 };
 
-export default function MobileTabBar({ unreadCount = 0, pendingOffersCount = 0, role }) {
+export default function MobileTabBar({ unreadCount = 0, pendingOffersCount = 0, orderUpdatesCount = 0, role }) {
   const { pathname } = useLocation();
   const tabs = tabsForRole(role);
   // 6 sekmede (nakliyeci) yatay boşluğu daralt — 460px'te sığsın.
@@ -83,7 +84,7 @@ export default function MobileTabBar({ unreadCount = 0, pendingOffersCount = 0, 
           );
         }
 
-        const badge = tab.to === "/mesajlar" ? unreadCount : tab.orderBadge ? pendingOffersCount : 0;
+        const badge = tab.to === "/mesajlar" ? unreadCount : tab.orderBadge ? pendingOffersCount : tab.updateBadge ? orderUpdatesCount : 0;
         const { Icon } = tab;
         return (
           <Link

@@ -4,7 +4,7 @@ import { AnimatePresence } from "framer-motion";
 import {
   saveTheme, loadListings, saveListings, loadUser, saveUser,
   loadUsers, saveUsers, loadOffers, saveOffers, loadMessages, saveMessages,
-  loadMsgSeen, saveMsgSeen, loadNotifSeen, saveNotifSeen, loadReviews, saveReviews, loadDocs, saveDocs,
+  loadMsgSeen, saveMsgSeen, loadOffersSeen, saveOffersSeen, loadNotifSeen, saveNotifSeen, loadReviews, saveReviews, loadDocs, saveDocs,
   loadOnboarded, saveOnboarded, loadReports, saveReports, loadPricingConfig, loadSavedSearches,
   loadAuditLog, appendAudit, loadAnnouncement, saveAnnouncement, loadBlocked, saveBlocked,
   loadNotifPrefs, saveNotifPrefs, loadFleet, saveFleet, loadMolaPosts, saveMolaPosts,
@@ -312,6 +312,9 @@ function AppShell() {
   // "Goruldu" ve bildirim okundu durumu — yerel tercih, her modda localStorage'da kalir
   const [msgSeen, setMsgSeen] = useState(() => loadMsgSeen());
   useEffect(() => { saveMsgSeen(msgSeen); }, [msgSeen]);
+  // Sipariş durumu "görüldü" — alıcı Sipariş sekmesini açınca güncellenir.
+  const [offersSeen, setOffersSeen] = useState(() => loadOffersSeen());
+  useEffect(() => { saveOffersSeen(offersSeen); }, [offersSeen]);
   // Bildirim "okundu" durumu — bildirim merkezi açılınca güncellenir.
   const [notifSeen, setNotifSeen] = useState(() => loadNotifSeen());
   const markNotifSeen = () => {
@@ -781,6 +784,19 @@ function AppShell() {
   };
   const requireAuth = () => setShowAuth(true);
   const markMessagesSeen = () => { if (user) setMsgSeen(prev => ({ ...prev, [user.id]: new Date().toISOString() })); };
+  // Kullanıcının kendi gönderdiği teklif/siparişlerin ŞU ANKİ durumlarını "görüldü" yaz.
+  // İçerik değişmediyse state'i yenileme (gereksiz render/save döngüsünü önler).
+  const markOffersSeen = () => {
+    if (!user) return;
+    const mineNow = {};
+    offers.forEach(o => { if (String(o.fromUserId) === String(user.id)) mineNow[String(o.id)] = o.status || "beklemede"; });
+    setOffersSeen(prev => {
+      const cur = prev[user.id] || {};
+      const keys = Object.keys(mineNow);
+      const same = keys.length === Object.keys(cur).length && keys.every(k => cur[k] === mineNow[k]);
+      return same ? prev : { ...prev, [user.id]: mineNow };
+    });
+  };
   // SB modunda eşleşen tarafların profil iletişim bilgisi (telefon/e-posta) önbelleği.
   // getContact senkron; eksikse profil arka planda çekilir, sonraki render'da dolar.
   const [contactCache, setContactCache] = useState({}); // { [id]: {name, phone, email} }
@@ -865,6 +881,7 @@ function AppShell() {
       else if (e.key === "hamted_users") setUsers(loadUsers());
       else if (e.key === "hamted_user") setUser(loadUser());
       else if (e.key === "hamted_msg_seen") setMsgSeen(loadMsgSeen());
+      else if (e.key === "hamted_offers_seen") setOffersSeen(loadOffersSeen());
       else if (e.key === "hamted_reviews") setReviews(loadReviews());
       else if (e.key === "hamted_docs") setDocs(loadDocs());
       else if (e.key === "hamted_fleet") setFleet(loadFleet());
@@ -883,6 +900,11 @@ function AppShell() {
   const seenIso = user ? (msgSeen[user.id] || null) : null;
   const unreadCount = user
     ? messages.filter(m => String(m.toId) === String(user.id) && (!seenIso || m.createdAt > seenIso)).length
+    : 0;
+  // Alıcı Sipariş sekmesi rozeti: son bakıştan beri durumu değişen (onaylanan/reddedilen) siparişlerim.
+  const myOffersSeen = user ? (offersSeen[user.id] || {}) : {};
+  const orderUpdatesCount = user
+    ? offers.filter(o => String(o.fromUserId) === String(user.id) && o.status && o.status !== "beklemede" && myOffersSeen[String(o.id)] !== o.status).length
     : 0;
 
   const notifSeenIso = user ? (notifSeen[user.id] || null) : null;
@@ -918,7 +940,7 @@ function AppShell() {
                 <Route path="/ilan-ver" element={<PageTransition><IlanVerPage onPublish={publishListing} onUpdate={updateListing} listings={listings} offers={offers} reviews={reviews} user={user} fleet={myFleet} onRequireAuth={requireAuth} onUpdateProfile={updateProfile} /></PageTransition>} />
                 <Route path="/ilan-duzenle/:id" element={<PageTransition><IlanVerPage onPublish={publishListing} onUpdate={updateListing} listings={listings} offers={offers} reviews={reviews} user={user} fleet={myFleet} onRequireAuth={requireAuth} onUpdateProfile={updateProfile} /></PageTransition>} />
                 <Route path="/ilanlarim" element={<PageTransition><IlanlarimPage listings={listings} user={user} offers={offers} reviews={reviews} onUpdateOffer={updateOffer} onAcceptOffer={acceptOffer} onUpdateListing={updateListing} onDeleteListing={removeListing} onRequireAuth={requireAuth} onUpdateProfile={updateProfile} getContact={getContact} onReport={addReport} /></PageTransition>} />
-                <Route path="/tekliflerim" element={<PageTransition><TekliflerimPage listings={listings} user={user} offers={offers} onRequireAuth={requireAuth} /></PageTransition>} />
+                <Route path="/tekliflerim" element={<PageTransition><TekliflerimPage listings={listings} user={user} offers={offers} onRequireAuth={requireAuth} onSeen={markOffersSeen} /></PageTransition>} />
                 <Route path="/mesajlar" element={<PageTransition><MesajlarPage user={user} listings={listings} offers={offers} messages={messages} onSendMessage={addMessage} onRequireAuth={requireAuth} onSeen={markMessagesSeen} onMarkThreadRead={markThreadRead} getContact={getContact} msgSeen={msgSeen} blockedIds={myBlocked} onReport={addReport} onToggleBlock={toggleBlock} /></PageTransition>} />
                 <Route path="/profil" element={<PageTransition><ProfilPage user={user} onUpdateProfile={updateProfile} onRequireAuth={requireAuth} onLogout={logout} onDeleteAccount={deleteAccount} reviews={reviews} getUserRating={getUserRating} listings={listings} offers={offers} docs={docs.filter(d => user && String(d.ownerId) === String(user.id))} onAddDoc={addDoc} onRemoveDoc={removeDoc} notifPrefs={notifPrefs} onUpdateNotifPrefs={updateNotifPrefs} onReport={addReport} blockedIds={myBlocked} onToggleBlock={toggleBlock} getContact={getContact} /></PageTransition>} />
                 <Route path="/panel" element={<PageTransition><DashboardPage user={user} listings={listings} offers={offers} messages={messages} onRequireAuth={requireAuth} /></PageTransition>} />
@@ -969,7 +991,7 @@ function AppShell() {
       )}
       <OfflineBanner onReconnect={() => { if (SB) { reloadListings(); reloadOffers(); } }} />
       <InstallPrompt />
-      <MobileTabBar unreadCount={unreadCount} pendingOffersCount={pendingOffersCount} role={(profile || user)?.role} />
+      <MobileTabBar unreadCount={unreadCount} pendingOffersCount={pendingOffersCount} orderUpdatesCount={orderUpdatesCount} role={(profile || user)?.role} />
 
       {showNewPassword && <NewPasswordModal onSubmit={updatePassword} onDone={() => setShowNewPassword(false)} />}
       {showAuth && !showRole && !showNewPassword && <AuthModal onClose={() => setShowAuth(false)} onProvider={startOAuth} onEmailAuth={emailAuth} onReset={resetPassword} />}
