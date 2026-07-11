@@ -2,8 +2,8 @@
 // Tasima kategorileri (hafriyat + silobas) + genisletilmis yuk/arac tipleri
 
 export const CATS = [
-  { id: "hafriyat", name: "Hafriyat", icon: "🚛", clr: "#C85A24", desc: "Kazi, toprak ve moloz tasima" },
-  { id: "silobas", name: "Silobas & Dökme", icon: "🛢️", clr: "#2E6FA3", desc: "Dökme sanayi/inşaat yükü: çimento, agrega, kum, kimyasal" },
+  { id: "hafriyat", name: "Hafriyat", icon: "🚛", clr: "#C85A24", desc: "Damperli dökme: kazı, moloz ve ocak ürünleri (kum, mıcır)" },
+  { id: "silobas", name: "Silobas & Dökme", icon: "🛢️", clr: "#2E6FA3", desc: "Pnömatik dökme toz/granül: çimento, kül, kireç, tahıl" },
 ];
 
 // Kullanici rolleri (3 taraf)
@@ -27,27 +27,42 @@ export const STOCK_LEVELS = [
   { id: "az", label: "Az stok" },
 ];
 
-// --- HAFRİYAT ---
+// --- HAFRİYAT & DAMPERLİ DÖKME ---
+// Kazı/moloz + OCAK ÜRÜNLERİ (kum, mıcır, agrega): hepsi DAMPER yüküdür.
+// Kum/mıcır/agrega silobasla taşınmaz — pnömatik tanker yalnız toz basar.
+// Mıcır numaraları ve mm aralıkları TR ocak piyasasının yaygın adlandırması
+// (bölgesel küçük farklar olabilir; form "Diğer" ile serbest girişe açık).
 export const HAFRIYAT_MATERIALS = [
-  // Kazi / Toprak
-  "Toprak (kazı)",
-  "Bitkisel toprak (humus)",
-  "Kil",
+  // Kazı / Toprak
+  "Hafriyat toprağı (kazı)",
+  "Bitkisel toprak",
   "Dolgu toprağı",
+  "Kil",
   // Moloz / Yıkıntı
-  "İnşaat molozi",
-  "Yıkıntı molozi",
-  "Tuğla kırığı",
+  "İnşaat molozu",
+  "Yıkıntı molozu (yıkım)",
   "Beton kırığı",
+  "Tuğla-kiremit kırığı",
+  "Asfalt kırığı / freze",
+  "Karışık hafriyat (toprak + moloz)",
   // Kaya / Taş
-  "Kaya / Taş",
-  "Granit kırığı",
-  "Bazalt",
-  "Kırma taş (büyük)",
-  // Özel
-  "Asfalt kırığı / frezeleme",
+  "Kaya / patlatma taşı (anroşman)",
+  // Ocak ürünleri (agrega)
+  "Taş tozu (0-5 mm)",
+  "Kırma kum (0-4 mm)",
+  "Mıcır 1 no (5-12 mm)",
+  "Mıcır 2 no (12-22 mm)",
+  "Mıcır 3 no (22-32 mm)",
+  "Balast (25-70 mm)",
+  "Bypass malzeme (0-25 mm)",
+  "Plentmiks temel (PMT 0-25)",
+  "Stabilize / mekanik",
+  "Tüvenan (elenmemiş)",
+  "Yıkanmış / elenmiş kum",
+  "Dere kumu / dere çakılı",
+  // Diğer
+  "Cüruf (parça)",
   "Demir / metal hurda",
-  "Hafriyat (karışık)",
 ];
 
 export const HAFRIYAT_VEHICLES = [
@@ -62,31 +77,37 @@ export const HAFRIYAT_VEHICLES = [
   "Ekskavatörlü + damper (komple)",
 ];
 
-// --- SİLOBAŞ & DÖKÜME (sanayi / inşaat dökme yük) ---
+// --- SİLOBAS (pnömatik dökme) ---
+// Yalnız TOZ / İNCE GRANÜL: havayla basılıp akışkanlaştırılabilen kuru yükler.
+// Kum, çakıl, mıcır, agrega SİLOBAS YÜKÜ DEĞİLDİR (bkz. hafriyat listesi);
+// tek istisna kurutulmuş silis kumu (cam/döküm sanayi). Klinker parça hâlde
+// damperle taşınır, o da bu listeden çıkarıldı.
 export const SILOBAS_MATERIALS = [
-  // İnşaat / Bağlayıcı
-  "Çimento (döküme)",
-  "Klinker",
-  "Kireç (söndürülmüş/kalsit)",
-  "Alçı (döküme)",
-  "Uçucu kül (fly ash)",
-  "Yüksek fırın cürufu (slag)",
-  "Mermer / kalsit tozu",
-  // Agrega / Kum
-  "Kum (0–3 mm)",
-  "İnce kum (0–1 mm)",
-  "Çakıl (3–8 mm)",
-  "Mıcır (8–16 mm)",
-  "Mıcır (16–32 mm)",
-  "Kırma taş (agrega)",
-  "Bazalt agrega",
-  // Endüstriyel / Kimyasal
-  "Kimyasal granül",
-  "Plastik granül (pelet)",
-  "Soda külü",
+  // Çimento & mineral katkı
+  "Çimento (dökme)",
+  "Uçucu kül",
+  "Öğütülmüş cüruf / tras",
+  "Mineral filler (mikronize)",
+  // Bağlayıcı / Yapı tozları
+  "Kireç (toz, sönmüş/sönmemiş)",
+  "Alçı (toz)",
+  // Maden / Endüstriyel toz
+  "Mikronize kalsit",
+  "Silis kumu (kurutulmuş)",
   "Bentonit",
+  "Barit",
   "Perlit",
-  "Baritin",
+  "Soda külü",
+  // Gıda / Tarım (gıda silobası ister)
+  "Un / irmik",
+  "Tahıl (buğday, arpa, mısır)",
+  "Dökme yem",
+  "Toz şeker",
+  "Tuz (öğütülmüş)",
+  // Kimya / Polimer
+  "Plastik granül (PE/PP/PVC)",
+  "Toz kimyasal / nişasta",
+  "Gübre (toz/granül)",
 ];
 
 export const SILOBAS_VEHICLES = [

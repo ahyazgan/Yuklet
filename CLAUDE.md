@@ -12,8 +12,8 @@ Satıcı (ocak/santral) kendi ürün/stok ilanını açar, alıcı bulur, nakliy
 - **Nakliyeci / Taşıyıcı** (`nakliyeci`): araç ilanı açar veya iş ilanlarına teklif verir — `/nakliyeci` landing
 
 ## İki Taşıma Kategorisi (başka kategori eklenmez)
-- **hafriyat** — kazı, toprak, moloz, kaya, asfalt kırığı, metal hurda
-- **silobas** — döküme çimento, agrega, kum, çakıl, mıcır, tahıl, kimyasal granül, gübre…
+- **hafriyat** — damperli dökme: kazı toprağı, moloz, kaya, asfalt kırığı, metal hurda + OCAK ÜRÜNLERİ (kum, mıcır, agrega, balast, dolgu)
+- **silobas** — pnömatik dökme, YALNIZ toz/ince granül: çimento, uçucu kül, kireç, alçı, kalsit, un, tahıl, yem, plastik granül, toz kimyasal, gübre. Kum/çakıl/mıcır/agrega silobas yükü DEĞİLDİR (damperle taşınır).
 
 ## Teknoloji
 - React 19 + Vite + react-router-dom v7
