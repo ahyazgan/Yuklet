@@ -89,7 +89,7 @@ function ListingCard({ l, isFav = false, onToggleFav, rel }) {
   const chips = [];
   if (isProduct) {
     if (l.material) chips.push(l.material);
-    if (l.deliveryIncluded) chips.push("NAKLİYE DAHİL");
+    // NAKLİYE DAHİL chip'te değil, fiyata bitişik rozette gösterilir (ana vaat).
   } else {
     if (l.amount) chips.push(`${l.amount} ${(l.unit || "").toUpperCase()}`);
     if (l.vehicle) chips.push(l.vehicle);
@@ -313,9 +313,34 @@ function ListingCard({ l, isFav = false, onToggleFav, rel }) {
         </div>
         <div className="flex flex-shrink-0 items-center gap-2.5">
           {fixed ? (
-            <span style={{ ...MONO, fontSize: isProduct ? 15 : 17, fontWeight: 800, color: C.green, letterSpacing: "-0.02em" }}>
-              {fixed}
-            </span>
+            isProduct ? (
+              // Ürün: fiyat + nakliye vaadi TEK blok — "tek net fiyat" ana vaattir.
+              <span className="flex flex-col items-end" style={{ gap: 3 }}>
+                <span style={{ ...MONO, fontSize: 15, fontWeight: 800, color: C.green, letterSpacing: "-0.02em" }}>
+                  {fixed}
+                </span>
+                <span
+                  style={{
+                    ...MONO,
+                    fontSize: 8.5,
+                    fontWeight: 700,
+                    letterSpacing: "0.04em",
+                    padding: "2px 6px",
+                    borderRadius: 4,
+                    whiteSpace: "nowrap",
+                    background: l.deliveryIncluded ? C.green : C.stone,
+                    color: l.deliveryIncluded ? "#fff" : C.muted,
+                    border: `1.5px solid ${l.deliveryIncluded ? C.ink : C.border}`,
+                  }}
+                >
+                  {l.deliveryIncluded ? "🚚 NAKLİYE DAHİL" : "NAKLİYE HARİÇ"}
+                </span>
+              </span>
+            ) : (
+              <span style={{ ...MONO, fontSize: 17, fontWeight: 800, color: C.green, letterSpacing: "-0.02em" }}>
+                {fixed}
+              </span>
+            )
           ) : (
             <span style={{ ...MONO, fontSize: 11, fontWeight: 800, color: C.ink, padding: "3px 8px", borderRadius: 5, background: C.yellow, border: `1.5px solid ${C.ink}`, whiteSpace: "nowrap" }}>
               TEKLİFE AÇIK

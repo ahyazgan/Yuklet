@@ -718,7 +718,7 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers
               </span>
               <span style={{ flex: 1, minWidth: 0 }}>
                 <span style={{ display: "block", fontFamily: ARCH, fontSize: 15, fontWeight: 900, textTransform: "uppercase", color: form.deliveryIncluded ? C.green : C.ink }}>Nakliye dahil et</span>
-                <span style={{ display: "block", fontFamily: MONO, fontSize: 11, color: C.sub, marginTop: 1 }}>Fiyata teslimat dahil (sahaya getiriyorum)</span>
+                <span style={{ display: "block", fontFamily: MONO, fontSize: 11, color: C.sub, marginTop: 1 }}>Alıcı tek net fiyat görür — sahaya teslim. İlanın "NAKLİYE DAHİL" rozetiyle çıkar.</span>
               </span>
               {/* green-framed switch */}
               <span style={{ width: 46, height: 26, flexShrink: 0, display: "flex", alignItems: "center", borderRadius: 999, border: `2px solid ${form.deliveryIncluded ? C.green : C.ink}`, background: form.deliveryIncluded ? C.green : C.card, padding: 2, justifyContent: form.deliveryIncluded ? "flex-end" : "flex-start", transition: "all 0.15s ease" }}>
