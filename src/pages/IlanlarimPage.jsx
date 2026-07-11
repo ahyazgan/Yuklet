@@ -134,10 +134,12 @@ export default function IlanlarimPage({ listings = [], user, offers = [], review
     toast("İlan yenilendi ve tekrar yayında", "success");
   };
   // Silme iki adım: önce uygulama içi "Emin misin?" penceresi, onaylanırsa sil.
+  // Sonuç kontrol edilir: SB modunda ağ/oturum hatasında yalancı "silindi" deme.
   const del = (l) => setConfirmDel(l);
-  const doDelete = () => {
+  const doDelete = async () => {
     if (!confirmDel) return;
-    onDeleteListing?.(confirmDel.id);
+    const res = await onDeleteListing?.(confirmDel.id);
+    if (res && res.ok === false) { toast(res.error || "İlan silinemedi, tekrar dene", "error"); return; }
     setConfirmDel(null);
     hapticWarn();
     toast("İlan silindi", "info");
@@ -298,10 +300,13 @@ export default function IlanlarimPage({ listings = [], user, offers = [], review
 
                 {/* Body */}
                 {closed ? (
-                  <div style={{ padding: 14, display: "flex", alignItems: "center", gap: 10 }}>
-                    <span style={{ flex: 1, fontFamily: MONO, fontSize: 11.5, color: C.muted }}>
+                  <div style={{ padding: 14, display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+                    <span style={{ flex: 1, minWidth: 120, fontFamily: MONO, fontSize: 11.5, color: C.muted }}>
                       İlan kapatıldı · {lOffers.length} teklif alındı
                     </span>
+                    <button onClick={() => toggleClose(l)} style={{ ...btnBase, color: C.green }}>
+                      <RotateCw size={13} strokeWidth={2.4} /> Tekrar Aç
+                    </button>
                     <button onClick={() => del(l)} style={{ ...btnBase, color: C.red }}>
                       <Trash2 size={13} strokeWidth={2.4} /> Sil
                     </button>
@@ -316,10 +321,14 @@ export default function IlanlarimPage({ listings = [], user, offers = [], review
                         </button>
                       </div>
                     ) : (
-                      <div style={{ padding: 14, display: "flex", alignItems: "center", gap: 10 }}>
-                        <span style={{ flex: 1, fontFamily: MONO, fontSize: 11.5, color: C.sub }}>Sipariş onaylandı · nakliyeyi ayarla</span>
+                      <div style={{ padding: 14, display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+                        <span style={{ flex: 1, minWidth: 120, fontFamily: MONO, fontSize: 11.5, color: C.sub }}>Sipariş onaylandı · nakliyeyi ayarla</span>
                         <button onClick={() => navigate(`/ilan-ver?${buildHaulParams(l, lOffers)}`)} style={{ ...btnBase, background: C.yellow, borderColor: C.ink }}>
                           Nakliye Ayarla <ArrowRight size={14} strokeWidth={2.6} />
+                        </button>
+                        {/* Nakliye-hariç üründe de teslim yolu olmalı — yoksa ilan sonsuza dek Eşleşti'de kilitli kalır. */}
+                        <button onClick={() => markDelivered(l)} style={{ ...btnBase, background: C.card, color: C.green }}>
+                          <Check size={14} strokeWidth={3} /> Teslim Edildi
                         </button>
                       </div>
                     )
@@ -551,6 +560,7 @@ const btnBase = {
   display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
   cursor: "pointer", background: C.card, color: C.ink,
   border: `2px solid ${C.ink}`, borderRadius: 6, padding: "8px 12px",
+  minHeight: 40, // saha kitlesi için dokunma hedefi — 35px'lik butonlar yanlış basılıyor
   fontFamily: HEAD, fontSize: 12, fontWeight: 800, textTransform: "uppercase", letterSpacing: "-0.01em",
 };
 
@@ -571,8 +581,8 @@ function StatusPill({ bg, fg, text, dot = true, small }) {
 
 function IconBtn({ children, onClick, title }) {
   return (
-    <button onClick={onClick} title={title} style={{
-      width: 34, height: 34, borderRadius: 6, cursor: "pointer",
+    <button onClick={onClick} title={title} aria-label={title} style={{
+      width: 40, height: 40, borderRadius: 6, cursor: "pointer", // 34→40: dokunma hedefi
       background: C.card, border: `2px solid ${C.ink}`, color: C.ink,
       display: "flex", alignItems: "center", justifyContent: "center",
     }}>{children}</button>

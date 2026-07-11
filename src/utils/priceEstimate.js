@@ -40,14 +40,16 @@ export function materialFactor(material) {
   const f = fold(material);
   if (!f) return 1;
   // hafriyat
-  if (/(kaya|granit|bazalt|kirma tas)/.test(f)) return 1.12;   // sert kaya — aşındırıcı, ağır
-  if (/(toprak|humus|kil|dolgu)/.test(f)) return 0.93;          // hafif, kolay
+  if (/(kaya|granit|bazalt|patlatma|anrosman)/.test(f)) return 1.12; // sert kaya — aşındırıcı, ağır
+  // "topra" kökü hem "toprak" hem "toprağı"nı (fold: topragi) yakalar.
+  // "kil" kelime sınırıyla: "çakılı" (fold: cakili) yanlışlıkla eşleşmesin.
+  if (/(topra|humus)/.test(f) || /\bkil\b/.test(f)) return 0.93; // hafif, kolay
   if (/(asfalt|frez)/.test(f)) return 1.05;
   if (/(metal|hurda)/.test(f)) return 1.08;
-  // silobas
-  if (/(cimento|kirec|alci|ucucu|kul)/.test(f)) return 1.15;    // bağlayıcı — tozlu, kapalı silobas
+  // silobas — özel/inox ÖNCE test edilir ("Soda külü" bağlayıcıdaki "kul"a takılmasın)
   if (/(kimyasal|plastik|granul|gubre|soda)/.test(f)) return 1.20; // özel/inox ekipman
-  if (/(bugday|arpa|misir|yulaf|celtik|pirinc|aycicek|kanola|yem|un|nisasta|seker|tuz)/.test(f)) return 1.10; // gıda — hijyenik
+  if (/(cimento|kirec|alci|ucucu|kul|curuf|tras|filler|kalsit|bentonit|barit|perlit)/.test(f)) return 1.15; // bağlayıcı/mineral toz — kapalı silobas
+  if (/(bugday|arpa|misir|yulaf|celtik|pirinc|aycicek|kanola|yem|irmik|nisasta|seker|tuz)/.test(f) || /\bun\b/.test(f)) return 1.10; // gıda — hijyenik
   return 1; // moloz, kum, çakıl, mıcır, agrega vb. taban
 }
 

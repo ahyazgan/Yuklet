@@ -66,7 +66,7 @@ begin
     'Kırma ocağı (taş/mıcır)', 'Kocaeli', 'Gebze',
     'Marmara bölgesinde 20 yıldır faaliyet gösteren kırma taş ocağı. Mıcır, çakıl ve agrega üretimi. Nakliyeli teslim mümkün, kapasite raporu ve TSE belgelerimiz mevcuttur.',
     'Hafta içi 07:30–18:30, Cmt 08:00–14:00',
-    array['Mıcır (8–16 mm)','Mıcır (16–32 mm)','Çakıl (3–8 mm)','Kırma taş (agrega)','Kum (0–3 mm)']
+    array['Mıcır 1 no (5-12 mm)','Mıcır 2 no (12-22 mm)','Mıcır 3 no (22-32 mm)','Taş tozu (0-5 mm)','Yıkanmış / elenmiş kum']
   )
   on conflict (id) do update set
     role = 'tedarikci', verified = true, rating = 4.8,
@@ -83,9 +83,9 @@ begin
     (owner_id, owner_name, owner_verified, owner_rating, type, cat, title, il, ilce,
      material, amount, unit, stock, price_type, price, description, status, offers_count, created_text)
   values
-    (seller_id,'Akdağ Kırma Ocağı',true,4.8,'urun','silobas','Mıcır (16–32 mm) — ocak teslim / nakliyeli','Kocaeli','Gebze','Mıcır (16–32 mm)',500,'ton','bol','sabit',480,'Yıkanmış 16–32 mm mıcır. Ocak teslim fiyatıdır, nakliye platformdan ayarlanır. Büyük tonajda fiyat görüşülür.','aktif',4,'1 gün önce'),
-    (seller_id,'Akdağ Kırma Ocağı',true,4.8,'urun','silobas','Çakıl (3–8 mm) — beton agregası','Kocaeli','Gebze','Çakıl (3–8 mm)',300,'ton','orta','sabit',520,'Beton santralleri için elenmiş çakıl. Sürekli alımda anlaşmalı fiyat.','aktif',2,'3 gün önce'),
-    (seller_id,'Akdağ Kırma Ocağı',true,4.8,'urun','silobas','Yıkanmış kum (0–3 mm)','Kocaeli','Gebze','Kum (0–3 mm)',200,'ton','az','teklif',null,'İnşaat ve sıva kumu. Stok sınırlı, fiyat için teklif verin.','aktif',1,'5 gün önce');
+    (seller_id,'Akdağ Kırma Ocağı',true,4.8,'urun','hafriyat','Mıcır 2 no (12-22 mm) — ocak teslim / nakliyeli','Kocaeli','Gebze','Mıcır 2 no (12-22 mm)',500,'ton','bol','sabit',480,'Yıkanmış 12-22 mm mıcır. Ocak teslim fiyatıdır, nakliye platformdan ayarlanır. Büyük tonajda fiyat görüşülür.','aktif',4,'1 gün önce'),
+    (seller_id,'Akdağ Kırma Ocağı',true,4.8,'urun','hafriyat','Mıcır 1 no (5-12 mm) — beton agregası','Kocaeli','Gebze','Mıcır 1 no (5-12 mm)',300,'ton','orta','sabit',520,'Beton santralleri için elenmiş 5-12 mm mıcır. Sürekli alımda anlaşmalı fiyat.','aktif',2,'3 gün önce'),
+    (seller_id,'Akdağ Kırma Ocağı',true,4.8,'urun','hafriyat','Yıkanmış kum (0-4 mm)','Kocaeli','Gebze','Yıkanmış / elenmiş kum',200,'ton','az','teklif',null,'İnşaat ve sıva kumu. Stok sınırlı, fiyat için teklif verin.','aktif',1,'5 gün önce');
 
   raise notice 'Demo satıcı hazır: % (satici@demo.yuklet.co / Demo1234!)', seller_id;
 end $$;

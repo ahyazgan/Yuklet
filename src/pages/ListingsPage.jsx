@@ -1241,7 +1241,9 @@ export default function ListingsPage({ listings = LISTINGS, user, fleet = [], on
       {/* ── FİLTRE ALT SAYFASI ── */}
       {mode === "normal" && showFilters && (
         <div
-          style={{ position: "fixed", inset: 0, zIndex: 50 }}
+          // z-60: alt bar z-50'nin ÜSTÜNDE olmalı, yoksa bar sheet'in
+          // TEMİZLE / GÖSTER satırını örtüyor ve dokunuşları çalıyor.
+          style={{ position: "fixed", inset: 0, zIndex: 60 }}
           className="mx-auto flex flex-col justify-end"
         >
           {/* overlay */}

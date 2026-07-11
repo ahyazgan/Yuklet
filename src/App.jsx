@@ -894,8 +894,10 @@ function AppShell() {
   }, [SB]);
 
   // Bildirim sayilari
+  // Yalnız AKTİF ilanlardaki bekleyen teklif/siparişler sayılır: kapalı/eşleşmiş
+  // ilanda aksiyon alınamadığından rozet aksi hâlde kalıcı ve yanlış yanar.
   const pendingOffersCount = user
-    ? offers.filter(o => o.status === "beklemede" && userListings.some(l => l.ownerId === user.id && String(l.id) === String(o.listingId))).length
+    ? offers.filter(o => o.status === "beklemede" && userListings.some(l => l.ownerId === user.id && String(l.id) === String(o.listingId) && (l.status || "aktif") === "aktif")).length
     : 0;
   const seenIso = user ? (msgSeen[user.id] || null) : null;
   const unreadCount = user

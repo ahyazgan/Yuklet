@@ -158,6 +158,10 @@ export default function ListingsMap({ listings = [], onPickIl }) {
     <div
       style={{
         position: "relative",
+        // Leaflet pane'lerinin yüksek z-index'leri (200-700) bu kutuda hapsolsun:
+        // yoksa yüzen TALEP butonu (z-40) ve alt bar (z-50) haritanın altında kalır.
+        zIndex: 0,
+        isolation: "isolate",
         height: 460,
         borderRadius: 6,
         overflow: "hidden",

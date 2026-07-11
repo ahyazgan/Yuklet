@@ -632,6 +632,19 @@ export default function ProfilPage({ user, onUpdateProfile, onRequireAuth, onLog
                     </button>
                   );
                 })}
+                {/* Güncel listede olmayan kayıtlı seçimler (eski liste adları):
+                    görünmez+silinemez kalmasınlar — çıkarılabilir chip olarak göster. */}
+                {form.malzemeler.filter((m) => !SATICI_MALZEMELERI.includes(m)).map((m) => (
+                  <button type="button" key={m} onClick={() => toggleMalzeme(m)}
+                    title="Listede olmayan eski seçim — çıkarmak için dokun"
+                    style={{
+                      fontFamily: MONO, fontSize: 10, fontWeight: 700, padding: "6px 10px", borderRadius: 6, cursor: "pointer",
+                      border: `2px dashed ${C.ink}`, background: C.yellow, color: C.ink,
+                      boxShadow: "2px 2px 0 #0A0A0A",
+                    }}>
+                    {m} ×
+                  </button>
+                ))}
               </div>
               {form.malzemeler.length > 0 && (
                 <div style={{ marginTop: 9, fontFamily: MONO, fontSize: 10, color: C.sub }}>{form.malzemeler.length} malzeme seçili</div>
