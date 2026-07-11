@@ -1,24 +1,37 @@
 import { Link, useLocation } from "react-router-dom";
-import { Home, List, Plus, MessageCircle, User, Coffee } from "lucide-react";
+import { Home, List, Plus, MessageCircle, User, Coffee, Store, Package } from "lucide-react";
 import { hapticTap } from "../native/haptics";
 
 // ── SAHA alt tab bar (Tailwind + inline style). Mobil app kolonuna hizalı (max-w-[460px]).
 // Beyaz zemin, üstte 2px siyah çizgi. Aktif sekmede üstte 18x3px sarı çizgi.
 // Ortada büyük sarı "+" butonu (48px, 2px ink çerçeve, radius 8px). Emoji DEĞİL — lucide stroke ikonlar.
 
-// Ortak sekmeler. Nakliyecide ortadaki büyük buton "İlan Ver" DEĞİL "Mola"dır.
+// Sekmeler role göre değişir:
+//   Alıcı (isveren):    Ana · Tedarik · +Talep · Mesaj · Profil
+//   Satıcı (tedarikci): Ana · Vitrinim · +Ürün Ekle · Mesaj · Profil
+//   Nakliyeci:          Ana · İlanlar · Mola · Mesaj · Profil
+//   Misafir:            Ana · İlanlar · +İlan Ver · Mesaj · Profil
 const HOME_TAB = { to: "/", label: "Ana", Icon: Home, match: (p) => p === "/" };
 const LISTINGS_TAB = { to: "/ilanlar", label: "İlanlar", Icon: List, match: (p) => p === "/ilanlar" || p.startsWith("/ilanlar?") || p.startsWith("/ilan/") };
 const ADD_TAB = { to: "/ilan-ver", label: "İlan Ver", Icon: Plus, center: true, match: (p) => p.startsWith("/ilan-ver") };
 const MESSAGES_TAB = { to: "/mesajlar", label: "Mesaj", Icon: MessageCircle, match: (p) => p.startsWith("/mesajlar") };
+// Alıcı: pazar ekranı "Tedarik" dilinde; ortadaki buton talep bırakma.
+const TEDARIK_TAB = { ...LISTINGS_TAB, label: "Tedarik", Icon: Store };
+const TALEP_TAB = { ...ADD_TAB, label: "Talep" };
+// Satıcı: pazar yerine kendi vitrini; ilan detayı/düzenleme de vitrin işi sayılır.
+const VITRIN_TAB = { to: "/ilanlarim", label: "Vitrinim", Icon: Package, match: (p) => p.startsWith("/ilanlarim") || p.startsWith("/ilan/") || p.startsWith("/ilan-duzenle") };
+const URUN_TAB = { ...ADD_TAB, label: "Ürün Ekle" };
 // Nakliyecide ortadaki büyük buton: İlan Ver yerine Mola.
 const MOLA_CENTER_TAB = { to: "/mola", label: "Mola", Icon: Coffee, center: true, match: (p) => p.startsWith("/mola") };
 const PROFILE_TAB = { to: "/profil", label: "Profil", Icon: User, match: (p) => p.startsWith("/profil") || p.startsWith("/ilanlarim") || p.startsWith("/panel") };
+// Satıcıda /ilanlarim Vitrinim sekmesini yakar, Profil'i değil.
+const SELLER_PROFILE_TAB = { ...PROFILE_TAB, match: (p) => p.startsWith("/profil") || p.startsWith("/panel") };
 
-// Nakliyecide ortada Mola (İlan Ver YOK); diğer rollerde ortada İlan Ver.
 function tabsForRole(role) {
-  const center = role === "nakliyeci" ? MOLA_CENTER_TAB : ADD_TAB;
-  return [HOME_TAB, LISTINGS_TAB, center, MESSAGES_TAB, PROFILE_TAB];
+  if (role === "tedarikci") return [HOME_TAB, VITRIN_TAB, URUN_TAB, MESSAGES_TAB, SELLER_PROFILE_TAB];
+  if (role === "nakliyeci") return [HOME_TAB, LISTINGS_TAB, MOLA_CENTER_TAB, MESSAGES_TAB, PROFILE_TAB];
+  if (role === "isveren") return [HOME_TAB, TEDARIK_TAB, TALEP_TAB, MESSAGES_TAB, PROFILE_TAB];
+  return [HOME_TAB, LISTINGS_TAB, ADD_TAB, MESSAGES_TAB, PROFILE_TAB];
 }
 
 const LABEL_STYLE = {
