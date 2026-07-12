@@ -31,10 +31,11 @@ const HAZARD = "repeating-linear-gradient(45deg,#0A0A0A 0 9px,#FACC15 9px 18px)"
 const FRAME = `2px solid ${C.ink}`;
 
 // Kayıt rolleri (CLAUDE.md sözleşmesi) — kayıt olurken seçilir.
+// Açıklamalar niyet dilinde: "Ne yapmak istiyorsun?" sorusunun cevabı.
 const ROLES = [
-  { key: "isveren", label: "Alıcı", desc: "İş ilanı açarım" },
-  { key: "tedarikci", label: "Satıcı", desc: "Ocak / santral" },
-  { key: "nakliyeci", label: "Nakliyeci", desc: "Araç / taşıma" },
+  { key: "isveren", label: "Alıcı", desc: "Yük taşıttırmak / mal almak" },
+  { key: "tedarikci", label: "Satıcı", desc: "Malzeme satmak" },
+  { key: "nakliyeci", label: "Nakliyeci", desc: "Yük taşımak (aracım var)" },
 ];
 
 // Google "G" çok renkli logosu
@@ -190,7 +191,7 @@ export default function AuthModal({ onClose, onProvider, onEmailAuth, onReset })
             {mode === "register" && (
               <div>
                 <div className="mb-1.5 text-[11px] font-bold uppercase" style={{ color: C.sub, fontFamily: MONO, letterSpacing: "0.03em" }}>
-                  Nasıl üye olacaksın?
+                  Ne yapmak istiyorsun?
                 </div>
                 <div className="grid grid-cols-3 gap-2">
                   {ROLES.map((r) => {

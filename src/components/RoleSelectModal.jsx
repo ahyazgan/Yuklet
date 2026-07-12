@@ -11,10 +11,12 @@ const ARCH = "'Archivo',system-ui,sans-serif";
 const HAZARD = "repeating-linear-gradient(45deg,#0A0A0A 0 9px,#FACC15 9px 18px)";
 const FRAME = `2px solid ${C.ink}`;
 
+// Açıklamalar NİYET dilinde: kullanıcı kendini rol adından değil,
+// yapmak istediği işten tanır ("yük taşıttırmak istiyorum" gibi).
 const ROLES = [
-  { id: "isveren", label: "Alıcı", desc: "İş ilanı açar, teklif alır" },
-  { id: "nakliyeci", label: "Nakliyeci / Taşıyıcı", desc: "Araç ilanı açar, yük taşır" },
-  { id: "tedarikci", label: "Satıcı", desc: "Malzeme satar: ocak, beton, kum" },
+  { id: "isveren", label: "Alıcı", desc: "Yük taşıttırmak ya da malzeme almak istiyorum" },
+  { id: "nakliyeci", label: "Nakliyeci / Taşıyıcı", desc: "Yük taşımak istiyorum — aracım var" },
+  { id: "tedarikci", label: "Satıcı", desc: "Malzeme satmak istiyorum — ocak / santral" },
 ];
 
 export default function RoleSelectModal({ onSelect }) {
@@ -41,10 +43,10 @@ export default function RoleSelectModal({ onSelect }) {
         <div className="p-7">
           <div className="mb-5 text-center">
             <h3 className="text-[20px] font-extrabold uppercase" style={{ color: C.ink, fontFamily: ARCH, letterSpacing: "-0.02em" }}>
-              Sen Kimsin?
+              Ne Yapmak İstiyorsun?
             </h3>
             <p className="mt-1.5 text-[12px]" style={{ color: C.sub, fontFamily: MONO }}>
-              Rolünü seç — sana uygun ekranı açalım
+              Seç — sana uygun ekranı açalım
             </p>
           </div>
 
