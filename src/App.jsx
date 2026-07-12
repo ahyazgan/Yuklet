@@ -964,7 +964,7 @@ function AppShell() {
                 {/* Piyasa Nabzı — özellik komple gizlendi (sistem henüz uygun değil); geri açmak için yorumu kaldır */}
                 {/* <Route path="/piyasa" element={<PageTransition><PiyasaNabziPage listings={listings} offers={offers} /></PageTransition>} /> */}
                 {/* <Route path="/fiyat-simulasyonu" element={<PageTransition><FiyatSimulasyonuPage /></PageTransition>} /> */}
-                <Route path="/yasal/:slug" element={<PageTransition><LegalPage /></PageTransition>} />
+                <Route path="/yasal/:slug" element={<PageTransition><LegalPage user={user} onDeleteAccount={deleteAccount} /></PageTransition>} />
                 <Route path="*" element={<PageTransition><NotFoundPage /></PageTransition>} />
               </Routes>
             </AnimatePresence>
