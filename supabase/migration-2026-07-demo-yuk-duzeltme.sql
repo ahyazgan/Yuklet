@@ -11,14 +11,17 @@
 -- Supabase Studio → SQL Editor → yapıştır → Run.
 -- ────────────────────────────────────────────────────────────────────
 
--- 1) Sistem demo ilanları (owner_id null)
+-- 1) Eski kanonik malzeme adları → yeni adlar.
+-- owner_id filtresi YOK: 'Hafriyat'/'Toprak'/'Cimento' gibi çıplak adlar yalnız
+-- eski seed/test verisinden gelebilir (yeni listede yoklar); kullanıcı hesabıyla
+-- açılmış kopya ilanlar da (ör. Dudullu testi) aynı düzeltmeyi ister.
 update public.listings
    set material = 'Hafriyat toprağı (kazı)'
- where owner_id is null and material in ('Hafriyat', 'Toprak');
+ where material in ('Hafriyat', 'Toprak');
 
 update public.listings
    set material = 'Çimento (dökme)'
- where owner_id is null and material = 'Cimento';
+ where material = 'Cimento';
 
 -- İlan 6: mıcır işi silobas değil hafriyat (damper) kategorisine geçer.
 update public.listings
