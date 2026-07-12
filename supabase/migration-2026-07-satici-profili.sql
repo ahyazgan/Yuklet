@@ -44,7 +44,7 @@ begin
       crypt('Demo1234!', gen_salt('bf')),
       now(),  -- e-posta onaylı sayılır → giriş yapılabilir
       '{"provider":"email","providers":["email"]}'::jsonb,
-      '{"name":"Akdağ Kırma Ocağı","role":"tedarikci"}'::jsonb,
+      '{"name":"Akdağ Madencilik","role":"tedarikci"}'::jsonb,
       now(), now()
     );
 
@@ -62,7 +62,7 @@ begin
   insert into public.profiles (id, email, name, role, phone, verified, rating,
                                tesis_turu, sehir, ilce, hakkinda, calisma_saatleri, malzemeler)
   values (
-    seller_id, 'satici@demo.yuklet.co', 'Akdağ Kırma Ocağı', 'tedarikci', '0532 000 00 00', true, 4.8,
+    seller_id, 'satici@demo.yuklet.co', 'Akdağ Madencilik', 'tedarikci', '0532 000 00 00', true, 4.8,
     'Kırma ocağı (taş/mıcır)', 'Kocaeli', 'Gebze',
     'Marmara bölgesinde 20 yıldır faaliyet gösteren kırma taş ocağı. Mıcır, çakıl ve agrega üretimi. Nakliyeli teslim mümkün, kapasite raporu ve TSE belgelerimiz mevcuttur.',
     'Hafta içi 07:30–18:30, Cmt 08:00–14:00',
@@ -83,9 +83,9 @@ begin
     (owner_id, owner_name, owner_verified, owner_rating, type, cat, title, il, ilce,
      material, amount, unit, stock, price_type, price, description, status, offers_count, created_text)
   values
-    (seller_id,'Akdağ Kırma Ocağı',true,4.8,'urun','hafriyat','Mıcır 2 no (12-22 mm) — ocak teslim / nakliyeli','Kocaeli','Gebze','Mıcır 2 no (12-22 mm)',500,'ton','bol','sabit',480,'Yıkanmış 12-22 mm mıcır. Ocak teslim fiyatıdır, nakliye platformdan ayarlanır. Büyük tonajda fiyat görüşülür.','aktif',4,'1 gün önce'),
-    (seller_id,'Akdağ Kırma Ocağı',true,4.8,'urun','hafriyat','Mıcır 1 no (5-12 mm) — beton agregası','Kocaeli','Gebze','Mıcır 1 no (5-12 mm)',300,'ton','orta','sabit',520,'Beton santralleri için elenmiş 5-12 mm mıcır. Sürekli alımda anlaşmalı fiyat.','aktif',2,'3 gün önce'),
-    (seller_id,'Akdağ Kırma Ocağı',true,4.8,'urun','hafriyat','Yıkanmış kum (0-4 mm)','Kocaeli','Gebze','Yıkanmış / elenmiş kum',200,'ton','az','teklif',null,'İnşaat ve sıva kumu. Stok sınırlı, fiyat için teklif verin.','aktif',1,'5 gün önce');
+    (seller_id,'Akdağ Madencilik',true,4.8,'urun','hafriyat','Mıcır 2 no (12-22 mm) — ocak teslim / nakliyeli','Kocaeli','Gebze','Mıcır 2 no (12-22 mm)',500,'ton','bol','sabit',480,'Yıkanmış 12-22 mm mıcır. Ocak teslim fiyatıdır, nakliye platformdan ayarlanır. Büyük tonajda fiyat görüşülür.','aktif',4,'1 gün önce'),
+    (seller_id,'Akdağ Madencilik',true,4.8,'urun','hafriyat','Mıcır 1 no (5-12 mm) — beton agregası','Kocaeli','Gebze','Mıcır 1 no (5-12 mm)',300,'ton','orta','sabit',520,'Beton santralleri için elenmiş 5-12 mm mıcır. Sürekli alımda anlaşmalı fiyat.','aktif',2,'3 gün önce'),
+    (seller_id,'Akdağ Madencilik',true,4.8,'urun','hafriyat','Yıkanmış kum (0-4 mm)','Kocaeli','Gebze','Yıkanmış / elenmiş kum',200,'ton','az','teklif',null,'İnşaat ve sıva kumu. Stok sınırlı, fiyat için teklif verin.','aktif',1,'5 gün önce');
 
   raise notice 'Demo satıcı hazır: % (satici@demo.yuklet.co / Demo1234!)', seller_id;
 end $$;

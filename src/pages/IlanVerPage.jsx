@@ -923,7 +923,7 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers
                 mağaza sürümünden kaldırıldı (Apple 2.1: çalışmayan/vaat eden UI).
                 Eklenecekse Mola'daki çoklu foto deseni kullanılabilir. */}
             <Field label="Ad / Firma *">
-              <input style={fieldBox} value={form.owner} onChange={(e) => set("owner", e.target.value)} placeholder="Örn: Yıldızlar İnşaat" />
+              <input style={fieldBox} value={form.owner} onChange={(e) => set("owner", e.target.value)} placeholder="Örn: Ertuğrul İnşaat" />
             </Field>
           </Block>
 

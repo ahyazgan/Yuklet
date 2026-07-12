@@ -858,7 +858,7 @@ export default function NakliyeHome({
     ],
   }[role];
 
-  const name = user?.name || (role === "nakliyeci" ? "Demir Nakliyat" : role === "tedarikci" ? "Aliağa Mıcır" : "Yıldızlar İnşaat");
+  const name = user?.name || (role === "nakliyeci" ? "Demiroğlu Nakliyat" : role === "tedarikci" ? "Akdağ Madencilik" : "Ertuğrul İnşaat");
   // Gerçek konum (profil) — yoksa gösterme (sabit placeholder yerine).
   const place = user
     ? [user.ilce, user.sehir || user.il].filter(Boolean).join(" · ").toLocaleUpperCase("tr-TR")

@@ -84,7 +84,7 @@ create trigger on_mola_reply_deleted
   after delete on public.mola_replies
   for each row execute function public.drop_thread_count();
 
--- ── Demo başlıklar + yorumlar (Demir Nakliyat) ──
+-- ── Demo başlıklar + yorumlar (Demiroğlu Nakliyat) ──
 do $$
 declare carrier_id uuid; t1 bigint; t2 bigint;
 begin
@@ -93,19 +93,19 @@ begin
     delete from public.mola_threads where owner_id = carrier_id;  -- replies cascade
 
     insert into public.mola_threads (owner_id, owner_name, owner_verified, title, body)
-    values (carrier_id, 'Demir Nakliyat', true, 'Mazot fiyatları bu hafta yine arttı, nasıl yönetiyorsunuz?',
+    values (carrier_id, 'Demiroğlu Nakliyat', true, 'Mazot fiyatları bu hafta yine arttı, nasıl yönetiyorsunuz?',
             'Sefer başı maliyet sürekli değişiyor. Fiyatı sabit mi tutuyorsunuz, yoksa yakıt zammına göre mi güncelliyorsunuz?')
     returning id into t1;
 
     insert into public.mola_threads (owner_id, owner_name, owner_verified, title, body)
-    values (carrier_id, 'Demir Nakliyat', true, 'Gebze OSB giriş çıkış saatleri hakkında bilgi',
+    values (carrier_id, 'Demiroğlu Nakliyat', true, 'Gebze OSB giriş çıkış saatleri hakkında bilgi',
             'OSB içine sabah kaçta giriş veriyorlar? Yoğunluk ne durumda, deneyimi olan paylaşsın.')
     returning id into t2;
 
     insert into public.mola_replies (thread_id, owner_id, owner_name, owner_verified, body)
     values
-      (t1, carrier_id, 'Demir Nakliyat', true, 'Ben artık tekliflerime yakıt endeksi ekliyorum, sabit fiyat vermiyorum.'),
-      (t2, carrier_id, 'Demir Nakliyat', true, 'Sabah 7-9 arası çok yoğun oluyor, 9 sonrası rahatlıyor.');
+      (t1, carrier_id, 'Demiroğlu Nakliyat', true, 'Ben artık tekliflerime yakıt endeksi ekliyorum, sabit fiyat vermiyorum.'),
+      (t2, carrier_id, 'Demiroğlu Nakliyat', true, 'Sabah 7-9 arası çok yoğun oluyor, 9 sonrası rahatlıyor.');
     -- last_reply_at/reply_count trigger ile otomatik güncellenir.
   end if;
 end $$;

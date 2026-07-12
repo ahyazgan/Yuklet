@@ -52,7 +52,7 @@ create policy mola_insert on public.mola_posts for insert with check (auth.uid()
 create policy mola_update on public.mola_posts for update using (auth.uid() = owner_id or public.is_admin());
 create policy mola_delete on public.mola_posts for delete using (auth.uid() = owner_id or public.is_admin());
 
--- ── Demo gönderiler (Demir Nakliyat — onaylı nakliyeci) ──
+-- ── Demo gönderiler (Demiroğlu Nakliyat — onaylı nakliyeci) ──
 do $$
 declare carrier_id uuid;
 begin
@@ -61,13 +61,13 @@ begin
     delete from public.mola_posts where owner_id = carrier_id;
     insert into public.mola_posts (owner_id, owner_name, owner_verified, category, title, body, price, il, phone)
     values
-      (carrier_id, 'Demir Nakliyat', true, 'dorse', 'Satılık 2.el silobas dorse (2018)',
+      (carrier_id, 'Demiroğlu Nakliyat', true, 'dorse', 'Satılık 2.el silobas dorse (2018)',
        '30 tonluk çimento silobas dorse. Bakımlı, belgeleri tam. Görüşülür.', 850000, 'Bursa', '0535 000 00 00'),
-      (carrier_id, 'Demir Nakliyat', true, 'eleman', 'Tecrübeli damper şoförü aranıyor',
+      (carrier_id, 'Demiroğlu Nakliyat', true, 'eleman', 'Tecrübeli damper şoförü aranıyor',
        'Marmara hattı düzenli sefer. SRC + psikoteknik şart. Maaş + prim.', null, 'Bursa', '0535 000 00 00'),
-      (carrier_id, 'Demir Nakliyat', true, 'ekipman', '385/65 R22.5 lastik (4 adet)',
+      (carrier_id, 'Demiroğlu Nakliyat', true, 'ekipman', '385/65 R22.5 lastik (4 adet)',
        'Az kullanılmış damper lastiği, %80 diş. Takım halinde.', 28000, 'Bursa', ''),
-      (carrier_id, 'Demir Nakliyat', true, 'duyuru', 'Gebze–İzmir hattı dönüş yükü arıyorum',
+      (carrier_id, 'Demiroğlu Nakliyat', true, 'duyuru', 'Gebze–İzmir hattı dönüş yükü arıyorum',
        'Cuma günleri İzmir''den Marmara''ya boş dönüyorum. Dönüş yükü olan yazsın.', null, 'İzmir', '');
   end if;
 end $$;

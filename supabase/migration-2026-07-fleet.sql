@@ -38,7 +38,7 @@ create policy fleet_delete on public.fleet for delete using (auth.uid() = owner_
 drop policy if exists fleet_admin_read on public.fleet;
 create policy fleet_admin_read on public.fleet for select using (public.is_admin());
 
--- ── Demo: Demir Nakliyat'a örnek araçlar (idempotent) ──
+-- ── Demo: Demiroğlu Nakliyat'a örnek araçlar (idempotent) ──
 do $$
 declare
   carrier_id uuid;

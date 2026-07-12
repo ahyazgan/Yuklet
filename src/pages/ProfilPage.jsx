@@ -457,7 +457,7 @@ export default function ProfilPage({ user, onUpdateProfile, onRequireAuth, onLog
 
           <div style={{ marginBottom: 14 }}>
             <label style={labelSt}>Ad / Firma</label>
-            <input style={inputSt} value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="Yıldızlar İnşaat" />
+            <input style={inputSt} value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="Ertuğrul İnşaat" />
           </div>
 
           {/* Firma logosu — ilanlarında ve profilinde görünür */}
