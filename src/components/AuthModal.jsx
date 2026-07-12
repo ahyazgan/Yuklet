@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Capacitor } from "@capacitor/core";
+import { loadKeepSession, saveKeepSession } from "../utils/storage";
 import Logo from "./Logo";
 
 // Apple girişi yalnız iOS'ta gösterilir: Android'de Apple provider yapılandırılmadan
@@ -66,6 +67,11 @@ export default function AuthModal({ onClose, onProvider, onEmailAuth, onReset })
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("");          // "" | "isveren" | "tedarikci" | "nakliyeci"
+  // "Oturumum açık kalsın" — varsayılan AÇIK; jeton kalıcı depoda tutulur,
+  // uygulama otomatik çıkış yapmaz. Anında kaydedilir ki Google/Apple
+  // yönlendirmesi öncesi de geçerli olsun.
+  const [keep, setKeep] = useState(() => loadKeepSession());
+  const toggleKeep = () => setKeep((v) => { saveKeepSession(!v); return !v; });
 
   const go = async (provider) => {
     setBusy(provider); setError(""); setInfo("");
@@ -235,11 +241,37 @@ export default function AuthModal({ onClose, onProvider, onEmailAuth, onReset })
                 style={{ border: FRAME, borderRadius: 6, color: C.ink, fontFamily: MONO }}
               />
             )}
-            {/* Şifremi unuttum? — sadece giriş modunda */}
-            {mode === "login" && (
-              <button type="button" onClick={goReset} disabled={Boolean(busy)} className="self-end text-[11px]" style={{ color: C.sub, textDecoration: "underline", background: "none", border: "none", cursor: "pointer", fontFamily: MONO }}>
-                Şifremi unuttum?
-              </button>
+            {/* Oturumum açık kalsın + Şifremi unuttum */}
+            {mode !== "reset" && (
+              <div className="flex items-center justify-between gap-2">
+                <button
+                  type="button"
+                  onClick={toggleKeep}
+                  disabled={Boolean(busy)}
+                  role="switch"
+                  aria-checked={keep}
+                  className="flex min-h-[40px] items-center gap-2"
+                  style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                >
+                  <span
+                    aria-hidden="true"
+                    className="flex items-center justify-center"
+                    style={{ width: 19, height: 19, flexShrink: 0, border: FRAME, borderRadius: 4, background: keep ? C.yellow : C.card }}
+                  >
+                    {keep && (
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.ink} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
+                    )}
+                  </span>
+                  <span className="text-[11px] font-bold" style={{ color: C.sub, fontFamily: MONO }}>
+                    Oturumum açık kalsın
+                  </span>
+                </button>
+                {mode === "login" && (
+                  <button type="button" onClick={goReset} disabled={Boolean(busy)} className="min-h-[40px] text-[11px]" style={{ color: C.sub, textDecoration: "underline", background: "none", border: "none", cursor: "pointer", fontFamily: MONO }}>
+                    Şifremi unuttum?
+                  </button>
+                )}
+              </div>
             )}
             <button
               type="submit"

@@ -15,6 +15,12 @@ function saveStr(key, val) {
 export const loadTheme = () => loadStr("hamted_theme", "light");
 export const saveTheme = (v) => saveStr("hamted_theme", v);
 
+// "Oturumum açık kalsın" (girişte seçilir, VARSAYILAN AÇIK).
+// Açık: oturum jetonu kalıcı depoda tutulur, uygulama kapansa da giriş sürer.
+// Kapalı: jeton yalnız sessionStorage'da — uygulama kapanınca oturum düşer.
+export const loadKeepSession = () => loadStr("hamted_keep_session", "1") !== "0";
+export const saveKeepSession = (v) => saveStr("hamted_keep_session", v ? "1" : "0");
+
 // Nakliye platformu
 export const loadListings = () => load("hamted_listings", []);
 export const saveListings = (v) => save("hamted_listings", v);
