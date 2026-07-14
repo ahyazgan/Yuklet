@@ -16,7 +16,7 @@ const SUB = "#5A5852";
 const ARCHIVO = { fontFamily: "'Archivo',sans-serif", fontWeight: 800, textTransform: "uppercase", letterSpacing: "-0.02em" };
 const FRAME = { border: `2px solid ${INK}`, borderRadius: 6 };
 
-export default function ReportModal({ targetLabel, onSubmit, onClose }) {
+export default function ReportModal({ targetLabel, onSubmit, onClose, doneTitle = "Bildirimin Alındı", doneText = "Ekibimiz en kısa sürede inceleyecek. Teşekkürler." }) {
   const [reason, setReason] = useState(REASONS[0]);
   const [desc, setDesc] = useState("");
   const [done, setDone] = useState(false);
@@ -47,8 +47,8 @@ export default function ReportModal({ targetLabel, onSubmit, onClose }) {
             >
               <Check size={28} strokeWidth={3} />
             </div>
-            <div style={{ ...ARCHIVO, fontSize: 18, color: INK }}>Bildirimin Alındı</div>
-            <p className="mt-2 text-sm" style={{ color: SUB }}>Ekibimiz en kısa sürede inceleyecek. Teşekkürler.</p>
+            <div style={{ ...ARCHIVO, fontSize: 18, color: INK }}>{doneTitle}</div>
+            <p className="mt-2 text-sm" style={{ color: SUB }}>{doneText}</p>
             <button
               onClick={onClose}
               className="mt-5 px-6 py-2.5"

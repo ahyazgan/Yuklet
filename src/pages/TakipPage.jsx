@@ -78,6 +78,7 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
   const [rateTags, setRateTags] = useState([]);
   const [showRate, setShowRate] = useState(false);
   const [showReport, setShowReport] = useState(false);
+  const [cancelDone, setCancelDone] = useState(false); // iptal başarı ekranı (rapor + otomatik iptal)
   const [payBusy, setPayBusy] = useState(false);
   const [payMsg, setPayMsg] = useState("");
   const [proofForm, setProofForm] = useState({ tonnage: "", ticketNo: "", note: "", photo: null, signature: null });
@@ -1299,15 +1300,22 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
       {showReport && (
         <ReportModal
           targetLabel={counterpart ? `${counterpart.role}: ${counterpart.name}` : `İlan: ${l.title}`}
-          onClose={() => setShowReport(false)}
+          doneTitle={cancelDone ? "İş İptal Edildi" : undefined}
+          doneText={cancelDone ? "Kabul edilen teklif iptal edildi, ilan yeniden yayına alındı. Bildirimin de kayda geçti." : undefined}
+          onClose={() => { setShowReport(false); setCancelDone(false); }}
           onSubmit={async (p) => {
             const res = await onReport?.({ type: counterpart ? "user" : "listing", targetId: counterpart?.id || l.id, listingId: l.id, fromId: user?.id || null, fromName: user?.name || "misafir", ...p });
             if (res && res.ok === false) return res;
             // "İşi iptal etmek istiyorum" seçildiyse iş OTOMATİK iptal edilir:
             // kabul edilen teklif 'iptal' olur, ilan yeniden 'aktif' (panoya döner).
-            if (p.reason === CANCEL_REASON && matched && !isDone) {
-              const c = await onCancelJob?.(l);
-              if (c && c.ok === false) return c;
+            // Sessiz atlama YOK — iptal edilemiyorsa nedeni modalda söylenir.
+            if (p.reason === CANCEL_REASON) {
+              if (isDone) return { ok: false, error: "Bu iş teslim edilmiş/kapanmış — artık iptal edilemez. Bildirimin yine de kaydedildi." };
+              if (!matched) return { ok: false, error: "Bu iş henüz eşleşmemiş — iptal gerekmez. Bildirimin kaydedildi." };
+              if (!onCancelJob) return { ok: false, error: "İptal şu an kullanılamıyor — uygulamayı yenileyip tekrar dene. Bildirimin kaydedildi." };
+              const c = await onCancelJob(l);
+              if (c && c.ok === false) return { ok: false, error: (c.error || "İş iptal edilemedi.") + " Bildirimin yine de kaydedildi." };
+              setCancelDone(true);
               toast("İş iptal edildi — ilan yeniden yayında", "success");
             }
             return res;
