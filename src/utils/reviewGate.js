@@ -16,9 +16,13 @@ function isJobDone(l) {
 }
 
 // İşin iki tarafını bul: ilan sahibi + kabul edilen teklifi veren nakliyeci.
+// Sahipsiz (owner_id null) demo/seed ilanda GERÇEK karşı taraf yok → null:
+// reviews tablosu gerçek profil ister (RLS + not null), yorum asla başarılamaz;
+// böyle bir iş "bekleyen değerlendirme" sayılsaydı kapı kullanıcıyı kilitlerdi
+// (String(null)="null" truthy olduğundan eskiden sayılıyordu).
 export function jobParties(listing, offers = []) {
   const accepted = offers.find((o) => String(o.listingId) === String(listing.id) && o.status === "kabul");
-  if (!accepted) return null;
+  if (!accepted || listing.ownerId == null || accepted.fromUserId == null) return null;
   return { ownerId: String(listing.ownerId), nakliyeciId: String(accepted.fromUserId), offer: accepted };
 }
 

@@ -369,7 +369,13 @@ function AppShell() {
     if ((profile || user)?.status === "banli") return { ok: false, error: "Hesabın askıya alındı." };
     if (SB) {
       try { await api.addReview(r); setReviews(await api.fetchReviews()); return { ok: true }; }
-      catch (e) { console.error(e); return { ok: false, error: e?.message || "Değerlendirme gönderilemedi." }; }
+      catch (e) {
+        console.error(e);
+        // RLS reddi ham İngilizce mesajla kullanıcıya sızmasın (örn. sahipsiz
+        // demo ilanda karşı taraf profili yok → policy ihlali).
+        const msg = String(e?.message || "");
+        return { ok: false, error: msg.includes("row-level security") ? "Bu iş için değerlendirme yapılamıyor." : (msg || "Değerlendirme gönderilemedi.") };
+      }
     }
     setReviews(prev => [r, ...prev]);
     return { ok: true };

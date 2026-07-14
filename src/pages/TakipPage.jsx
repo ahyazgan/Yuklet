@@ -195,7 +195,11 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
     ? (isOwner ? { id: accepted?.fromUserId, name: nakliyeci, role: "Nakliyeci" }
       : isNakliyeci ? { id: l.ownerId, name: l.owner, role: "İş sahibi" } : null)
     : null;
-  const myReview = counterpart && reviews.find(
+  // Değerlendirme yalnız GERÇEK hesaba yapılabilir — sahipsiz demo ilanda
+  // counterpart.id null olur; reviews RLS'i/şeması bunu zaten reddeder,
+  // kart hiç gösterilmez (kullanıcı "gönderilemedi" hatasıyla uğraşmasın).
+  const canRate = Boolean(counterpart && counterpart.id != null);
+  const myReview = canRate && reviews.find(
     (r) => String(r.fromId) === String(user.id) && String(r.toId) === String(counterpart.id) && String(r.listingId) === String(l.id)
   );
   const counterpartRating = counterpart ? getUserRating?.(counterpart.id) : null;
@@ -387,7 +391,7 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
   const toggleTag = (t) => setRateTags((prev) => prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]);
 
   const submitReview = async () => {
-    if (!counterpart || !rateVal) return;
+    if (!counterpart || counterpart.id == null || !rateVal) return;
     const tagSuffix = rateTags.length ? ` [${rateTags.join(", ")}]` : "";
     const res = await onAddReview?.({
       id: newId(), listingId: l.id, offerId: accepted?.id,
@@ -1144,8 +1148,8 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
           </button>
         )}
 
-        {/* DEĞERLENDİRME açma kartı (eşleşince) */}
-        {counterpart && (
+        {/* DEĞERLENDİRME açma kartı (eşleşince; yalnız gerçek karşı taraf) */}
+        {canRate && (
           myReview ? (
             <div style={{ ...whiteCard, display: "flex", alignItems: "center", gap: 10 }}>
               <Star size={20} color={C.yellow} fill={C.yellow} strokeWidth={2} style={{ flexShrink: 0 }} />
@@ -1220,7 +1224,7 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
       )}
 
       {/* ── DEĞERLENDİRME BOTTOM SHEET ── */}
-      {showRate && counterpart && (
+      {showRate && canRate && (
         <div
           onClick={() => setShowRate(false)}
           style={{ position: "fixed", inset: 0, zIndex: 60, background: "rgba(10,10,10,0.55)", display: "flex", alignItems: "flex-end", justifyContent: "center" }}
