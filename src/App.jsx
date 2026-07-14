@@ -281,6 +281,37 @@ function AppShell() {
     return { ok: true };
   };
 
+  // ── İş iptali ── taraflardan biri (ilan sahibi ya da kabul edilen sürücü)
+  // eşleşmiş işi iptal eder: kabul edilen teklif 'iptal', ilan yeniden 'aktif'
+  // (faz/sefer/kanıt sıfır) — iş panoya döner. SB'de atomik RPC (RLS altında
+  // sürücü teklifini/accepted_by_id'yi istemciden düzeltemez).
+  const cancelJob = async (listing) => {
+    const me = profile || user;
+    if (!me) return { ok: false, error: "Giriş gerekli." };
+    if (SB) {
+      try {
+        await api.cancelJobRpc(listing.id);
+        await Promise.all([reloadOffers(), reloadListings()]);
+        return { ok: true };
+      } catch (e) { console.error(e); return { ok: false, error: e?.message || "İş iptal edilemedi." }; }
+    }
+    // Yerel mod — RPC guard'larının birebir karşılığı.
+    const acc = offers.find(o => String(o.listingId) === String(listing.id) && o.status === "kabul");
+    const isParty = String(listing.ownerId) === String(me.id) || (acc && String(acc.fromUserId) === String(me.id));
+    if (!isParty) return { ok: false, error: "Bu işi yalnızca tarafları iptal edebilir." };
+    if (listing.status !== "eslesti") return { ok: false, error: "Yalnızca eşleşmiş iş iptal edilebilir." };
+    if (listing.phase === "teslim") return { ok: false, error: "Teslim edilmiş iş iptal edilemez." };
+    if (listing.paymentStatus === "bloke") return { ok: false, error: "Emanetteki ödeme çözülmeden iş iptal edilemez." };
+    const now = nowIso();
+    setOffers(prev => prev.map(o =>
+      String(o.listingId) === String(listing.id) && o.status === "kabul"
+        ? { ...o, status: "iptal", updatedAt: now } : o));
+    setUserListings(prev => prev.map(l => String(l.id) === String(listing.id)
+      ? { ...l, status: "aktif", phase: null, acceptedById: null, assignedVehicle: null, cycleStage: null, arrivedAt: null, tripsDone: 0, deliveryProof: null }
+      : l));
+    return { ok: true };
+  };
+
   // Mesajlar
   const [messages, setMessages] = useState(() => (SB ? [] : loadMessages()));
   useEffect(() => { if (!SB) saveMessages(messages); }, [messages, SB]);
@@ -934,7 +965,7 @@ function AppShell() {
                 <Route path="/filo" element={<PageTransition><FleetPage user={user} fleet={myFleet} onAddVehicle={addVehicle} onUpdateVehicle={updateVehicle} onRemoveVehicle={removeVehicle} onRequireAuth={requireAuth} /></PageTransition>} />
                 <Route path="/ilanlar" element={<PageTransition><ListingsPage listings={listings} user={user} fleet={myFleet} blockedIds={myBlocked} offers={offers} reviews={reviews} onRefresh={SB ? () => Promise.all([reloadListings(), reloadOffers()]) : undefined} /></PageTransition>} />
                 <Route path="/ilan/:id" element={<PageTransition><IlanDetayPage listings={listings} user={user} fleet={myFleet} onRequireAuth={requireAuth} onUpdateProfile={updateProfile} offers={offers} reviews={reviews} onAddOffer={addOffer} onAcceptJob={acceptJob} onReport={addReport} isBlocked={isBlocked} onToggleBlock={toggleBlock} /></PageTransition>} />
-                <Route path="/takip/:id" element={<PageTransition><TakipPage listings={listings} user={user} offers={offers} getContact={getContact} reviews={reviews} onAddReview={addReview} getUserRating={getUserRating} onUpdateListing={updateListing} onReport={addReport} onPayToEscrow={payToEscrow} onReleasePayment={releasePayment} onRefundPayment={refundPayment} onEarlyPayout={earlyPayoutNakliyeci} /></PageTransition>} />
+                <Route path="/takip/:id" element={<PageTransition><TakipPage listings={listings} user={user} offers={offers} getContact={getContact} reviews={reviews} onAddReview={addReview} getUserRating={getUserRating} onUpdateListing={updateListing} onReport={addReport} onCancelJob={cancelJob} onPayToEscrow={payToEscrow} onReleasePayment={releasePayment} onRefundPayment={refundPayment} onEarlyPayout={earlyPayoutNakliyeci} /></PageTransition>} />
                 <Route path="/sozlesme/:offerId" element={<PageTransition><SozlesmePage listings={listings} offers={offers} getContact={getContact} /></PageTransition>} />
                 {PAYMENTS_ENABLED && (
                 <Route path="/cuzdan" element={<PageTransition><CuzdanPage user={user} listings={listings} offers={offers} onRequireAuth={requireAuth} /></PageTransition>} />

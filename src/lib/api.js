@@ -474,6 +474,14 @@ export async function acceptJobRpc({ listingId, price, vehicle }) {
   return data ? rowToListing(data) : null;
 }
 
+// İş iptali — sunucu RPC'si (atomik; RLS altında sürücü teklifini/ilanı
+// istemciden düzeltemez). Kabul edilen teklif 'iptal' + ilan yeniden 'aktif'.
+export async function cancelJobRpc(listingId) {
+  const { data, error } = await supabase.rpc("cancel_job", { p_listing_id: listingId });
+  if (error) throw error;
+  return data ? rowToListing(data) : null;
+}
+
 // ── Messages ────────────────────────────────────────────────
 export async function fetchMessages() {
   const { data, error } = await supabase.from("messages").select("*").order("created_at", { ascending: true });

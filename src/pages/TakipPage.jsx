@@ -4,7 +4,7 @@ import { ChevronLeft, Check, MapPin, Phone, MessageSquare, FileCheck, Star, Shie
 import { LISTINGS } from "../data/listings";
 import { CATS } from "../data/categories";
 import { StarsDisplay } from "../components/Stars";
-import ReportModal from "../components/ReportModal";
+import ReportModal, { CANCEL_REASON } from "../components/ReportModal";
 import SEO from "../components/SEO";
 import { useToast } from "../components/Toast";
 import { splitAmount, payableAmount, fmtTL, PAYMENT_LABEL, earlyPayout, EARLY_PAY_FEE_RATE } from "../utils/payments";
@@ -69,7 +69,7 @@ const shell = {
   fontFamily: "'Plus Jakarta Sans', system-ui, -apple-system, sans-serif",
 };
 
-export default function TakipPage({ listings = LISTINGS, user, offers = [], getContact, reviews = [], onAddReview, getUserRating, onUpdateListing, onReport, onPayToEscrow, onReleasePayment, onRefundPayment, onEarlyPayout }) {
+export default function TakipPage({ listings = LISTINGS, user, offers = [], getContact, reviews = [], onAddReview, getUserRating, onUpdateListing, onReport, onCancelJob, onPayToEscrow, onReleasePayment, onRefundPayment, onEarlyPayout }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
@@ -1300,7 +1300,18 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
         <ReportModal
           targetLabel={counterpart ? `${counterpart.role}: ${counterpart.name}` : `İlan: ${l.title}`}
           onClose={() => setShowReport(false)}
-          onSubmit={(p) => onReport?.({ type: counterpart ? "user" : "listing", targetId: counterpart?.id || l.id, listingId: l.id, fromId: user?.id || null, fromName: user?.name || "misafir", ...p })}
+          onSubmit={async (p) => {
+            const res = await onReport?.({ type: counterpart ? "user" : "listing", targetId: counterpart?.id || l.id, listingId: l.id, fromId: user?.id || null, fromName: user?.name || "misafir", ...p });
+            if (res && res.ok === false) return res;
+            // "İşi iptal etmek istiyorum" seçildiyse iş OTOMATİK iptal edilir:
+            // kabul edilen teklif 'iptal' olur, ilan yeniden 'aktif' (panoya döner).
+            if (p.reason === CANCEL_REASON && matched && !isDone) {
+              const c = await onCancelJob?.(l);
+              if (c && c.ok === false) return c;
+              toast("İş iptal edildi — ilan yeniden yayında", "success");
+            }
+            return res;
+          }}
         />
       )}
     </div>
