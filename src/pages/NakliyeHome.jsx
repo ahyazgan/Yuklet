@@ -539,7 +539,7 @@ function NakliyeciBody({ nav, available, setAvailable, carrier }) {
             const from = (l.il || l.yukleme || "—").toUpperCase();
             const to = (l.varisIl || l.bosaltma || l.ilce || "—").toUpperCase();
             const isHafriyat = l.cat === "hafriyat";
-            const amount = l.amount ? `${l.amount}${(l.unit || "T").charAt(0).toUpperCase()}` : "";
+            const amount = l.amount ? `${l.amount} ${(l.unit || "ton").toLocaleUpperCase("tr-TR")}` : "";
             const price = l.priceType === "sabit" && l.price != null
               ? `${amount ? amount + " · " : ""}₺${Number(l.price).toLocaleString("tr-TR")}`
               : `${amount ? amount + " · " : ""}TEKLİF`;
@@ -685,7 +685,7 @@ function RecentListings({ nav, jobs = [] }) {
             const from = (l.il || l.yukleme || "—").toUpperCase();
             const to = (l.varisIl || l.bosaltma || l.ilce || "—").toUpperCase();
             const isHafriyat = l.cat === "hafriyat";
-            const amount = l.amount ? `${l.amount}${(l.unit || "T").charAt(0).toUpperCase()}` : "";
+            const amount = l.amount ? `${l.amount} ${(l.unit || "ton").toLocaleUpperCase("tr-TR")}` : "";
             const price = l.priceType === "sabit" && l.price != null
               ? `${amount ? amount + " · " : ""}₺${Number(l.price).toLocaleString("tr-TR")}`
               : `${amount ? amount + " · " : ""}TEKLİF`;
