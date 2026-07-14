@@ -448,10 +448,55 @@ function SchematicRoute() {
   );
 }
 
+/* ── Devam eden iş kartı (kabul edilen iş → sevkiyat takibi) ────────── */
+const PHASE_LABEL = { eslesti: "Eşleşti", yuklendi: "Yüklendi", yolda: "Yolda", teslim: "Teslim" };
+
+function CarrierActiveJobCard({ l, nav }) {
+  const code = "YKL-" + String(l.id).padStart(4, "0").slice(-4);
+  const from = (l.il || l.yukleme || "—").toUpperCase();
+  const to = (l.varisIl || l.bosaltma || l.ilce || "—").toUpperCase();
+  const ph = l.phase || "eslesti";
+  const onRoad = ph === "yuklendi" || ph === "yolda";
+  const amount = l.amount ? `${l.amount} ${(l.unit || "ton").toLocaleUpperCase("tr-TR")}` : "";
+  const pay = l.pay ?? l.price;
+  const price = pay != null ? `₺${Number(pay).toLocaleString("tr-TR")}` : "";
+  return (
+    <button
+      onClick={() => nav(`/takip/${l.id}`)}
+      className="relative flex w-full overflow-hidden text-left"
+      style={{ background: C.card, border: FRAME, borderRadius: 6, boxShadow: SHADOW_SM }}
+    >
+      {/* sol dikey şerit — devam eden iş imzası: hazard */}
+      <span className="flex-shrink-0" style={{ width: 8, backgroundImage: HAZARD }} />
+      <div className="flex-1 p-3">
+        <div className="mb-2 flex items-center justify-between">
+          <span className="text-[9.5px] font-bold uppercase" style={{ color: C.muted, fontFamily: MONO }}>{code}</span>
+          <StatusBadge bg={onRoad ? C.yellow : C.green} fg={onRoad ? C.ink : "#FFFFFF"}>{PHASE_LABEL[ph] || ph}</StatusBadge>
+        </div>
+        <div className="mb-1.5 text-[14px] font-extrabold uppercase leading-tight" style={{ color: C.ink, fontFamily: ARCH, letterSpacing: "-0.01em" }}>
+          {l.title}
+        </div>
+        <div className="mb-2.5 flex items-center gap-1.5 text-[10px] font-bold uppercase" style={{ color: C.sub, fontFamily: MONO }}>
+          {from}<ArrowRight size={12} strokeWidth={2.5} style={{ color: C.faint }} />{to}
+        </div>
+        <div className="flex items-center justify-between pt-2.5" style={{ borderTop: `1.5px solid ${C.stone}` }}>
+          <span className="text-[11px] font-bold" style={{ fontFamily: MONO, color: C.green }}>
+            {amount}{amount && price ? " · " : ""}{price}
+          </span>
+          <span className="flex items-center gap-1 text-[10px] font-extrabold uppercase" style={{ color: C.ink, fontFamily: ARCH }}>
+            <Truck size={13} strokeWidth={2.5} /> Sevkiyatı Aç <ChevronRight size={13} strokeWidth={2.5} />
+          </span>
+        </div>
+      </div>
+    </button>
+  );
+}
+
 /* ── NAKLİYECİ gövdesi ──────────────────────────────────────────────── */
 function NakliyeciBody({ nav, available, setAvailable, carrier }) {
   const backhaulCount = carrier?.backhaulCount || 0;
   const suitableJobs = carrier?.suitableJobs || [];
+  const activeJobs = carrier?.activeJobs || [];
   // Dönüş yükü kartı — gerçek veri (sabit "Bursa→İstanbul 412km" yerine).
   const originCity = (carrier?.backhaulCity || "").toLocaleUpperCase("tr-TR");
   const destCity = (carrier?.backhaulTo || "").toLocaleUpperCase("tr-TR");
@@ -482,6 +527,29 @@ function NakliyeciBody({ nav, available, setAvailable, carrier }) {
           />
         </button>
       </div>
+
+      {/* Devam eden işlerim — kabul edilen iş buradan sevkiyata gider */}
+      {activeJobs.length > 0 && (
+        <>
+          <SectionTitle right={<StatusBadge bg={C.green} fg="#FFFFFF">{activeJobs.length} Aktif</StatusBadge>}>
+            {activeJobs.length > 1 ? "Devam Eden İşlerim" : "Devam Eden İşim"}
+          </SectionTitle>
+          <div className="mb-6 flex flex-col gap-2.5">
+            {activeJobs.slice(0, 3).map((l) => (
+              <CarrierActiveJobCard key={l.id} l={l} nav={nav} />
+            ))}
+            {activeJobs.length > 3 && (
+              <button
+                onClick={() => nav("/sevkiyat")}
+                className="flex w-full items-center justify-center gap-1 py-2 text-[10px] font-bold uppercase"
+                style={{ color: C.ink, fontFamily: MONO, textDecoration: "underline" }}
+              >
+                Tüm sevkiyatlar ({activeJobs.length}) <ChevronRight size={13} strokeWidth={2.5} />
+              </button>
+            )}
+          </div>
+        </>
+      )}
 
       {/* Dönüş yükü — koyu map kartı */}
       <SectionTitle right={backhaulCount > 0 ? <StatusBadge bg={C.green} fg="#FFFFFF">{backhaulCount} Eşleşme</StatusBadge> : null}>Dönüş Yükü</SectionTitle>
@@ -846,11 +914,20 @@ export default function NakliyeHome({
 
   // ── Nakliyeci için gerçek veri türetimleri ──
   const carrier = useMemo(() => {
-    if (!user) return { suitableJobs: [], openOffers: 0, won: 0, backhaulCount: 0 };
+    if (!user) return { suitableJobs: [], activeJobs: [], openOffers: 0, won: 0, backhaulCount: 0 };
     // Verdiğim teklifler (açık + kazanılan).
     const myOffers = offers.filter((o) => String(o.fromUserId) === String(user.id));
     const openOffers = myOffers.filter((o) => o.status === "beklemede").length;
     const won = myOffers.filter((o) => o.status === "kabul").length;
+    // Devam eden işlerim: kabul edilmiş (kazandığım) ve henüz teslim/kapanmamış
+    // işler — DispatchPage ile aynı tanım (status kapali / phase teslim = bitti).
+    // pay: anlaşılan bedel (teklifle kazanıldıysa teklif fiyatı, yoksa ilan fiyatı).
+    const acceptedByListing = new Map(
+      myOffers.filter((o) => o.status === "kabul").map((o) => [String(o.listingId), o])
+    );
+    const activeJobs = listings
+      .filter((l) => acceptedByListing.has(String(l.id)) && l.status !== "kapali" && l.phase !== "teslim")
+      .map((l) => ({ ...l, pay: acceptedByListing.get(String(l.id))?.price ?? l.price }));
     // Sana uygun işler: açık iş ilanları (başkalarının), en yeni 2.
     const suitableJobs = listings
       .filter((l) => l.type === "is" && l.status === "aktif" && String(l.ownerId) !== String(user.id))
@@ -866,7 +943,7 @@ export default function NakliyeHome({
       city && backhaulTo && IL_COORDS[city] && IL_COORDS[backhaulTo]
         ? haversineKm(IL_COORDS[city], IL_COORDS[backhaulTo])
         : null;
-    return { suitableJobs, openOffers, won, backhaulCount, backhaulCity: city, backhaulTo, backhaulKm };
+    return { suitableJobs, activeJobs, openOffers, won, backhaulCount, backhaulCity: city, backhaulTo, backhaulKm };
   }, [user, listings, offers]);
 
   // istatistik şeridi (rol başına 3 kutu) — alıcı gerçek veriye bağlı.
