@@ -1182,12 +1182,12 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
           </div>
         )}
 
-        {/* Şikayet / anlaşmazlık */}
+        {/* Anlaşmazlık ve iptal — aynı şikayet akışını açar */}
         <button
           onClick={() => setShowReport(true)}
-          style={{ alignSelf: "center", background: "transparent", border: "none", fontFamily: MONO, fontSize: 11, fontWeight: 700, color: C.muted, cursor: "pointer", letterSpacing: "0.04em", padding: "4px 0", display: "inline-flex", alignItems: "center", gap: 5 }}
+          style={{ alignSelf: "center", background: "transparent", border: "none", fontFamily: MONO, fontSize: 11, fontWeight: 700, color: C.rose, cursor: "pointer", letterSpacing: "0.04em", padding: "4px 0", display: "inline-flex", alignItems: "center", gap: 5 }}
         >
-          <AlertTriangle size={12} /> SORUN BİLDİR / ANLAŞMAZLIK
+          <AlertTriangle size={12} /> ANLAŞMAZLIK VE İPTAL
         </button>
       </div>
 

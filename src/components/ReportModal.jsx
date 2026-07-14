@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Check, ChevronDown } from "lucide-react";
 
 // ── SAHA report modal. Sharp 2px ink frame, Archivo uppercase, Space Mono sub.
-const REASONS = ["Yanıltıcı / sahte ilan", "Dolandırıcılık şüphesi", "Uygunsuz içerik", "Ödeme / anlaşma sorunu", "İletişim kurulamıyor", "Diğer"];
+const REASONS = ["Yanıltıcı / sahte ilan", "Dolandırıcılık şüphesi", "Uygunsuz içerik", "Ödeme / anlaşma sorunu", "İşi iptal etmek istiyorum", "İletişim kurulamıyor", "Diğer"];
 
 const INK = "#0A0A0A";
 const YELLOW = "#FACC15";
