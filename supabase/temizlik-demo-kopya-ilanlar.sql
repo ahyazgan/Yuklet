@@ -30,11 +30,13 @@ update public.listings set price = 42000
 
 -- 3) Demiroğlu (Bursa) araç ilanı "Anadolu yakası" diyordu — Murat Kayhan'ın
 --    ilanıyla birebir aynı başlıktı. Bursa'ya taşı, başlığı ayrıştır.
+--    NOT: birebir title eşleşmesi canlıda tutmadı (tire/karakter farkı) —
+--    joker eşleşme kullanılır; güncellenince desen artık tutmaz (idempotent).
 update public.listings set
     title = 'Damperli kamyon boşta — Bursa / Güney Marmara',
     il = 'Bursa', ilce = 'Nilüfer',
     description = 'Bursa ve Güney Marmara hattında hafriyat/moloz işleri için boş aracım var. Sefer veya günlük çalışırım.'
- where title = 'Damperli kamyon boşta — Anadolu yakası'
+ where title ilike 'Damperli kamyon%Anadolu yakas%'
    and owner_id in (select id from auth.users where email = 'nakliyeci@demo.yuklet.co');
 
 -- Kontrol: başlık bazında tekrar kalmamalı (her başlık 1 satır beklenir)
