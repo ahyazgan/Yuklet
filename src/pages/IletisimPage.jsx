@@ -103,7 +103,12 @@ export default function IletisimPage() {
               </div>
               <div style={{ minWidth: 0 }}>
                 <div style={{ fontFamily: MONO, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em", color: C.muted }}>{title}</div>
-                <div style={{ marginTop: 2, fontFamily: ARCHIVO, fontSize: 14, fontWeight: 800, letterSpacing: "-0.01em", color: C.ink }}>{value}</div>
+                {/* E-posta adresi tıklanınca mail uygulaması açılsın (mailto) */}
+                {String(value).includes("@") ? (
+                  <a href={`mailto:${value}`} style={{ display: "inline-block", marginTop: 2, fontFamily: ARCHIVO, fontSize: 14, fontWeight: 800, letterSpacing: "-0.01em", color: C.ink, textDecoration: "underline", textUnderlineOffset: 3 }}>{value}</a>
+                ) : (
+                  <div style={{ marginTop: 2, fontFamily: ARCHIVO, fontSize: 14, fontWeight: 800, letterSpacing: "-0.01em", color: C.ink }}>{value}</div>
+                )}
                 <div style={{ marginTop: 2, fontFamily: BODY, fontSize: 11.5, color: C.sub }}>{sub}</div>
               </div>
             </div>

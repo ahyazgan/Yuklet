@@ -52,8 +52,17 @@ Sıra önemli — üstten aşağı ilerle.
 
 ## 5. Destek kanalı
 
-- [ ] **info@ / kvkk@yuklet.co mail ALAMIYOR (MX yok).** ImprovMX (veya benzeri)
-  kur; mağaza formlarına destek e-postası yazmadan önce şart.
+- [ ] **info@ / kvkk@yuklet.co mail ALAMIYOR (MX yok — 2026-07-14 doğrulandı;
+  DNS Vercel'de: ns1/ns2.vercel-dns.com).** Kurulum (~3 dk):
+  1. improvmx.com → ücretsiz hesap → domain `yuklet.co` ekle →
+     alias'lar: `info` → kendi e-postan, `kvkk` → kendi e-postan
+     (veya `*` catch-all).
+  2. Vercel dashboard → Domains → yuklet.co → DNS Records → ekle:
+     - `MX` @ → `mx1.improvmx.com` (priority 10)
+     - `MX` @ → `mx2.improvmx.com` (priority 20)
+     - `TXT` @ → `v=spf1 include:spf.improvmx.com ~all`
+     (kök TXT şu an boş — Resend alt alan adında, çakışma yok.)
+  3. ImprovMX panelinde yeşil onayı bekle, info@yuklet.co'ya test maili at.
 
 ## 6. Bilinen ertelenmiş kalemler (yayını engellemez)
 
