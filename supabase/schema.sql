@@ -62,7 +62,7 @@ create table if not exists public.listings (
   recurring_text  text default '',
   vehicle         text,
   capacity        text,
-  price_type      text not null default 'teklif', -- teklif | sabit
+  price_type      text not null default 'sabit', -- sabit (doğrudan kabul modeli; 'teklif' kaldırıldı)
   price           numeric,
   description     text default '',
   status          text not null default 'aktif',  -- aktif | kapali | eslesti
@@ -763,12 +763,12 @@ insert into public.listings
    material, amount, unit, date_text, recurring, recurring_text, vehicle, capacity,
    price_type, price, description, status, offers_count, created_text)
 select * from (values
-  ('Ertuğrul İnşaat', true, 4.7::numeric, 'is','hafriyat','Dudullu şantiye hafriyat taşıma','İstanbul','Ümraniye','Dudullu OSB, blok C inşaatı','Samandıra döküm sahası','Hafriyat toprağı (kazı)',1200::numeric,'ton','8-12 Haziran',true,'5 gün, günde ~20 sefer',null::text,null::text,'teklif',null::numeric,'Bina kazısından çıkan hafriyat. Yükleme makinesi sahada mevcut. Taşıma mesafesi ~14 km.','aktif',0,'2 saat önce'),
+  ('Ertuğrul İnşaat', true, 4.7::numeric, 'is','hafriyat','Dudullu şantiye hafriyat taşıma','İstanbul','Ümraniye','Dudullu OSB, blok C inşaatı','Samandıra döküm sahası','Hafriyat toprağı (kazı)',1200::numeric,'ton','8-12 Haziran',true,'5 gün, günde ~20 sefer',null::text,null::text,'sabit',42000::numeric,'Bina kazısından çıkan hafriyat. Yükleme makinesi sahada mevcut. Taşıma mesafesi ~14 km.','aktif',0,'2 saat önce'),
   ('Körfez Yapı', true, 4.5, 'is','silobas','Çimento terminalinden şantiyeye dökme çimento','Kocaeli','Gebze','Gebze çimento terminali','Çayırova konut projesi','Çimento (dökme)',28,'ton','3 Haziran (acil)',false,'',null,null,'sabit',4500,'Tek sefer dökme çimento taşıma. Silobas zorunlu. Boşaltma sahasında silo var.','aktif',0,'5 saat önce'),
-  ('Murat Kayhan', false, 4.9, 'arac','hafriyat','Damperli kamyon boşta — Anadolu yakası','İstanbul','Pendik','','','',18,'ton','Bugün-yarın müsait',false,'','Damperli kamyon','18 ton','teklif',null,'Anadolu yakası hafriyat/moloz işleri için boş aracım var. Sefer veya günlük çalışırım.','aktif',0,'1 saat önce'),
-  ('Demiroğlu Nakliyat', true, 4.8, 'arac','silobas','Silobas (çimento) — Marmara bölgesi','Bursa','Nilüfer','','','',30,'ton','5 Haziran sonrası',true,'Haftalık düzenli iş alabilir','Silobas (çimento)','30 ton','teklif',null,'Marmara geneli dökme çimento taşırım. Belgelerim tam, düzenli iş tercihim.','aktif',0,'dün'),
-  ('Başkent Altyapı İnşaat', true, 4.6, 'is','hafriyat','Yol genişletme — kazı fazlası taşıma','Ankara','Etimesgut','Eryaman yol çalışması','Belediye döküm alanı','Hafriyat toprağı (kazı)',800,'m³','10-15 Haziran',true,'Yaklaşık 1 hafta',null,null,'teklif',null,'Yol genişletmeden çıkan toprak. Birden fazla araca ihtiyaç var.','aktif',0,'3 saat önce'),
-  ('Batı Ege Lojistik', true, 4.4, 'is','hafriyat','Limandan fabrikaya mıcır taşıma','İzmir','Aliağa','Aliağa limanı','Kemalpaşa sanayi','Mıcır 2 no (12-22 mm)',120,'ton','7-9 Haziran',false,'',null,null,'teklif',null,'Limandan boşaltılan mıcır, fabrikaya taşınacak. Damperli kamyon uygun.','aktif',0,'6 saat önce')
+  ('Murat Kayhan', false, 4.9, 'arac','hafriyat','Damperli kamyon boşta — Anadolu yakası','İstanbul','Pendik','','','',18,'ton','Bugün-yarın müsait',false,'','Damperli kamyon','18 ton','sabit',6500,'Anadolu yakası hafriyat/moloz işleri için boş aracım var. Sefer veya günlük çalışırım.','aktif',0,'1 saat önce'),
+  ('Demiroğlu Nakliyat', true, 4.8, 'arac','silobas','Silobas (çimento) — Marmara bölgesi','Bursa','Nilüfer','','','',30,'ton','5 Haziran sonrası',true,'Haftalık düzenli iş alabilir','Silobas (çimento)','30 ton','sabit',8500,'Marmara geneli dökme çimento taşırım. Belgelerim tam, düzenli iş tercihim.','aktif',0,'dün'),
+  ('Başkent Altyapı İnşaat', true, 4.6, 'is','hafriyat','Yol genişletme — kazı fazlası taşıma','Ankara','Etimesgut','Eryaman yol çalışması','Belediye döküm alanı','Hafriyat toprağı (kazı)',800,'m³','10-15 Haziran',true,'Yaklaşık 1 hafta',null,null,'sabit',55000,'Yol genişletmeden çıkan toprak. Birden fazla araca ihtiyaç var.','aktif',0,'3 saat önce'),
+  ('Batı Ege Lojistik', true, 4.4, 'is','hafriyat','Limandan fabrikaya mıcır taşıma','İzmir','Aliağa','Aliağa limanı','Kemalpaşa sanayi','Mıcır 2 no (12-22 mm)',120,'ton','7-9 Haziran',false,'',null,null,'sabit',9000,'Limandan boşaltılan mıcır, fabrikaya taşınacak. Damperli kamyon uygun.','aktif',0,'6 saat önce')
 ) as v
 where not exists (select 1 from public.listings where owner_id is null);
 

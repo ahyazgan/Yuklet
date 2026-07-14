@@ -96,7 +96,7 @@ KVKK basvurulari: kvkk@yuklet.co`
 - **Platform:** yuklet.co web sitesi ve mobil uygulamasi
 - **Kullanici:** Platformu kullanan gercek veya tuzel kisi
 - **Is Sahibi:** Tasinacak yuk icin is ilani veren taraf (alici, firma, kisi)
-- **Nakliyeci:** Arac ilani veren veya ise teklif veren tasiyici taraf
+- **Nakliyeci:** Arac ilani veren veya isi ilandaki fiyattan kabul eden tasiyici taraf
 
 ## 2. Platformun Niteligi
 

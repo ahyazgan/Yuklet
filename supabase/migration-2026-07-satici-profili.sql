@@ -85,7 +85,7 @@ begin
   values
     (seller_id,'Akdağ Madencilik',true,4.8,'urun','hafriyat','Mıcır 2 no (12-22 mm) — ocak teslim / nakliyeli','Kocaeli','Gebze','Mıcır 2 no (12-22 mm)',500,'ton','bol','sabit',480,'Yıkanmış 12-22 mm mıcır. Ocak teslim fiyatıdır, nakliye platformdan ayarlanır. Büyük tonajda fiyat görüşülür.','aktif',4,'1 gün önce'),
     (seller_id,'Akdağ Madencilik',true,4.8,'urun','hafriyat','Mıcır 1 no (5-12 mm) — beton agregası','Kocaeli','Gebze','Mıcır 1 no (5-12 mm)',300,'ton','orta','sabit',520,'Beton santralleri için elenmiş 5-12 mm mıcır. Sürekli alımda anlaşmalı fiyat.','aktif',2,'3 gün önce'),
-    (seller_id,'Akdağ Madencilik',true,4.8,'urun','hafriyat','Yıkanmış kum (0-4 mm)','Kocaeli','Gebze','Yıkanmış / elenmiş kum',200,'ton','az','teklif',null,'İnşaat ve sıva kumu. Stok sınırlı, fiyat için teklif verin.','aktif',1,'5 gün önce');
+    (seller_id,'Akdağ Madencilik',true,4.8,'urun','hafriyat','Yıkanmış kum (0-4 mm)','Kocaeli','Gebze','Yıkanmış / elenmiş kum',200,'ton','az','sabit',430,'İnşaat ve sıva kumu. Stok sınırlı; ton başı sabit fiyat.','aktif',1,'5 gün önce');
 
   raise notice 'Demo satıcı hazır: % (satici@demo.yuklet.co / Demo1234!)', seller_id;
 end $$;

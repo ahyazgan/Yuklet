@@ -463,7 +463,7 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers
           </div>
           <div>
             <h1 style={{ margin: 0, fontFamily: ARCH, fontSize: 24, fontWeight: 900, letterSpacing: "-0.02em", textTransform: "uppercase" }}>İlanın yayında!</h1>
-            <p style={{ margin: "8px 0 0", fontSize: 14, color: C.sub }}>{isUrun ? "Alıcılar artık ürününü görebilir ve iletişime geçebilir." : (published?.priceType === "sabit" ? (published?.type === "arac" ? "Alıcılar aracını sabit fiyattan doğrudan kiralayabilir." : "Nakliyeciler işini sabit fiyattan doğrudan kabul edebilir.") : "Nakliyeci ve iş sahipleri artık ilanına teklif verebilir.")}</p>
+            <p style={{ margin: "8px 0 0", fontSize: 14, color: C.sub }}>{isUrun ? "Alıcılar artık ürününü görebilir ve iletişime geçebilir." : published?.type === "arac" ? "Alıcılar aracını sabit fiyattan doğrudan kiralayabilir." : "Nakliyeciler işini sabit fiyattan doğrudan kabul edebilir."}</p>
           </div>
 
           {/* summary card — dark header block + hazard stripe */}

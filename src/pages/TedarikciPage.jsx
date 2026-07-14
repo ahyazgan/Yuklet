@@ -35,7 +35,7 @@ const HERO_TITLE = ["Ocağını dijitale", "taşı, talep topla"];
 const HOW = [
   { n: "01", t: "Satıcı hesabı aç", d: "Ocak / tesisini tanımla, belgeleri yükle, doğrulanmış rozet al." },
   { n: "02", t: "Ürün & fiyat gir", d: "Neyi, hangi fiyattan, ne stokla sattığını belirt. Nakliyeli veya teslim." },
-  { n: "03", t: "Siparişleri yönet", d: "Alıcılar teklif verir, doğrudan sipariş açar; akışı panelden yönet." },
+  { n: "03", t: "Siparişleri yönet", d: "Alıcılar net fiyattan doğrudan sipariş açar; akışı panelden yönet." },
 ];
 
 const BENEFITS = [

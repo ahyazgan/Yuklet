@@ -596,8 +596,7 @@ export default function ListingsPage({ listings = LISTINGS, user, fleet = [], on
         (max == null || (l.price != null && l.price <= max)) &&
         matchesQ(l)
     );
-    if (sort === "teklif") out = [...out].sort((a, b) => (b.offers || 0) - (a.offers || 0));
-    else if (sort === "ucuz") out = [...out].sort((a, b) => (a.price ?? Infinity) - (b.price ?? Infinity));
+    if (sort === "ucuz") out = [...out].sort((a, b) => (a.price ?? Infinity) - (b.price ?? Infinity));
     else if (sort === "pahali") out = [...out].sort((a, b) => (b.price ?? -1) - (a.price ?? -1));
     else if (sort === "onayli") out = [...out].sort((a, b) => (b.ownerVerified ? 1 : 0) - (a.ownerVerified ? 1 : 0));
     // Sponsorlu (öne çıkan) ilanlar her zaman üstte (mevcut sıra korunur)
@@ -1412,7 +1411,6 @@ export default function ListingsPage({ listings = LISTINGS, user, fleet = [], on
                 <div className="flex flex-wrap gap-1.5">
                   {[
                     ["yeni", "YENİ"],
-                    ["teklif", "EN ÇOK TEKLİF"],
                     ["ucuz", "FİYAT ↑"],
                     ["pahali", "FİYAT ↓"],
                     ["onayli", "ONAYLI ÖNCE"],

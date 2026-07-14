@@ -67,7 +67,7 @@ export default function PhoneVerifyModal({ initialPhone = "", reason, onVerified
               <Check size={28} strokeWidth={3} />
             </div>
             <div style={{ ...ARCHIVO, fontSize: 18, color: INK }}>Numara Doğrulandı</div>
-            <p className="mt-2 text-sm" style={{ color: SUB }}>Artık ilan açabilir ve teklif verebilirsin.</p>
+            <p className="mt-2 text-sm" style={{ color: SUB }}>Artık ilan açabilir ve iş kabul edebilirsin.</p>
             <button onClick={onClose} className="mt-5 px-6 py-2.5" style={{ ...ARCHIVO, fontSize: 13, background: INK, color: YELLOW, ...FRAME }}>
               Devam et
             </button>
