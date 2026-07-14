@@ -39,6 +39,19 @@ update public.listings set
  where title ilike 'Damperli kamyon%Anadolu yakas%'
    and owner_id in (select id from auth.users where email = 'nakliyeci@demo.yuklet.co');
 
+-- 4) Yüksek demo fiyatları makul banda çek (₺42.000 / ₺55.000 demo panoda
+--    korkutucu duruyordu). Tonaj da fiyatla uyumlu küçültülür ki ton başı
+--    birim mantıklı kalsın (~₺60-65/ton hafriyat). price koşulu idempotentlik
+--    sağlar: bir kez indirildikten sonra tekrar eşleşmez.
+update public.listings set price = 12500, amount = 200, unit = 'ton'
+ where price = 42000
+   and title ilike 'Dudullu%hafriyat%'
+   and owner_id in (select id from auth.users where email = 'alici@demo.yuklet.co');
+
+update public.listings set price = 9750, amount = 150, recurring_text = '2-3 gün'
+ where owner_id is null and price = 55000
+   and title ilike 'Yol genişletme%';
+
 -- Kontrol: başlık bazında tekrar kalmamalı (her başlık 1 satır beklenir)
 select title, count(*) as adet, array_agg(owner_name) as sahipler
   from public.listings
