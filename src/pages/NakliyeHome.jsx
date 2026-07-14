@@ -5,10 +5,9 @@
 //
 // Prop sözleşmesi DEĞİŞMEDİ: NakliyeHome({ user, pendingOffersCount, unreadCount, onLoginClick }).
 
-import { useState } from "react";
+import { useState, useMemo, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { useMemo } from "react";
 import {
   Bell, Search, MapPin, RefreshCw, Truck, Package,
   ArrowRight, MessageCircle, ChevronRight, Activity, TrendingUp, Plus,
@@ -20,6 +19,20 @@ import { loadListings, loadOffers } from "../utils/storage";
 import { marketPulse, haversineKm } from "../utils/priceEstimate";
 import { loadsNearCity } from "../utils/backhaul";
 import { IL_COORDS } from "../data/ilCoords";
+
+// Gerçek harita (Leaflet) ayrı chunk — ana sayfa ilk yüklemesini şişirmesin.
+const BackhaulMap = lazy(() => import("../components/BackhaulMap"));
+
+// İl adı → koordinat (büyük/küçük harf ve Türkçe karakter toleranslı).
+const TR_FOLD = { "İ": "i", "I": "i", "ı": "i", "Ş": "s", "ş": "s", "Ğ": "g", "ğ": "g", "Ç": "c", "ç": "c", "Ö": "o", "ö": "o", "Ü": "u", "ü": "u" };
+const foldIl = (s = "") => String(s).split("").map((c) => TR_FOLD[c] || c).join("").toLowerCase().trim();
+function resolveIlCoord(name) {
+  if (!name) return null;
+  if (IL_COORDS[name]) return IL_COORDS[name];
+  const f = foldIl(name);
+  const key = Object.keys(IL_COORDS).find((k) => foldIl(k) === f);
+  return key ? IL_COORDS[key] : null;
+}
 
 /* ── SAHA paleti (kesin değerler — _DESIGN_SYSTEM.md) ────────────────── */
 const C = {
@@ -411,6 +424,30 @@ function EmptyActiveJob({ nav, user }) {
   );
 }
 
+/* ── Şematik güzergah (gerçek harita yüklenene / koordinat yoksa yedek) ── */
+function SchematicRoute() {
+  return (
+    <>
+      {/* ızgara zemin — radar hissi */}
+      <div
+        className="absolute inset-0"
+        style={{
+          backgroundImage: "linear-gradient(#2c2c2c 1px,transparent 1px),linear-gradient(90deg,#2c2c2c 1px,transparent 1px)",
+          backgroundSize: "26px 26px", opacity: 0.55,
+        }}
+      />
+      <svg viewBox="0 0 392 150" className="absolute inset-0 h-full w-full" preserveAspectRatio="none">
+        <path d="M44 118 C 130 118, 160 55, 240 62 S 340 48, 356 36" stroke={C.yellow} strokeWidth="3" fill="none" strokeDasharray="1 9" strokeLinecap="round" />
+        <circle cx="240" cy="62" r="4" fill={C.yellow} opacity="0.65" />
+        {/* başlangıç: senin ilin (dolu nokta) */}
+        <circle cx="44" cy="118" r="8" fill={C.yellow} stroke="#141414" strokeWidth="2" />
+        {/* hedef: yük ili (halka) */}
+        <circle cx="356" cy="36" r="7" fill="#141414" stroke={C.yellow} strokeWidth="3" />
+      </svg>
+    </>
+  );
+}
+
 /* ── NAKLİYECİ gövdesi ──────────────────────────────────────────────── */
 function NakliyeciBody({ nav, available, setAvailable, carrier }) {
   const backhaulCount = carrier?.backhaulCount || 0;
@@ -419,6 +456,9 @@ function NakliyeciBody({ nav, available, setAvailable, carrier }) {
   const originCity = (carrier?.backhaulCity || "").toLocaleUpperCase("tr-TR");
   const destCity = (carrier?.backhaulTo || "").toLocaleUpperCase("tr-TR");
   const backhaulKm = carrier?.backhaulKm || null;
+  // Gerçek harita için koordinatlar (il adı eşleşmezse şematik görünüm kalır).
+  const originCoord = resolveIlCoord(carrier?.backhaulCity);
+  const destCoord = resolveIlCoord(carrier?.backhaulTo);
   return (
     <>
       {/* müsaitlik anahtarı */}
@@ -445,31 +485,22 @@ function NakliyeciBody({ nav, available, setAvailable, carrier }) {
 
       {/* Dönüş yükü — koyu map kartı */}
       <SectionTitle right={backhaulCount > 0 ? <StatusBadge bg={C.green} fg="#FFFFFF">{backhaulCount} Eşleşme</StatusBadge> : null}>Dönüş Yükü</SectionTitle>
-      <div className="relative mb-6 overflow-hidden" style={{ border: FRAME, borderRadius: 6, boxShadow: SHADOW }}>
-        <div className="relative h-[120px] overflow-hidden" style={{ background: "#141414" }}>
-          {/* ızgara zemin — radar hissi */}
-          <div
-            className="absolute inset-0"
-            style={{
-              backgroundImage: "linear-gradient(#2c2c2c 1px,transparent 1px),linear-gradient(90deg,#2c2c2c 1px,transparent 1px)",
-              backgroundSize: "26px 26px", opacity: 0.55,
-            }}
-          />
-          {/* şematik güzergah — canlı harita değil, güzergah önizlemesi */}
-          <svg viewBox="0 0 392 120" className="absolute inset-0 h-full w-full">
-            <path d="M44 92 C 130 92, 160 40, 240 46 S 340 36, 356 26" stroke={C.yellow} strokeWidth="3" fill="none" strokeDasharray="1 9" strokeLinecap="round" />
-            <circle cx="240" cy="46" r="4" fill={C.yellow} opacity="0.65" />
-            {/* başlangıç: senin ilin (dolu nokta) */}
-            <circle cx="44" cy="92" r="8" fill={C.yellow} stroke="#141414" strokeWidth="2" />
-            {/* hedef: yük ili (halka) */}
-            <circle cx="356" cy="26" r="7" fill="#141414" stroke={C.yellow} strokeWidth="3" />
-          </svg>
+      <div className="relative mb-6 overflow-hidden" style={{ border: FRAME, borderRadius: 6, boxShadow: SHADOW, zIndex: 0, isolation: "isolate" }}>
+        <div className="relative h-[150px] overflow-hidden" style={{ background: "#141414" }}>
+          {/* gerçek harita — koordinat çözülemezse şematik güzergah yedeği */}
+          {originCoord ? (
+            <Suspense fallback={<SchematicRoute />}>
+              <BackhaulMap origin={originCoord} dest={destCoord} />
+            </Suspense>
+          ) : (
+            <SchematicRoute />
+          )}
 
           {/* başlangıç ili chip'i — gerçek merkez ilin */}
           {originCity && (
             <span
-              className="absolute bottom-2.5 left-6 flex items-center gap-1.5 px-2 py-[3px] text-[9px] font-bold uppercase"
-              style={{ fontFamily: MONO, color: "#fff", background: "rgba(0,0,0,.6)", border: `1.5px solid ${C.yellow}`, borderRadius: 4, letterSpacing: "0.04em" }}
+              className="pointer-events-none absolute bottom-2.5 left-6 flex items-center gap-1.5 px-2 py-[3px] text-[9px] font-bold uppercase"
+              style={{ zIndex: 500, fontFamily: MONO, color: "#fff", background: "rgba(0,0,0,.6)", border: `1.5px solid ${C.yellow}`, borderRadius: 4, letterSpacing: "0.04em" }}
             >
               <span className="h-[6px] w-[6px] rounded-full" style={{ background: C.yellow }} /> {originCity}
             </span>
@@ -478,8 +509,8 @@ function NakliyeciBody({ nav, available, setAvailable, carrier }) {
           {/* hedef ili chip'i — en yakın gerçek yükün ili (varsa) */}
           {destCity && (
             <span
-              className="absolute right-3 top-8 flex items-center gap-1.5 px-2 py-[3px] text-[9px] font-bold uppercase"
-              style={{ fontFamily: MONO, color: "#fff", background: "rgba(0,0,0,.6)", border: "1.5px solid rgba(255,255,255,.55)", borderRadius: 4, letterSpacing: "0.04em" }}
+              className="pointer-events-none absolute right-3 top-8 flex items-center gap-1.5 px-2 py-[3px] text-[9px] font-bold uppercase"
+              style={{ zIndex: 500, fontFamily: MONO, color: "#fff", background: "rgba(0,0,0,.6)", border: "1.5px solid rgba(255,255,255,.55)", borderRadius: 4, letterSpacing: "0.04em" }}
             >
               <span className="h-[6px] w-[6px] rounded-full" style={{ border: `1.5px solid ${C.yellow}` }} /> {destCity}
             </span>
@@ -487,8 +518,8 @@ function NakliyeciBody({ nav, available, setAvailable, carrier }) {
 
           {/* orta rozet — gerçek yaklaşık km ya da durum */}
           <span
-            className="absolute left-1/2 top-3 -translate-x-1/2 px-2 py-[3px] text-[9px] font-bold uppercase"
-            style={{ fontFamily: MONO, color: C.yellow, background: "rgba(0,0,0,.55)", border: `1.5px solid ${C.yellow}`, borderRadius: 4, letterSpacing: "0.04em" }}
+            className="pointer-events-none absolute left-1/2 top-3 -translate-x-1/2 px-2 py-[3px] text-[9px] font-bold uppercase"
+            style={{ zIndex: 500, fontFamily: MONO, color: C.yellow, background: "rgba(0,0,0,.55)", border: `1.5px solid ${C.yellow}`, borderRadius: 4, letterSpacing: "0.04em" }}
           >
             {backhaulKm ? `~${backhaulKm} KM · BOŞ DÖNÜŞ` : backhaulCount > 0 ? `${backhaulCount} UYGUN YÜK` : "BOŞ DÖNÜŞ"}
           </span>
