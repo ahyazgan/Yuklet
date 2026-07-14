@@ -7,6 +7,22 @@ import { supabase } from "./supabase";
 // ║  kalir. App.jsx bu fonksiyonlari kullanacak (cutover sonraki adim).║
 // ╚══════════════════════════════════════════════════════════════════╝
 
+// Ham Supabase/ağ hatasını kullanıcı diline çevirir; bilinmeyende fallback.
+export function trMsg(e, fallback = "İşlem başarısız. Tekrar dene.") {
+  const m = String(e?.message || e || "");
+  if (/failed to fetch|load failed|network\s?(error|request failed)|fetch failed/i.test(m)) return "Bağlantı yok. İnternetini kontrol edip tekrar dene.";
+  if (/invalid login credentials/i.test(m)) return "E-posta veya şifre hatalı.";
+  if (/already registered|user_already_exists/i.test(m)) return "Bu e-posta zaten kayıtlı. Giriş yapmayı dene.";
+  if (/email not confirmed/i.test(m)) return "E-postanı doğrulamadan giremezsin. Gelen kutunu kontrol et.";
+  if (/rate limit|too many requests/i.test(m)) return "Çok fazla deneme yapıldı. Biraz bekleyip tekrar dene.";
+  if (/password.*(short|least)/i.test(m)) return "Şifre en az 6 karakter olmalı.";
+  if (/row-level security|violates|not-null|foreign key/i.test(m)) return fallback;
+  if (/sürücü yalnız|surucu yalniz/i.test(m)) return fallback;
+  // Türkçe yazılmış (bizim RPC'lerin ürettiği) mesajlar aynen geçsin.
+  if (/[çğıöşüÇĞİÖŞÜ]/.test(m) || /gerekli|edilemez|bulunamadı|uygun değil|askıya/i.test(m)) return m;
+  return fallback;
+}
+
 // ── Mapper'lar ──────────────────────────────────────────────
 const rowToListing = (r) => ({
   id: r.id, type: r.type, cat: r.cat, title: r.title,
@@ -67,6 +83,8 @@ const rowToOffer = (r) => ({
   price: r.price, message: r.message, status: r.status, createdAt: r.created_at, updatedAt: r.updated_at,
   // urun siparisi alanlari
   qty: r.qty, unit: r.unit, kind: r.kind,
+  // accept_job RPC'si kind='direkt' yazar; bildirim katmani o.direct'e bakar.
+  direct: r.kind === "direkt",
 });
 
 const rowToMessage = (r) => ({
@@ -181,8 +199,15 @@ export async function signInWithGoogleNative() {
   const webClientId = import.meta.env.VITE_GOOGLE_WEB_CLIENT_ID;
   const iOSClientId = import.meta.env.VITE_GOOGLE_IOS_CLIENT_ID;
   const isIOS = Capacitor.getPlatform() === "ios";
-  if (isIOS && !iOSClientId) return { ok: false, error: "VITE_GOOGLE_IOS_CLIENT_ID tanimli degil (.env.local)." };
-  if (!isIOS && !webClientId) return { ok: false, error: "VITE_GOOGLE_WEB_CLIENT_ID tanimli degil (.env.local)." };
+  // Env eksikse teknik detay konsola, kullaniciya sade Turkce mesaj.
+  if (isIOS && !iOSClientId) {
+    console.error("[GoogleNative] VITE_GOOGLE_IOS_CLIENT_ID tanimli degil (.env.local).");
+    return { ok: false, error: "Google girişi şu anda kullanılamıyor." };
+  }
+  if (!isIOS && !webClientId) {
+    console.error("[GoogleNative] VITE_GOOGLE_WEB_CLIENT_ID tanimli degil (.env.local).");
+    return { ok: false, error: "Google girişi şu anda kullanılamıyor." };
+  }
 
   if (!_socialLoginInited) {
     await SocialLogin.initialize({ google: { webClientId, iOSClientId, mode: "online" } });
@@ -273,8 +298,10 @@ export async function updatePassword({ password }) {
 
 export async function getProfile(userId) {
   // maybeSingle: satir yoksa hata firlatmaz (single 0 satirda PGRST116 doner).
+  // HATA (ag/RLS) ile "satir yok" AYRI durumlar: hata FIRLATILIR (cagiran catch'ler),
+  // satir yoksa null doner. Boylece hydrate ag hatasini rol-yok sanip modal acmaz.
   const { data, error } = await supabase.from("profiles").select("*").eq("id", userId).maybeSingle();
-  if (error) console.error("[getProfile]", error.message);
+  if (error) { console.error("[getProfile]", error.message); throw error; }
   return rowToProfile(data);
 }
 
@@ -371,12 +398,18 @@ export async function checkHealth() {
     const { error } = await supabase.from("listings").select("id").limit(1);
     if (!error) return { ok: true, code: "ok", message: "Supabase bagli." };
     const msg = String(error.message || "");
+    // Ag hatasi yapilandirma hatasi DEGILDIR: code "network" doner, App.jsx kirmizi
+    // "SUPABASE BAGLANTI SORUNU" banner'ini basmaz (OfflineBanner zaten var).
+    if (/failed to fetch|load failed|network/i.test(msg))
+      return { ok: false, code: "network", message: "İnternet bağlantısı yok" };
     if (/relation .* does not exist|could not find the table|schema cache/i.test(msg))
       return { ok: false, code: "no_schema", message: "Baglanti var ama tablolar yok. supabase/schema.sql dosyasini SQL Editor'de calistir." };
     if (/jwt|api key|invalid|unauthorized|401/i.test(msg))
       return { ok: false, code: "bad_key", message: "Anahtar gecersiz. VITE_SUPABASE_URL ve anon anahtarini kontrol et." };
     return { ok: false, code: "error", message: msg || "Bilinmeyen Supabase hatasi." };
   } catch (e) {
+    if (/failed to fetch|load failed|network/i.test(String(e?.message || "")))
+      return { ok: false, code: "network", message: "İnternet bağlantısı yok" };
     return { ok: false, code: "network", message: "Supabase'e ulasilamadi (ag/URL). " + (e?.message || "") };
   }
 }

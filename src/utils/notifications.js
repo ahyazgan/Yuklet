@@ -40,6 +40,14 @@ export function buildNotifications(user, { listings = [], offers = [], messages 
         time: o.createdAt, link: "/ilanlarim",
       });
     }
+    // İşverene: nakliyeci işi iptal etti — ilan yeniden yayına döndü.
+    if (myListingIds.has(String(o.listingId)) && o.status === "iptal") {
+      items.push({
+        id: `res-own-${o.id}`, icon: "🚫",
+        text: `"${titleOf(o.listingId)}" işi iptal edildi — ilanın yeniden yayında`,
+        time: o.updatedAt || o.createdAt, link: `/ilan/${o.listingId}`,
+      });
+    }
     // Teklifi verene: sonuç (kabul/ret). Doğrudan kabulde kişi zaten kendisi
     // kabul etti -> ona ayrıca "kabul edildi" bildirimi gösterme.
     if (String(o.fromUserId) === uid && o.status !== "beklemede" && !o.direct) {
@@ -67,6 +75,8 @@ export function buildNotifications(user, { listings = [], offers = [], messages 
     if (!done) continue;
     const accepted = offers.find((o) => String(o.listingId) === String(l.id) && o.status === "kabul");
     if (!accepted) continue;
+    // Sahipsiz (tanıtım) iş hatırlatma üretmesin — String(null)="null" truthy tuzağı.
+    if (l.ownerId == null || accepted.fromUserId == null) continue;
     const ownerId = String(l.ownerId);
     const nakliyeciId = String(accepted.fromUserId);
     // Sadece işin iki tarafına; karşı tarafı belirle.

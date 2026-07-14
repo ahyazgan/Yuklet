@@ -306,6 +306,7 @@ begin
     -- (Normalde handle_new_user profili onceden yaratir; bu ek koruma.)
     new.verified := false;
     new.status   := 'aktif';
+    if new.role not in ('', 'isveren', 'tedarikci', 'nakliyeci') then new.role := ''; end if;
     return new;
   end if;
   new.verified := old.verified;
@@ -313,6 +314,11 @@ begin
   -- Rol yalniz GERCEKTEN secilmisse kilitli. Bos VEYA 'isveren' (eski default) =>
   -- ilk-secim serbest (drift'ten kalan 'isveren' satirlari degistirilebilsin).
   if old.role is not null and old.role <> '' and old.role <> 'isveren' then
+    new.role := old.role;
+  end if;
+  -- Deger whitelist: gecerli uc rol disina (orn. 'admin') gecis engellenir.
+  if new.role is distinct from old.role
+     and new.role not in ('', 'isveren', 'tedarikci', 'nakliyeci') then
     new.role := old.role;
   end if;
   return new;
@@ -382,6 +388,10 @@ returns trigger language plpgsql security definer set search_path = public as $$
 declare
   allowed text[] := array['phase','status','cycle_stage','arrived_at','trips_done','delivery_proof','payment_received_at','payment_paid_at'];
 begin
+  -- Ic-trigger muafiyeti: sync_offers_count gibi sistem trigger'larinin yaptigi
+  -- listings guncellemeleri (pg_trigger_depth 2+) kullanici kisitina takilmasin —
+  -- yoksa alicinin siparis/teklif INSERT'i sayac guncellemesi yuzunden geri aliniyordu.
+  if pg_trigger_depth() > 1 then return new; end if;
   -- Sahip, admin ve dogrudan SQL (auth.uid() null) tam yetkili; yalniz surucu kisitlanir.
   if auth.uid() is null or auth.uid() = old.owner_id or public.is_admin() then
     return new;
@@ -394,8 +404,15 @@ begin
      and old.accepted_by_id is null and new.accepted_by_id = auth.uid() then
     allowed := allowed || array['accepted_by_id','assigned_vehicle'];
   end if;
+  -- IPTAL gecisi (eslesti → aktif, kabulun simetrigi): surucu kendi ustlendigi isi
+  -- birakir — cancel_job RPC accepted_by_id/assigned_vehicle'i sifirlar. SECURITY
+  -- DEFINER RLS'i atlar ama trigger'i ATLAMAZ; bu istisna olmadan surucu iptali patliyordu.
+  if old.status = 'eslesti' and new.status = 'aktif'
+     and old.accepted_by_id = auth.uid() and new.accepted_by_id is null then
+    allowed := allowed || array['accepted_by_id','assigned_vehicle'];
+  end if;
   if (to_jsonb(new) - allowed) is distinct from (to_jsonb(old) - allowed) then
-    raise exception 'Surucu yalniz sefer alanlarini guncelleyebilir';
+    raise exception 'Sürücü yalnız sefer alanlarını güncelleyebilir';
   end if;
   return new;
 end; $$;
@@ -403,6 +420,23 @@ drop trigger if exists on_listing_driver_guard on public.listings;
 create trigger on_listing_driver_guard
   before update on public.listings
   for each row execute function public.guard_driver_listing_update();
+
+-- Ilan rozet snapshot'i SUNUCUDAN: owner_verified/owner_rating istemciden gelen
+-- degere degil profiles'a bakar (REST ile sahte "ONAYLI" rozetli ilan basilamaz).
+-- owner_id null (demo seed, dogrudan SQL) satirlarda dokunulmaz.
+create or replace function public.enforce_owner_snapshot()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if new.owner_id is not null then
+    new.owner_verified := coalesce((select verified from public.profiles where id = new.owner_id), false);
+    new.owner_rating   := coalesce((select rating   from public.profiles where id = new.owner_id), 5.0);
+  end if;
+  return new;
+end; $$;
+drop trigger if exists on_listing_owner_snapshot on public.listings;
+create trigger on_listing_owner_snapshot
+  before insert on public.listings
+  for each row execute function public.enforce_owner_snapshot();
 
 -- offers: teklifi veren VEYA ilan sahibi gorur; teklifi veren ekler; ilan sahibi durum gunceller
 drop policy if exists offers_read   on public.offers;
@@ -613,13 +647,18 @@ begin
   if v_status = 'banli' then raise exception 'Hesabın askıya alındı.'; end if;
   select * into v_listing from public.listings where id = p_listing_id for update;
   if not found then raise exception 'İlan bulunamadı.'; end if;
+  -- Sahipsiz (owner_id null) tanitim ilani kabul EDILEMEZ: karsi taraf yok —
+  -- mesaj/degerlendirme hedefsiz kalir, ilan panodan herkes icin kaybolur.
+  if v_listing.owner_id is null then raise exception 'Bu bir tanıtım ilanıdır — kabul edilemez.'; end if;
   if v_listing.owner_id = v_uid then raise exception 'Kendi ilanını kabul edemezsin.'; end if;
   -- 'is' (iş) VE 'arac' (araç kiralama) sabit fiyatlı doğrudan-kabul edilebilir; ürün ilanı hariç.
   if v_listing.type not in ('is','arac') then raise exception 'Bu ilan doğrudan kabul edilemez.'; end if;
   if coalesce(v_listing.price_type,'') <> 'sabit' then raise exception 'Yalnızca sabit fiyatlı ilanlar doğrudan kabul edilir.'; end if;
   if v_listing.status <> 'aktif' then raise exception 'Bu ilan artık uygun değil.'; end if;
-  insert into public.offers (listing_id, from_user_id, from_user_name, price, message, status)
-  values (p_listing_id, v_uid, v_name, v_listing.price, 'İş sabit fiyattan kabul edildi.', 'kabul');
+  -- kind='direkt': dogrudan kabul — bildirim katmani "teklifin kabul edildi"
+  -- yerine dogru davranisi secebilsin (istemci rowToOffer direct'i bundan turetir).
+  insert into public.offers (listing_id, from_user_id, from_user_name, price, message, status, kind)
+  values (p_listing_id, v_uid, v_name, v_listing.price, 'İş sabit fiyattan kabul edildi.', 'kabul', 'direkt');
   update public.listings set status = 'eslesti', accepted_by_id = v_uid, assigned_vehicle = p_vehicle
    where id = p_listing_id returning * into v_listing;
   return v_listing;
@@ -639,7 +678,8 @@ begin
   if not found then raise exception 'Teklif bulunamadı.'; end if;
   select * into v_listing from public.listings where id = v_offer.listing_id for update;
   if not found then raise exception 'İlan bulunamadı.'; end if;
-  if v_listing.owner_id <> v_uid then raise exception 'Yalnızca ilan sahibi kabul edebilir.'; end if;
+  -- NULL-guvenli: sahipsiz ilanin teklifi kimseye kabul ettirilemez.
+  if v_listing.owner_id is distinct from v_uid then raise exception 'Yalnızca ilan sahibi kabul edebilir.'; end if;
   if v_listing.status in ('eslesti','kapali') then raise exception 'Bu ilan artık uygun değil.'; end if;
   update public.offers set status = 'ret', updated_at = now()
     where listing_id = v_offer.listing_id and id <> p_offer_id and status = 'beklemede';
@@ -664,7 +704,8 @@ begin
   if v_uid is null then raise exception 'Giriş gerekli.'; end if;
   select * into v_listing from public.listings where id = p_listing_id for update;
   if not found then raise exception 'İlan bulunamadı.'; end if;
-  if v_listing.owner_id <> v_uid
+  -- NULL-guvenli: owner_id null (sahipsiz demo) iken '<>' NULL uretip kontrolu deliyordu.
+  if v_listing.owner_id is distinct from v_uid
      and not exists (select 1 from public.offers o
                       where o.listing_id = p_listing_id and o.status = 'kabul' and o.from_user_id = v_uid)
   then raise exception 'Bu işi yalnızca tarafları iptal edebilir.'; end if;
@@ -673,6 +714,8 @@ begin
   if coalesce(v_listing.payment_status,'yok') = 'bloke' then raise exception 'Emanetteki ödeme çözülmeden iş iptal edilemez.'; end if;
   update public.offers set status = 'iptal', updated_at = now()
     where listing_id = p_listing_id and status = 'kabul';
+  -- Onceki surucunun GPS izi (son konum + rota) yeni eslesmeye tasinmasin.
+  delete from public.trip_locations where listing_id = p_listing_id;
   update public.listings
      set status = 'aktif', phase = null, accepted_by_id = null, assigned_vehicle = null,
          cycle_stage = null, arrived_at = null, trips_done = 0, delivery_proof = null

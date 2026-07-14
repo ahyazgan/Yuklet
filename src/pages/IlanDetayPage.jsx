@@ -179,6 +179,9 @@ export default function IlanDetayPage({ listings = LISTINGS, user, fleet = [], o
   const listingOffers = offers.filter((o) => String(o.listingId) === String(l.id));
   const ownerRel = l.ownerId != null ? computeReliability(l.ownerId, { listings, offers, reviews }) : null;
   const isOwner = user && l.ownerId && l.ownerId === user.id;
+  // Sahipsiz (owner_id NULL) demo kayıt = tanıtım ilanı: sunucu etkileşimi
+  // engelliyor, istemci de aksiyonları hiç göstermesin.
+  const isShowcase = l.ownerId == null;
   // Rol-aksiyon eşleşmesi: iş ilanına yalnız nakliyeci teklif/kabul eder;
   // ürün ve araç ilanına yalnız alıcı (isveren) sipariş/kiralama yapar.
   // Giriş yapmamışsa izin ver (auth modalı açılır, rol girişte belirlenir).
@@ -229,12 +232,16 @@ export default function IlanDetayPage({ listings = LISTINGS, user, fleet = [], o
 
   const submitOffer = async () => {
     if (sending) return;                       // çift-tık koruması
+    if (isShowcase) { toast("Bu bir tanıtım ilanı — işlem yapılamaz.", "error"); return; }
     if (!offerGate()) return;
     if (isProduct) {
       if (!qty && !message.trim()) { toast("Miktar veya mesaj girin", "error"); return; }
     } else if (!price && !message.trim()) {
       toast("Fiyat veya mesaj girin", "error"); return;
     }
+    // Negatif/sıfır/geçersiz sayı girildiyse dur (boş bırakmak serbest).
+    if (price && !(Number(price) > 0)) { toast("Geçerli bir fiyat girin", "error"); return; }
+    if (qty && !(Number(qty) > 0)) { toast("Geçerli bir miktar girin", "error"); return; }
     setSending(true);
     const res = await onAddOffer?.({
       id: newId(), listingId: l.id, fromUser: user.name, fromUserId: user.id,
@@ -263,7 +270,7 @@ export default function IlanDetayPage({ listings = LISTINGS, user, fleet = [], o
   // ── Doğrudan kabul (sabit fiyatlı iş) — aynı kapılar (telefon + değerlendirme) ──
   // Nakliyecinin bu işe atayabileceği aktif filo araçları (ops.).
   const myFleet = user ? fleet.filter((v) => v.active) : [];
-  const startAccept = () => { if (!offerGate()) return; setPickedVehicleId(isVehicle ? null : (myFleet[0]?.id ?? null)); setShowAcceptConfirm(true); };
+  const startAccept = () => { if (isShowcase) { toast("Bu bir tanıtım ilanı — işlem yapılamaz.", "error"); return; } if (!offerGate()) return; setPickedVehicleId(isVehicle ? null : (myFleet[0]?.id ?? null)); setShowAcceptConfirm(true); };
   const confirmAccept = async () => {
     setAccepting(true);
     const vehicle = myFleet.find((v) => v.id === pickedVehicleId) || null;
@@ -568,6 +575,17 @@ export default function IlanDetayPage({ listings = LISTINGS, user, fleet = [], o
             {l.status === "eslesti" ? "Bu ilan eşleşti, yeni teklif alınmıyor." : "Bu ilan kapatıldı, yeni teklif alınmıyor."}
           </div>
         )}
+        {/* Tanıtım ilanı: aksiyonların yerini alan pasif bilgi bloğu */}
+        {isShowcase && (
+          <div style={{ background: C.stone, border: `2px solid ${C.ink}`, borderRadius: 6, padding: 16, textAlign: "center" }}>
+            <span style={{ display: "inline-block", fontFamily: MONO, fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em", background: C.yellow, color: C.ink, border: `2px solid ${C.ink}`, borderRadius: 5, padding: "3px 9px" }}>
+              TANITIM İLANI
+            </span>
+            <p style={{ fontFamily: MONO, fontSize: 12, fontWeight: 700, color: C.sub, lineHeight: 1.55, margin: "10px 0 0" }}>
+              Bu ilan örnek amaçlıdır; teklif ve kabul kapalıdır.
+            </p>
+          </div>
+        )}
 
         {/* ── Gelen teklifler ────────────────────────────────────── */}
         <div style={{ ...card, padding: 15 }}>
@@ -618,7 +636,7 @@ export default function IlanDetayPage({ listings = LISTINGS, user, fleet = [], o
       </div>
 
       {/* ── STICKY BOTTOM "Teklif ver" BAR (white, 2px top rule) ──── */}
-      {!isOwner && !closed && (
+      {!isOwner && !closed && !isShowcase && (
         <div style={{ position: "sticky", bottom: 0, marginTop: 16, zIndex: 30, background: C.card, borderTop: `2px solid ${C.ink}`, padding: "12px 16px", display: "flex", alignItems: "center", gap: 12 }}>
           <div style={{ minWidth: 0, flex: 1 }}>
             <div style={{ fontFamily: MONO, fontSize: 8.5, fontWeight: 700, color: C.muted, letterSpacing: "0.08em", textTransform: "uppercase" }}>

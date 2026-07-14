@@ -88,6 +88,7 @@ export default function IlanlarimPage({ listings = [], user, offers = [], review
   const [expanded, setExpanded] = useState({}); // listingId -> bool
   const [reportOffer, setReportOffer] = useState(null); // şikayet edilen teklif
   const [confirmDel, setConfirmDel] = useState(null);   // silme onayı bekleyen ilan ("Emin misin?" penceresi)
+  const [offerBusy, setOfferBusy] = useState(null);     // işlenen teklif id'si (çift-tık koruması)
 
   if (!user) {
     return (
@@ -113,21 +114,29 @@ export default function IlanlarimPage({ listings = [], user, offers = [], review
 
   // ── Actions (functionality preserved 1:1) ──
   const accept = async (listing, offer) => {
+    if (offerBusy) return;                              // çift-tık koruması
     // Telefon zorunlu: eşleşince karşı taraf sana ulaşabilmeli (diğer eşleşme
     // noktalarıyla simetrik — ilan ver / teklif ver / kabul).
     if (!isValidPhone(user?.phone)) { setNeedPhone(true); return; }
-    // ATOMİK: tek çağrı — teklif 'kabul' + kardeşler 'ret' + ilan 'eslesti'. Eski iki
-    // ayrı çağrı araya hata girince yarı-kalıp çift-kabule yol açabiliyordu.
-    const res = await onAcceptOffer?.(offer, listing);
-    if (res && res.ok === false) { toast(res.error || "Teklif kabul edilemedi", "error"); return; }
-    hapticSuccess();
-    toast("Teklif kabul edildi, ilan eşleşti", "success");
+    setOfferBusy(offer.id);
+    try {
+      // ATOMİK: tek çağrı — teklif 'kabul' + kardeşler 'ret' + ilan 'eslesti'. Eski iki
+      // ayrı çağrı araya hata girince yarı-kalıp çift-kabule yol açabiliyordu.
+      const res = await onAcceptOffer?.(offer, listing);
+      if (res && res.ok === false) { toast(res.error || "Teklif kabul edilemedi", "error"); return; }
+      hapticSuccess();
+      toast("Teklif kabul edildi, ilan eşleşti", "success");
+    } finally { setOfferBusy(null); }
   };
   const reject = async (offer) => {
-    const res = await onUpdateOffer?.(offer.id, { status: "ret" });
-    if (res && res.ok === false) { toast(res.error || "Teklif reddedilemedi", "error"); return; }
-    hapticWarn();
-    toast("Teklif reddedildi", "info");
+    if (offerBusy) return;                              // çift-tık koruması
+    setOfferBusy(offer.id);
+    try {
+      const res = await onUpdateOffer?.(offer.id, { status: "ret" });
+      if (res && res.ok === false) { toast(res.error || "Teklif reddedilemedi", "error"); return; }
+      hapticWarn();
+      toast("Teklif reddedildi", "info");
+    } finally { setOfferBusy(null); }
   };
   const renew = async (l) => {
     const res = await onUpdateListing?.(l.id, { status: "aktif", createdText: "az önce" });
@@ -146,8 +155,10 @@ export default function IlanlarimPage({ listings = [], user, offers = [], review
     toast("İlan silindi", "info");
   };
   const toggleClose = (l) => onUpdateListing?.(l.id, { status: l.status === "kapali" ? "aktif" : "kapali" });
-  const markDelivered = (l) => {
-    onUpdateListing?.(l.id, { status: "kapali", delivered: true });
+  const markDelivered = async (l) => {
+    // Sonuç kontrolü: SB modunda ağ/oturum hatasında yalancı "teslim edildi" deme.
+    const res = await onUpdateListing?.(l.id, { status: "kapali", delivered: true });
+    if (res && res.ok === false) { toast(res.error || "Kaydedilemedi", "error"); return; }
     hapticSuccess();
     toast("Sipariş teslim edildi olarak işaretlendi", "success");
   };
@@ -430,10 +441,10 @@ export default function IlanlarimPage({ listings = [], user, offers = [], review
                                 {/* Actions */}
                                 {o.status === "beklemede" && !matched && (
                                   <div style={{ display: "flex", gap: 7, marginTop: 11 }}>
-                                    <button onClick={() => accept(l, o)} style={{ ...btnBase, flex: 1, background: C.green, color: "#fff", borderColor: C.ink }}>
+                                    <button onClick={() => accept(l, o)} disabled={offerBusy === o.id} style={{ ...btnBase, flex: 1, background: C.green, color: "#fff", borderColor: C.ink, opacity: offerBusy === o.id ? 0.6 : 1 }}>
                                       <Check size={14} strokeWidth={3} /> {o.kind === "siparis" ? "Siparişi Onayla" : "Kabul Et"}
                                     </button>
-                                    <button onClick={() => reject(o)} style={{ ...btnBase, background: C.card, color: C.red, borderColor: C.ink }}>
+                                    <button onClick={() => reject(o)} disabled={offerBusy === o.id} style={{ ...btnBase, background: C.card, color: C.red, borderColor: C.ink, opacity: offerBusy === o.id ? 0.6 : 1 }}>
                                       <X size={14} strokeWidth={3} /> Ret
                                     </button>
                                   </div>

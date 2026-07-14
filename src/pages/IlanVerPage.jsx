@@ -271,6 +271,15 @@ export default function IlanVerPage({ onPublish, onUpdate, listings = [], offers
       setError("Sabit fiyat zorunludur. Lütfen geçerli bir tutar girin.");
       return;
     }
+    // Negatif/geçersiz sayılar yayına düşmesin (alanlar opsiyonel; girildiyse > 0 olmalı).
+    if (form.amount && !(Number(form.amount) > 0)) {
+      setError("Geçerli bir miktar girin.");
+      return;
+    }
+    if (form.recurring && form.dailyTrips && !(Number(form.dailyTrips) > 0)) {
+      setError("Geçerli bir günlük sefer sayısı girin.");
+      return;
+    }
     const data = {
       type, cat,
       title: form.title.trim(),

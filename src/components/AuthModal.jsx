@@ -10,8 +10,11 @@ import Logo from "./Logo";
 const SHOW_APPLE = Capacitor.getPlatform() === "ios";
 // Google butonu iOS'ta GİZLİ: native iOS Google girişi (Info.plist reversed-client-id)
 // henüz yapılandırılmadı → buton kırık olurdu (App Store 2.1). iOS'ta e-posta + Apple kalır.
-// ID girilip yapılandırılınca bu koşulu kaldır.
-const SHOW_GOOGLE = Capacitor.getPlatform() !== "ios";
+// Android native'de giriş VITE_GOOGLE_WEB_CLIENT_ID env'ine bağlı; env yoksa (CI build)
+// buton HER ZAMAN hata verirdi → yalnız env doluysa göster. Web'de her zaman görünür.
+const SHOW_GOOGLE =
+  Capacitor.getPlatform() === "web" ||
+  (Capacitor.getPlatform() === "android" && Boolean(import.meta.env.VITE_GOOGLE_WEB_CLIENT_ID));
 
 // ── SAHA Giriş modal — E-POSTA/ŞİFRE + GOOGLE / APPLE. 2px ink çerçeve · hazard
 // şeridi · Archivo uppercase · Space Mono. E-posta ile giriş/kayıt arasında geçiş;

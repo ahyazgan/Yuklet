@@ -133,7 +133,9 @@ function AppShell() {
   const listings = bannedIds.size ? allListings.filter((l) => !bannedIds.has(String(l.ownerId))) : allListings;
   const reloadListings = async () => { try { setUserListings(await api.fetchListings()); } catch (e) { console.error(e); } };
   const publishListing = async (listing) => {
-    if (user?.status === "banli") return null;   // yaptirim: banli kullanici ilan veremez
+    // Yaptirim: banli kullanici ilan veremez — sessiz basari yerine ACIK hata
+    // (IlanVerPage catch'i setError ile gosterir; null donmek sahte "yayında" ekrani acardi).
+    if (user?.status === "banli") throw new Error("Hesabın askıya alındı.");
     if (SB) {
       // DB kaydı başarısızsa hata yukarı fırlatılır; UI sahte "yayında" göstermez.
       const saved = await api.createListing(listing, profile || user);
@@ -146,7 +148,7 @@ function AppShell() {
   const updateListing = async (id, patch) => {
     if (SB) {
       try { await api.updateListing(id, patch); setUserListings(prev => prev.map(l => l.id === id ? { ...l, ...patch } : l)); return { ok: true }; }
-      catch (e) { console.error(e); return { ok: false, error: e?.message || "Güncelleme başarısız." }; }
+      catch (e) { console.error(e); return { ok: false, error: api.trMsg(e, "Güncelleme başarısız.") }; }
     }
     setUserListings(prev => prev.map(l => l.id === id ? { ...l, ...patch } : l));
     return { ok: true };
@@ -161,7 +163,7 @@ function AppShell() {
         setOffers(prev => prev.filter(o => String(o.listingId) !== String(id)));
         return { ok: true };
       }
-      catch (e) { console.error(e); return { ok: false, error: e?.message || "Silme başarısız." }; }
+      catch (e) { console.error(e); return { ok: false, error: api.trMsg(e, "Silme başarısız.") }; }
     }
     setUserListings(prev => prev.filter(l => l.id !== id)); setOffers(prev => prev.filter(o => String(o.listingId) !== String(id)));
     return { ok: true };
@@ -220,7 +222,7 @@ function AppShell() {
     if (user?.status === "banli") return { ok: false, error: "Hesabın askıya alındı." };   // yaptirim: banli kullanici teklif veremez
     if (SB) {
       try { await api.createOffer(offer, profile || user); await Promise.all([reloadOffers(), reloadListings()]); return { ok: true }; }
-      catch (e) { console.error(e); return { ok: false, error: e?.message || "Teklif gönderilemedi." }; }
+      catch (e) { console.error(e); return { ok: false, error: api.trMsg(e, "Teklif gönderilemedi.") }; }
     }
     setOffers(prev => [offer, ...prev]);
     return { ok: true };
@@ -228,7 +230,7 @@ function AppShell() {
   const updateOffer = async (id, patch) => {
     if (SB) {
       try { await api.updateOffer(id, patch); setOffers(prev => prev.map(o => o.id === id ? { ...o, ...patch } : o)); return { ok: true }; }
-      catch (e) { console.error(e); return { ok: false, error: e?.message || "Teklif güncellenemedi." }; }
+      catch (e) { console.error(e); return { ok: false, error: api.trMsg(e, "Teklif güncellenemedi.") }; }
     }
     setOffers(prev => prev.map(o => o.id === id ? { ...o, ...patch, ...(patch.status ? { updatedAt: new Date().toISOString() } : {}) } : o));
     return { ok: true };
@@ -242,7 +244,7 @@ function AppShell() {
         await api.acceptOfferRpc(offer.id);
         await Promise.all([reloadOffers(), reloadListings()]);
         return { ok: true };
-      } catch (e) { console.error(e); return { ok: false, error: e?.message || "Teklif kabul edilemedi." }; }
+      } catch (e) { console.error(e); return { ok: false, error: api.trMsg(e, "Teklif kabul edilemedi.") }; }
     }
     const now = new Date().toISOString();
     setOffers(prev => prev.map(o =>
@@ -270,7 +272,7 @@ function AppShell() {
         // Tek atomik RPC: teklif 'kabul' + ilan 'eslesti' + atanan araç (RLS-uyumlu).
         await api.acceptJobRpc({ listingId: listing.id, price: listing.price ?? null, vehicle: av });
         await Promise.all([reloadOffers(), reloadListings()]);
-      } catch (e) { console.error(e); return { ok: false, error: e?.message || "İşlem başarısız." }; }
+      } catch (e) { console.error(e); return { ok: false, error: api.trMsg(e, "İşlem başarısız.") }; }
     } else {
       const offer = { id: newId(), ...base, fromUser: me.name, fromUserId: me.id, status: "kabul", direct: true, createdAt: nowIso(), updatedAt: nowIso() };
       setOffers(prev => [offer, ...prev]);
@@ -293,7 +295,7 @@ function AppShell() {
         await api.cancelJobRpc(listing.id);
         await Promise.all([reloadOffers(), reloadListings()]);
         return { ok: true };
-      } catch (e) { console.error(e); return { ok: false, error: e?.message || "İş iptal edilemedi." }; }
+      } catch (e) { console.error(e); return { ok: false, error: api.trMsg(e, "İş iptal edilemedi.") }; }
     }
     // Yerel mod — RPC guard'larının birebir karşılığı.
     const acc = offers.find(o => String(o.listingId) === String(listing.id) && o.status === "kabul");
@@ -320,7 +322,7 @@ function AppShell() {
     if ((profile || user)?.status === "banli") return { ok: false, error: "Hesabın askıya alındı." };
     if (SB) {
       try { const saved = await api.sendMessage(msg); setMessages(prev => [...prev, saved]); return { ok: true }; }
-      catch (e) { console.error(e); return { ok: false, error: e?.message || "Mesaj gönderilemedi." }; }
+      catch (e) { console.error(e); return { ok: false, error: api.trMsg(e, "Mesaj gönderilemedi.") }; }
     }
     setMessages(prev => [...prev, msg]);
     return { ok: true };
@@ -374,7 +376,7 @@ function AppShell() {
         // RLS reddi ham İngilizce mesajla kullanıcıya sızmasın (örn. sahipsiz
         // demo ilanda karşı taraf profili yok → policy ihlali).
         const msg = String(e?.message || "");
-        return { ok: false, error: msg.includes("row-level security") ? "Bu iş için değerlendirme yapılamıyor." : (msg || "Değerlendirme gönderilemedi.") };
+        return { ok: false, error: msg.includes("row-level security") ? "Bu iş için değerlendirme yapılamıyor." : api.trMsg(e, "Değerlendirme gönderilemedi.") };
       }
     }
     setReviews(prev => [r, ...prev]);
@@ -391,7 +393,7 @@ function AppShell() {
   const addDoc = async (d) => {
     if (SB) {
       try { const saved = await api.addDoc({ ...d, ownerId: (profile || user)?.id }); setDocs(prev => [{ ...d, ...saved, ownerId: (profile || user)?.id }, ...prev]); return { ok: true }; }
-      catch (e) { console.error(e); return { ok: false, error: e?.message || "Belge yüklenemedi." }; }
+      catch (e) { console.error(e); return { ok: false, error: api.trMsg(e, "Belge yüklenemedi.") }; }
     }
     setDocs(prev => [d, ...prev]);
     return { ok: true };
@@ -399,7 +401,7 @@ function AppShell() {
   const removeDoc = async (id) => {
     if (SB) {
       // Yalnızca DB silme başarılıysa state'ten kaldır (hayalet silme önlenir).
-      try { await api.removeDoc(id); } catch (e) { console.error(e); return { ok: false, error: e?.message || "Belge silinemedi." }; }
+      try { await api.removeDoc(id); } catch (e) { console.error(e); return { ok: false, error: api.trMsg(e, "Belge silinemedi.") }; }
     }
     setDocs(prev => prev.filter(x => x.id !== id));
     return { ok: true };
@@ -414,7 +416,7 @@ function AppShell() {
     if (user?.status === "banli") return { ok: false, error: "Hesabın askıya alındı." };
     if (SB) {
       try { const saved = await api.addFleetVehicle(user.id, v); setFleet(prev => [saved, ...prev]); return { ok: true, vehicle: saved }; }
-      catch (e) { console.error(e); return { ok: false, error: e?.message || "Araç eklenemedi." }; }
+      catch (e) { console.error(e); return { ok: false, error: api.trMsg(e, "Araç eklenemedi.") }; }
     }
     const rec = { id: Date.now(), ownerId: user.id, ...v, active: v.active !== false, createdAt: new Date().toISOString() };
     setFleet(prev => [rec, ...prev]);
@@ -423,14 +425,14 @@ function AppShell() {
   const updateVehicle = async (id, patch) => {
     if (SB) {
       try { const saved = await api.updateFleetVehicle(id, patch); setFleet(prev => prev.map(v => v.id === id ? saved : v)); return { ok: true }; }
-      catch (e) { console.error(e); return { ok: false, error: e?.message || "Araç güncellenemedi." }; }
+      catch (e) { console.error(e); return { ok: false, error: api.trMsg(e, "Araç güncellenemedi.") }; }
     }
     setFleet(prev => prev.map(v => v.id === id ? { ...v, ...patch } : v));
     return { ok: true };
   };
   const removeVehicle = async (id) => {
     if (SB) {
-      try { await api.removeFleetVehicle(id); } catch (e) { console.error(e); return { ok: false, error: e?.message || "Araç silinemedi." }; }
+      try { await api.removeFleetVehicle(id); } catch (e) { console.error(e); return { ok: false, error: api.trMsg(e, "Araç silinemedi.") }; }
     }
     setFleet(prev => prev.filter(v => v.id !== id));
     return { ok: true };
@@ -451,7 +453,7 @@ function AppShell() {
         const saved = await api.addMolaPost(cur.id, { ...rest, ...meta, images });
         setMolaPosts(prev => [saved, ...prev]);
         return { ok: true, post: saved };
-      } catch (e) { console.error(e); return { ok: false, error: e?.message || "Gönderi paylaşılamadı." }; }
+      } catch (e) { console.error(e); return { ok: false, error: api.trMsg(e, "Gönderi paylaşılamadı.") }; }
     }
     // Yerel mod: base64 dataURL'leri doğrudan sakla (Storage yok).
     const rec = { id: Date.now(), ownerId: cur.id, ...meta, ...rest, images: photos || [], status: "aktif", createdAt: new Date().toISOString() };
@@ -460,7 +462,7 @@ function AppShell() {
   };
   const removeMolaPost = async (id) => {
     if (SB) {
-      try { await api.removeMolaPost(id); } catch (e) { console.error(e); return { ok: false, error: e?.message || "Gönderi silinemedi." }; }
+      try { await api.removeMolaPost(id); } catch (e) { console.error(e); return { ok: false, error: api.trMsg(e, "Gönderi silinemedi.") }; }
     }
     setMolaPosts(prev => prev.filter(p => p.id !== id));
     return { ok: true };
@@ -478,14 +480,14 @@ function AppShell() {
     if (cur?.status === "banli") return { ok: false, error: "Hesabın askıya alındı." };
     if (SB) {
       try { const saved = await api.addThread(cur.id, { ...t, ...ownerMeta() }); setMolaThreads(prev => [saved, ...prev]); return { ok: true, thread: saved }; }
-      catch (e) { console.error(e); return { ok: false, error: e?.message || "Başlık açılamadı." }; }
+      catch (e) { console.error(e); return { ok: false, error: api.trMsg(e, "Başlık açılamadı.") }; }
     }
     const rec = { id: Date.now(), ownerId: cur.id, ...ownerMeta(), ...t, replyCount: 0, lastReplyAt: new Date().toISOString(), status: "aktif", createdAt: new Date().toISOString() };
     setMolaThreads(prev => [rec, ...prev]);
     return { ok: true, thread: rec };
   };
   const removeThread = async (id) => {
-    if (SB) { try { await api.removeThread(id); } catch (e) { console.error(e); return { ok: false, error: e?.message || "Başlık silinemedi." }; } }
+    if (SB) { try { await api.removeThread(id); } catch (e) { console.error(e); return { ok: false, error: api.trMsg(e, "Başlık silinemedi.") }; } }
     setMolaThreads(prev => prev.filter(t => t.id !== id));
     setMolaReplies(prev => prev.filter(r => String(r.threadId) !== String(id)));
     return { ok: true };
@@ -503,7 +505,7 @@ function AppShell() {
         // sayı sonraki fetchThreads ile gelir. (Yerel modda trigger yok → elle artırılır.)
         setMolaThreads(prev => prev.map(t => t.id === threadId ? { ...t, lastReplyAt: saved.createdAt } : t));
         return { ok: true, reply: saved };
-      } catch (e) { console.error(e); return { ok: false, error: e?.message || "Yorum gönderilemedi." }; }
+      } catch (e) { console.error(e); return { ok: false, error: api.trMsg(e, "Yorum gönderilemedi.") }; }
     }
     const rec = { id: Date.now(), threadId, ownerId: cur.id, ...ownerMeta(), body, createdAt: new Date().toISOString() };
     setMolaReplies(prev => [...prev, rec]);
@@ -513,7 +515,7 @@ function AppShell() {
   const removeReply = async (id, threadId) => {
     if (SB) {
       // SB: reply_count'u DB trigger'ı azaltır → burada elle azaltma (çift olur).
-      try { await api.removeReply(id); } catch (e) { console.error(e); return { ok: false, error: e?.message || "Yorum silinemedi." }; }
+      try { await api.removeReply(id); } catch (e) { console.error(e); return { ok: false, error: api.trMsg(e, "Yorum silinemedi.") }; }
       setMolaReplies(prev => prev.filter(r => r.id !== id));
       return { ok: true };
     }
@@ -532,7 +534,7 @@ function AppShell() {
     delete rec.desc;
     if (SB) {
       try { await api.addReport({ ...rec, fromId: (profile || user)?.id, fromName: (profile || user)?.name }); return { ok: true }; }
-      catch (e) { console.error(e); return { ok: false, error: e?.message || "Şikayet gönderilemedi." }; }
+      catch (e) { console.error(e); return { ok: false, error: api.trMsg(e, "Şikayet gönderilemedi.") }; }
     }
     setReports(prev => [{ ...rec, id: newId(), createdAt: nowIso(), status: "acik" }, ...prev]);
     return { ok: true };
@@ -546,7 +548,7 @@ function AppShell() {
 
   // ── Admin / moderasyon (SB modunda RLS is_admin() ile DB'ye yazar) ──
   const setReportStatus = async (id, status) => {
-    if (SB) { try { await api.updateReport(id, { status }); } catch (e) { console.error(e); return { ok: false, error: e?.message }; } }
+    if (SB) { try { await api.updateReport(id, { status }); } catch (e) { console.error(e); return { ok: false, error: api.trMsg(e) }; } }
     setReports(prev => prev.map(r => r.id === id ? { ...r, status } : r));
     return { ok: true };
   };
@@ -559,7 +561,7 @@ function AppShell() {
       try {
         await api.updateDocStatus(docId, decision);
         if (decision === "dogrulandi" && d) await api.adminUpdateProfile(d.ownerId, { verified: true });
-      } catch (e) { console.error(e); return { ok: false, error: e?.message }; }
+      } catch (e) { console.error(e); return { ok: false, error: api.trMsg(e) }; }
     }
     setAdminDocs(prev => prev.map(x => x.id === docId ? { ...x, status: decision } : x));
     setDocs(prev => prev.map(x => x.id === docId ? { ...x, status: decision } : x));
@@ -579,7 +581,7 @@ function AppShell() {
   const updateUserAdmin = async (userId, patch) => {
     // SB modunda önce DB'ye yaz; başarısızsa yerel state'i HİÇ değiştirme
     // (aksi halde UI "banlandı" gösterir ama DB değişmez — yanıltıcı).
-    if (SB) { try { await api.adminUpdateProfile(userId, patch); } catch (e) { console.error(e); return { ok: false, error: e?.message }; } }
+    if (SB) { try { await api.adminUpdateProfile(userId, patch); } catch (e) { console.error(e); return { ok: false, error: api.trMsg(e) }; } }
     setUsers((prev) => prev.map((u) => String(u.id) === String(userId) ? { ...u, ...patch } : u));
     setUser((cur) => (cur && String(cur.id) === String(userId) ? { ...cur, ...patch } : cur));
     const target = users.find((u) => String(u.id) === String(userId));
@@ -605,12 +607,18 @@ function AppShell() {
   // dondurse bile modali TEKRAR ACMA (yaris durumu -> sonsuz "sen kimsin" dongusu).
   const roleChosenRef = useRef(false);
   const lastGoodProfileRef = useRef(null);  // en son bilinen DOLU-rollu profil (klobber korumasi)
+  // Son getProfile denemesi HATAYLA mi bitti (ag kesik vb.)? Hata "rol yok" demek
+  // DEGILDIR — bu durumda rol secim modali ACILMAZ (eldeki oturumla devam edilir).
+  // Basarili okuma ref'i sifirlar; gercek bos-rol (OAuth ilk giris) modali yine acar.
+  const profileFetchFailedRef = useRef(false);
   useEffect(() => {
     if (!authReady) return;
     const u = profile || user;
     if (u && u.role) { roleChosenRef.current = true; setShowRole(false); return; }
     // Kullanici yok VEYA rol bos: rol daha once secildiyse (ref) modali ACMA.
     if (!u) { setShowRole(false); return; }
+    // Rol bos ama profil AG HATASI yuzunden okunamadi -> modal acma (yanlis alarm).
+    if (profileFetchFailedRef.current) { setShowRole(false); return; }
     setShowRole(!roleChosenRef.current);
   }, [authReady, user, profile]);
 
@@ -646,7 +654,12 @@ function AppShell() {
         setAuthReady(true);
         return;
       }
-      const prof = await api.getProfile(sbUser.id).catch(() => null);
+      // getProfile: HATA (ag/RLS) firlatir, "satir yok" null doner — ikisi ayri durum.
+      // Hata durumunda rol modali ACILMAMALI (profileFetchFailedRef); satir-yok'ta
+      // (OAuth ilk giris) mevcut needsRole akisi aynen isler.
+      let prof = null;
+      try { prof = await api.getProfile(sbUser.id); profileFetchFailedRef.current = false; }
+      catch (e) { console.error("[hydrate] profil okunamadi:", e?.message || e); profileFetchFailedRef.current = true; }
       // Ayni kullanici icin en son bilinen dolu rolu koru (klobber engelle).
       const good = lastGoodProfileRef.current;
       const sameUser = good && String(good.id) === String(sbUser.id);
@@ -734,7 +747,8 @@ function AppShell() {
       const res = mode === "register"
         ? await api.signUp({ name, email, password, role })   // rol kayıt formundan gelir
         : await api.signIn({ email, password });
-      if (!res.ok) return res;
+      // Ham Supabase hatasi ("Invalid login credentials" vb.) kullanici diline cevrilir.
+      if (!res.ok) return { ...res, error: api.trMsg(res.error, mode === "register" ? "Kayıt olunamadı. Tekrar dene." : "Giriş yapılamadı. Tekrar dene.") };
       if (res.needsConfirm) return res; // modal acik kalir, onay bekler
       setShowAuth(false);               // oturum kuruldu -> onAuthChange hydrate eder
       return res;
@@ -747,7 +761,10 @@ function AppShell() {
   // Sifremi unuttum -> sifirlama baglantili e-posta (SB modu). localStorage modunda
   // backend yok -> bilgi mesaji ile gecistir (gelistirme/onizleme).
   const resetPassword = async ({ email }) => {
-    if (SB) return api.resetPassword({ email });
+    if (SB) {
+      const res = await api.resetPassword({ email });
+      return res.ok ? res : { ...res, error: api.trMsg(res.error, "Şifre sıfırlama bağlantısı gönderilemedi. Tekrar dene.") };
+    }
     return { ok: true, message: "Önizleme modunda şifre sıfırlama devre dışı." };
   };
   // Yeni sifre belirle (recovery oturumu) -> Supabase'e yazar, modali kapatir.
@@ -892,7 +909,7 @@ function AppShell() {
           return { ok: true };
         }
         return { ok: false, error: res.error || "Profil güncellenemedi." };
-      } catch (e) { console.error(e); return { ok: false, error: e?.message || "Profil güncellenemedi." }; }
+      } catch (e) { console.error(e); return { ok: false, error: api.trMsg(e, "Profil güncellenemedi.") }; }
     }
     setUser(prev => prev ? { ...prev, ...patch } : prev);
     setUsers(prev => prev.map(u => (user && u.id === user.id) ? { ...u, ...patch } : u));
@@ -1011,8 +1028,10 @@ function AppShell() {
       </main>
 
       <UpdateBanner />
-      {/* SB modunda yanlis yapilandirma uyarisi — sessiz bos ekran yerine net tani */}
-      {SB && sbHealth && !sbHealth.ok && (
+      {/* SB modunda yanlis yapilandirma uyarisi — sessiz bos ekran yerine net tani.
+          code "network" = internet yok (yapilandirma degil) -> bu banner GOSTERILMEZ,
+          OfflineBanner zaten kullaniciyi bilgilendiriyor. */}
+      {SB && sbHealth && !sbHealth.ok && sbHealth.code !== "network" && (
         <div role="alert" style={{ position: "fixed", left: 12, right: 12, bottom: 76, zIndex: 9999, margin: "0 auto", maxWidth: 440, background: "#7A1212", color: "#fff", border: "2px solid #0A0A0A", borderRadius: 8, padding: "10px 12px", boxShadow: "3px 3px 0 rgba(10,10,10,.4)", fontFamily: "'Space Mono', ui-monospace, monospace", fontSize: 11.5, lineHeight: 1.45 }}>
           <strong style={{ display: "block", fontSize: 12, marginBottom: 2 }}>SUPABASE BAĞLANTI SORUNU</strong>
           {sbHealth.message}

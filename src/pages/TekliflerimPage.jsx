@@ -33,6 +33,7 @@ const STATUS = {
   beklemede: { label: "BEKLEMEDE", bg: C.yellow, fg: C.ink },
   kabul: { label: "ONAYLANDI", bg: C.green, fg: "#fff" },
   ret: { label: "REDDEDİLDİ", bg: C.sub, fg: "#fff" },
+  iptal: { label: "İPTAL EDİLDİ", bg: C.sub, fg: "#fff" }, // iş iptali izsiz kaybolmasın
 };
 
 const fmtTL = (n) => "₺" + Number(n).toLocaleString("tr-TR");
@@ -72,9 +73,13 @@ export default function TekliflerimPage({ listings = [], offers = [], user, onRe
   const counts = {
     beklemede: mine.filter((x) => x.o.status === "beklemede").length,
     kabul: mine.filter((x) => x.o.status === "kabul").length,
-    ret: mine.filter((x) => x.o.status === "ret").length,
+    // "Reddedilen" sekmesi iptal edilenleri de kapsar (iptal ayrı sekme değil).
+    ret: mine.filter((x) => x.o.status === "ret" || x.o.status === "iptal").length,
   };
-  const visible = mine.filter((x) => (x.o.status || "beklemede") === tab);
+  const visible = mine.filter((x) => {
+    const st = x.o.status || "beklemede";
+    return tab === "ret" ? st === "ret" || st === "iptal" : st === tab;
+  });
 
   return (
     <div style={shell}>

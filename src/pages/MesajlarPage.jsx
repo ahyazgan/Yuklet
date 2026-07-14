@@ -108,6 +108,7 @@ export default function MesajlarPage({ user, listings = [], offers = [], message
       const offerSide = { id: o.fromUserId, name: o.fromUser };
       if (user.id !== ownerSide.id && user.id !== offerSide.id) return null;
       const other = user.id === ownerSide.id ? offerSide : ownerSide;
+      if (other.id == null) return null; // sahipsiz (tanıtım) ilan: karşı taraf yok, sohbet açılmaz
       return { key: `${o.listingId}:${o.id}`, listingId: l.id, offerId: o.id, listingTitle: l.title, other };
     })
     .filter(Boolean)

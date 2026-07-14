@@ -93,11 +93,28 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
   const watchStopRef = useRef(null);
   const lastRouteRef = useRef(null);
 
-  // Sefer kanalına abone ol (canlı konum yayını). Unmount'ta izleme durur.
+  // Sefer kanalına abone ol (canlı konum yayını). Unmount'ta izleme durur
+  // (watch kesilir + yarım kalan sefer kapatılır — aksi halde "canlı" görünürdü).
   useEffect(() => {
     const unsub = subscribeTrip(id, setTrip);
-    return () => { unsub(); if (watchStopRef.current) { watchStopRef.current(); watchStopRef.current = null; } };
+    return () => { unsub(); if (watchStopRef.current) { watchStopRef.current(); watchStopRef.current = null; endTrip(id); } };
   }, [id]);
+
+  // İş iptal edilince / teslim olunca GPS yayını da dursun: "durdur" butonu
+  // DOM'dan kalksa da watchPosition + trip yayını sürüyordu.
+  // (Erken return'den önce; gerekli değerler içeride null-güvenli türetilir.)
+  useEffect(() => {
+    if (!tracking) return;
+    const lst = listings.find((x) => String(x.id) === String(id));
+    const acc = offers.find((o) => String(o.listingId) === String(id) && o.status === "kabul");
+    const isMatched = Boolean(lst) && (lst.status === "eslesti" || Boolean(acc));
+    const done = Boolean(lst) && (lst.phase === "teslim" || lst.status === "kapali");
+    if (!isMatched || done) {
+      if (watchStopRef.current) { watchStopRef.current(); watchStopRef.current = null; }
+      endTrip(id);
+      setTracking(false);
+    }
+  }, [tracking, listings, offers, id]);
 
   // Geofence: sürücü konumu yükleme/boşaltma alanına girince fazı otomatik ilerlet.
   // (Erken return'den önce; gerekli değerler içeride null-güvenli türetilir.)
@@ -212,9 +229,11 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
   const nextPhase = phaseIdx >= 0 && phaseIdx < PHASES.length - 1 ? PHASES[phaseIdx + 1] : null;
   const estTrips = l.amount && (l.unit === "ton" || l.unit === "m³") ? Math.ceil(l.amount / 18) : null;
   const isDone = phase === "teslim" || l.status === "kapali";
-  const advancePhase = () => {
+  const advancePhase = async () => {
     if (!nextPhase) return;
-    onUpdateListing?.(l.id, { phase: nextPhase[0], ...(nextPhase[0] === "teslim" ? { status: "kapali" } : {}) });
+    // Yazma sonucunu kontrol et — SB modunda sessiz kayıp olmasın.
+    const res = await onUpdateListing?.(l.id, { phase: nextPhase[0], ...(nextPhase[0] === "teslim" ? { status: "kapali" } : {}) });
+    if (res && res.ok === false) { toast(res.error || "Kaydedilemedi, tekrar dene", "error"); return; }
   };
 
   // ── Canlı konum (sürücü = nakliyeci) ──
@@ -589,7 +608,10 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
                   )}
                   {estTrips && phaseIdx >= 1 && tripsDone < estTrips && (
                     <button
-                      onClick={() => onUpdateListing?.(l.id, { tripsDone: tripsDone + 1 })}
+                      onClick={async () => {
+                        const res = await onUpdateListing?.(l.id, { tripsDone: tripsDone + 1 });
+                        if (res && res.ok === false) { toast(res.error || "Kaydedilemedi, tekrar dene", "error"); return; }
+                      }}
                       style={{ background: "transparent", color: C.yellow, border: `2px solid #2A2824`, borderRadius: 5, padding: "10px 14px", fontFamily: MONO, fontSize: 11, fontWeight: 700, cursor: "pointer" }}
                     >
                       +1 SEFER
@@ -1192,7 +1214,7 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
         {/* İşi iptal et — AÇIK ve AYRI aksiyon. (Eskiden şikayet modalındaki
             sebep listesine gömülüydü; kullanıcı sebebi seçmeden gönderince
             yalnız rapor kaydediliyor, iptal hiç tetiklenmiyordu.) */}
-        {matched && !isDone && onCancelJob && (
+        {canManage && !isDone && onCancelJob && (
           <button
             onClick={() => setShowCancel(true)}
             style={{ width: "100%", background: "transparent", border: `2px solid ${C.rose}`, borderRadius: 6, padding: "12px 0", fontFamily: ARCH, fontSize: 13, fontWeight: 900, textTransform: "uppercase", letterSpacing: "-0.01em", color: C.rose, cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7 }}
