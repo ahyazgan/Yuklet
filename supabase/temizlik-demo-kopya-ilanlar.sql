@@ -52,12 +52,25 @@ update public.listings set price = 9750, amount = 150, recurring_text = '2-3 gü
  where owner_id is null and price = 55000
    and title ilike 'Yol genişletme%';
 
+-- 5) Elle açılmış demo ilanların tonajı da fiyatla orantılansın.
+--    Çimento sevkiyatı ₺4.500 → 28 ton (tek silobas sefer, kısa mesafe);
+--    Kazı toprağı ₺15.000 → 250 ton (₺60/ton hafriyat). Fiyat koşulu sayesinde
+--    fiyat ileride değişirse bu blok eski tonajı dayatmaz.
+update public.listings set amount = 28, unit = 'ton'
+ where price = 4500 and title ilike '%Dökme Çimento Sevkiyat%'
+   and owner_id in (select id from auth.users where email = 'alici@demo.yuklet.co');
+
+update public.listings set amount = 250, unit = 'ton'
+ where price = 15000 and title ilike 'Kazı Toprağı%'
+   and owner_id in (select id from auth.users where email = 'alici@demo.yuklet.co');
+
 -- Kontrol: başlık bazında tekrar kalmamalı (her başlık 1 satır beklenir)
 select title, count(*) as adet, array_agg(owner_name) as sahipler
   from public.listings
  group by title having count(*) > 1;
 
--- Kontrol: güncel demo pano
-select id, owner_name, left(title, 48) as title, il, price_type, price, status
+-- Kontrol: güncel demo pano (tonaj + ton başı birim fiyatla)
+select id, owner_name, left(title, 42) as title, amount, unit, price,
+       case when amount > 0 and price > 0 then round(price / amount) end as birim
   from public.listings
  order by id;
