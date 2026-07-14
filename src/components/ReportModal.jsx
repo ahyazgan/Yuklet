@@ -28,13 +28,19 @@ export default function ReportModal({ targetLabel, onSubmit, onClose, doneTitle 
   const submit = async () => {
     setBusy(true);
     setError("");
-    const res = await onSubmit?.({ reason, desc: desc.trim() });
-    setBusy(false);
-    if (res && res.ok === false) {
-      setError(res.error || "Gönderilemedi. Bağlantını kontrol edip tekrar dene.");
-      return;
+    try {
+      const res = await onSubmit?.({ reason, desc: desc.trim() });
+      if (res && res.ok === false) {
+        setError(res.error || "Gönderilemedi. Bağlantını kontrol edip tekrar dene.");
+        return;
+      }
+      setDone(true);
+    } catch {
+      // onSubmit fırlatırsa buton sonsuz "Gönderiliyor…" kalmasın.
+      setError("Gönderilemedi. Bağlantını kontrol edip tekrar dene.");
+    } finally {
+      setBusy(false);
     }
-    setDone(true);
   };
 
   return (

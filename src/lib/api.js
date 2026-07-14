@@ -581,8 +581,11 @@ export async function fetchAllReports() {
   return (data || []).map(rowToReport);
 }
 export async function updateReport(id, patch) {
-  const { error } = await supabase.from("reports").update({ status: patch.status }).eq("id", id);
+  // .select ile 0-satır kontrolü: RLS engellerse hata fırlatmaz, sessizce
+  // 0 satır döner — admin panel sahte başarı göstermesin (adminUpdateProfile deseni).
+  const { data, error } = await supabase.from("reports").update({ status: patch.status }).eq("id", id).select("id");
   if (error) throw error;
+  if (!data || data.length === 0) throw new Error("Şikayet güncellenemedi (yetki yok ya da kayıt bulunamadı).");
 }
 export async function adminUpdateProfile(userId, patch) {
   // Admin: ban/rol/onay. snake_case'e çevir.
@@ -599,8 +602,9 @@ export async function adminUpdateProfile(userId, patch) {
   }
 }
 export async function updateDocStatus(docId, status) {
-  const { error } = await supabase.from("docs").update({ status }).eq("id", docId);
+  const { data, error } = await supabase.from("docs").update({ status }).eq("id", docId).select("id");
   if (error) throw error;
+  if (!data || data.length === 0) throw new Error("Belge güncellenemedi (yetki yok ya da kayıt bulunamadı).");
 }
 
 // ── Docs (belgeler) — url Supabase Storage'dan gelir ────────
