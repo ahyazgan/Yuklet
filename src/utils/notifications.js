@@ -44,8 +44,8 @@ export function buildNotifications(user, { listings = [], offers = [], messages 
     // kabul etti -> ona ayrıca "kabul edildi" bildirimi gösterme.
     if (String(o.fromUserId) === uid && o.status !== "beklemede" && !o.direct) {
       items.push({
-        id: `res-${o.id}`, icon: o.status === "kabul" ? "✅" : "❌",
-        text: `"${titleOf(o.listingId)}" için teklifin ${o.status === "kabul" ? "kabul edildi 🎉" : "reddedildi"}`,
+        id: `res-${o.id}`, icon: o.status === "kabul" ? "✅" : o.status === "iptal" ? "🚫" : "❌",
+        text: `"${titleOf(o.listingId)}" için ${o.status === "kabul" ? "teklifin kabul edildi 🎉" : o.status === "iptal" ? "iş iptal edildi" : "teklifin reddedildi"}`,
         time: o.updatedAt || o.createdAt, link: o.status === "kabul" ? "/mesajlar" : `/ilan/${o.listingId}`,
       });
     }

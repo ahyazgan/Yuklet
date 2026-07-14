@@ -2,10 +2,12 @@ import { useState } from "react";
 import { Check, ChevronDown } from "lucide-react";
 
 // ── SAHA report modal. Sharp 2px ink frame, Archivo uppercase, Space Mono sub.
-// İptal sebebi dışarıdan da kullanılır (TakipPage bu sebep seçilince işi
-// gerçekten iptal eder) — metni tek yerden yönetmek için export edilir.
+// CANCEL_REASON: TakipPage'in "İşi İptal Et" onayı, admin izine düşen şikayet
+// kaydında bu sebebi kullanır. Sebep LİSTEDE DEĞİL — modal 10 ayrı yüzeyden
+// açılıyor ve yalnız TakipPage iptali işleyebiliyordu; listede durunca diğer
+// yüzeylerde "iptal ettim" sanılıp hiçbir şey iptal olmuyordu.
 export const CANCEL_REASON = "İşi iptal etmek istiyorum";
-const REASONS = ["Yanıltıcı / sahte ilan", "Dolandırıcılık şüphesi", "Uygunsuz içerik", "Ödeme / anlaşma sorunu", CANCEL_REASON, "İletişim kurulamıyor", "Diğer"];
+const REASONS = ["Yanıltıcı / sahte ilan", "Dolandırıcılık şüphesi", "Uygunsuz içerik", "Ödeme / anlaşma sorunu", "İletişim kurulamıyor", "Diğer"];
 
 const INK = "#0A0A0A";
 const YELLOW = "#FACC15";

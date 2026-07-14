@@ -78,7 +78,9 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
   const [rateTags, setRateTags] = useState([]);
   const [showRate, setShowRate] = useState(false);
   const [showReport, setShowReport] = useState(false);
-  const [cancelDone, setCancelDone] = useState(false); // iptal başarı ekranı (rapor + otomatik iptal)
+  const [showCancel, setShowCancel] = useState(false); // iş iptal onay sayfası
+  const [cancelBusy, setCancelBusy] = useState(false);
+  const [cancelNote, setCancelNote] = useState("");
   const [payBusy, setPayBusy] = useState(false);
   const [payMsg, setPayMsg] = useState("");
   const [proofForm, setProofForm] = useState({ tonnage: "", ticketNo: "", note: "", photo: null, signature: null });
@@ -1183,12 +1185,24 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
           </div>
         )}
 
-        {/* Anlaşmazlık ve iptal — aynı şikayet akışını açar */}
+        {/* İşi iptal et — AÇIK ve AYRI aksiyon. (Eskiden şikayet modalındaki
+            sebep listesine gömülüydü; kullanıcı sebebi seçmeden gönderince
+            yalnız rapor kaydediliyor, iptal hiç tetiklenmiyordu.) */}
+        {matched && !isDone && onCancelJob && (
+          <button
+            onClick={() => setShowCancel(true)}
+            style={{ width: "100%", background: "transparent", border: `2px solid ${C.rose}`, borderRadius: 6, padding: "12px 0", fontFamily: ARCH, fontSize: 13, fontWeight: 900, textTransform: "uppercase", letterSpacing: "-0.01em", color: C.rose, cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7 }}
+          >
+            <X size={16} strokeWidth={2.6} /> İşi İptal Et
+          </button>
+        )}
+
+        {/* Şikayet / anlaşmazlık — yalnız bildirim (iptal üstteki butondan) */}
         <button
           onClick={() => setShowReport(true)}
-          style={{ alignSelf: "center", background: "transparent", border: "none", fontFamily: MONO, fontSize: 11, fontWeight: 700, color: C.rose, cursor: "pointer", letterSpacing: "0.04em", padding: "4px 0", display: "inline-flex", alignItems: "center", gap: 5 }}
+          style={{ alignSelf: "center", background: "transparent", border: "none", fontFamily: MONO, fontSize: 11, fontWeight: 700, color: C.muted, cursor: "pointer", letterSpacing: "0.04em", padding: "4px 0", display: "inline-flex", alignItems: "center", gap: 5 }}
         >
-          <AlertTriangle size={12} /> ANLAŞMAZLIK VE İPTAL
+          <AlertTriangle size={12} /> SORUN BİLDİR / ANLAŞMAZLIK
         </button>
       </div>
 
@@ -1297,29 +1311,64 @@ export default function TakipPage({ listings = LISTINGS, user, offers = [], getC
         </div>
       )}
 
+      {/* ── İŞ İPTAL ONAYI (bottom sheet) — cancel_job'u doğrudan çağırır ── */}
+      {showCancel && (
+        <div
+          onClick={() => !cancelBusy && setShowCancel(false)}
+          style={{ position: "fixed", inset: 0, zIndex: 60, background: "rgba(10,10,10,0.55)", display: "flex", alignItems: "flex-end", justifyContent: "center" }}
+        >
+          <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxWidth: 460, background: C.sheet, border: `2px solid ${C.ink}`, borderBottom: "none", borderTopLeftRadius: 12, borderTopRightRadius: 12, overflow: "hidden" }}>
+            <div style={{ height: 8, backgroundImage: HAZARD }} />
+            <div style={{ padding: "18px 18px 22px" }}>
+              <h2 style={{ fontFamily: ARCH, fontSize: 18, fontWeight: 900, textTransform: "uppercase", letterSpacing: "-0.02em", color: C.rose, margin: 0, display: "flex", alignItems: "center", gap: 8 }}>
+                <AlertTriangle size={20} /> İşi İptal Et
+              </h2>
+              <p style={{ fontSize: 13, color: C.sub, margin: "10px 0 0", lineHeight: 1.6 }}>
+                Anlaşma iptal olur, <b>"{l.title}"</b> ilanı yeniden yayına döner ve başka nakliyeciyle eşleşebilir. Bu işlem geri alınamaz.
+              </p>
+              <label style={{ display: "block", fontFamily: MONO, fontSize: 10, fontWeight: 700, color: C.sub, textTransform: "uppercase", margin: "14px 0 6px" }}>İptal nedeni (opsiyonel)</label>
+              <textarea
+                value={cancelNote}
+                onChange={(e) => setCancelNote(e.target.value)}
+                placeholder="Ne oldu?"
+                style={{ width: "100%", boxSizing: "border-box", background: C.card, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "10px 12px", fontSize: 13, minHeight: 64, resize: "vertical", outline: "none", fontFamily: "inherit", color: C.ink }}
+              />
+              <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
+                <button
+                  onClick={() => setShowCancel(false)}
+                  disabled={cancelBusy}
+                  style={{ flex: 1, background: C.stone, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "13px 0", fontFamily: ARCH, fontSize: 13, fontWeight: 900, textTransform: "uppercase", cursor: "pointer" }}
+                >
+                  Vazgeç
+                </button>
+                <button
+                  onClick={async () => {
+                    if (cancelBusy) return;
+                    setCancelBusy(true);
+                    const res = await onCancelJob?.(l);
+                    if (!res || res.ok === false) { setCancelBusy(false); toast(res?.error || "İş iptal edilemedi.", "error"); return; }
+                    // Admin izi: iptal, şikayet kaydı olarak da düşer (başarısızlığı akışı bloklamaz).
+                    try { await onReport?.({ type: "listing", targetId: l.id, listingId: l.id, fromId: user?.id || null, fromName: user?.name || "misafir", reason: CANCEL_REASON, desc: cancelNote.trim() }); } catch { /* iz düşmese de iptal tamam */ }
+                    setCancelBusy(false); setShowCancel(false); setCancelNote("");
+                    hapticSuccess();
+                    toast("İş iptal edildi — ilan yeniden yayında", "success");
+                  }}
+                  disabled={cancelBusy}
+                  style={{ flex: 1.4, background: C.rose, border: `2px solid ${C.ink}`, borderRadius: 6, padding: "13px 0", fontFamily: ARCH, fontSize: 13, fontWeight: 900, textTransform: "uppercase", color: "#fff", cursor: cancelBusy ? "default" : "pointer", opacity: cancelBusy ? 0.6 : 1 }}
+                >
+                  {cancelBusy ? "İptal ediliyor…" : "Evet, İşi İptal Et"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showReport && (
         <ReportModal
           targetLabel={counterpart ? `${counterpart.role}: ${counterpart.name}` : `İlan: ${l.title}`}
-          doneTitle={cancelDone ? "İş İptal Edildi" : undefined}
-          doneText={cancelDone ? "Kabul edilen teklif iptal edildi, ilan yeniden yayına alındı. Bildirimin de kayda geçti." : undefined}
-          onClose={() => { setShowReport(false); setCancelDone(false); }}
-          onSubmit={async (p) => {
-            const res = await onReport?.({ type: counterpart ? "user" : "listing", targetId: counterpart?.id || l.id, listingId: l.id, fromId: user?.id || null, fromName: user?.name || "misafir", ...p });
-            if (res && res.ok === false) return res;
-            // "İşi iptal etmek istiyorum" seçildiyse iş OTOMATİK iptal edilir:
-            // kabul edilen teklif 'iptal' olur, ilan yeniden 'aktif' (panoya döner).
-            // Sessiz atlama YOK — iptal edilemiyorsa nedeni modalda söylenir.
-            if (p.reason === CANCEL_REASON) {
-              if (isDone) return { ok: false, error: "Bu iş teslim edilmiş/kapanmış — artık iptal edilemez. Bildirimin yine de kaydedildi." };
-              if (!matched) return { ok: false, error: "Bu iş henüz eşleşmemiş — iptal gerekmez. Bildirimin kaydedildi." };
-              if (!onCancelJob) return { ok: false, error: "İptal şu an kullanılamıyor — uygulamayı yenileyip tekrar dene. Bildirimin kaydedildi." };
-              const c = await onCancelJob(l);
-              if (c && c.ok === false) return { ok: false, error: (c.error || "İş iptal edilemedi.") + " Bildirimin yine de kaydedildi." };
-              setCancelDone(true);
-              toast("İş iptal edildi — ilan yeniden yayında", "success");
-            }
-            return res;
-          }}
+          onClose={() => setShowReport(false)}
+          onSubmit={(p) => onReport?.({ type: counterpart ? "user" : "listing", targetId: counterpart?.id || l.id, listingId: l.id, fromId: user?.id || null, fromName: user?.name || "misafir", ...p })}
         />
       )}
     </div>

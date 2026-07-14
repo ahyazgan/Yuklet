@@ -44,6 +44,7 @@ const OFFER_STATUS = {
   beklemede: { label: "BEKLEMEDE", bg: C.yellow, fg: C.ink },
   kabul: { label: "KABUL", bg: C.green, fg: "#fff" },
   ret: { label: "REDDEDİLDİ", bg: C.sub, fg: "#fff" },
+  iptal: { label: "İPTAL EDİLDİ", bg: C.sub, fg: "#fff" }, // iş iptali sonrası (fallback BEKLEMEDE göstermesin)
 };
 
 function fmtDate(iso) {
@@ -264,7 +265,7 @@ export default function IlanlarimPage({ listings = [], user, offers = [], review
                           l.vehicle || null,
                         ]
                     ).filter(Boolean).join(" · ")}
-                    {l.type !== "urun" && lOffers.length > 0 && <span style={{ color: C.ink, fontWeight: 700 }}>{" · "}{lOffers.length} TEKLİF</span>}
+                    {l.type !== "urun" && lOffers.filter((o) => o.status !== "iptal").length > 0 && <span style={{ color: C.ink, fontWeight: 700 }}>{" · "}{lOffers.filter((o) => o.status !== "iptal").length} TEKLİF</span>}
                   </p>
 
                   {/* Ürün ilanı: stok kontrolü + gelen sipariş sayısı */}
