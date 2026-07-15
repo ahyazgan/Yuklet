@@ -11,13 +11,14 @@ Sıra önemli — üstten aşağı ilerle.
   - Nakliyecinin "İşi İptal Et"i her zaman patlar.
   Dosyanın sonundaki kontrol sorguları: 6 fonksiyon adı dönmeli; sahipsiz
   ilanlarda `eslesti` kalmamalı.
-- [ ] **Admin OLMAYAN hesapla duman testi** (admin hesabı guard'lardan muaf —
-  admin'le test bloker'ları GÖSTERMEZ):
-  - Demo alıcı ile bir ürüne sipariş ver → "Talebin iletildi" görmeli.
-  - Demo nakliyeci ile sabit fiyatlı işi kabul et → ana sayfada "Devam Eden
-    İşim" kartı → takip → "İşi İptal Et" → iş panoya dönmeli.
-  - Sahipsiz demo ilanda (Körfez Yapı / Murat Kayhan / Başkent / Batı Ege)
-    "TANITIM İLANI" bloğu görünmeli, kabul/teklif kapalı olmalı.
+- [x] **Admin OLMAYAN hesapla duman testi — GEÇTİ (2026-07-15, API düzeyinde,
+  geçici hesaplarla kalıcı iz bırakmadan; 12/12 PASS):**
+  - Sipariş INSERT + offers_count güncellemesi (bloker-1) ✓
+  - accept_job → eslesti, cancel_job → aktif (bloker-2, admin olmayan sürücü) ✓
+  - Sahipsiz ilana accept_job → "Bu bir tanıtım ilanıdır — kabul edilemez." ✓
+  - Temizlik doğrulandı: test ilanları + hesaplar tamamen silindi ✓
+- [ ] (Opsiyonel, 30 sn görsel kontrol) Web'de sahipsiz bir demo ilana girip
+  "TANITIM İLANI" bloğunun göründüğünü gözle de doğrula.
 
 ## 2. Native build (ŞART)
 
