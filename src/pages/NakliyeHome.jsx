@@ -18,6 +18,7 @@ import { LISTINGS } from "../data/listings";
 import { loadListings, loadOffers } from "../utils/storage";
 import { marketPulse, haversineKm } from "../utils/priceEstimate";
 import { loadsNearCity } from "../utils/backhaul";
+import { haulerCategory } from "../utils/haulerCategory";
 import { IL_COORDS } from "../data/ilCoords";
 
 // Gerçek harita (Leaflet) ayrı chunk — ana sayfa ilk yüklemesini şişirmesin.
@@ -492,8 +493,50 @@ function CarrierActiveJobCard({ l, nav }) {
   );
 }
 
+/* ── Taşıma türü seçim kartı (ilk giriş — profil boş + filo belirsizken) ── */
+const HAULER_TYPE_OPTIONS = [
+  ["Hafriyat (damperli)", "Hafriyat — Damperli"],
+  ["Silobas / dökme", "Silobas — Toz / Dökme"],
+  ["Hafriyat + Silobas (ikisi)", "Her İkisi"],
+];
+
+function HaulerTypeCard({ onUpdateProfile }) {
+  const [busy, setBusy] = useState(false);
+  const pick = async (val) => {
+    if (busy) return;
+    setBusy(true);
+    const res = await onUpdateProfile?.({ tasimaTuru: val });
+    // Başarıda kart, profil güncellenince kendiliğinden kaybolur.
+    if (res && res.ok === false) setBusy(false);
+  };
+  return (
+    <div className="mb-5 overflow-hidden" style={{ background: C.card, border: FRAME, borderRadius: 6, boxShadow: SHADOW_SM }}>
+      <Hazard h={6} />
+      <div className="p-3.5">
+        <div className="text-[14px] font-extrabold uppercase" style={{ fontFamily: ARCH, color: C.ink, letterSpacing: "-0.01em" }}>Ne taşıyorsun?</div>
+        <div className="mb-3 mt-1 text-[10px] font-bold uppercase" style={{ fontFamily: MONO, color: C.sub }}>
+          Sana yalnız uygun yükleri gösterelim — sonradan profilden değiştirebilirsin
+        </div>
+        <div className="flex flex-col gap-2">
+          {HAULER_TYPE_OPTIONS.map(([val, label]) => (
+            <button
+              key={val}
+              onClick={() => pick(val)}
+              disabled={busy}
+              className="flex items-center justify-between px-3.5 py-3 text-left text-[12.5px] font-extrabold uppercase"
+              style={{ fontFamily: ARCH, color: C.ink, background: C.stone, border: FRAME, borderRadius: 5, opacity: busy ? 0.6 : 1, cursor: busy ? "default" : "pointer" }}
+            >
+              {label} <ChevronRight size={15} strokeWidth={2.5} />
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ── NAKLİYECİ gövdesi ──────────────────────────────────────────────── */
-function NakliyeciBody({ nav, available, setAvailable, carrier }) {
+function NakliyeciBody({ nav, available, setAvailable, carrier, onUpdateProfile }) {
   const backhaulCount = carrier?.backhaulCount || 0;
   const suitableJobs = carrier?.suitableJobs || [];
   const activeJobs = carrier?.activeJobs || [];
@@ -506,6 +549,9 @@ function NakliyeciBody({ nav, available, setAvailable, carrier }) {
   const destCoord = resolveIlCoord(carrier?.backhaulTo);
   return (
     <>
+      {/* İlk giriş: taşıma türü sorusu (uygun yük filtrelemesi için) */}
+      {carrier?.needsHaulerType && onUpdateProfile && <HaulerTypeCard onUpdateProfile={onUpdateProfile} />}
+
       {/* müsaitlik anahtarı */}
       <div className="mb-5 flex items-center gap-2.5 p-3" style={{ background: C.card, border: FRAME, borderRadius: 6, boxShadow: SHADOW_SM }}>
         <span
@@ -860,7 +906,7 @@ function PiyasaWidget({ nav }) {
 }
 
 export default function NakliyeHome({
-  user, listings = [], offers = [], notifUnread = 0, onLoginClick, announcement,
+  user, listings = [], offers = [], fleet = [], notifUnread = 0, onLoginClick, onUpdateProfile, announcement,
 }) {
   const navigate = useNavigate();
   const [annDismissed, setAnnDismissed] = useState(false);
@@ -914,7 +960,10 @@ export default function NakliyeHome({
 
   // ── Nakliyeci için gerçek veri türetimleri ──
   const carrier = useMemo(() => {
-    if (!user) return { suitableJobs: [], activeJobs: [], openOffers: 0, won: 0, backhaulCount: 0 };
+    if (!user) return { suitableJobs: [], activeJobs: [], openOffers: 0, won: 0, backhaulCount: 0, needsHaulerType: false };
+    // Uzmanlık: silobasçıya hafriyat işi "sana uygun" diye gösterilmez (tersi de).
+    // Profildeki taşıma türü ya da filo/araç ilanlarından türetilir; belirsizse null = hepsi.
+    const hc = haulerCategory({ user, listings, fleet });
     // Verdiğim teklifler (açık + kazanılan).
     const myOffers = offers.filter((o) => String(o.fromUserId) === String(user.id));
     const openOffers = myOffers.filter((o) => o.status === "beklemede").length;
@@ -928,13 +977,13 @@ export default function NakliyeHome({
     const activeJobs = listings
       .filter((l) => acceptedByListing.has(String(l.id)) && l.status !== "kapali" && l.phase !== "teslim")
       .map((l) => ({ ...l, pay: acceptedByListing.get(String(l.id))?.price ?? l.price }));
-    // Sana uygun işler: açık iş ilanları (başkalarının), en yeni 2.
+    // Sana uygun işler: açık iş ilanları (başkalarının, uzmanlığına uygun), en yeni 2.
     const suitableJobs = listings
-      .filter((l) => l.type === "is" && l.status === "aktif" && String(l.ownerId) !== String(user.id))
+      .filter((l) => l.type === "is" && l.status === "aktif" && String(l.ownerId) !== String(user.id) && (!hc || l.cat === hc))
       .slice(0, 2);
-    // Dönüş yükü: kullanıcının ilinden çıkan uygun yükler (gerçek eşleşme).
+    // Dönüş yükü: kullanıcının ilinden çıkan uygun yükler (uzmanlık kategorisinde).
     const city = user.sehir || user.il || "";
-    const nearLoads = city ? loadsNearCity(city, listings, { limit: 20 }) : [];
+    const nearLoads = city ? loadsNearCity(city, listings, { cat: hc, limit: 20 }) : [];
     const backhaulCount = nearLoads.length;
     // En yakın uygun yükün ili → karttaki gerçek güzergah ucu + yaklaşık km.
     const near = nearLoads[0] || null;
@@ -943,8 +992,11 @@ export default function NakliyeHome({
       city && backhaulTo && IL_COORDS[city] && IL_COORDS[backhaulTo]
         ? haversineKm(IL_COORDS[city], IL_COORDS[backhaulTo])
         : null;
-    return { suitableJobs, activeJobs, openOffers, won, backhaulCount, backhaulCity: city, backhaulTo, backhaulKm };
-  }, [user, listings, offers]);
+    // Taşıma türü sorusu: nakliyeci hiç beyan etmemiş VE filodan da çıkarılamıyorsa
+    // ana sayfada tek soruluk seçim kartı gösterilir ("Her ikisi" de geçerli cevap).
+    const needsHaulerType = !user.tasimaTuru && hc == null;
+    return { suitableJobs, activeJobs, openOffers, won, backhaulCount, backhaulCity: city, backhaulTo, backhaulKm, haulerCat: hc, needsHaulerType };
+  }, [user, listings, offers, fleet]);
 
   // istatistik şeridi (rol başına 3 kutu) — alıcı gerçek veriye bağlı.
   const STAT = {
@@ -1020,7 +1072,7 @@ export default function NakliyeHome({
         {/* <PiyasaWidget nav={navigate} /> */}
 
         {role === "nakliyeci" ? (
-          <NakliyeciStateful navigate={navigate} carrier={carrier} />
+          <NakliyeciStateful navigate={navigate} carrier={carrier} onUpdateProfile={onUpdateProfile} />
         ) : role === "tedarikci" ? (
           <TedarikciBody nav={navigate} seller={seller} />
         ) : (
@@ -1079,7 +1131,7 @@ export default function NakliyeHome({
 }
 
 /* müsaitlik state'i için ince sarmalayıcı (hook kuralları) */
-function NakliyeciStateful({ navigate, carrier }) {
+function NakliyeciStateful({ navigate, carrier, onUpdateProfile }) {
   const [available, setAvailable] = useState(true);
-  return <NakliyeciBody nav={navigate} available={available} setAvailable={setAvailable} carrier={carrier} />;
+  return <NakliyeciBody nav={navigate} available={available} setAvailable={setAvailable} carrier={carrier} onUpdateProfile={onUpdateProfile} />;
 }

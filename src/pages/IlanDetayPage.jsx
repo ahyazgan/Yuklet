@@ -223,6 +223,14 @@ export default function IlanDetayPage({ listings = LISTINGS, user, fleet = [], o
   const offerGate = () => {
     if (!user) { onRequireAuth?.(); return false; }
     if (!roleAllowed) { toast(roleHint, "error"); return false; }   // yanlış rol bu aksiyonu yapamaz
+    // Taşıma türü uyumu: profili net tek tür beyan eden nakliyeci, uyumsuz
+    // kategorideki İŞ ilanına teklif/kabul veremez (sunucudaki accept_job
+    // guard'ının istemci aynası — kullanıcı hatayı erken ve dostça görür).
+    const myCat = { "Hafriyat (damperli)": "hafriyat", "Silobas / dökme": "silobas" }[user.tasimaTuru];
+    if (l.type === "is" && myCat && l.cat && l.cat !== myCat) {
+      toast("Bu iş taşıma türüne uygun değil — profilindeki taşıma türünü kontrol et.", "error");
+      return false;
+    }
     // Telefon zorunlu: geçerli cep numarası yoksa akış içinde girdirilir.
     if (!isValidPhone(user.phone)) { setNeedPhone(true); return false; }
     const pend = pendingReviews(user, listings, offers, reviews);

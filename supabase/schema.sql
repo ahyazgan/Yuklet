@@ -639,10 +639,11 @@ create or replace function public.accept_job(
   p_listing_id bigint, p_price numeric default null, p_vehicle jsonb default null
 ) returns public.listings language plpgsql security definer set search_path = public as $$
 declare
-  v_uid uuid := auth.uid(); v_listing public.listings; v_name text; v_status text;
+  v_uid uuid := auth.uid(); v_listing public.listings; v_name text; v_status text; v_turu text;
 begin
   if v_uid is null then raise exception 'Giriş gerekli.'; end if;
-  select coalesce(name,''), coalesce(status,'aktif') into v_name, v_status
+  select coalesce(name,''), coalesce(status,'aktif'), coalesce(tasima_turu,'')
+    into v_name, v_status, v_turu
     from public.profiles where id = v_uid;
   if v_status = 'banli' then raise exception 'Hesabın askıya alındı.'; end if;
   select * into v_listing from public.listings where id = p_listing_id for update;
@@ -655,6 +656,13 @@ begin
   if v_listing.type not in ('is','arac') then raise exception 'Bu ilan doğrudan kabul edilemez.'; end if;
   if coalesce(v_listing.price_type,'') <> 'sabit' then raise exception 'Yalnızca sabit fiyatlı ilanlar doğrudan kabul edilir.'; end if;
   if v_listing.status <> 'aktif' then raise exception 'Bu ilan artık uygun değil.'; end if;
+  -- Tasima turu uyumu: profili NET TEK tur beyan eden nakliyeci uyumsuz
+  -- kategorideki IS ilanini kabul edemez (silobasci hafriyat isi alamaz, tersi de).
+  -- Bos/"ikisi"/diger beyanlar kisitlanmaz; arac kiralamada kabul eden alicidir — kapsam disi.
+  if v_listing.type = 'is' and (
+       (v_turu = 'Hafriyat (damperli)' and v_listing.cat = 'silobas')
+    or (v_turu = 'Silobas / dökme'     and v_listing.cat = 'hafriyat')
+  ) then raise exception 'Bu iş taşıma türüne uygun değil — profilindeki taşıma türünü kontrol et.'; end if;
   -- kind='direkt': dogrudan kabul — bildirim katmani "teklifin kabul edildi"
   -- yerine dogru davranisi secebilsin (istemci rowToOffer direct'i bundan turetir).
   insert into public.offers (listing_id, from_user_id, from_user_name, price, message, status, kind)
