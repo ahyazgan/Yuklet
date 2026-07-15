@@ -57,7 +57,9 @@ Sıra önemli — üstten aşağı ilerle.
   mx1/mx2.improvmx.com (10/20) + SPF TXT eklendi, yayılım Google DNS'ten
   doğrulandı, ImprovMX rozeti Active. Alma ücretsiz; o adresten GÖNDERMEK
   gerekirse ImprovMX Premium ya da Zoho Mail free gerekir (şimdilik gereksiz).
-- [ ] info@yuklet.co'ya test maili at, hotmail'e düştüğünü bir kez gör.
+- [x] Test maili doğrulandı (2026-07-15): info@yuklet.co → hotmail'e düştü.
+- [ ] Play Console iletişim e-postasını geçici gmail'den info@yuklet.co'ya
+  güncelle (mağaza formu doldurulurken).
 
 ## 6. Bilinen ertelenmiş kalemler (yayını engellemez)
 
