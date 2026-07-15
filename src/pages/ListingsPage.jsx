@@ -25,7 +25,7 @@ import {
 import { LISTINGS, IL_LIST } from "../data/listings";
 import { CATS, MATERIALS } from "../data/categories";
 import { loadsNearCity } from "../utils/backhaul";
-import { loadSavedSearches, saveSavedSearches, loadRecentSearches, saveRecentSearches } from "../utils/storage";
+import { loadSavedSearches, saveSavedSearches, loadRecentSearches, saveRecentSearches, loadCatPref, saveCatPref } from "../utils/storage";
 import usePullToRefresh from "../hooks/usePullToRefresh";
 import useFavorites from "../hooks/useFavorites";
 import { computeReliability, reliabilityTier } from "../utils/reliability";
@@ -464,17 +464,30 @@ export default function ListingsPage({ listings = LISTINGS, user, fleet = [], on
   );
   // Mount'ta filo/ilan (SB) henüz boşsa haulerCat null olur → cat "all" kalır.
   // Veri gelip haulerCat çözülünce, kullanıcı kategoriye ELLE dokunmadıysa bir kez uygula.
+  // Öncelik: URL ?cat= > kayıtlı kullanıcı tercihi (son elle seçim) > uzmanlık > "Tümü".
   const userTouchedCatRef = useRef(false);   // kullanıcı kategoriyi elle değiştirdi mi
   const haulerCatAppliedRef = useRef(false);
-  const pickCat = (c) => { userTouchedCatRef.current = true; setCat(c); };
+  // Elle seçim kalıcı tercih olur: hafriyatçı hep hafriyat görmek istiyorsa
+  // (ya da silobasçı silobas) pano bir sonraki açılışta aynı sekmeyle gelir.
+  const pickCat = (c) => {
+    userTouchedCatRef.current = true;
+    setCat(c);
+    if (user?.id) saveCatPref({ ...loadCatPref(), [user.id]: c });
+  };
   useEffect(() => {
     if (haulerCatAppliedRef.current) return;
     if (["hafriyat", "silobas"].includes(sp.get("cat"))) { haulerCatAppliedRef.current = true; return; }
+    const saved = user?.id ? loadCatPref()[user.id] : null;
+    if (["hafriyat", "silobas", "all"].includes(saved)) {
+      if (!userTouchedCatRef.current) setCat(saved);       // kayıtlı tercih kazanır
+      haulerCatAppliedRef.current = true;
+      return;
+    }
     if (haulerCat) {
       if (!userTouchedCatRef.current) setCat(haulerCat);   // kullanıcı dokunmadıysa
       haulerCatAppliedRef.current = true;
     }
-  }, [haulerCat, sp]);
+  }, [haulerCat, sp, user]);
   const [il, setIl] = useState("all");
   const [q, setQ] = useState("");
   // Dönüş yükü (backhaul) sadece nakliyeci aracı — alıcı bu moda hiç girmez.

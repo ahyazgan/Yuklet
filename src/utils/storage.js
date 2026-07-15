@@ -50,6 +50,11 @@ export const loadReports = () => load("hamted_reports", []);
 export const saveReports = (v) => save("hamted_reports", v);
 export const loadSavedSearches = () => load("hamted_saved_searches", []);
 export const saveSavedSearches = (v) => save("hamted_saved_searches", v);
+// İlanlar panosu kategori tercihi (kullanıcı başına kalıcı):
+// { [userId]: "hafriyat" | "silobas" | "all" } — kullanıcı sekmeyi elle
+// değiştirince kaydedilir, pano bir sonraki açılışta onunla gelir.
+export const loadCatPref = () => load("hamted_cat_pref", {});
+export const saveCatPref = (v) => save("hamted_cat_pref", v);
 // Favori (kaydedilen) ilanlar — ilan id'lerinin string dizisi.
 export const loadFavorites = () => load("hamted_favorites", []);
 export const saveFavorites = (v) => save("hamted_favorites", v);
