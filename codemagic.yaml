@@ -88,12 +88,14 @@ workflows:
           # Sertifikayi anahtarliga ekle
           keychain add-certificates
 
-          # 3) Teshis: bu bundle id icin profiller
-          echo "=== Bu bundle id icin profiller ==="
-          app-store-connect list-profiles \
-            --filter-bundle-id-identifier "$BUNDLE_ID" || true
-
-          # 4) Profilleri Xcode projesine uygula
+          # Profilleri Xcode projesine uygula.
+          # NOT: Bu adim "Failed to set code signing settings" ile duserse
+          # neredeyse her zaman App ID'nin capability'leri (Associated Domains,
+          # Sign in with Apple) ile App.entitlements uyusmuyordur — portalda
+          # com.yuklet.app kimliginde ilgili capability acilmali; profil
+          # sonraki build'de otomatik yeniden uretilir.
+          # (Eski "list-profiles --filter-bundle-id-identifier" teshis komutu
+          # CLI'nin yeni surumunde kalkti; kaldirildi.)
           xcode-project use-profiles
 
       - name: Xcode archive & imzala
