@@ -5,10 +5,9 @@ Sıra önemli — üstten aşağı ilerle.
 
 ## 1. Canlı veritabanı (ŞART — yapılmadan yayınlama)
 
-- [ ] **`supabase/migration-2026-07-tasima-turu-uyum.sql` → Studio'da Run.**
-  Silobasçı/hafriyatçı ayrımı: uyumsuz kategorideki işin kabulü sunucuda
-  reddedilir. (Çalıştırılmazsa yalnız arayüz filtresi kalır — yine çalışır
-  ama link üzerinden uyumsuz kabul mümkün olur.)
+- [x] **`migration-2026-07-tasima-turu-uyum.sql` çalıştırıldı + canlıda
+  test edildi (2026-07-15, 7/7 PASS):** silobas beyanlı nakliyeci hafriyat
+  işini alamadı, doğru türde aldı, iptalle panoya döndü, iz bırakılmadı.
 
 - [ ] **Supabase Studio → SQL Editor → `supabase/migration-2026-07-magaza-oncesi-sunucu-fix.sql` → Run.**
   Bu migration olmadan normal (admin olmayan) kullanıcılarda:
