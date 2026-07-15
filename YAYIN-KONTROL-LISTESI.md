@@ -52,17 +52,12 @@ Sıra önemli — üstten aşağı ilerle.
 
 ## 5. Destek kanalı
 
-- [ ] **info@ / kvkk@yuklet.co mail ALAMIYOR (MX yok — 2026-07-14 doğrulandı;
-  DNS Vercel'de: ns1/ns2.vercel-dns.com).** Kurulum (~3 dk):
-  1. improvmx.com → ücretsiz hesap → domain `yuklet.co` ekle →
-     alias'lar: `info` → kendi e-postan, `kvkk` → kendi e-postan
-     (veya `*` catch-all).
-  2. Vercel dashboard → Domains → yuklet.co → DNS Records → ekle:
-     - `MX` @ → `mx1.improvmx.com` (priority 10)
-     - `MX` @ → `mx2.improvmx.com` (priority 20)
-     - `TXT` @ → `v=spf1 include:spf.improvmx.com ~all`
-     (kök TXT şu an boş — Resend alt alan adında, çakışma yok.)
-  3. ImprovMX panelinde yeşil onayı bekle, info@yuklet.co'ya test maili at.
+- [x] **TAMAM (2026-07-15):** ImprovMX kuruldu — `*@yuklet.co` (catch-all,
+  info@ ve kvkk@ dahil) → a.hakan_@hotmail.com'a yönlenir. Vercel DNS'e
+  mx1/mx2.improvmx.com (10/20) + SPF TXT eklendi, yayılım Google DNS'ten
+  doğrulandı, ImprovMX rozeti Active. Alma ücretsiz; o adresten GÖNDERMEK
+  gerekirse ImprovMX Premium ya da Zoho Mail free gerekir (şimdilik gereksiz).
+- [ ] info@yuklet.co'ya test maili at, hotmail'e düştüğünü bir kez gör.
 
 ## 6. Bilinen ertelenmiş kalemler (yayını engellemez)
 
