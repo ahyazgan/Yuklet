@@ -9,7 +9,7 @@ import { useState, useMemo, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
-  Bell, Search, MapPin, RefreshCw, Truck, Package,
+  Bell, Search, MapPin, RefreshCw, Truck, Package, Factory,
   ArrowRight, MessageCircle, ChevronRight, Activity, TrendingUp, Plus,
 } from "lucide-react";
 import SEO from "../components/SEO";
@@ -811,6 +811,82 @@ function TedarikciBody({ nav, seller }) {
 }
 
 /* ── Son ilanlar (müteahhit) — DB'deki gerçek son iş ilanları ────────── */
+/* ── KAYITSIZ ZİYARETÇİ: karşılama + değer önerisi ─────────────────── */
+function VisitorHero({ onSearch }) {
+  return (
+    <div className="px-[18px] pt-3">
+      <div className="mb-3 flex justify-center">
+        <Logo size="lg" style={{ height: 72 }} />
+      </div>
+      {/* koyu hero — tek cümlelik değer önerisi */}
+      <div className="relative mb-4 overflow-hidden" style={{ background: C.ink, border: FRAME, borderRadius: 6, boxShadow: SHADOW }}>
+        <Hazard vertical w={16} className="absolute right-0 top-0" />
+        <div className="py-4 pl-4 pr-8">
+          <div className="text-[9.5px] font-bold uppercase" style={{ color: C.yellow, fontFamily: MONO, letterSpacing: "0.06em" }}>
+            Hafriyat · Silobas · Ocak Ürünleri
+          </div>
+          <div className="mt-1.5 text-[21px] font-extrabold uppercase leading-[1.05]" style={{ color: "#FFFFFF", fontFamily: ARCH, letterSpacing: "-0.01em" }}>
+            Yük ile aracı<br />doğrudan eşle
+          </div>
+          <div className="mt-2 text-[10px] font-bold uppercase" style={{ color: "#C9C7C0", fontFamily: MONO }}>
+            Sabit fiyat · %0 komisyon · Belgeli üyeler
+          </div>
+        </div>
+      </div>
+      {/* arama: pano herkese açık */}
+      <button
+        onClick={onSearch}
+        className="flex h-12 w-full items-center gap-2.5 px-3.5"
+        style={{ background: C.card, border: FRAME, borderRadius: 6, boxShadow: SHADOW_SM }}
+      >
+        <Search size={18} strokeWidth={2} style={{ color: C.ink }} />
+        <span className="flex-1 text-left text-[10.5px] font-bold uppercase" style={{ color: C.sub, fontFamily: MONO, letterSpacing: "0.02em" }}>
+          İl · Malzeme · Güzergah Ara
+        </span>
+      </button>
+    </div>
+  );
+}
+
+/* Kayıtsız ziyaretçi gövdesi: rol seçimi kartları + canlı pano */
+const VISITOR_ROLES = [
+  { icon: Package, title: "Yük Veriyorum", desc: "Sabit fiyatla ilan aç, nakliyeci doğrudan kabul etsin", to: "/muteahhit" },
+  { icon: Truck, title: "Taşıyorum", desc: "Sana uygun işleri gör, tek dokunuşla üstlen", to: "/nakliyeci" },
+  { icon: Factory, title: "Malzeme Satıyorum", desc: "Kum, mıcır, çimento — ürününü panoya koy", to: "/tedarikci" },
+];
+
+function VisitorBody({ nav, recentJobs }) {
+  return (
+    <>
+      <SectionTitle>Ne yapmak istiyorsun?</SectionTitle>
+      <div className="mb-6 flex flex-col gap-2.5">
+        {VISITOR_ROLES.map((r) => (
+          <button
+            key={r.to}
+            onClick={() => nav(r.to)}
+            className="flex w-full items-center gap-3 p-3.5 text-left"
+            style={{ background: C.card, border: FRAME, borderRadius: 6, boxShadow: SHADOW_SM }}
+          >
+            <span className="flex h-12 w-12 flex-shrink-0 items-center justify-center" style={{ background: C.ink, borderRadius: 6 }}>
+              <r.icon size={22} color={C.yellow} strokeWidth={2.2} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[14px] font-extrabold uppercase leading-tight" style={{ color: C.ink, fontFamily: ARCH, letterSpacing: "-0.01em" }}>
+                {r.title}
+              </span>
+              <span className="mt-1 block text-[9.5px] font-bold uppercase leading-snug" style={{ color: C.sub, fontFamily: MONO }}>
+                {r.desc}
+              </span>
+            </span>
+            <ChevronRight size={18} strokeWidth={2.5} className="flex-shrink-0" style={{ color: C.ink }} />
+          </button>
+        ))}
+      </div>
+      <RecentListings nav={nav} jobs={recentJobs} />
+    </>
+  );
+}
+
 function RecentListings({ nav, jobs = [] }) {
   return (
     <>
@@ -1031,16 +1107,21 @@ export default function NakliyeHome({
       {/* üst hazard şeridi */}
       <Hazard h={8} />
 
-      <Header
-        name={name}
-        role={role}
-        place={place}
-        logo={user?.logo || ""}
-        unread={notifUnread}
-        onBell={() => navigate("/bildirimler")}
-        onProfile={() => navigate("/profil")}
-        onSearch={() => navigate("/ilanlar")}
-      />
+      {/* kayıtsız ziyaretçi kişisel header yerine değer önerisi görür */}
+      {user ? (
+        <Header
+          name={name}
+          role={role}
+          place={place}
+          logo={user?.logo || ""}
+          unread={notifUnread}
+          onBell={() => navigate("/bildirimler")}
+          onProfile={() => navigate("/profil")}
+          onSearch={() => navigate("/ilanlar")}
+        />
+      ) : (
+        <VisitorHero onSearch={() => navigate("/ilanlar")} />
+      )}
 
       {/* duyuru / kampanya bandı (admin yönetir) */}
       {ann && (
@@ -1053,14 +1134,16 @@ export default function NakliyeHome({
         </div>
       )}
 
-      {/* stat şeridi: 3 kutu grid */}
-      <div className="px-[18px] pt-4">
-        <div className="grid grid-cols-3 gap-2.5">
-          {STAT.map((s) => (
-            <StatBox key={s.label} {...s} />
-          ))}
+      {/* stat şeridi: 3 kutu grid — kayıtsızken boş "—" kutuları gösterme */}
+      {user && (
+        <div className="px-[18px] pt-4">
+          <div className="grid grid-cols-3 gap-2.5">
+            {STAT.map((s) => (
+              <StatBox key={s.label} {...s} />
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       <motion.div
         initial={{ opacity: 0, y: 10 }}
@@ -1071,7 +1154,9 @@ export default function NakliyeHome({
         {/* Piyasa Nabzı — sistem henüz buna uygun değil, gizlendi (geri açmak için yorumu kaldır) */}
         {/* <PiyasaWidget nav={navigate} /> */}
 
-        {role === "nakliyeci" ? (
+        {!user ? (
+          <VisitorBody nav={navigate} recentJobs={recentJobs} />
+        ) : role === "nakliyeci" ? (
           <NakliyeciStateful navigate={navigate} carrier={carrier} onUpdateProfile={onUpdateProfile} />
         ) : role === "tedarikci" ? (
           <TedarikciBody nav={navigate} seller={seller} />
