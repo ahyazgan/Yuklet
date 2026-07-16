@@ -26,11 +26,13 @@ Sıra önemli — üstten aşağı ilerle.
 
 ## 2. Native build (ŞART)
 
-- [ ] **Codemagic'te iOS (`ios-appstore`) ve Android workflow'larını tetikle.**
-  Cihazlardaki mevcut build 12 Temmuz'dan kalma — haritalar, "Devam Eden
-  İşlerim", iptal akışı ve tüm denetim düzeltmeleri native pakette YOK.
-  Sürüm 1.0.1 dört kaynakta hizalı (package.json / appUpdate.js /
-  build.gradle / pbxproj). Bir sonraki sürümde dördünü birden artır.
+- [x] **iOS build YEŞİL (2026-07-16, commit f429b39):** App.ipa (11.81 MB)
+  otomatik App Store Connect'e yüklendi. İmza kalıcı anahtara bağlandı
+  (CM_CERTIFICATE_PRIVATE_KEY, base64); pbxproj'daki BOM sorunu çözüldü.
+  TestFlight'ta "İşleniyor" bitince telefona kurup test et.
+- [ ] **Android build:** Start new build → master → "YÜKLET Android - Play
+  (AAB)" → üretilen AAB'yi indir (Play Console'a yüklenecek).
+  Sürüm 1.0.1 dört kaynakta hizalı; bir sonraki sürümde dördünü birden artır.
 
 ## 3. Apple tarafı
 
