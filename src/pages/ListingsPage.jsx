@@ -78,9 +78,14 @@ const deviationOf = (dist) => DEVIATION_KM[dist] ?? 60;
 const norm = (s) => String(s ?? "").toLocaleLowerCase("tr");
 
 // ── İlan kartı ──
-function ListingCard({ l, isFav = false, onToggleFav, rel }) {
+function ListingCard({ l, isFav = false, onToggleFav, rel, viewerRole }) {
   const isH = l.cat === "hafriyat";
   const isProduct = l.type === "urun";
+  // Kart CTA'sı detay sayfasındaki rol guard'ı ile aynı kurala uyar:
+  // iş ilanı → nakliyeci aksiyonu; ürün/araç ilanı → alıcı aksiyonu.
+  // Görüntüleyenin rolü uymuyorsa aksiyon etiketi yerine nötr "İncele" gösterilir.
+  const ctaRole = l.type === "is" ? "nakliyeci" : "isveren";
+  const ctaAllowed = !viewerRole || viewerRole === ctaRole;
   const fixed = isProduct
     ? (l.price ? `₺${l.price.toLocaleString("tr-TR")}${l.priceUnit || "/ton"}` : null)
     : fmtPrice(l);
@@ -355,11 +360,13 @@ function ListingCard({ l, isFav = false, onToggleFav, rel }) {
               whiteSpace: "nowrap",
             }}
           >
-            {isProduct
-              ? "SİPARİŞ VER →"
-              : (l.priceType === "sabit" && l.price)
-                ? (l.type === "arac" ? "KİRALA →" : "KABUL ET →")
-                : l.offers > 0 ? `${l.offers} TEKLİF →` : "TEKLİF VER →"}
+            {!ctaAllowed
+              ? "İNCELE →"
+              : isProduct
+                ? "SİPARİŞ VER →"
+                : (l.priceType === "sabit" && l.price)
+                  ? (l.type === "arac" ? "KİRALA →" : "KABUL ET →")
+                  : l.offers > 0 ? `${l.offers} TEKLİF →` : "TEKLİF VER →"}
           </span>
         </div>
       </div>
@@ -1149,7 +1156,7 @@ export default function ListingsPage({ listings = LISTINGS, user, fleet = [], on
                     onClick={() => navigate(`/ilan/${m.listing.id}`)}
                     style={{ display: "block", width: "100%", textAlign: "left" }}
                   >
-                    <ListingCard l={m.listing} isFav={isFav(m.listing.id)} onToggleFav={toggleFav} rel={ownerRel[String(m.listing.ownerId)]} />
+                    <ListingCard l={m.listing} isFav={isFav(m.listing.id)} onToggleFav={toggleFav} rel={ownerRel[String(m.listing.ownerId)]} viewerRole={user?.role} />
                   </button>
                 </div>
                 );
@@ -1215,7 +1222,7 @@ export default function ListingsPage({ listings = LISTINGS, user, fleet = [], on
                 onClick={() => navigate(`/ilan/${l.id}`)}
                 style={{ display: "block", width: "100%", textAlign: "left" }}
               >
-                <ListingCard l={l} isFav={isFav(l.id)} onToggleFav={toggleFav} rel={ownerRel[String(l.ownerId)]} />
+                <ListingCard l={l} isFav={isFav(l.id)} onToggleFav={toggleFav} rel={ownerRel[String(l.ownerId)]} viewerRole={user?.role} />
               </button>
             ))}
           </div>
