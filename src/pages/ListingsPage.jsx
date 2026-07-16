@@ -607,8 +607,7 @@ export default function ListingsPage({ listings = LISTINGS, user, fleet = [], on
     const blockedSet = new Set((blockedIds || []).map(String));
     let out = listings.filter(
       (l) =>
-        // Eşleşmiş iş açık fırsat değildir: kimse kabul edemez, akışta yer kaplamasın.
-        l.status !== "kapali" && l.status !== "eslesti" &&
+        l.status !== "kapali" &&
         !blockedSet.has(String(l.ownerId)) &&
         (!favOnly || isFav(l.id)) &&
         (!verifiedOnly || l.ownerVerified) &&
