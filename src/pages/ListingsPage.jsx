@@ -447,10 +447,13 @@ export default function ListingsPage({ listings = LISTINGS, user, fleet = [], on
   // ürün kataloglarını göster. Diğer roller "Tümü" ile açılır. Kullanıcı sekmeden
   // istediği türe geçebilir — bu yalnız VARSAYILAN'dır.
   const isBuyer = user?.role === "isveren";
-  const defaultType = isBuyer ? "urun" : "all";
+  // Nakliyeci /ilanlar'da yalnız aksiyon alabileceği İŞ ilanlarını görür:
+  // araç/ürün ilanları onun için kullanılamaz (kirala/sipariş alıcı işlemidir).
+  const isHauler = user?.role === "nakliyeci";
+  const defaultType = isBuyer ? "urun" : isHauler ? "is" : "all";
   // YÜKLET Akıllı Fiyat: kartlardaki piyasa etiketleri için geçmiş veri (bir kez).
   const [type, setType] = useState(
-    ["arac", "is", "urun"].includes(sp.get("type")) ? sp.get("type") : defaultType
+    !isHauler && ["arac", "is", "urun"].includes(sp.get("type")) ? sp.get("type") : defaultType
   );
   // Rol geç hidrate olursa (sayfa yenileme) varsayılan türü bir kez uygula —
   // kullanıcı sekmeye ELLE dokunmadıysa. (haulerCat desenine paralel.)
@@ -459,9 +462,10 @@ export default function ListingsPage({ listings = LISTINGS, user, fleet = [], on
   const pickType = (t) => { userTouchedTypeRef.current = true; setType(t); };
   useEffect(() => {
     if (typeAppliedRef.current) return;
-    if (["arac", "is", "urun"].includes(sp.get("type"))) { typeAppliedRef.current = true; return; }
+    // Nakliyecide URL ?type= yok sayılır: rol geç hidrate olsa da İŞ'e sabitlenir.
+    if (user?.role !== "nakliyeci" && ["arac", "is", "urun"].includes(sp.get("type"))) { typeAppliedRef.current = true; return; }
     if (user?.role) {
-      if (!userTouchedTypeRef.current) setType(user.role === "isveren" ? "urun" : "all");
+      if (!userTouchedTypeRef.current) setType(user.role === "isveren" ? "urun" : user.role === "nakliyeci" ? "is" : "all");
       typeAppliedRef.current = true;
     }
   }, [user, sp]);
@@ -608,7 +612,7 @@ export default function ListingsPage({ listings = LISTINGS, user, fleet = [], on
         (!favOnly || isFav(l.id)) &&
         (!verifiedOnly || l.ownerVerified) &&
         (!recurringOnly || l.recurring) &&
-        (type === "all" || l.type === type) &&
+        (isHauler ? l.type === "is" : (type === "all" || l.type === type)) &&
         (cat === "all" || l.cat === cat) &&
         (il === "all" || l.il === il) &&
         (material === "all" || l.material === material) &&
@@ -622,7 +626,7 @@ export default function ListingsPage({ listings = LISTINGS, user, fleet = [], on
     // Sponsorlu (öne çıkan) ilanlar her zaman üstte (mevcut sıra korunur)
     out = [...out].sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
     return out;
-  }, [listings, type, cat, il, q, material, priceMin, priceMax, sort, verifiedOnly, recurringOnly, favOnly, isFav, blockedIds]);
+  }, [listings, type, cat, il, q, material, priceMin, priceMax, sort, verifiedOnly, recurringOnly, favOnly, isFav, blockedIds, isHauler]);
 
   const activeFilters =
     (material !== "all" ? 1 : 0) + (priceMin || priceMax ? 1 : 0) + (sort !== "yeni" ? 1 : 0) + (verifiedOnly ? 1 : 0) + (recurringOnly ? 1 : 0);
@@ -953,8 +957,8 @@ export default function ListingsPage({ listings = LISTINGS, user, fleet = [], on
           ))}
         </div>
 
-        {/* İş / Araç türü (sadece normal modda) */}
-        {mode === "normal" && (
+        {/* İş / Araç türü (sadece normal modda; nakliyecide gizli — hep İŞ) */}
+        {mode === "normal" && !isHauler && (
           <div className="flex gap-1.5">
             {[
               ["all", "TÜMÜ"],
@@ -1326,24 +1330,26 @@ export default function ListingsPage({ listings = LISTINGS, user, fleet = [], on
                 </div>
               </div>
 
-              {/* Araç / İş türü */}
-              <div>
-                <div style={{ ...MONO, fontSize: 10, fontWeight: 700, color: C.sub, marginBottom: 8, letterSpacing: "0.06em" }}>
-                  TÜR
+              {/* Araç / İş türü (nakliyecide gizli — hep İŞ) */}
+              {!isHauler && (
+                <div>
+                  <div style={{ ...MONO, fontSize: 10, fontWeight: 700, color: C.sub, marginBottom: 8, letterSpacing: "0.06em" }}>
+                    TÜR
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {[
+                      ["all", "TÜMÜ"],
+                      ["is", "İŞ İLANI"],
+                      ["arac", "ARAÇ İLANI"],
+                      ["urun", "ÜRÜN İLANI"],
+                    ].map(([k, lbl]) => (
+                      <button key={k} style={chip(type === k)} onClick={() => pickType(k)}>
+                        {lbl}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {[
-                    ["all", "TÜMÜ"],
-                    ["is", "İŞ İLANI"],
-                    ["arac", "ARAÇ İLANI"],
-                    ["urun", "ÜRÜN İLANI"],
-                  ].map(([k, lbl]) => (
-                    <button key={k} style={chip(type === k)} onClick={() => pickType(k)}>
-                      {lbl}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              )}
 
               {/* Malzeme */}
               <div>
