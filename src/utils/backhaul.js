@@ -127,7 +127,7 @@ export function backhaulForJob(job, all, limit = 3) {
   const r = routeOf(job);
   if (!r.toIl) return [];
   return all
-    .filter((x) => x.type === "is" && x.id !== job.id && x.status !== "kapali" && (!job.ownerId || x.ownerId !== job.ownerId))
+    .filter((x) => x.type === "is" && x.id !== job.id && x.status !== "kapali" && x.status !== "eslesti" && (!job.ownerId || x.ownerId !== job.ownerId))
     .map((x) => {
       const xr = routeOf(x);
       const d = ilDistance(r.toIl, xr.fromIl);           // dönüşte yükü alabilir mi
@@ -147,7 +147,7 @@ export function loadsForVehicle(arac, all, limit = 3) {
   const vIl = routeOf(arac).fromIl;
   if (!vIl) return [];
   return all
-    .filter((x) => x.type === "is" && x.status !== "kapali" && x.cat === arac.cat) // ayni arac sinifi
+    .filter((x) => x.type === "is" && x.status !== "kapali" && x.status !== "eslesti" && x.cat === arac.cat) // ayni arac sinifi
     .map((x) => {
       const xr = routeOf(x);
       const d = ilDistance(vIl, xr.fromIl);
@@ -164,7 +164,7 @@ export function loadsNearCity(il, all, { cat = null, maxDist = 2, limit = 20 } =
   const ref = canonIl(il);
   if (!ref) return [];
   return all
-    .filter((x) => x.type === "is" && x.status !== "kapali" && (!cat || x.cat === cat))
+    .filter((x) => x.type === "is" && x.status !== "kapali" && x.status !== "eslesti" && (!cat || x.cat === cat))
     .map((x) => {
       const xr = routeOf(x);
       const d = ilDistance(ref, xr.fromIl);
