@@ -9,7 +9,17 @@
 
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ChevronLeft, Share2, Heart, Star, BadgeCheck, ArrowRight, X, Send, AlertTriangle, Truck, Boxes, Check, ShieldCheck, RotateCw, Navigation, Phone } from "lucide-react";
+import { ChevronLeft, Share2, Heart, Star, BadgeCheck, ArrowRight, X, Send, AlertTriangle, Truck, Boxes, Check, ShieldCheck, RotateCw, Navigation, Phone, MessageCircle } from "lucide-react";
+
+// Türk numarasını wa.me biçimine çevir: "0532 123 45 67" → "905321234567".
+// Çevrilemeyen/eksik numarada boş döner (WhatsApp butonu gizlenir, Ara kalır).
+const waPhone = (raw) => {
+  const d = String(raw || "").replace(/\D/g, "");
+  if (d.startsWith("90") && d.length === 12) return d;
+  if (d.startsWith("0") && d.length === 11) return "9" + d;
+  if (d.startsWith("5") && d.length === 10) return "90" + d;
+  return "";
+};
 import { LISTINGS } from "../data/listings";
 import { CATS } from "../data/categories";
 import { computeReliability, reliabilityTier } from "../utils/reliability";
@@ -574,10 +584,22 @@ export default function IlanDetayPage({ listings = LISTINGS, user, fleet = [], o
             </button>
           </div>
           {ownerPhone && (
-            <a href={`tel:${ownerPhone}`} onClick={() => onPhoneTap?.(l)} aria-label={`${l.owner || "İlan sahibi"} telefonu: ${ownerPhone}`}
-              style={{ marginTop: 12, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, border: `2px solid ${C.ink}`, borderRadius: 6, background: C.green, color: "#fff", padding: "11px 12px", fontFamily: MONO, fontSize: 14, fontWeight: 700, letterSpacing: "0.02em", textDecoration: "none" }}>
-              <Phone size={15} strokeWidth={2.4} /> {ownerPhone}
-            </a>
+            <div style={{ marginTop: 12, display: "flex", gap: 8 }}>
+              <a href={`tel:${ownerPhone}`} onClick={() => onPhoneTap?.(l)} aria-label={`${l.owner || "İlan sahibi"} telefonu: ${ownerPhone}`}
+                style={{ flex: 1.4, minWidth: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, border: `2px solid ${C.ink}`, borderRadius: 6, background: C.green, color: "#fff", padding: "11px 8px", fontFamily: MONO, fontSize: 13.5, fontWeight: 700, letterSpacing: "0.02em", textDecoration: "none", whiteSpace: "nowrap" }}>
+                <Phone size={15} strokeWidth={2.4} /> {ownerPhone}
+              </a>
+              {/* WhatsApp: İLAN SAHİBİNİN numarasına sohbet açar (platform numarası yok).
+                  wa.me uluslararası biçim ister: 0532… → 90532… */}
+              {waPhone(ownerPhone) && (
+                <a href={`https://wa.me/${waPhone(ownerPhone)}?text=${encodeURIComponent(`Merhaba, YÜKLET'teki "${l.title}" ilanınız hakkında yazıyorum.`)}`}
+                  target="_blank" rel="noopener noreferrer" onClick={() => onPhoneTap?.(l)}
+                  aria-label={`${l.owner || "İlan sahibi"} ile WhatsApp'tan yaz`}
+                  style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, border: `2px solid ${C.ink}`, borderRadius: 6, background: "#25D366", color: "#fff", padding: "11px 8px", fontFamily: HEAD, fontSize: 13, fontWeight: 800, textTransform: "uppercase", textDecoration: "none", whiteSpace: "nowrap" }}>
+                  <MessageCircle size={15} strokeWidth={2.6} /> WhatsApp
+                </a>
+              )}
+            </div>
           )}
           {phoneGated && (
             <button onClick={() => onRequireAuth?.()}
