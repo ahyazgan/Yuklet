@@ -305,11 +305,13 @@ export default function IlanDetayPage({ listings = LISTINGS, user, fleet = [], o
 
   // Engelleme durumu (ilan sahibi).
   const blocked = isBlocked ? isBlocked(l.ownerId) : false;
-  // İlan sahibinin telefonu — sahibi olmayan herkese gösterilir (hızlı iletişim
-  // ürün kararı; profiles RLS'i zaten herkese açık okunur). SB modunda profil
-  // arka planda çekilir, önbellek dolunca numara sonraki render'da görünür.
-  const ownerContact = !isOwner && l.ownerId != null ? getContact?.(l.ownerId) : null;
+  // İlan sahibinin telefonu — yalnız KAYITLI (giriş yapmış) kullanıcıya
+  // gösterilir; ziyaretçi numara yerine "giriş yap" çağrısı görür (ürün kararı:
+  // ilan herkese açık, iletişim üyelere). SB modunda profil arka planda
+  // çekilir, önbellek dolunca numara sonraki render'da görünür.
+  const ownerContact = user && !isOwner && l.ownerId != null ? getContact?.(l.ownerId) : null;
   const ownerPhone = (ownerContact?.phone || "").trim();
+  const phoneGated = !user && !isOwner && l.ownerId != null; // ziyaretçi: numara kilitli
   // Favori (kaydedilen ilan) — kalp ile ekle/çıkar.
   const fav = isFav(l.id);
   const onToggleFav = () => {
@@ -576,6 +578,12 @@ export default function IlanDetayPage({ listings = LISTINGS, user, fleet = [], o
               style={{ marginTop: 12, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, border: `2px solid ${C.ink}`, borderRadius: 6, background: C.green, color: "#fff", padding: "11px 12px", fontFamily: MONO, fontSize: 14, fontWeight: 700, letterSpacing: "0.02em", textDecoration: "none" }}>
               <Phone size={15} strokeWidth={2.4} /> {ownerPhone}
             </a>
+          )}
+          {phoneGated && (
+            <button onClick={() => onRequireAuth?.()}
+              style={{ marginTop: 12, width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, border: `2px solid ${C.ink}`, borderRadius: 6, background: C.stone, color: C.ink, padding: "11px 12px", fontFamily: MONO, fontSize: 11.5, fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase", cursor: "pointer" }}>
+              <Phone size={14} strokeWidth={2.4} /> Numarayı görmek için giriş yap
+            </button>
           )}
         </div>
 
