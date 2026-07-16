@@ -84,7 +84,13 @@ workflows:
           # uretilir -- ilk build'den sonra bu anahtari Codemagic'e kaydet.
           CERT_KEY=/tmp/cert_key.pem
           if [ -n "$CM_CERTIFICATE_PRIVATE_KEY" ]; then
-            printf '%s' "$CM_CERTIFICATE_PRIVATE_KEY" > $CERT_KEY
+            # Deger BASE64 (tek satir — UI kutusu cok satirli PEM'in satir
+            # sonlarini ezdigi icin onerilen bicim) ya da duz PEM olabilir.
+            if printf '%s' "$CM_CERTIFICATE_PRIVATE_KEY" | grep -q "BEGIN"; then
+              printf '%s\n' "$CM_CERTIFICATE_PRIVATE_KEY" > $CERT_KEY
+            else
+              printf '%s' "$CM_CERTIFICATE_PRIVATE_KEY" | base64 -d > $CERT_KEY
+            fi
             echo "Kayitli imzalama anahtari kullanildi (sabit)."
           else
             openssl genrsa -out $CERT_KEY 2048
