@@ -34,6 +34,21 @@ workflows:
     integrations:
       app_store_connect: yuklet_asc  # Codemagic UI'da ekleyeceğin App Store Connect API key adı
     scripts:
+      - name: Ortam degiskenleri kontrolu
+        script: |
+          # Yazim hatasina karsi erken durdurma: bu adlar Codemagic UI'da
+          # BIREBIR boyle olmali, yoksa uygulama sunucusuz (olu) derlenir.
+          if [ -z "$VITE_SUPABASE_URL" ] || [ -z "$VITE_SUPABASE_ANON_KEY" ]; then
+            echo "HATA: VITE_SUPABASE_URL ve/veya VITE_SUPABASE_ANON_KEY BOS geldi."
+            echo "Codemagic > Settings > Environment variables'da adlar TAM olarak"
+            echo "  VITE_SUPABASE_URL"
+            echo "  VITE_SUPABASE_ANON_KEY"
+            echo "olmali (yuklet_supabase grubunda). Muhtemel neden: yazim hatasi"
+            echo "(orn. SUPBASE / SUPABAS gibi). Yanlis satiri silip dogru adla ekleyin."
+            exit 1
+          fi
+          echo "Supabase ortam degiskenleri OK."
+
       - name: npm bağımlılıklarını kur
         script: |
           # npm ci yerine install: lock ile registry arasindaki kucuk
@@ -148,6 +163,16 @@ workflows:
       node: 22
       java: 17
     scripts:
+      - name: Ortam degiskenleri kontrolu
+        script: |
+          # iOS workflow'undaki kontrolun aynisi (yazim hatasinda erken dur).
+          if [ -z "$VITE_SUPABASE_URL" ] || [ -z "$VITE_SUPABASE_ANON_KEY" ]; then
+            echo "HATA: VITE_SUPABASE_URL ve/veya VITE_SUPABASE_ANON_KEY BOS geldi."
+            echo "Codemagic > Settings > Environment variables adlarini kontrol edin."
+            exit 1
+          fi
+          echo "Supabase ortam degiskenleri OK."
+
       - name: npm bağımlılıklarını kur
         script: npm install
 
