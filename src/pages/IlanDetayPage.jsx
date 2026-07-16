@@ -665,11 +665,9 @@ export default function IlanDetayPage({ listings = LISTINGS, user, fleet = [], o
               )}
             </div>
           </div>
-          {!roleAllowed ? (
-            <span style={{ flex: "0 1 auto", fontFamily: MONO, fontSize: 10, fontWeight: 700, color: C.muted, textAlign: "right", lineHeight: 1.4, maxWidth: 160 }}>
-              {roleHint}
-            </span>
-          ) : acceptMode && user ? (
+          {/* Rol uymuyorsa aksiyon alanı tamamen gizlenir — nakliyeci araç/ürün
+              ilanında, alıcı iş ilanında buton/uyarı görmez; sadece fiyat kalır. */}
+          {!roleAllowed ? null : acceptMode && user ? (
             <button onClick={startAccept}
               style={{ display: "flex", alignItems: "center", gap: 7, background: C.green, color: "#fff", border: `2px solid ${C.ink}`, borderRadius: 6, padding: "12px 18px", fontFamily: HEAD, fontWeight: 800, fontSize: 14, textTransform: "uppercase", cursor: "pointer", whiteSpace: "nowrap", boxShadow: "3px 3px 0 rgba(10,10,10,0.18)" }}>
               <Check size={17} strokeWidth={3} /> {acceptLabel}
