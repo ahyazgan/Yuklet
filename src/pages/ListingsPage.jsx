@@ -360,7 +360,10 @@ function ListingCard({ l, isFav = false, onToggleFav, rel, viewerRole }) {
               whiteSpace: "nowrap",
             }}
           >
-            {!ctaAllowed
+            {l.status === "eslesti"
+              // Eşleşmiş iş kabul edilemez — kartta "KABUL ET" yanıltıcı olur.
+              ? "DETAY →"
+              : !ctaAllowed
               ? "İNCELE →"
               : isProduct
                 ? "SİPARİŞ VER →"
@@ -623,6 +626,9 @@ export default function ListingsPage({ listings = LISTINGS, user, fleet = [], on
     if (sort === "ucuz") out = [...out].sort((a, b) => (a.price ?? Infinity) - (b.price ?? Infinity));
     else if (sort === "pahali") out = [...out].sort((a, b) => (b.price ?? -1) - (a.price ?? -1));
     else if (sort === "onayli") out = [...out].sort((a, b) => (b.ownerVerified ? 1 : 0) - (a.ownerVerified ? 1 : 0));
+    // Açık işler eşleşmişlerin üstünde: eşleşen ilan panoda kalır (dolu görünüm)
+    // ama aksiyon alınabilir işler önce gelir.
+    out = [...out].sort((a, b) => (a.status === "eslesti" ? 1 : 0) - (b.status === "eslesti" ? 1 : 0));
     // Sponsorlu (öne çıkan) ilanlar her zaman üstte (mevcut sıra korunur)
     out = [...out].sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
     return out;
