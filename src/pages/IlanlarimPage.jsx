@@ -80,7 +80,7 @@ function initial(name) {
   return String(name || "?").trim().charAt(0).toUpperCase() || "?";
 }
 
-export default function IlanlarimPage({ listings = [], user, offers = [], reviews = [], onUpdateOffer, onAcceptOffer, onUpdateListing, onDeleteListing, onRequireAuth, onUpdateProfile, getContact, onReport }) {
+export default function IlanlarimPage({ listings = [], user, offers = [], reviews = [], onUpdateOffer, onAcceptOffer, onUpdateListing, onDeleteListing, onRequireAuth, onUpdateProfile, getContact, onReport, phoneTaps = {} }) {
   const navigate = useNavigate();
   const toast = useToast();
   const [needPhone, setNeedPhone] = useState(false);   // telefon zorunlu kapısı (kabul öncesi)
@@ -277,6 +277,8 @@ export default function IlanlarimPage({ listings = [], user, offers = [], review
                         ]
                     ).filter(Boolean).join(" · ")}
                     {l.type !== "urun" && lOffers.filter((o) => o.status !== "iptal").length > 0 && <span style={{ color: C.ink, fontWeight: 700 }}>{" · "}{lOffers.filter((o) => o.status !== "iptal").length} TEKLİF</span>}
+                    {/* Arama sayacı: numarana kaç farklı üye dokundu (ilgi kanıtı) */}
+                    {(phoneTaps[String(l.id)] || 0) > 0 && <span style={{ color: C.green, fontWeight: 700 }}>{" · "}📞 {phoneTaps[String(l.id)]} ARAMA</span>}
                   </p>
 
                   {/* Ürün ilanı: stok kontrolü + gelen sipariş sayısı */}

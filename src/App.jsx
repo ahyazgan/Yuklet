@@ -9,6 +9,7 @@ import {
   loadAuditLog, appendAudit, loadAnnouncement, saveAnnouncement, loadBlocked, saveBlocked,
   loadNotifPrefs, saveNotifPrefs, loadFleet, saveFleet, loadMolaPosts, saveMolaPosts,
   loadMolaThreads, saveMolaThreads, loadMolaReplies, saveMolaReplies,
+  loadAuthReturn, saveAuthReturn, clearAuthReturn, loadPhoneTaps, savePhoneTaps,
 } from "./utils/storage";
 import { visibleReviewsFor } from "./utils/reviewGate";
 import { newId, nowIso } from "./utils/id";
@@ -383,6 +384,10 @@ function AppShell() {
     return { ok: true };
   };
 
+  // Arama sayacı — { [listingId]: kaç farklı kişi numaraya dokundu }.
+  // SB: phone_taps tablosundan (RLS yalnız sahibin ilanlarını döndürür);
+  // yerel mod: hamted_phone_taps. İlanlarım "X arama" rozetini bundan okur.
+  const [phoneTaps, setPhoneTaps] = useState(() => (SB ? {} : loadPhoneTaps()));
   // Belgeler (K belgesi, ruhsat, vergi levhasi)
   const [docs, setDocs] = useState(() => (SB ? [] : loadDocs()));
   useEffect(() => { if (!SB) saveDocs(docs); }, [docs, SB]);
@@ -684,6 +689,9 @@ function AppShell() {
     if (!SB || !user?.id) { return; }
     api.fetchDocs(user.id).then(setDocs).catch(() => {});
     api.fetchMyFleet().then(setFleet).catch(() => {});
+    // Arama sayacı: kendi ilanlarının numara-dokunuş sayıları (tablo henüz
+    // yoksa/migration koşulmadıysa sessizce boş kalır).
+    api.fetchPhoneTapCounts().then(setPhoneTaps).catch(() => {});
     // Mola Yeri nakliyeci-özel: yalnız nakliyeci rolünde çek (RLS de korur).
     if (user.role === "nakliyeci") {
       api.fetchMolaPosts().then(setMolaPosts).catch(() => {});
@@ -728,14 +736,38 @@ function AppShell() {
       const res = provider === "apple"
         ? await api.signInWithAppleNative()
         : await api.signInWithGoogleNative();
-      if (res.ok) setShowAuth(false);
+      if (res.ok) { clearAuthReturn(); setShowAuth(false); } // native: sayfadan ayrilinmadi
       return res;
     }
-    if (SB) return api.signInWithProvider(provider); // web: tarayici yonlendirilir
+    if (SB) {
+      // Web OAuth tam sayfa yonlendirme yapar ve site kokune doner — kullanici
+      // hangi sayfadan giris yaptiysa (orn. ilan detayi) donuste oraya gitmek
+      // icin yol saklanir; oturum kurulunca asagidaki effect geri goturur.
+      if (location.pathname !== "/") saveAuthReturn(location.pathname);
+      return api.signInWithProvider(provider); // web: tarayici yonlendirilir
+    }
     // Supabase YAPILANDIRILMAMIS (env eksik) -> GERCEK kimlik dogrulama yok.
     // Sahte OAuth hesabi ACMA: aksi halde herkes kayit olmadan iceri girerdi
     // (guvenlik acigi). Net hata don; sessizce sahte oturum acma.
     return { ok: false, error: "Sunucu baglantisi yok — giris yapilamiyor. Lutfen daha sonra tekrar dene." };
+  };
+  // OAuth donusu (web): saglayicidan site kokune donulur; oturum kurulunca
+  // kullaniciyi giris yaptigi sayfaya (orn. /ilan/123) geri gotur.
+  useEffect(() => {
+    if (!user) return;
+    const back = loadAuthReturn();
+    if (!back) return;
+    clearAuthReturn();
+    if (back !== location.pathname) navigate(back);
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Arama sayacı: ilan detayındaki numaraya dokunuş kaydı (fire-and-forget).
+  // Yalnız üye dokunuşu sayılır (numara zaten üyeye görünür); sahibin kendi
+  // dokunuşu sayılmaz. SB'de kişi başına tek satır (unique) — mükerrer yutulur.
+  const logPhoneTap = (listing) => {
+    if (!listing?.id || !user?.id || String(listing.ownerId) === String(user.id)) return;
+    if (SB) { api.logPhoneTap(listing.id, user.id).catch(() => {}); return; }
+    const m = { ...loadPhoneTaps() }; const k = String(listing.id);
+    m[k] = (m[k] || 0) + 1; savePhoneTaps(m); setPhoneTaps(m);
   };
   // ── Giris: E-POSTA / SIFRE (kayit + giris) ───────────────────
   // SB modu: signUp/signIn Supabase'e yazar; onAuthChange oturumu kurar. Onay
@@ -750,6 +782,7 @@ function AppShell() {
       // Ham Supabase hatasi ("Invalid login credentials" vb.) kullanici diline cevrilir.
       if (!res.ok) return { ...res, error: api.trMsg(res.error, mode === "register" ? "Kayıt olunamadı. Tekrar dene." : "Giriş yapılamadı. Tekrar dene.") };
       if (res.needsConfirm) return res; // modal acik kalir, onay bekler
+      clearAuthReturn();                // modal girisi sayfada kalir — bayat donus yolu kalmasin
       setShowAuth(false);               // oturum kuruldu -> onAuthChange hydrate eder
       return res;
     }
@@ -987,7 +1020,7 @@ function AppShell() {
                 <Route path="/sefer-gecmisi" element={<PageTransition><TripHistoryPage user={user} listings={listings} offers={offers} onRequireAuth={requireAuth} /></PageTransition>} />
                 <Route path="/filo" element={<PageTransition><FleetPage user={user} fleet={myFleet} onAddVehicle={addVehicle} onUpdateVehicle={updateVehicle} onRemoveVehicle={removeVehicle} onRequireAuth={requireAuth} /></PageTransition>} />
                 <Route path="/ilanlar" element={<PageTransition><ListingsPage listings={listings} user={user} fleet={myFleet} blockedIds={myBlocked} offers={offers} reviews={reviews} onRefresh={SB ? () => Promise.all([reloadListings(), reloadOffers()]) : undefined} /></PageTransition>} />
-                <Route path="/ilan/:id" element={<PageTransition><IlanDetayPage listings={listings} user={user} fleet={myFleet} onRequireAuth={requireAuth} onUpdateProfile={updateProfile} offers={offers} reviews={reviews} onAddOffer={addOffer} onAcceptJob={acceptJob} onReport={addReport} isBlocked={isBlocked} onToggleBlock={toggleBlock} getContact={getContact} /></PageTransition>} />
+                <Route path="/ilan/:id" element={<PageTransition><IlanDetayPage listings={listings} user={user} fleet={myFleet} onRequireAuth={requireAuth} onUpdateProfile={updateProfile} offers={offers} reviews={reviews} onAddOffer={addOffer} onAcceptJob={acceptJob} onReport={addReport} isBlocked={isBlocked} onToggleBlock={toggleBlock} getContact={getContact} onPhoneTap={logPhoneTap} /></PageTransition>} />
                 <Route path="/takip/:id" element={<PageTransition><TakipPage listings={listings} user={user} offers={offers} getContact={getContact} reviews={reviews} onAddReview={addReview} getUserRating={getUserRating} onUpdateListing={updateListing} onReport={addReport} onCancelJob={cancelJob} onPayToEscrow={payToEscrow} onReleasePayment={releasePayment} onRefundPayment={refundPayment} onEarlyPayout={earlyPayoutNakliyeci} /></PageTransition>} />
                 <Route path="/sozlesme/:offerId" element={<PageTransition><SozlesmePage listings={listings} offers={offers} getContact={getContact} /></PageTransition>} />
                 {PAYMENTS_ENABLED && (
@@ -995,7 +1028,7 @@ function AppShell() {
                 )}
                 <Route path="/ilan-ver" element={<PageTransition><IlanVerPage onPublish={publishListing} onUpdate={updateListing} listings={listings} offers={offers} reviews={reviews} user={user} fleet={myFleet} onRequireAuth={requireAuth} onUpdateProfile={updateProfile} /></PageTransition>} />
                 <Route path="/ilan-duzenle/:id" element={<PageTransition><IlanVerPage onPublish={publishListing} onUpdate={updateListing} listings={listings} offers={offers} reviews={reviews} user={user} fleet={myFleet} onRequireAuth={requireAuth} onUpdateProfile={updateProfile} /></PageTransition>} />
-                <Route path="/ilanlarim" element={<PageTransition><IlanlarimPage listings={listings} user={user} offers={offers} reviews={reviews} onUpdateOffer={updateOffer} onAcceptOffer={acceptOffer} onUpdateListing={updateListing} onDeleteListing={removeListing} onRequireAuth={requireAuth} onUpdateProfile={updateProfile} getContact={getContact} onReport={addReport} /></PageTransition>} />
+                <Route path="/ilanlarim" element={<PageTransition><IlanlarimPage listings={listings} user={user} offers={offers} reviews={reviews} onUpdateOffer={updateOffer} onAcceptOffer={acceptOffer} onUpdateListing={updateListing} onDeleteListing={removeListing} onRequireAuth={requireAuth} onUpdateProfile={updateProfile} getContact={getContact} onReport={addReport} phoneTaps={phoneTaps} /></PageTransition>} />
                 <Route path="/tekliflerim" element={<PageTransition><TekliflerimPage listings={listings} user={user} offers={offers} onRequireAuth={requireAuth} onSeen={markOffersSeen} /></PageTransition>} />
                 <Route path="/mesajlar" element={<PageTransition><MesajlarPage user={user} listings={listings} offers={offers} messages={messages} onSendMessage={addMessage} onRequireAuth={requireAuth} onSeen={markMessagesSeen} onMarkThreadRead={markThreadRead} getContact={getContact} msgSeen={msgSeen} blockedIds={myBlocked} onReport={addReport} onToggleBlock={toggleBlock} /></PageTransition>} />
                 <Route path="/profil" element={<PageTransition><ProfilPage user={user} onUpdateProfile={updateProfile} onRequireAuth={requireAuth} onLogout={logout} onDeleteAccount={deleteAccount} reviews={reviews} getUserRating={getUserRating} listings={listings} offers={offers} docs={docs.filter(d => user && String(d.ownerId) === String(user.id))} onAddDoc={addDoc} onRemoveDoc={removeDoc} notifPrefs={notifPrefs} onUpdateNotifPrefs={updateNotifPrefs} onReport={addReport} blockedIds={myBlocked} onToggleBlock={toggleBlock} getContact={getContact} /></PageTransition>} />

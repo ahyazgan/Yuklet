@@ -127,7 +127,7 @@ function DetailRow({ label, value }) {
   );
 }
 
-export default function IlanDetayPage({ listings = LISTINGS, user, fleet = [], onRequireAuth, onUpdateProfile, offers = [], reviews = [], onAddOffer, onAcceptJob, onReport, isBlocked, onToggleBlock, getContact }) {
+export default function IlanDetayPage({ listings = LISTINGS, user, fleet = [], onRequireAuth, onUpdateProfile, offers = [], reviews = [], onAddOffer, onAcceptJob, onReport, isBlocked, onToggleBlock, getContact, onPhoneTap }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
@@ -574,7 +574,7 @@ export default function IlanDetayPage({ listings = LISTINGS, user, fleet = [], o
             </button>
           </div>
           {ownerPhone && (
-            <a href={`tel:${ownerPhone}`} aria-label={`${l.owner || "İlan sahibi"} telefonu: ${ownerPhone}`}
+            <a href={`tel:${ownerPhone}`} onClick={() => onPhoneTap?.(l)} aria-label={`${l.owner || "İlan sahibi"} telefonu: ${ownerPhone}`}
               style={{ marginTop: 12, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, border: `2px solid ${C.ink}`, borderRadius: 6, background: C.green, color: "#fff", padding: "11px 12px", fontFamily: MONO, fontSize: 14, fontWeight: 700, letterSpacing: "0.02em", textDecoration: "none" }}>
               <Phone size={15} strokeWidth={2.4} /> {ownerPhone}
             </a>

@@ -835,6 +835,31 @@ create trigger on_mola_reply_deleted after delete on public.mola_replies
   for each row execute function public.drop_thread_count();
 
 -- ──────────────────────────────────────────────
+-- 7c) ARAMA SAYACI (phone_taps) — ilan detayındaki numaraya dokunanlar.
+-- Kişi başına ilan başına 1 kayıt (kaç FARKLI kişi aradı). Yalnız üye yazar,
+-- yalnız ilan sahibi (+admin) okur. Ayrıntı: migration-2026-07-arama-sayaci.sql
+-- ──────────────────────────────────────────────
+create table if not exists public.phone_taps (
+  id          bigint generated always as identity primary key,
+  listing_id  bigint not null references public.listings(id) on delete cascade,
+  tapper_id   uuid   not null references public.profiles(id) on delete cascade,
+  created_at  timestamptz not null default now(),
+  unique (listing_id, tapper_id)
+);
+create index if not exists phone_taps_listing_idx on public.phone_taps (listing_id);
+alter table public.phone_taps enable row level security;
+drop policy if exists phone_taps_insert on public.phone_taps;
+create policy phone_taps_insert on public.phone_taps
+  for insert to authenticated with check (auth.uid() = tapper_id);
+drop policy if exists phone_taps_read on public.phone_taps;
+create policy phone_taps_read on public.phone_taps
+  for select using (
+    exists (select 1 from public.listings l
+             where l.id = listing_id and l.owner_id = auth.uid())
+    or public.is_admin()
+  );
+
+-- ──────────────────────────────────────────────
 -- 8) DEMO SEED  (owner_id null = sistem ilani; herkes gorur, kimse duzenleyemez)
 -- İDEMPOTENT: yalnız hiç demo ilan (owner_id null) yokken ekle. Eski hali hedefsiz
 -- `on conflict do nothing` idi → her Run 6 mükerrer ilan eklerdi (identity id çakışmaz).

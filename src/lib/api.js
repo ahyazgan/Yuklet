@@ -554,6 +554,26 @@ export async function addReview({ listingId, fromId, fromName, toId, rating, com
   if (error) throw error;
 }
 
+// ── Arama sayacı (phone_taps) ────────────────────────────────
+// İlan detayındaki numaraya dokunma kaydı. Kişi başına ilan başına tek satır
+// (unique) — mükerrer dokunuş sessizce yutulur; sayaç "kaç farklı kişi" demektir.
+export async function logPhoneTap(listingId, userId) {
+  const { error } = await supabase.from("phone_taps").upsert(
+    { listing_id: listingId, tapper_id: userId },
+    { onConflict: "listing_id,tapper_id", ignoreDuplicates: true }
+  );
+  if (error) throw error;
+}
+// İlan sahibi kendi ilanlarının arama sayıları → { [listingId]: adet }.
+// RLS zaten yalnız sahibin ilanlarına ait satırları döndürür.
+export async function fetchPhoneTapCounts() {
+  const { data, error } = await supabase.from("phone_taps").select("listing_id");
+  if (error) throw error;
+  const map = {};
+  for (const r of data || []) { const k = String(r.listing_id); map[k] = (map[k] || 0) + 1; }
+  return map;
+}
+
 // ── Reports (şikayet) ───────────────────────────────────────
 export async function addReport({ type, targetId, listingId, fromId, fromName, reason, description }) {
   const { error } = await supabase.from("reports").insert({

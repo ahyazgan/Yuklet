@@ -91,6 +91,15 @@ export const savePricingConfig = (v) => save("hamted_pricing_config", v);
 // Ana sayfa duyuru / kampanya bandi (admin yonetir).
 export const loadAnnouncement = () => load("hamted_announcement", { active: false, text: "", tone: "promo" });
 export const saveAnnouncement = (v) => save("hamted_announcement", v);
+// OAuth girişi tam sayfa yönlendirme yapar (web) — dönüşte kullanıcıyı
+// çıktığı sayfaya (örn. ilan detayı) geri götürmek için yol saklanır.
+export const loadAuthReturn = () => loadStr("hamted_auth_return", "");
+export const saveAuthReturn = (path) => saveStr("hamted_auth_return", path || "");
+export const clearAuthReturn = () => saveStr("hamted_auth_return", "");
+// Arama sayacı (yalnız localStorage modu) — { [listingId]: adet }.
+// SB modunda phone_taps tablosuna yazılır (api.logPhoneTap).
+export const loadPhoneTaps = () => load("hamted_phone_taps", {});
+export const savePhoneTaps = (v) => save("hamted_phone_taps", v);
 // Admin denetim kaydi (audit log) — kim, ne zaman, ne yapti.
 export const loadAuditLog = () => load("hamted_audit_log", []);
 export const appendAudit = (entry) => {
