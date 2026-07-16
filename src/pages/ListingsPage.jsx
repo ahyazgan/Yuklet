@@ -100,6 +100,9 @@ function ListingCard({ l, isFav = false, onToggleFav, rel, viewerRole }) {
     if (l.vehicle) chips.push(l.vehicle);
   }
 
+  // Eşleşen iş alınmıştır: kart panoda kalır ama karartılır — açık işlerden
+  // bir bakışta ayrılsın (rozet + DETAY etiketiyle birlikte).
+  const matched = l.status === "eslesti";
   return (
     <div
       style={{
@@ -108,6 +111,8 @@ function ListingCard({ l, isFav = false, onToggleFav, rel, viewerRole }) {
         borderRadius: 6,
         overflow: "hidden",
         boxShadow: l.featured ? "3px 3px 0 #FACC15" : "none",
+        opacity: matched ? 0.55 : 1,
+        filter: matched ? "grayscale(0.5)" : "none",
       }}
     >
       {l.featured && (
