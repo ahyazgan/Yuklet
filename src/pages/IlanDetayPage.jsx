@@ -9,7 +9,7 @@
 
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ChevronLeft, Share2, Heart, Star, BadgeCheck, ArrowRight, X, Send, AlertTriangle, Truck, Boxes, Check, ShieldCheck, RotateCw, Navigation } from "lucide-react";
+import { ChevronLeft, Share2, Heart, Star, BadgeCheck, ArrowRight, X, Send, AlertTriangle, Truck, Boxes, Check, ShieldCheck, RotateCw, Navigation, Phone } from "lucide-react";
 import { LISTINGS } from "../data/listings";
 import { CATS } from "../data/categories";
 import { computeReliability, reliabilityTier } from "../utils/reliability";
@@ -127,7 +127,7 @@ function DetailRow({ label, value }) {
   );
 }
 
-export default function IlanDetayPage({ listings = LISTINGS, user, fleet = [], onRequireAuth, onUpdateProfile, offers = [], reviews = [], onAddOffer, onAcceptJob, onReport, isBlocked, onToggleBlock }) {
+export default function IlanDetayPage({ listings = LISTINGS, user, fleet = [], onRequireAuth, onUpdateProfile, offers = [], reviews = [], onAddOffer, onAcceptJob, onReport, isBlocked, onToggleBlock, getContact }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
@@ -305,6 +305,11 @@ export default function IlanDetayPage({ listings = LISTINGS, user, fleet = [], o
 
   // Engelleme durumu (ilan sahibi).
   const blocked = isBlocked ? isBlocked(l.ownerId) : false;
+  // İlan sahibinin telefonu — sahibi olmayan herkese gösterilir (hızlı iletişim
+  // ürün kararı; profiles RLS'i zaten herkese açık okunur). SB modunda profil
+  // arka planda çekilir, önbellek dolunca numara sonraki render'da görünür.
+  const ownerContact = !isOwner && l.ownerId != null ? getContact?.(l.ownerId) : null;
+  const ownerPhone = (ownerContact?.phone || "").trim();
   // Favori (kaydedilen ilan) — kalp ile ekle/çıkar.
   const fav = isFav(l.id);
   const onToggleFav = () => {
@@ -566,6 +571,12 @@ export default function IlanDetayPage({ listings = LISTINGS, user, fleet = [], o
               Mesaj
             </button>
           </div>
+          {ownerPhone && (
+            <a href={`tel:${ownerPhone}`} aria-label={`${l.owner || "İlan sahibi"} telefonu: ${ownerPhone}`}
+              style={{ marginTop: 12, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, border: `2px solid ${C.ink}`, borderRadius: 6, background: C.green, color: "#fff", padding: "11px 12px", fontFamily: MONO, fontSize: 14, fontWeight: 700, letterSpacing: "0.02em", textDecoration: "none" }}>
+              <Phone size={15} strokeWidth={2.4} /> {ownerPhone}
+            </a>
+          )}
         </div>
 
         {/* ── Owner / closed banner (in-flow; replaces sticky CTA logic) ── */}
