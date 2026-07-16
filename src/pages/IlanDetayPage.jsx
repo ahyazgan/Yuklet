@@ -607,6 +607,20 @@ export default function IlanDetayPage({ listings = LISTINGS, user, fleet = [], o
               <Phone size={14} strokeWidth={2.4} /> Numarayı görmek için giriş yap
             </button>
           )}
+          {/* Tanıtım ilanı: gerçek sahip/numara yok — butonlar maskeli görünür,
+              dokununca bilgi verilir (ekran görüntüsü + uygulama hissi tam olsun). */}
+          {isShowcase && (
+            <div style={{ marginTop: 12, display: "flex", gap: 8 }}>
+              <button onClick={() => toast("Bu bir tanıtım ilanıdır — gerçek ilanlarda numara görünür.", "info")}
+                style={{ flex: 1.4, minWidth: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, border: `2px solid ${C.ink}`, borderRadius: 6, background: C.green, color: "#fff", padding: "11px 8px", fontFamily: MONO, fontSize: 13.5, fontWeight: 700, letterSpacing: "0.02em", whiteSpace: "nowrap", cursor: "pointer" }}>
+                <Phone size={15} strokeWidth={2.4} /> 05•• ••• •• ••
+              </button>
+              <button onClick={() => toast("Bu bir tanıtım ilanıdır — gerçek ilanlarda numara görünür.", "info")}
+                style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, border: `2px solid ${C.ink}`, borderRadius: 6, background: "#25D366", color: "#fff", padding: "11px 8px", fontFamily: HEAD, fontSize: 13, fontWeight: 800, textTransform: "uppercase", whiteSpace: "nowrap", cursor: "pointer" }}>
+                <MessageCircle size={15} strokeWidth={2.6} /> WhatsApp
+              </button>
+            </div>
+          )}
         </div>
 
         {/* ── Owner / closed banner (in-flow; replaces sticky CTA logic) ── */}
