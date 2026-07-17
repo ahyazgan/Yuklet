@@ -44,10 +44,12 @@ export async function initNative() {
     /* keyboard plugin yok — sorun değil */
   }
 
-  // Splash'i içerik hazır olunca gizle (config'te autoHide de var, bu güvenlik ağı).
+  // Splash'i HEMEN gizle — arkasındaki BootLoader (manila zemin, kamyon animasyonu)
+  // devralsın. Splash rengi de manila olduğu için geçiş renk atlaması yapmaz.
+  // (config'te launchAutoHide:true güvenlik ağı; hide() çağrılmasa da 400ms'de kapanır.)
   try {
     const { SplashScreen } = await import("@capacitor/splash-screen");
-    setTimeout(() => SplashScreen.hide().catch(() => {}), 300);
+    await SplashScreen.hide().catch(() => {});
   } catch {
     /* noop */
   }

@@ -9,11 +9,17 @@ import GoogleSignIn
 // kalır; web tarafındaki aşağı-çek-yenile dokunma tabanlı olduğundan
 // etkilenmez. Main.storyboard bu sınıfı kullanır (customModule="App").
 class BounceFreeBridgeViewController: CAPBridgeViewController {
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        webView?.scrollView.bounces = false
-        webView?.scrollView.alwaysBounceVertical = false
-        webView?.scrollView.alwaysBounceHorizontal = false
+    // viewWillAppear (viewDidLoad değil): plugin/inset ayarları viewDidLoad'dan
+    // SONRA bounce'u tekrar açabilir; viewWillAppear her görünürlükte dayatır.
+    // Not: asıl overscroll düzeltmesi CSS tarafında (body scroll kilidi); bu
+    // native ayar ek sigortadır. contentInsetAdjustmentBehavior'a DOKUNMUYORUZ
+    // — .never üst safe-area boşluğunu bozabilir (Capacitor contentInset yönetir).
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        guard let sv = webView?.scrollView else { return }
+        sv.bounces = false
+        sv.alwaysBounceVertical = false
+        sv.alwaysBounceHorizontal = false
     }
 }
 

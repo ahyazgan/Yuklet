@@ -78,7 +78,13 @@ const FleetPage = lazy(() => import("./pages/FleetPage"));
 
 function ScrollToTop() {
   const { pathname } = useLocation();
-  useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
+  // Scroll artık body'de değil #app-scroll (main) konteynerinde — body scroll
+  // kilitli (iOS overscroll düzeltmesi). Sayfa değişince o konteyneri başa sar.
+  useEffect(() => {
+    const el = document.getElementById("app-scroll");
+    if (el) el.scrollTop = 0;
+    window.scrollTo(0, 0); // yedek (web/geniş ekran)
+  }, [pathname]);
   return null;
 }
 
@@ -601,6 +607,15 @@ function AppShell() {
   // Sadece kendi araçlarım (fleet yukarıda tanımlı; user burada tanımlandığı için burada hesaplanır).
   const myFleet = fleet.filter((v) => user && String(v.ownerId) === String(user.id));
   const [authReady, setAuthReady] = useState(!SB);                  // SB modunda oturum yuklenince hazir
+  // BootLoader minimum gorunme suresi: getSession (yerel) ~100ms'de biter,
+  // acilis animasyonu goze carpmadan kaybolurdu. Auth mantigini GECIKTIRMEZ —
+  // yalniz yukleyicinin en az bu kadar (kamyon dongusunun yarisi) gorunmesini
+  // saglar. authReady ayni anda hazirsa da 900ms boyunca animasyon oynar.
+  const [minSplashElapsed, setMinSplashElapsed] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setMinSplashElapsed(true), 900);
+    return () => clearTimeout(t);
+  }, []);
   const [showAuth, setShowAuth] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false); // sifre sifirlama: yeni sifre modali
   const [showRole, setShowRole] = useState(false);
@@ -1007,9 +1022,9 @@ function AppShell() {
     <div className="app-root">
       <ScrollToTop />
 
-      <main>
+      <main id="app-scroll">
         <ErrorBoundary>
-          {!authReady ? (
+          {(!authReady || !minSplashElapsed) ? (
             <BootLoader />
           ) : (
           <Suspense fallback={<PageLoader />}>

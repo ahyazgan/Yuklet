@@ -24,10 +24,18 @@ export default function usePullToRefresh(onRefresh, { disabled = false } = {}) {
   useEffect(() => {
     if (disabled || typeof window === "undefined" || !("ontouchstart" in window)) return;
 
+    // Scroll artık body'de değil #app-scroll (main) konteynerinde — body scroll
+    // kilitli (iOS overscroll düzeltmesi). "En üstte miyiz?" kontrolü o
+    // konteynerin scrollTop'una bakmalı; window.scrollY hep 0 kalır.
+    const atTop = () => {
+      const el = document.getElementById("app-scroll");
+      return el ? el.scrollTop <= 0 : window.scrollY <= 0;
+    };
+
     const onStart = (e) => {
       if (refreshingRef.current) return;
       // Yalnızca en üstteyken ve tek parmakla başlat.
-      if (window.scrollY <= 0 && e.touches.length === 1) {
+      if (atTop() && e.touches.length === 1) {
         startY.current = e.touches[0].clientY;
         active.current = true;
       } else {
@@ -38,7 +46,7 @@ export default function usePullToRefresh(onRefresh, { disabled = false } = {}) {
     const onMove = (e) => {
       if (!active.current || startY.current == null || refreshingRef.current) return;
       const dy = e.touches[0].clientY - startY.current;
-      if (dy > 0 && window.scrollY <= 0) {
+      if (dy > 0 && atTop()) {
         // Dirençli (lastik) his: karekök yumuşatma.
         const eased = Math.min(MAX, Math.sqrt(dy) * 9);
         setDist(eased);
