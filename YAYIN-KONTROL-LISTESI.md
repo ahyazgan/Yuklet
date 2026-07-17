@@ -50,13 +50,16 @@ Sıra önemli — üstten aşağı ilerle.
   marka paletiyle başlıklandı. ASC → 1.0 → iPhone 6.5" alanına sırayla yükle
   (01→06). Play için de aynı görseller kullanılabilir (Play min 2 adet,
   320-3840px arası kabul eder).
-- [x] **App Store'a GÖNDERİLDİ (2026-07-17 19:06, Waiting for Review):**
-  build 7 (1.0), metadata sabit-fiyat metinleriyle güncellendi, iPhone 6.5"
-  + iPad 13" görselleri yüklendi, App Privacy publish edildi (9 veri türü,
-  tracking yok), yaş 4+, fiyat ücretsiz, ülke: Türkiye. Review demo hesabı:
-  ahyazgan98@icloud.com (nakliyeci rolü). Submission ID:
-  c75d0615-0acf-4f0b-8486-678cf4a77c11. SONUÇ MAİLİNİ BEKLE — red gelirse
-  gerekçeyle birlikte düzeltilecek.
+- [x] **App Store'a GÖNDERİLDİ — 2. deneme (2026-07-17 19:59, Waiting for
+  Review, build 1.0.1 (27)):** İlk gönderim (build 7) ITMS-90683 "Invalid
+  Binary" ile döndü — eksik `NSLocationAlwaysAndWhenInUseUsageDescription`.
+  Düzeltme: commit baa5beb (NSLocationAlways* purpose string'leri eklendi),
+  Codemagic run #26 → iOS build 27 üretti (build no = Codemagic sayacı + 1,
+  codemagic.yaml:72). Build 26 ve öncesi DÜZELTMESİZ — bir daha kullanma.
+  Metadata sabit-fiyat metinleri, iPhone 6.5" + iPad 13" görselleri, App
+  Privacy publish (9 veri türü, tracking yok), yaş 4+, ücretsiz, Türkiye.
+  Review demo hesabı: ahyazgan98@icloud.com (nakliyeci). Submission ID:
+  c75d0615-0acf-4f0b-8486-678cf4a77c11. SONUÇ MAİLİNİ BEKLE.
 - [x] Gizlilik politikası URL: `https://yuklet.co/gizlilik.html` (canlı, 200;
   ASC'ye bu girildi).
 - [ ] Onay sonrası: `public/app-version.json` → `iosUrl`'e App Store linkini yaz.
