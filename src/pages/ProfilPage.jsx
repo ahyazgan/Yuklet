@@ -13,6 +13,7 @@ import { visibleReviewsFor } from "../utils/reviewGate";
 import { isAdmin } from "../utils/admin";
 import { computeReliability, reliabilityTier } from "../utils/reliability";
 import { PAYMENTS_ENABLED } from "../config/features";
+import { BUILD_STAMP } from "../lib/buildInfo";
 
 // ── SAHA profil — keskin endüstriyel "saha" dili.
 //    2px ink çerçeve, koyu header + hazard, Archivo uppercase, Space Mono, stroke ikon.
@@ -1075,6 +1076,11 @@ export default function ProfilPage({ user, onUpdateProfile, onRequireAuth, onLog
         {/* Hesap silme profil yüzeyinden kaldırıldı — artık Gizlilik & Yasal >
             "Hesap Sil" sekmesinde (LegalPage /yasal/hesap-silme). Menüdeki
             "Gizlilik & Yasal" satırının açıklaması oraya işaret eder. */}
+
+        {/* Derleme damgası — cihazdaki paketin hangi commit'ten çıktığını gösterir */}
+        <div style={{ marginTop: 14, textAlign: "center", fontFamily: MONO, fontSize: 9.5, letterSpacing: "0.06em", color: "rgba(90,88,82,.55)" }}>
+          {BUILD_STAMP}
+        </div>
       </div>
 
       {/* Yorum şikayet modali — hakaret/uygunsuz içerik bildirimi (App Store 1.2) */}

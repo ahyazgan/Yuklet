@@ -3,6 +3,8 @@
 // manevra yapar; zemin sayfalarla aynı manila (#F1EDE5) — yükleyiciden
 // içeriğe geçiş kesintisiz. Saf CSS animasyonu — ek bağımlılık yok.
 
+import { BUILD_STAMP } from "../lib/buildInfo";
+
 const ARCH = "'Archivo',system-ui,sans-serif";
 const MONO = "'Space Mono','SFMono-Regular',ui-monospace,monospace";
 const C = { bg: "#F1EDE5", ink: "#0A0A0A", sub: "#5A5852" };
@@ -54,6 +56,11 @@ export default function BootLoader() {
         <span className="boot-dot boot-anim">.</span>
         <span className="boot-dot boot-anim" style={{ animationDelay: ".2s" }}>.</span>
         <span className="boot-dot boot-anim" style={{ animationDelay: ".4s" }}>.</span>
+      </div>
+
+      {/* Derleme damgası — cihazdaki paketin hangi commit'ten çıktığını kanıtlar */}
+      <div style={{ position: "absolute", bottom: "max(14px, env(safe-area-inset-bottom))", left: 0, right: 0, textAlign: "center", fontFamily: MONO, fontSize: 9, letterSpacing: "0.06em", color: "rgba(90,88,82,.6)" }}>
+        {BUILD_STAMP}
       </div>
     </div>
   );
