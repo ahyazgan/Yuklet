@@ -19,10 +19,12 @@ export async function initNative() {
 
   try {
     const { StatusBar, Style } = await import("@capacitor/status-bar");
-    // Manila (#F1EDE5) status bar şeridi → KOYU ikonlar. Capacitor'da Style.Light
-    // = "açık zemin, koyu içerik" demektir (ada rağmen). iOS'ta şerit rengi
-    // capacitor.config ios.backgroundColor (#F1EDE5) + contentInset:"always"
-    // ile gelir; Android'de aşağıda doğrudan ayarlanır.
+    // Style.Light = "açık zemin, KOYU ikonlar" (Capacitor'da ad tersinedir).
+    // iOS: contentInset "never" → webview tam ekran, status bar'ın arkasını
+    // sayfanın kendi zemini doldurur (ayrı renkli şerit YOK; .app-root
+    // padding-top env(safe-area-inset-top) içeriği saatin altından kaçırır).
+    // Android: overlay kapalı — şerit manila (#F1EDE5), sayfa zeminiyle AYNI
+    // renk olduğu için ayrı bir bant olarak algılanmaz.
     await StatusBar.setStyle({ style: Style.Light });
     if (platform() === "android") {
       await StatusBar.setBackgroundColor({ color: "#F1EDE5" });
@@ -45,9 +47,16 @@ export async function initNative() {
     /* keyboard plugin yok — sorun değil */
   }
 
-  // Splash'i HEMEN gizle — arkasındaki BootLoader (manila zemin, kamyon animasyonu)
-  // devralsın. Splash rengi de manila olduğu için geçiş renk atlaması yapmaz.
-  // (config'te launchAutoHide:true güvenlik ağı; hide() çağrılmasa da 400ms'de kapanır.)
+  // Splash burada GİZLENMEZ. Eskiden hemen gizleniyordu ama React ilk kareyi
+  // boyamadan kapanınca arada boş/koyu bir an görünüyordu ("lacivert flaş").
+  // Artık BootLoader ekrana çizildikten sonra kendisi gizler (hideSplash);
+  // config'teki launchAutoHide + launchShowDuration yalnız emniyet ağıdır.
+}
+
+// BootLoader ilk karesi boyandıktan sonra çağrılır — native splash'ten manila
+// animasyona kesintisiz (manila→manila) geçiş. Web'de no-op.
+export async function hideSplash() {
+  if (!isNative()) return;
   try {
     const { SplashScreen } = await import("@capacitor/splash-screen");
     await SplashScreen.hide().catch(() => {});

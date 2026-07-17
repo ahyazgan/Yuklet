@@ -21,6 +21,13 @@ export const saveTheme = (v) => saveStr("hamted_theme", v);
 export const loadKeepSession = () => loadStr("hamted_keep_session", "1") !== "0";
 export const saveKeepSession = (v) => saveStr("hamted_keep_session", v ? "1" : "0");
 
+// SB profil önbelleği — soğuk açılışta AĞ BEKLEMEDEN oturumu kurmak için.
+// hydrate dolu-rollü her profili buraya yazar; sonraki açılışta oturum yerelden
+// anında kurulur, taze profil arka planda çekilip üzerine yazılır. Çıkışta silinir.
+export const loadProfileCache = () => load("hamted_profile_cache", null);
+export const saveProfileCache = (v) => save("hamted_profile_cache", v);
+export const clearProfileCache = () => { try { localStorage.removeItem("hamted_profile_cache"); } catch { /* ignore */ } };
+
 // Nakliye platformu
 export const loadListings = () => load("hamted_listings", []);
 export const saveListings = (v) => save("hamted_listings", v);

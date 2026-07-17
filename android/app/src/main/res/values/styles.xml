@@ -13,8 +13,9 @@
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
         <item name="android:background">@null</item>
-        <!-- Manila (açık) status bar → KOYU ikonlar. windowLightStatusBar=true
-             saat/pil ikonlarını koyu yapar (açık zeminde görünür). -->
+        <!-- Manila (açık) status bar → KOYU ikonlar; sayfa zeminiyle aynı renk,
+             ayrı bant görünmez. windowLightStatusBar=true saat/pil ikonlarını
+             koyu yapar (açık zeminde görünür). -->
         <item name="android:windowLightStatusBar">true</item>
         <!-- Android 15: zorunlu edge-to-edge'i kapat, içerik status bar altına girmesin.
              Bilinen sınır: API 36 hedefinde Android 16 bu bayrağı yok sayar. -->

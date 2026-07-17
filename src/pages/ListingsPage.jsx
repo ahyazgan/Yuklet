@@ -720,7 +720,7 @@ export default function ListingsPage({ listings = LISTINGS, user, fleet = [], on
 
       {/* Aşağı-çekip-yenile göstergesi */}
       {(distance > 0 || refreshing) && (
-        <div style={{ position: "fixed", top: 0, left: "50%", transform: `translateX(-50%) translateY(${Math.max(0, distance - 34)}px)`, zIndex: 55, width: 34, height: 34, borderRadius: "50%", background: "#0A0A0A", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "2px 2px 0 rgba(10,10,10,0.2)", pointerEvents: "none" }}>
+        <div style={{ position: "fixed", top: "env(safe-area-inset-top)", left: "50%", transform: `translateX(-50%) translateY(${Math.max(0, distance - 34)}px)`, zIndex: 55, width: 34, height: 34, borderRadius: "50%", background: "#0A0A0A", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "2px 2px 0 rgba(10,10,10,0.2)", pointerEvents: "none" }}>
           <RotateCw size={18} strokeWidth={2.6} color="#FACC15" style={{ transform: `rotate(${refreshing ? 0 : pull * 270}deg)`, animation: refreshing ? "ptr-spin 0.7s linear infinite" : "none" }} />
         </div>
       )}
@@ -1483,7 +1483,7 @@ export default function ListingsPage({ listings = LISTINGS, user, fleet = [], on
             {/* Alt: Temizle + Göster */}
             <div
               className="flex items-center gap-2"
-              style={{ padding: 16, borderTop: `2px solid ${C.line}`, background: C.sheet, position: "sticky", bottom: 0 }}
+              style={{ padding: "16px 16px calc(16px + env(safe-area-inset-bottom))", borderTop: `2px solid ${C.line}`, background: C.sheet, position: "sticky", bottom: 0 }}
             >
               <button
                 onClick={() => {

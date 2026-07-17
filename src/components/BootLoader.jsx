@@ -3,13 +3,26 @@
 // manevra yapar; zemin sayfalarla aynı manila (#F1EDE5) — yükleyiciden
 // içeriğe geçiş kesintisiz. Saf CSS animasyonu — ek bağımlılık yok.
 
+import { useEffect } from "react";
 import { BUILD_STAMP } from "../lib/buildInfo";
+import { hideSplash } from "../native/capacitor";
 
 const ARCH = "'Archivo',system-ui,sans-serif";
 const MONO = "'Space Mono','SFMono-Regular',ui-monospace,monospace";
 const C = { bg: "#F1EDE5", ink: "#0A0A0A", sub: "#5A5852" };
 
 export default function BootLoader() {
+  // Native splash'i ancak BU ekran gerçekten boyandıktan sonra gizle — çift
+  // requestAnimationFrame ilk karenin ekrana çıktığını garantiler. Böylece
+  // splash ile animasyon arasında boş/koyu bir an kalmaz (web'de no-op).
+  useEffect(() => {
+    let raf2 = 0;
+    const raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => { hideSplash(); });
+    });
+    return () => { cancelAnimationFrame(raf1); cancelAnimationFrame(raf2); };
+  }, []);
+
   return (
     <div
       role="status"

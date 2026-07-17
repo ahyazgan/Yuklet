@@ -10,6 +10,7 @@ import {
   loadNotifPrefs, saveNotifPrefs, loadFleet, saveFleet, loadMolaPosts, saveMolaPosts,
   loadMolaThreads, saveMolaThreads, loadMolaReplies, saveMolaReplies,
   loadAuthReturn, saveAuthReturn, clearAuthReturn, loadPhoneTaps, savePhoneTaps,
+  loadProfileCache, saveProfileCache, clearProfileCache, loadKeepSession,
 } from "./utils/storage";
 import { visibleReviewsFor } from "./utils/reviewGate";
 import { newId, nowIso } from "./utils/id";
@@ -607,13 +608,17 @@ function AppShell() {
   // Sadece kendi araçlarım (fleet yukarıda tanımlı; user burada tanımlandığı için burada hesaplanır).
   const myFleet = fleet.filter((v) => user && String(v.ownerId) === String(user.id));
   const [authReady, setAuthReady] = useState(!SB);                  // SB modunda oturum yuklenince hazir
-  // BootLoader minimum gorunme suresi: getSession (yerel) ~100ms'de biter,
-  // acilis animasyonu goze carpmadan kaybolurdu. Auth mantigini GECIKTIRMEZ —
-  // yalniz yukleyicinin en az bu kadar (kamyon dongusunun yarisi) gorunmesini
-  // saglar. authReady ayni anda hazirsa da 900ms boyunca animasyon oynar.
+  // BootLoader minimum gorunme suresi: acilis animasyonu tek karede yok olup
+  // "titreme" gibi gorunmesin diye kisa bir taban. Auth mantigini GECIKTIRMEZ.
+  // Kullanici "giris cok yavas" dedigi icin 900ms -> 500ms indirildi; profil
+  // onbellegi sayesinde authReady de artik ag beklemiyor (asagida hydrate).
   const [minSplashElapsed, setMinSplashElapsed] = useState(false);
   useEffect(() => {
-    const t = setTimeout(() => setMinSplashElapsed(true), 900);
+    // BootLoader ekrandayken giris rotasinin chunk'ini ONDEN indir — kapı
+    // açıldığında lazy çoktan çözülmüş olur, Suspense iskeleti hiç görünmez.
+    // (Giriş her zaman "/" — NakliyeHome; diğer rotalar gerektiğinde yüklenir.)
+    import("./pages/NakliyeHome");
+    const t = setTimeout(() => setMinSplashElapsed(true), 500);
     return () => clearTimeout(t);
   }, []);
   const [showAuth, setShowAuth] = useState(false);
@@ -672,8 +677,23 @@ function AppShell() {
           lastGoodProfileRef.current = null; roleChosenRef.current = false;
           setProfile(null); setUser(null);
         }
+        // Onbellek suprumu: cikista VE oturumsuz acilista (jeton dusmus/suresi
+        // gecmis — orn. "oturumum acik kalsin" kapaliydi, SIGNED_OUT hic
+        // ateslenmedi). Sahipsiz profil PII'si kalici depoda BIRAKILMAZ.
+        if (event === "SIGNED_OUT" || event === "INITIAL_SESSION") clearProfileCache();
         setAuthReady(true);
         return;
+      }
+      // HIZ YOLU (soguk acilis): onceki oturumdan onbellege alinmis DOLU-rollu
+      // profil ayni kullaniciya aitse oturumu ANINDA kur — BootLoader agi
+      // BEKLEMEZ. Taze profil hemen asagida yine cekilir; gelince uzerine yazar
+      // (rol koruma/klobber mantigi aynen isler). Yalniz ilk hydrate'te gecerli:
+      // bellekte zaten iyi profil varsa (lastGoodProfileRef) onbellege gerek yok.
+      const cached = loadProfileCache();
+      if (cached && cached.role && String(cached.id) === String(sbUser.id) && !lastGoodProfileRef.current) {
+        lastGoodProfileRef.current = cached; roleChosenRef.current = true;
+        setProfile(cached); setUser(cached);
+        setAuthReady(true);
       }
       // getProfile: HATA (ag/RLS) firlatir, "satir yok" null doner — ikisi ayri durum.
       // Hata durumunda rol modali ACILMAMALI (profileFetchFailedRef); satir-yok'ta
@@ -688,7 +708,13 @@ function AppShell() {
         (prof && prof.role) ? prof                                   // taze profil dolu -> kullan
         : (sameUser && good.role) ? good                             // taze bos ama eldeki dolu -> KORU
         : (prof || { id: sbUser.id, name: sbUser.email || "", role: "", phone: "" });
-      if (useProf.role) { lastGoodProfileRef.current = useProf; roleChosenRef.current = true; }
+      if (useProf.role) {
+        lastGoodProfileRef.current = useProf; roleChosenRef.current = true;
+        // Sonraki soguk acilis agsiz kurulsun — ama YALNIZ "oturumum acik
+        // kalsin" aciksa: kapaliysa jeton uygulama kapaninca oluyor, kalici
+        // depoda profil PII'si (telefon vb.) birakmak gizlilik sozunu bozar.
+        if (loadKeepSession()) saveProfileCache(useProf); else clearProfileCache();
+      }
       setProfile(useProf); setUser(useProf);
       setAuthReady(true);
     };
