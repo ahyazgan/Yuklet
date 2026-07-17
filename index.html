@@ -8,10 +8,9 @@
     <!-- viewport-fit=cover: iOS'ta env(safe-area-inset-*) ancak bununla dolar;
          yoksa alt tab bar home-indicator'in altina yapisir (MobileTabBar padding'i 0 kalir). -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <!-- YÜKLET marka fontlari (Plus Jakarta Sans govde/baslik + Space Mono veri) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Archivo:wght@600;700;800;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+    <!-- Marka fontlari pakete gomulu (@fontsource, main.jsx'te import edilir).
+         Uzak Google Fonts CSS'i render-bloklayan istekti: native kabukta acilisi
+         yavaslatiyordu — geri EKLEME. -->
     <meta name="theme-color" content="#1b222d" />
     <meta name="apple-mobile-web-app-title" content="YÜKLET" />
     <meta name="description" content="YÜKLET - Turkiye'nin yuk & nakliye eslestirme platformu. Hafriyat ve silobas islerini dogru aracla, hizli ve guvenli sekilde bulusturur." />

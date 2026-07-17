@@ -267,8 +267,12 @@ export async function signInWithAppleNative() {
 }
 
 export async function getSessionUser() {
-  const { data } = await supabase.auth.getUser();
-  return data?.user || null;
+  // getSession: oturumu YEREL depodan okur (ag turu yok) — acilis bunu bekledigi
+  // icin getUser()'in sunucu dogrulamasi soguk baslatmayi saniyelerce geciktiriyordu.
+  // Token suresi dolduysa SDK kendisi tazeler; bayat/iptal edilmis oturumu ise
+  // sonraki ilk RLS'li istek (getProfile) zaten yakalar.
+  const { data } = await supabase.auth.getSession();
+  return data?.session?.user || null;
 }
 
 export function onAuthChange(cb) {

@@ -1,4 +1,6 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
+/* Outfit fontu pakete gömülü (@fontsource, main.jsx'te import). Buradaki uzak
+   @import render'ı SERİ bloklardı (önce bu dosya, sonra Google CSS, sonra font)
+   — native kabukta açılışı en çok yavaşlatan istekti. Geri EKLEME. */
 
 /* ═══════════════════════════════════════════════════════════════════
    index.css — sadece global temel + tema değişkenleri + Tailwind dışı
