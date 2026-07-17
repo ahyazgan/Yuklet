@@ -1,6 +1,21 @@
 import UIKit
+import WebKit
 import Capacitor
 import GoogleSignIn
+
+// ── Kenar sekmesi (rubber-band) kapalı köprü VC'si ──────────────────
+// Sayfa sonunda yukarı çekilince WebView gövdesi esneyip sabit alt tab
+// bar'ı birlikte kaldırıyordu. Bounce kapatılınca sabit barlar yerinde
+// kalır; web tarafındaki aşağı-çek-yenile dokunma tabanlı olduğundan
+// etkilenmez. Main.storyboard bu sınıfı kullanır (customModule="App").
+class BounceFreeBridgeViewController: CAPBridgeViewController {
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        webView?.scrollView.bounces = false
+        webView?.scrollView.alwaysBounceVertical = false
+        webView?.scrollView.alwaysBounceHorizontal = false
+    }
+}
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {

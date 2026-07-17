@@ -63,6 +63,11 @@
 
 /* ═══ RESET (Tailwind preflight kapalı olduğu için elde tutuluyor) ═══ */
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+/* overscroll-behavior: kenarda esneme/sekme (iOS rubber-band, Android stretch)
+   sabit alt tab bar'ı gövdeyle birlikte kaldırıyordu — kapalı. iOS'ta asıl
+   çözüm native (BounceFreeBridgeViewController); bu satır Android + web içindir.
+   Aşağı-çek-yenile kendi dokunma takibiyle çalışır, bundan etkilenmez. */
+html, body { overscroll-behavior-y: none; }
 body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; transition: background .3s, color .3s; }
 a { text-decoration: none; color: inherit; }
 /* color: inherit → iOS'ta buton içindeki rengi belirtilmemiş metin sistem mavisi
