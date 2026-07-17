@@ -9,7 +9,9 @@ Sıra önemli — üstten aşağı ilerle.
   test edildi (2026-07-15, 7/7 PASS):** silobas beyanlı nakliyeci hafriyat
   işini alamadı, doğru türde aldı, iptalle panoya döndü, iz bırakılmadı.
 
-- [ ] **Supabase Studio → SQL Editor → `supabase/migration-2026-07-magaza-oncesi-sunucu-fix.sql` → Run.**
+- [x] **`migration-2026-07-magaza-oncesi-sunucu-fix.sql` çalıştırıldı + doğrulandı
+  (2026-07-15; aşağıdaki 12/12 duman testi bu migration olmadan geçemezdi).**
+  Orijinal madde (kayıt için): Supabase Studio → SQL Editor → Run.
   Bu migration olmadan normal (admin olmayan) kullanıcılarda:
   - Ürün siparişi / teklif verme sunucuda GERİ ALINIR (offers_count guard bloker'ı),
   - Nakliyecinin "İşi İptal Et"i her zaman patlar.
@@ -30,6 +32,10 @@ Sıra önemli — üstten aşağı ilerle.
   otomatik App Store Connect'e yüklendi. İmza kalıcı anahtara bağlandı
   (CM_CERTIFICATE_PRIVATE_KEY, base64); pbxproj'daki BOM sorunu çözüldü.
   TestFlight'ta "İşleniyor" bitince telefona kurup test et.
+- [ ] **YENİ iOS build ŞART (520d99a sonrası):** eski build'in APP İKONU KOYU
+  LACİVERT (hatalı) + açılış düzeltmeleri (lacivert flaş, şeritler, hız) yok.
+  Codemagic → Start new build → master → ios-appstore. App Store'a gönderilecek
+  sürüm BU build olmalı; telefonda ikon beyaz + açılış akıcı diye doğrula.
 - [ ] **Android build:** Start new build → master → "YÜKLET Android - Play
   (AAB)" → üretilen AAB'yi indir (Play Console'a yüklenecek).
   Sürüm 1.0.1 dört kaynakta hizalı; bir sonraki sürümde dördünü birden artır.
@@ -39,6 +45,11 @@ Sıra önemli — üstten aşağı ilerle.
 - [ ] Apple Developer portal → Identifiers → `com.yuklet.app` →
   **Associated Domains** capability'sini aç (entitlement repo'da hazır:
   `applinks:yuklet.co`). Codemagic imza profillerini yeniden üretir.
+- [x] **Ekran görüntüleri HAZIR (2026-07-17):** `store-assets/ios-6.5/` içinde
+  6 adet 1284×2778 (iPhone 6.5") çerçeveli görsel — canlı siteden yakalandı,
+  marka paletiyle başlıklandı. ASC → 1.0 → iPhone 6.5" alanına sırayla yükle
+  (01→06). Play için de aynı görseller kullanılabilir (Play min 2 adet,
+  320-3840px arası kabul eder).
 - [ ] App Store Connect: uygulama kaydı + metadata + ekran görüntüleri.
   Gizlilik formu: takip YOK; toplanan veri = e-posta, ad, telefon, konum
   (yalnız uygulama işlevi için, hesapla ilişkili, takip için değil) —
