@@ -24,8 +24,17 @@ import '@fontsource/outfit/900.css'
 import './tailwind.css'
 import './index.css'
 import App from './App.jsx'
-import { registerSW } from './utils/pwa'
+import { unregisterSW } from './utils/pwa'
 import { initNative, isNative } from './native/capacitor'
+
+// SW KILL-SWITCH — render'dan ÖNCE, hem native hem web.
+// Geçmiş sürümlerde kaydedilen service worker `capacitor://localhost` (native)
+// ve yuklet.co (PWA) origin'lerinde cache'i KALICI tutuyordu; uygulama/build
+// güncellenince bile eski cache'lenmiş index.html + JS/CSS'i servis edip yeni
+// sürümü "eski görünür" yapıyordu. Bu, kayıtlı tüm SW'leri kaldırır + tüm
+// Cache Storage'ı siler. sw.js artık pakete hiç girmiyor (public/'ten silindi),
+// yani bir daha kaydedilemez. Tüm kullanıcılar güncelleyince kaldırılabilir.
+unregisterSW()
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -33,10 +42,6 @@ createRoot(document.getElementById('root')).render(
   </StrictMode>,
 )
 
-// Native (iOS/Android) kabukta: plugin kurulumu + service worker KAPALI
-// (Capacitor kendi WebView'ından servis eder; SW cache çakışması yaratabilir).
 if (isNative()) {
   initNative()
-} else {
-  registerSW()
 }
