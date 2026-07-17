@@ -25,6 +25,7 @@ import usePushNotifications from "./hooks/usePushNotifications";
 import { ToastProvider } from "./components/Toast";
 import { ErrorBoundary, NotFoundPage } from "./components/ErrorBoundary";
 import { SkeletonGrid } from "./components/Skeleton";
+import BootLoader from "./components/BootLoader";
 import PageTransition from "./components/PageTransition";
 import { initBackButton, initDeepLinks } from "./native/capacitor";
 
@@ -1009,7 +1010,7 @@ function AppShell() {
       <main>
         <ErrorBoundary>
           {!authReady ? (
-            <PageLoader />
+            <BootLoader />
           ) : (
           <Suspense fallback={<PageLoader />}>
             <AnimatePresence mode="wait">
