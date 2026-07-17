@@ -14,6 +14,10 @@
 	<string>İndirilen belge ve görselleri galerinize kaydetmek için erişim gerekir.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Sefer sırasında canlı konumu iş sahibiyle paylaşmak ve tahmini varışı göstermek için konum erişimi gerekir.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Sefer sırasında canlı konumu iş sahibiyle paylaşmak ve tahmini varışı göstermek için konum erişimi gerekir. Konum yalnızca sefer takibini siz başlattığınızda kullanılır.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>Sefer sırasında canlı konumu iş sahibiyle paylaşmak için konum erişimi gerekir. Konum yalnızca sefer takibini siz başlattığınızda kullanılır.</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>CFBundleDisplayName</key>
