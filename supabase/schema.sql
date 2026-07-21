@@ -209,6 +209,24 @@ begin
   if me is null then
     raise exception 'Oturum yok: hesap silinemez.';
   end if;
+  -- Kabul ettigi TESLIM EDILMEMIS esli isler panoya geri doner (karsi tarafta
+  -- silinmis kullaniciya bagli "hayalet eslesme" kalmasin; cancel_job ile ayni).
+  delete from public.trip_locations where listing_id in (
+    select id from public.listings
+     where accepted_by_id = me and status = 'eslesti' and coalesce(phase,'') <> 'teslim');
+  update public.listings
+     set status = 'aktif', phase = null, accepted_by_id = null, assigned_vehicle = null,
+         cycle_stage = null, arrived_at = null, trips_done = 0, delivery_proof = null
+   where accepted_by_id = me and status = 'eslesti' and coalesce(phase,'') <> 'teslim';
+  -- Storage temizligi (logos/<uid>/..., mola/<uid>/...): "verileriniz kalici
+  -- olarak silinir" vaadi Storage'i da kapsar. Yetki farki silmeyi engellemesin.
+  begin
+    delete from storage.objects
+     where bucket_id in ('logos', 'mola')
+       and (storage.foldername(name))[1] = me::text;
+  exception when others then
+    raise notice 'storage temizligi atlandi: %', sqlerrm;
+  end;
   -- Cascade tum public verisini temizler; auth kullanicisini sil.
   delete from auth.users where id = me;
 end; $$;

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Settings, BadgeCheck, Truck, Package, Lock, Building2, HelpCircle, LogOut, ChevronRight, ShieldCheck, Upload, FileText, Star, Heart, Navigation, History, Inbox, Bell, Flag, Ban } from "lucide-react";
+import { Settings, BadgeCheck, Truck, Package, Lock, Building2, HelpCircle, LogOut, ChevronRight, ShieldCheck, Upload, FileText, Star, Heart, Navigation, History, Inbox, Bell, Flag, Ban, Trash2 } from "lucide-react";
 import { useToast } from "../components/Toast";
 import { StarsDisplay } from "../components/Stars";
 import SEO from "../components/SEO";
@@ -1073,9 +1073,14 @@ export default function ProfilPage({ user, onUpdateProfile, onRequireAuth, onLog
           <LogOut size={18} strokeWidth={2.2} /> Çıkış yap
         </button>
 
-        {/* Hesap silme profil yüzeyinden kaldırıldı — artık Gizlilik & Yasal >
-            "Hesap Sil" sekmesinde (LegalPage /yasal/hesap-silme). Menüdeki
-            "Gizlilik & Yasal" satırının açıklaması oraya işaret eder. */}
+        {/* Hesap silme — App Store 5.1.1(v) & Google Play: profil yüzeyinden tek
+            dokunuşla erişilmeli (yalnız yasal sayfaya gömülü olması 1.0.1 build 27'de
+            ret nedeni oldu). Buton silme ekranına (/yasal/hesap-silme) götürür;
+            asıl iki adımlı onay + delete_my_account çağrısı orada. */}
+        <button type="button" onClick={() => navigate("/yasal/hesap-silme")}
+          style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, background: C.card, border: `2px solid ${C.red}`, color: C.red, borderRadius: 6, padding: "14px", fontFamily: MONO, fontSize: 13, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, cursor: "pointer", boxShadow: "3px 3px 0 rgba(10,10,10,.12)" }}>
+          <Trash2 size={18} strokeWidth={2.2} /> Hesabımı sil
+        </button>
 
         {/* Derleme damgası — cihazdaki paketin hangi commit'ten çıktığını gösterir */}
         <div style={{ marginTop: 14, textAlign: "center", fontFamily: MONO, fontSize: 9.5, letterSpacing: "0.06em", color: "rgba(90,88,82,.55)" }}>

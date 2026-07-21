@@ -387,8 +387,12 @@ export async function setMyRole(role) {
 // messages/reviews/docs) otomatik temizler. Sonra oturumu kapat.
 export async function deleteMyAccount() {
   const { error } = await supabase.rpc("delete_my_account");
-  if (error) return { ok: false, error: error.message };
-  await supabase.auth.signOut().catch(() => {});
+  if (error) return { ok: false, error: trMsg(error, "Hesap silinemedi. Tekrar dene.") };
+  // signOut THROW ETMEZ, { error } doner — ag/5xx hatasinda yerel oturum kalir
+  // ve SIGNED_OUT ateslenmez (silinen hesap UI'da dirilebilirdi). Hesap sunucuda
+  // zaten silindi: global signOut basarisizsa yerel kapsamli signOut ile dusur.
+  const { error: soErr } = await supabase.auth.signOut();
+  if (soErr) await supabase.auth.signOut({ scope: "local" }).catch(() => {});
   return { ok: true };
 }
 

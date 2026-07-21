@@ -907,6 +907,11 @@ function AppShell() {
       setUsers((prev) => prev.filter((u) => String(u.id) !== uid));
       if (blocked[uid]) { const nb = { ...blocked }; delete nb[uid]; setBlocked(nb); saveBlocked(nb); }
     }
+    // logout ile AYNI temizlik: signOut ag hatasiyla sessizce basarisiz olursa
+    // SIGNED_OUT ateslenmez — ref/onbellek burada temizlenmezse sonraki hydrate
+    // silinen hesabi onbellekten "girisli" gosterebilirdi (PII de kalirdi).
+    lastGoodProfileRef.current = null; roleChosenRef.current = false;
+    clearProfileCache();
     setUser(null);
     setProfile(null);
     return { ok: true };
@@ -1093,7 +1098,7 @@ function AppShell() {
                 {/* Piyasa Nabzı — özellik komple gizlendi (sistem henüz uygun değil); geri açmak için yorumu kaldır */}
                 {/* <Route path="/piyasa" element={<PageTransition><PiyasaNabziPage listings={listings} offers={offers} /></PageTransition>} /> */}
                 {/* <Route path="/fiyat-simulasyonu" element={<PageTransition><FiyatSimulasyonuPage /></PageTransition>} /> */}
-                <Route path="/yasal/:slug" element={<PageTransition><LegalPage user={user} onDeleteAccount={deleteAccount} /></PageTransition>} />
+                <Route path="/yasal/:slug" element={<PageTransition><LegalPage user={user} onDeleteAccount={deleteAccount} onRequireAuth={requireAuth} /></PageTransition>} />
                 <Route path="*" element={<PageTransition><NotFoundPage /></PageTransition>} />
               </Routes>
             </AnimatePresence>

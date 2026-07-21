@@ -203,7 +203,7 @@ haklarina sahipsiniz.
 Haklarinizi kullanmak icin hesabiniza kayitli e-posta adresinizden yazin:
 - E-posta: kvkk@yuklet.co
 
-Basvurular en gec 30 gun icinde ucretsiz sonuclandirilir. Hesabinizi ve tum verilerinizi ayrica uygulama icinden (Profil > Gizlilik & Yasal > Hesap Sil) aninda silebilirsiniz.`
+Basvurular en gec 30 gun icinde ucretsiz sonuclandirilir. Hesabinizi ve tum verilerinizi ayrica uygulama icinden (Profil > Hesabimi sil) aninda silebilirsiniz.`
   },
   "hesap-silme": {
     title: "Hesap ve Veri Silme",
@@ -214,8 +214,8 @@ Basvurular en gec 30 gun icinde ucretsiz sonuclandirilir. Hesabinizi ve tum veri
 En hizli yontem uygulama uzerinden silmektir:
 
 - **Profil** sekmesini acin
-- Menuden **"Gizlilik & Yasal"** satirina dokunun
-- **"Hesap Sil"** sekmesine gecin ve sayfanin altindaki **"Hesabimi kalici olarak sil"** butonuna dokunun
+- Sayfanin altindaki **"Hesabimi sil"** butonuna dokunun (ayni ekrana menuden **"Gizlilik & Yasal"** > **"Hesap Sil"** sekmesiyle de ulasabilirsiniz)
+- Bu sayfada sekmelerin hemen altindaki **"Hesabimi kalici olarak sil"** butonuna dokunun
 - Onay adimini tamamlayin
 
 Hesabiniz ve verileriniz aninda silinir, oturumunuz kapatilir.
@@ -265,7 +265,7 @@ const TABS = [
 
 const shell = { display: "flex", flexDirection: "column", minHeight: "100%", background: C.bg, fontFamily: BODY };
 
-export default function LegalPage({ user, onDeleteAccount }) {
+export default function LegalPage({ user, onDeleteAccount, onRequireAuth }) {
   const { slug } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
@@ -340,6 +340,50 @@ export default function LegalPage({ user, onDeleteAccount }) {
           })}
         </div>
 
+        {/* Hesap silme aksiyonu — SAYFANIN ÜSTÜNDE, uzun yasal metnin ALTINDA DEĞİL.
+            App Store 5.1.1(v) & Google Play: silme seçeneği kaydırmadan görünür olmalı
+            (metnin altına gömülü olması 1.0.1 build 27'de ret nedeniydi).
+            Yalnız "Hesap Sil" sekmesinde ve giriş yapılmışken. */}
+        {slug === "hesap-silme" && (
+          user ? (
+            !confirmDelete ? (
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(true)}
+                style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", minHeight: 44, background: C.card, border: "2px solid #DC2626", color: "#DC2626", borderRadius: 6, padding: "12px", fontFamily: MONO, fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, cursor: "pointer" }}
+              >
+                <Trash2 size={15} strokeWidth={2.4} /> Hesabımı kalıcı olarak sil
+              </button>
+            ) : (
+              <div style={{ padding: 14, background: C.card, border: "2px solid #DC2626", borderRadius: 6 }}>
+                <p style={{ margin: "0 0 12px", fontFamily: MONO, fontSize: 12, color: C.ink, lineHeight: 1.5 }}>
+                  Hesabın, ilanların, tekliflerin, mesajların ve belgelerin <strong>kalıcı olarak</strong> silinecek. Bu işlem geri alınamaz.
+                </p>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button type="button" onClick={() => setConfirmDelete(false)} disabled={deleting}
+                    style={{ flex: 1, minHeight: 44, background: C.card, border: `2px solid ${C.ink}`, color: C.ink, borderRadius: 6, padding: "12px", fontFamily: MONO, fontSize: 12, fontWeight: 700, textTransform: "uppercase", cursor: "pointer" }}>
+                    Vazgeç
+                  </button>
+                  <button type="button" onClick={handleDeleteAccount} disabled={deleting}
+                    style={{ flex: 1, minHeight: 44, background: "#DC2626", border: "2px solid #DC2626", color: "#fff", borderRadius: 6, padding: "12px", fontFamily: MONO, fontSize: 12, fontWeight: 700, textTransform: "uppercase", cursor: "pointer", opacity: deleting ? 0.6 : 1 }}>
+                    {deleting ? "Siliniyor…" : "Evet, sil"}
+                  </button>
+                </div>
+              </div>
+            )
+          ) : (
+            <div style={{ padding: 14, background: C.card, border: `2px solid ${C.ink}`, borderRadius: 6, textAlign: "center" }}>
+              <p style={{ margin: "0 0 10px", fontFamily: MONO, fontSize: 11.5, color: C.sub, lineHeight: 1.5 }}>
+                Hesabını uygulama içinden silmek için önce giriş yap.
+              </p>
+              <button type="button" onClick={() => onRequireAuth?.()}
+                style={{ width: "100%", minHeight: 44, background: C.ink, border: `2px solid ${C.ink}`, color: C.yellow, borderRadius: 6, padding: "12px", fontFamily: MONO, fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, cursor: "pointer" }}>
+                Giriş yap
+              </button>
+            </div>
+          )
+        )}
+
         {/* Content card — hazard top strip */}
         <div style={{ position: "relative", overflow: "hidden", background: C.card, border: `2px solid ${C.ink}`, borderRadius: 6, boxShadow: "3px 3px 0 #0A0A0A" }}>
           <div style={{ height: 7, backgroundImage: HAZARD }} />
@@ -374,41 +418,6 @@ export default function LegalPage({ user, onDeleteAccount }) {
           </div>
         </div>
 
-        {/* Hesap silme aksiyonu — yalnız "Hesap Sil" sekmesinde ve giriş yapılmışken.
-            (App Store 5.1.1(v) & Google Play: uygulama içinden silme bu ekranda.) */}
-        {slug === "hesap-silme" && (
-          user ? (
-            !confirmDelete ? (
-              <button
-                type="button"
-                onClick={() => setConfirmDelete(true)}
-                style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", minHeight: 44, background: C.card, border: "2px solid #DC2626", color: "#DC2626", borderRadius: 6, padding: "12px", fontFamily: MONO, fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, cursor: "pointer" }}
-              >
-                <Trash2 size={15} strokeWidth={2.4} /> Hesabımı kalıcı olarak sil
-              </button>
-            ) : (
-              <div style={{ padding: 14, background: C.card, border: "2px solid #DC2626", borderRadius: 6 }}>
-                <p style={{ margin: "0 0 12px", fontFamily: MONO, fontSize: 12, color: C.ink, lineHeight: 1.5 }}>
-                  Hesabın, ilanların, tekliflerin, mesajların ve belgelerin <strong>kalıcı olarak</strong> silinecek. Bu işlem geri alınamaz.
-                </p>
-                <div style={{ display: "flex", gap: 8 }}>
-                  <button type="button" onClick={() => setConfirmDelete(false)} disabled={deleting}
-                    style={{ flex: 1, minHeight: 44, background: C.card, border: `2px solid ${C.ink}`, color: C.ink, borderRadius: 6, padding: "12px", fontFamily: MONO, fontSize: 12, fontWeight: 700, textTransform: "uppercase", cursor: "pointer" }}>
-                    Vazgeç
-                  </button>
-                  <button type="button" onClick={handleDeleteAccount} disabled={deleting}
-                    style={{ flex: 1, minHeight: 44, background: "#DC2626", border: "2px solid #DC2626", color: "#fff", borderRadius: 6, padding: "12px", fontFamily: MONO, fontSize: 12, fontWeight: 700, textTransform: "uppercase", cursor: "pointer", opacity: deleting ? 0.6 : 1 }}>
-                    {deleting ? "Siliniyor…" : "Evet, sil"}
-                  </button>
-                </div>
-              </div>
-            )
-          ) : (
-            <p style={{ margin: 0, fontFamily: MONO, fontSize: 11.5, color: C.sub, textAlign: "center" }}>
-              Hesabını uygulama içinden silmek için önce giriş yap.
-            </p>
-          )
-        )}
       </div>
     </div>
   );
