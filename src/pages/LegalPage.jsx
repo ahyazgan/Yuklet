@@ -203,7 +203,7 @@ haklarina sahipsiniz.
 Haklarinizi kullanmak icin hesabiniza kayitli e-posta adresinizden yazin:
 - E-posta: kvkk@yuklet.co
 
-Basvurular en gec 30 gun icinde ucretsiz sonuclandirilir. Hesabinizi ve tum verilerinizi ayrica uygulama icinden (Profil > Hesabimi sil) aninda silebilirsiniz.`
+Basvurular en gec 30 gun icinde ucretsiz sonuclandirilir. Hesabinizi ve tum verilerinizi ayrica uygulama icinden (Profil > Hesabi sil) aninda silebilirsiniz.`
   },
   "hesap-silme": {
     title: "Hesap ve Veri Silme",
@@ -214,7 +214,7 @@ Basvurular en gec 30 gun icinde ucretsiz sonuclandirilir. Hesabinizi ve tum veri
 En hizli yontem uygulama uzerinden silmektir:
 
 - **Profil** sekmesini acin
-- Sayfanin altindaki **"Hesabimi sil"** butonuna dokunun (ayni ekrana menuden **"Gizlilik & Yasal"** > **"Hesap Sil"** sekmesiyle de ulasabilirsiniz)
+- Menuden **"Hesabi sil"** satirina dokunun
 - Bu sayfada sekmelerin hemen altindaki **"Hesabimi kalici olarak sil"** butonuna dokunun
 - Onay adimini tamamlayin
 

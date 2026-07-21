@@ -1049,19 +1049,24 @@ export default function ProfilPage({ user, onUpdateProfile, onRequireAuth, onLog
             ] : []),
             ...(isAdmin(user) ? [{ icon: ShieldCheck, label: "Yönetim Paneli", desc: "Şikayet, belge ve moderasyon", to: "/admin" }] : []),
             { icon: Ban, label: "Engellenen kullanıcılar", desc: blockedIds.length ? `${blockedIds.length} kullanıcı engelli` : "Engellediğin kimse yok", onClick: () => setShowBlocked(true) },
+            // Hesap silme — App Store 5.1.1(v) & Google Play: Profil yüzeyinden
+            // erişilebilir olmalı (yalnız yasal sayfaya gömülmesi 1.0.1/27'de ret
+            // nedeni oldu). Menü satırı olarak KALMALI; asıl onay + silme
+            // /yasal/hesap-silme ekranında.
+            { icon: Trash2, label: "Hesabı sil", desc: "Hesabını ve tüm verilerini kalıcı olarak sil", to: "/yasal/hesap-silme", danger: true },
           ].map((m, i, arr) => {
             const Icon = m.icon;
             return (
               <button key={m.to || m.label} onClick={() => (m.onClick ? m.onClick() : navigate(m.to))}
                 style={{ width: "100%", display: "flex", alignItems: "center", gap: 14, padding: "14px 14px", background: "none", border: "none", borderBottom: i < arr.length - 1 ? `1.5px solid ${C.ink}` : "none", textAlign: "left", cursor: "pointer" }}>
                 <span style={{ width: 38, height: 38, flexShrink: 0, borderRadius: 6, background: C.stone, border: `2px solid ${C.ink}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <Icon size={18} color={C.ink} strokeWidth={2} />
+                  <Icon size={18} color={m.danger ? C.red : C.ink} strokeWidth={2} />
                 </span>
                 <span style={{ minWidth: 0, flex: 1 }}>
-                  <span style={{ display: "block", fontFamily: ARCHIVO, fontSize: 14, fontWeight: 800, color: C.ink, textTransform: "uppercase", letterSpacing: "-0.02em" }}>{m.label}</span>
+                  <span style={{ display: "block", fontFamily: ARCHIVO, fontSize: 14, fontWeight: 800, color: m.danger ? C.red : C.ink, textTransform: "uppercase", letterSpacing: "-0.02em" }}>{m.label}</span>
                   <span style={{ display: "block", fontFamily: MONO, fontSize: 10, color: C.sub, marginTop: 2 }}>{m.desc}</span>
                 </span>
-                <ChevronRight size={18} color={C.ink} strokeWidth={2.2} />
+                <ChevronRight size={18} color={m.danger ? C.red : C.ink} strokeWidth={2.2} />
               </button>
             );
           })}
@@ -1071,15 +1076,6 @@ export default function ProfilPage({ user, onUpdateProfile, onRequireAuth, onLog
         <button type="button" onClick={() => onLogout?.()}
           style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, background: C.card, border: `2px solid ${C.ink}`, color: C.red, borderRadius: 6, padding: "14px", fontFamily: MONO, fontSize: 13, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, cursor: "pointer", boxShadow: "3px 3px 0 rgba(10,10,10,.12)" }}>
           <LogOut size={18} strokeWidth={2.2} /> Çıkış yap
-        </button>
-
-        {/* Hesap silme — App Store 5.1.1(v) & Google Play: profil yüzeyinden tek
-            dokunuşla erişilmeli (yalnız yasal sayfaya gömülü olması 1.0.1 build 27'de
-            ret nedeni oldu). Buton silme ekranına (/yasal/hesap-silme) götürür;
-            asıl iki adımlı onay + delete_my_account çağrısı orada. */}
-        <button type="button" onClick={() => navigate("/yasal/hesap-silme")}
-          style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, background: C.card, border: `2px solid ${C.red}`, color: C.red, borderRadius: 6, padding: "14px", fontFamily: MONO, fontSize: 13, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, cursor: "pointer", boxShadow: "3px 3px 0 rgba(10,10,10,.12)" }}>
-          <Trash2 size={18} strokeWidth={2.2} /> Hesabımı sil
         </button>
 
         {/* Derleme damgası — cihazdaki paketin hangi commit'ten çıktığını gösterir */}
