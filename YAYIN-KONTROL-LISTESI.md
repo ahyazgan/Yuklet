@@ -62,7 +62,9 @@ Sıra önemli — üstten aşağı ilerle.
   c75d0615-0acf-4f0b-8486-678cf4a77c11. SONUÇ MAİLİNİ BEKLE.
 - [x] Gizlilik politikası URL: `https://yuklet.co/gizlilik.html` (canlı, 200;
   ASC'ye bu girildi).
-- [ ] Onay sonrası: `public/app-version.json` → `iosUrl`'e App Store linkini yaz.
+- [x] ONAYLANDI (2026-07-23): 1.0.1 (build 28) "approved for distribution" —
+  App Store sayfası `https://apps.apple.com/app/id6787767256` (görünmesi 24 saate
+  kadar sürebilir). `public/app-version.json` → `iosUrl` yazıldı.
 
 ## 4. Google Play tarafı
 
